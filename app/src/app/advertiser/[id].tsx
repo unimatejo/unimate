@@ -8,12 +8,13 @@ import MapView, { Marker } from 'react-native-maps';
 import { Button, Header, Loading, Row, Screen, T, Tag } from '@/components/ui';
 import { supabase } from '@/lib/supabase';
 import { C } from '@/lib/theme';
+import { t } from '@/lib/i18n';
 
 type Adv = {
   id: string; name: string; category: string; description: string | null; phone: string | null; hours: string | null;
   menu: { name: string; price_jod?: number; photo_url?: string }[]; photos: string[]; logo_url: string | null; lat: number | null; lng: number | null;
 };
-const CAT: Record<string, string> = { restaurant: 'مطعم', cafe: 'كافيه', bookshop: 'مكتبة', print: 'طباعة', housing: 'سكن', courses: 'دورات', shop: 'محل', other: 'خدمة' };
+const CAT: Record<string, string> = { restaurant: t('مطعم'), cafe: t('كافيه'), bookshop: t('مكتبة'), print: t('طباعة'), housing: t('سكن'), courses: t('دورات'), shop: t('محل'), other: t('خدمة') };
 
 export default function Advertiser() {
   const { id, campaign } = useLocalSearchParams<{ id: string; campaign?: string }>();
@@ -34,7 +35,7 @@ export default function Advertiser() {
 
   return (
     <Screen>
-      <Header title={a.name} subtitle={CAT[a.category]} right={<Tag label="ممول" bg={C.orangeSoft} fg={C.orange} />} />
+      <Header title={a.name} subtitle={CAT[a.category]} right={<Tag label={t('ممول')} bg={C.orangeSoft} fg={C.orange} />} />
       <ScrollView contentContainerStyle={{ padding: 18, paddingTop: 4, gap: 14, paddingBottom: 60 }}>
         {cover ? <Image source={{ uri: cover }} style={{ width: '100%', aspectRatio: 16 / 10, borderRadius: 24 }} contentFit="cover" transition={200} /> : null}
         <Row gap={12}>
@@ -46,17 +47,17 @@ export default function Advertiser() {
         </Row>
         <Row gap={10}>
           {a.hours ? <Row gap={6} style={{ flex: 1, backgroundColor: C.card, borderRadius: 16, padding: 12 }}><Clock size={17} color={C.green} /><T v="small">{a.hours}</T></Row> : null}
-          {a.phone ? <Button kind="green" title="اتصل" icon={<Phone size={17} color={C.white} />} onPress={call} style={{ minHeight: 46 }} /> : null}
+          {a.phone ? <Button kind="green" title={t('اتصل')} icon={<Phone size={17} color={C.white} />} onPress={call} style={{ minHeight: 46 }} /> : null}
         </Row>
 
         {a.menu.length > 0 && (
           <View style={{ gap: 8 }}>
-            <T v="h3">القائمة</T>
+            <T v="h3">{t('القائمة')}</T>
             {a.menu.map((m, i) => (
               <Row key={i} gap={12} style={{ backgroundColor: C.card, borderRadius: 18, padding: 10 }}>
                 {m.photo_url ? <Image source={{ uri: m.photo_url }} style={{ width: 54, height: 54, borderRadius: 14 }} /> : null}
                 <T v="bodyMd" style={{ flex: 1 }}>{m.name}</T>
-                {m.price_jod != null ? <T v="bold" color={C.primary}>{m.price_jod} د.أ</T> : null}
+                {m.price_jod != null ? <T v="bold" color={C.primary}>{m.price_jod} {t('د.أ')}</T> : null}
               </Row>
             ))}
           </View>
@@ -70,13 +71,13 @@ export default function Advertiser() {
 
         {a.lat != null && a.lng != null && (
           <View style={{ gap: 8 }}>
-            <Row gap={6}><MapPin size={18} color={C.red} /><T v="h3">الموقع</T></Row>
+            <Row gap={6}><MapPin size={18} color={C.red} /><T v="h3">{t('الموقع')}</T></Row>
             <View style={{ height: 180, borderRadius: 22, overflow: 'hidden' }}>
               <MapView style={{ flex: 1 }} initialRegion={{ latitude: a.lat, longitude: a.lng, latitudeDelta: 0.006, longitudeDelta: 0.006 }} scrollEnabled={false} zoomEnabled={false}>
                 <Marker coordinate={{ latitude: a.lat, longitude: a.lng }} title={a.name} />
               </MapView>
             </View>
-            <Button kind="soft" title="شوفه على خريطة الجامعة" onPress={() => router.push({ pathname: '/map', params: { advertiser: a.id } })} />
+            <Button kind="soft" title={t('شوفه على خريطة الجامعة')} onPress={() => router.push({ pathname: '/map', params: { advertiser: a.id } })} />
           </View>
         )}
       </ScrollView>

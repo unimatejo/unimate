@@ -6,7 +6,8 @@ import { Alert, FlatList, TextInput, View } from 'react-native';
 import { Avatar, Button, Header, Row, Screen, T, Tap } from '@/components/ui';
 import { useAuth } from '@/lib/auth';
 import { supabase } from '@/lib/supabase';
-import { C, F } from '@/lib/theme';
+import { C, F, isDark } from '@/lib/theme';
+import { t, ta } from '@/lib/i18n';
 
 type P = { id: string; full_name: string; avatar_url: string | null };
 
@@ -36,23 +37,23 @@ export default function Share() {
     setBusy(true);
     let ok = 0;
     for (const id of picked) {
-      const { data: conv } = await supabase.rpc('start_direct', { target: id, context: 'مشاركة منشور' });
+      const { data: conv } = await supabase.rpc('start_direct', { target: id, context: t('مشاركة منشور') });
       if (!conv) continue;
       const { error } = await supabase.from('messages').insert({ conversation_id: conv, sender_id: (profile?.id ?? ''), kind: 'post_share', ref_id: post, body: note.trim() || null });
       if (!error) ok++;
     }
     setBusy(false);
-    if (!ok) { Alert.alert('ما زبط', 'جرّب كمان مرة.'); return; }
+    if (!ok) { Alert.alert(t('ما زبط'), t('جرّب كمان مرة.')); return; }
     router.back();
   }
 
   return (
     <Screen>
-      <Header title="أرسل لصديق" />
+      <Header title={t('أرسل لصديق')} />
       <View style={{ paddingHorizontal: 18 }}>
         <Row gap={8} style={{ minHeight: 46, borderRadius: 14, backgroundColor: C.card, paddingHorizontal: 12 }}>
           <Search size={18} color={C.muted} />
-          <TextInput value={q} onChangeText={setQ} placeholder="دوّر" placeholderTextColor={C.faint} style={{ flex: 1, fontFamily: F.body, fontSize: 14, color: C.ink, textAlign: 'right' }} />
+          <TextInput keyboardAppearance={isDark ? 'dark' : 'light'} value={q} onChangeText={setQ} placeholder={t('دوّر')} placeholderTextColor={C.faint} style={{ flex: 1, fontFamily: F.body, fontSize: 14, color: C.ink, textAlign: ta }} />
         </Row>
       </View>
       <FlatList
@@ -73,13 +74,13 @@ export default function Share() {
             </Tap>
           );
         }}
-        ListEmptyComponent={<T v="small" color={C.muted} style={{ textAlign: 'center' }}>تابع ناس عشان تبعتلهم.</T>}
+        ListEmptyComponent={<T v="small" color={C.muted} style={{ textAlign: 'center' }}>{t('تابع ناس عشان تبعتلهم.')}</T>}
       />
       {picked.size > 0 && (
         <View style={{ padding: 18, gap: 10, borderTopWidth: 0.5, borderTopColor: C.line, backgroundColor: C.bg }}>
-          <TextInput value={note} onChangeText={setNote} placeholder="اكتب رسالة..." placeholderTextColor={C.faint}
-            style={{ minHeight: 46, borderRadius: 14, backgroundColor: C.card, paddingHorizontal: 14, fontFamily: F.body, fontSize: 14, color: C.ink, textAlign: 'right' }} />
-          <Button title={picked.size > 1 ? `أرسل لـ ${picked.size}` : 'أرسل'} icon={<Send size={17} color={C.white} />} onPress={send} loading={busy} />
+          <TextInput keyboardAppearance={isDark ? 'dark' : 'light'} value={note} onChangeText={setNote} placeholder={t('اكتب رسالة...')} placeholderTextColor={C.faint}
+            style={{ minHeight: 46, borderRadius: 14, backgroundColor: C.card, paddingHorizontal: 14, fontFamily: F.body, fontSize: 14, color: C.ink, textAlign: ta }} />
+          <Button title={picked.size > 1 ? t('أرسل لـ {0}', [picked.size]) : t('أرسل')} icon={<Send size={17} color={C.white} />} onPress={send} loading={busy} />
         </View>
       )}
     </Screen>

@@ -8,6 +8,7 @@ import { Avatar, Button, Card, Empty, Header, Row, Screen, T, Tag } from '@/comp
 import { useAuth } from '@/lib/auth';
 import { supabase } from '@/lib/supabase';
 import { C } from '@/lib/theme';
+import { nm, t } from '@/lib/i18n';
 
 type Req = { id: string; context: string | null; first: string | null; from: { id: string; full_name: string; avatar_url: string | null; major: { name_ar: string } | null } | null };
 
@@ -23,7 +24,7 @@ export default function Requests() {
     for (const r of (data ?? []) as any[]) {
       const c = r.conversation;
       const [{ data: from }, { data: msg }] = await Promise.all([
-        supabase.from('profiles').select('id, full_name, avatar_url, major:majors(name_ar)').eq('id', c.created_by).single(),
+        supabase.from('profiles').select('id, full_name, avatar_url, major:majors(name_ar, name_en)').eq('id', c.created_by).single(),
         supabase.from('messages').select('body').eq('conversation_id', c.id).order('created_at').limit(1).maybeSingle(),
       ]);
       out.push({ id: c.id, context: c.context_label, first: msg?.body ?? null, from: from as Req['from'] });
@@ -41,7 +42,7 @@ export default function Requests() {
 
   return (
     <Screen>
-      <Header title="طلبات المراسلة" />
+      <Header title={t('طلبات المراسلة')} />
       <FlatList
         data={rows}
         keyExtractor={(r) => r.id}
@@ -49,7 +50,7 @@ export default function Requests() {
         ListHeaderComponent={
           <Row gap={10} center={false} style={{ backgroundColor: C.card, borderRadius: 20, padding: 14, marginBottom: 4 }}>
             <View style={{ width: 38, height: 38, borderRadius: 13, backgroundColor: C.green, alignItems: 'center', justifyContent: 'center' }}><ShieldCheck size={20} color={C.white} /></View>
-            <T v="small" color={C.ink2} style={{ flex: 1 }}>المرسل ما بيعرف إذا شفت رسالته. إذا تجاهلتها، بتختفي بهدوء وما حدا بيعرف.</T>
+            <T v="small" color={C.ink2} style={{ flex: 1 }}>{t('المرسل ما بيعرف إذا شفت رسالته. إذا تجاهلتها، بتختفي بهدوء وما حدا بيعرف.')}</T>
           </Row>
         }
         renderItem={({ item }) => (
@@ -59,20 +60,20 @@ export default function Requests() {
                 <Avatar id={item.from?.id} name={item.from?.full_name} url={item.from?.avatar_url} size={50} />
                 <View style={{ flex: 1 }}>
                   <Row gap={5}><T v="bold">{item.from?.full_name}</T><BadgeCheck size={15} color={C.white} fill={C.primary} /></Row>
-                  <T v="tiny" color={C.muted}>{item.from?.major?.name_ar ?? ''}</T>
+                  <T v="tiny" color={C.muted}>{nm(item.from?.major) ?? ''}</T>
                 </View>
               </Row>
               {item.context && <Tag label={item.context} bg={C.primarySoft} fg={C.primary} />}
               {item.first && <View style={{ backgroundColor: C.bg, borderRadius: 16, padding: 12 }}><T v="body">{item.first}</T></View>}
               <Row gap={8}>
-                <Button title="قبول" onPress={() => answer(item.id, true)} style={{ flex: 1, minHeight: 44 }} />
-                <Button kind="soft" title="تجاهل" onPress={() => answer(item.id, false)} style={{ flex: 1, minHeight: 44 }} />
-                <Button kind="white" title="إبلاغ" onPress={() => router.push({ pathname: '/report', params: { type: 'conversation', id: item.id, user: item.from?.id } })} style={{ flex: 1, minHeight: 44, borderWidth: 1, borderColor: C.pinkSoft }} />
+                <Button title={t('قبول')} onPress={() => answer(item.id, true)} style={{ flex: 1, minHeight: 44 }} />
+                <Button kind="soft" title={t('تجاهل')} onPress={() => answer(item.id, false)} style={{ flex: 1, minHeight: 44 }} />
+                <Button kind="white" title={t('إبلاغ')} onPress={() => router.push({ pathname: '/report', params: { type: 'conversation', id: item.id, user: item.from?.id } })} style={{ flex: 1, minHeight: 44, borderWidth: 1, borderColor: C.pinkSoft }} />
               </Row>
             </Card>
           </Animated.View>
         )}
-        ListEmptyComponent={<Empty icon={<MessageCircle size={28} color={C.primary} />} title="ما في طلبات جديدة" body="لما حدا جديد يراسلك، بيوصل هون أول." />}
+        ListEmptyComponent={<Empty icon={<MessageCircle size={28} color={C.primary} />} title={t('ما في طلبات جديدة')} body={t('لما حدا جديد يراسلك، بيوصل هون أول.')} />}
       />
     </Screen>
   );

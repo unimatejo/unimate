@@ -5,21 +5,22 @@ import Animated, { FadeInDown } from 'react-native-reanimated';
 
 import { Header, Screen, T, Tap } from '@/components/ui';
 import { CATEGORY, C } from '@/lib/theme';
+import { t } from '@/lib/i18n';
 
 const ICON: Record<string, typeof Search> = {
   square: MessageCircle, summaries: BookOpen, assignments: ClipboardCheck, tutoring: GraduationCap, lost_found: Search,
   market: ShoppingBag, exchange: ArrowLeftRight, transport_housing: Bus, events: Sparkles, opportunities: Briefcase,
 };
 const DESC: Record<string, string> = {
-  square: 'أسئلة سريعة ونقاشات', summaries: 'شارك ونزّل ملخصات المواد', assignments: 'مواعيد ونقاش الواجبات',
-  tutoring: 'درّس أو لاقي مدرّس', lost_found: 'ضاع منك إشي أو لقيت إشي', market: 'بيع وشراء كتب وأدوات',
-  exchange: 'بدّل كتابك أو تبرع فيه', transport_housing: 'توصيلة مشتركة وسكن', events: 'نشاطات وأندية ورياضة', opportunities: 'تدريب وشغل جزئي ومنح',
+  square: t('أسئلة سريعة ونقاشات'), summaries: t('شارك ونزّل ملخصات المواد'), assignments: t('مواعيد ونقاش الواجبات'),
+  tutoring: t('درّس أو لاقي مدرّس'), lost_found: t('ضاع منك إشي أو لقيت إشي'), market: t('بيع وشراء كتب وأدوات'),
+  exchange: t('بدّل كتابك أو تبرع فيه'), transport_housing: t('توصيلة مشتركة وسكن'), events: t('نشاطات وأندية ورياضة'), opportunities: t('تدريب وشغل جزئي ومنح'),
 };
 
 export default function Sections() {
   return (
     <Screen>
-      <Header title="أقسام المجتمع" />
+      <Header title={t('أقسام المجتمع')} />
       <ScrollView contentContainerStyle={{ padding: 18, paddingTop: 4, flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
         {Object.entries(CATEGORY).map(([k, v], i) => {
           const Icon = ICON[k];

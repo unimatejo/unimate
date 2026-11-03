@@ -6,7 +6,8 @@ import Animated, { FadeInDown, useAnimatedStyle, useSharedValue, withSequence, w
 
 import { Button, Header, Screen, T } from '@/components/ui';
 import { sendEmailCode, verifyEmailCode } from '@/lib/auth';
-import { C, F } from '@/lib/theme';
+import { C, F, isDark } from '@/lib/theme';
+import { t } from '@/lib/i18n';
 
 export default function Verify() {
   const { email, uni } = useLocalSearchParams<{ email: string; uni: string }>();
@@ -24,7 +25,7 @@ export default function Verify() {
     const { error: e } = await verifyEmailCode(email, c);
     setBusy(false);
     if (e) {
-      setError('الرمز غلط أو انتهى. تأكد منه وجرّب مرة ثانية.');
+      setError(t('الرمز غلط أو انتهى. تأكد منه وجرّب مرة ثانية.'));
       shake.value = withSequence(withTiming(10, { duration: 50 }), withTiming(-10, { duration: 50 }), withTiming(6, { duration: 50 }), withTiming(0, { duration: 50 }));
       return;
     }
@@ -39,8 +40,8 @@ export default function Verify() {
           <View style={{ width: 64, height: 64, borderRadius: 22, backgroundColor: C.primarySoft, alignItems: 'center', justifyContent: 'center' }}>
             <MailCheck size={30} color={C.primary} />
           </View>
-          <T v="h1">افتح إيميلك</T>
-          <T v="body" color={C.muted}>بعتنا رسالة على {email}{uni ? ` (${uni})` : ''}. اضغط الرابط اللي فيها من هالتلفون وبتدخل علطول، أو اكتب الرمز هون إذا وصلك رمز.</T>
+          <T v="h1">{t('افتح إيميلك')}</T>
+          <T v="body" color={C.muted}>{t('بعتنا رسالة على')} {email}{uni ? ` (${uni})` : ''}{t('. اضغط الرابط اللي فيها من هالتلفون وبتدخل علطول، أو اكتب الرمز هون إذا وصلك رمز.')}</T>
         </Animated.View>
 
         <Pressable onPress={() => input.current?.focus()}>
@@ -55,14 +56,14 @@ export default function Verify() {
             })}
           </Animated.View>
         </Pressable>
-        <TextInput
+        <TextInput keyboardAppearance={isDark ? 'dark' : 'light'}
           ref={input} value={code} autoFocus keyboardType="number-pad" textContentType="oneTimeCode" autoComplete="one-time-code"
           maxLength={6} onChangeText={(t) => { const c = t.replace(/\D/g, ''); setCode(c); if (c.length === 6) verify(c); }}
-          style={{ position: 'absolute', opacity: 0, height: 1, width: 1 }} accessibilityLabel="رمز التحقق"
+          style={{ position: 'absolute', opacity: 0, height: 1, width: 1 }} accessibilityLabel={t('رمز التحقق')}
         />
         {error && <T v="small" color={C.danger}>{error}</T>}
-        <Button title="تأكيد" loading={busy} disabled={code.length < 6} onPress={() => verify()} />
-        <Button kind="ghost" title={resent ? 'بعتنا رمز جديد' : 'ما وصلني، ابعت مرة ثانية'} disabled={resent}
+        <Button title={t('تأكيد')} loading={busy} disabled={code.length < 6} onPress={() => verify()} />
+        <Button kind="ghost" title={resent ? t('بعتنا رمز جديد') : t('ما وصلني، ابعت مرة ثانية')} disabled={resent}
           onPress={async () => { await sendEmailCode(email); setResent(true); }} style={{ minHeight: 44 }} />
       </KeyboardAvoidingView>
     </Screen>

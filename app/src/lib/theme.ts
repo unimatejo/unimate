@@ -1,6 +1,7 @@
 import { Appearance } from 'react-native';
 
 import { getPref } from './prefs';
+import { t } from './i18n';
 
 // Design tokens. Two palettes; the active one is copied into `C` at startup (and the app reloads when it changes).
 const LIGHT = {
@@ -122,14 +123,14 @@ export function avatarColors(id?: string | null) {
 }
 
 export const CATEGORY: Record<string, { label: string; color: string; soft: string; ink: string }> = {
-  square: { label: 'الساحة', color: C.primary, soft: C.primarySoft, ink: C.primaryDark },
-  summaries: { label: 'ملخصات', color: C.green, soft: C.greenSoft, ink: C.greenInk },
-  assignments: { label: 'واجبات', color: C.violet, soft: C.violetSoft, ink: C.violetInk },
-  tutoring: { label: 'دروس خصوصية', color: '#4F46E5', soft: isDark ? '#1D1B45' : '#ECEBFF', ink: isDark ? '#B4B0FF' : '#3730A3' },
-  lost_found: { label: 'المفقودات', color: '#0D9488', soft: isDark ? '#0B2724' : '#E3F6F4', ink: isDark ? '#5EE6D6' : '#0A6B62' },
-  market: { label: 'سوق الطلاب', color: C.orange, soft: C.orangeSoft, ink: C.orangeInk },
-  exchange: { label: 'تبادل وتبرعات', color: '#DB2777', soft: isDark ? '#38122A' : '#FDEBF4', ink: isDark ? '#F9A8D4' : '#9D174D' },
-  transport_housing: { label: 'مواصلات وسكن', color: C.sky, soft: C.skySoft, ink: C.skyInk },
-  events: { label: 'فعاليات', color: C.pink, soft: C.pinkSoft, ink: C.pinkInk },
-  opportunities: { label: 'فرص وتدريب', color: '#64748B', soft: isDark ? '#1E222B' : '#EEF0F6', ink: isDark ? '#CBD5E1' : '#334155' },
+  square: { label: t('الساحة'), color: C.primary, soft: C.primarySoft, ink: C.primaryDark },
+  summaries: { label: t('ملخصات'), color: C.green, soft: C.greenSoft, ink: C.greenInk },
+  assignments: { label: t('واجبات'), color: C.violet, soft: C.violetSoft, ink: C.violetInk },
+  tutoring: { label: t('دروس خصوصية'), color: '#4F46E5', soft: isDark ? '#1D1B45' : '#ECEBFF', ink: isDark ? '#B4B0FF' : '#3730A3' },
+  lost_found: { label: t('المفقودات'), color: '#0D9488', soft: isDark ? '#0B2724' : '#E3F6F4', ink: isDark ? '#5EE6D6' : '#0A6B62' },
+  market: { label: t('سوق الطلاب'), color: C.orange, soft: C.orangeSoft, ink: C.orangeInk },
+  exchange: { label: t('تبادل وتبرعات'), color: '#DB2777', soft: isDark ? '#38122A' : '#FDEBF4', ink: isDark ? '#F9A8D4' : '#9D174D' },
+  transport_housing: { label: t('مواصلات وسكن'), color: C.sky, soft: C.skySoft, ink: C.skyInk },
+  events: { label: t('فعاليات'), color: C.pink, soft: C.pinkSoft, ink: C.pinkInk },
+  opportunities: { label: t('فرص وتدريب'), color: '#64748B', soft: isDark ? '#1E222B' : '#EEF0F6', ink: isDark ? '#CBD5E1' : '#334155' },
 };

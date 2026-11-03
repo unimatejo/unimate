@@ -9,11 +9,12 @@ import Animated, { FadeIn } from 'react-native-reanimated';
 import { Avatar, Button, Chip, Row, Screen, Segmented, T, Tap } from '@/components/ui';
 import { useAuth } from '@/lib/auth';
 import { supabase } from '@/lib/supabase';
-import { CATEGORY, C, F } from '@/lib/theme';
+import { C, CATEGORY, F, isDark } from '@/lib/theme';
 import { pickMedia, pickPdf, uploadFile, type Picked } from '@/lib/upload';
+import { t, ta } from '@/lib/i18n';
 
-const POST_AUD = [['university', 'الجامعة'], ['college', 'كليتي'], ['major', 'تخصصي'], ['friends', 'أصدقائي']] as const;
-const STORY_AUD = [['friends', 'أصدقائي'], ['close_friends', 'المقربين'], ['major', 'دفعتي'], ['university', 'الجامعة']] as const;
+const POST_AUD = [['university', t('الجامعة')], ['college', t('كليتي')], ['major', t('تخصصي')], ['friends', t('أصدقائي')]] as const;
+const STORY_AUD = [['friends', t('أصدقائي')], ['close_friends', t('المقربين')], ['major', t('دفعتي')], ['university', t('الجامعة')]] as const;
 
 export default function NewPost() {
   const { profile } = useAuth();
@@ -33,7 +34,7 @@ export default function NewPost() {
 
   async function pick(camera = false, video = false) {
     try { const m = await pickMedia({ camera, video }); if (m) setMedia(m); }
-    catch (e) { Alert.alert('ما زبط', (e as Error).message); }
+    catch (e) { Alert.alert(t('ما زبط'), (e as Error).message); }
   }
 
   async function publish() {
@@ -42,8 +43,8 @@ export default function NewPost() {
     try {
       if (isPost) {
         const opts = poll?.map((o) => o.trim()).filter(Boolean) ?? null;
-        if (poll && (!body.trim() || (opts?.length ?? 0) < 2)) { Alert.alert('الاستطلاع', 'اكتب السؤال فوق وخيارين على الأقل.'); setBusy(false); return; }
-        if (!body.trim() && !media && !pdf) { Alert.alert('اكتب إشي أو ضيف صورة أو ملف'); setBusy(false); return; }
+        if (poll && (!body.trim() || (opts?.length ?? 0) < 2)) { Alert.alert(t('الاستطلاع'), t('اكتب السؤال فوق وخيارين على الأقل.')); setBusy(false); return; }
+        if (!body.trim() && !media && !pdf) { Alert.alert(t('اكتب إشي أو ضيف صورة أو ملف')); setBusy(false); return; }
         const { data: post, error } = await supabase.from('posts').insert({
           author_id: (profile?.id ?? ''), university_id: profile.university_id, community_id: params.community ?? null,
           category: cat, audience: params.community ? 'community' : POST_AUD[aud][0],
@@ -62,7 +63,7 @@ export default function NewPost() {
           await supabase.from('post_media').insert({ post_id: post.id, kind: 'file', url: path, file_name: pdf.name, size_bytes: pdf.size, position: 1 });
         }
       } else {
-        if (!media) { Alert.alert('ضيف صورة أو فيديو للستوري'); setBusy(false); return; }
+        if (!media) { Alert.alert(t('ضيف صورة أو فيديو للستوري')); setBusy(false); return; }
         const path = await uploadFile('stories', (profile?.id ?? ''), media);
         const { error } = await supabase.from('stories').insert({
           author_id: (profile?.id ?? ''), university_id: profile.university_id, kind: media.kind, media_url: path,
@@ -73,7 +74,7 @@ export default function NewPost() {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
       if (router.canGoBack()) router.back(); else router.replace('/community');
     } catch (e) {
-      Alert.alert('ما انتشر', (e as Error).message);
+      Alert.alert(t('ما انتشر'), (e as Error).message);
     } finally { setBusy(false); }
   }
 
@@ -81,9 +82,9 @@ export default function NewPost() {
   return (
     <Screen bg={C.card}>
       <Row gap={8} style={{ paddingHorizontal: 12, paddingVertical: 8 }}>
-        <Tap onPress={() => router.back()} accessibilityLabel="إلغاء" style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}><X size={24} color={C.ink} /></Tap>
-        <View style={{ flex: 1 }}><Segmented items={['منشور', 'ستوري']} value={mode} onChange={(i) => { setMode(i); setAud(0); setMedia(null); }} /></View>
-        <Button title={isPost ? 'نشر' : 'شارك'} loading={busy} onPress={publish} style={{ minHeight: 42, borderRadius: 14, paddingHorizontal: 18 }} />
+        <Tap onPress={() => router.back()} accessibilityLabel={t('إلغاء')} style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}><X size={24} color={C.ink} /></Tap>
+        <View style={{ flex: 1 }}><Segmented items={[t('منشور'), t('ستوري')]} value={mode} onChange={(i) => { setMode(i); setAud(0); setMedia(null); }} /></View>
+        <Button title={isPost ? t('نشر') : t('شارك')} loading={busy} onPress={publish} style={{ minHeight: 42, borderRadius: 14, paddingHorizontal: 18 }} />
       </Row>
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
         <ScrollView contentContainerStyle={{ padding: 18, gap: 16 }} keyboardShouldPersistTaps="handled">
@@ -91,18 +92,18 @@ export default function NewPost() {
             <Avatar id={profile?.id} name={profile?.full_name} url={profile?.avatar_url} size={44} />
             <View style={{ flex: 1, gap: 6 }}>
               {isPost && ['market', 'tutoring', 'events', 'opportunities', 'summaries'].includes(cat) && (
-                <TextInput value={title} onChangeText={setTitle} placeholder="العنوان" placeholderTextColor={C.faint} style={{ fontFamily: F.title, fontSize: 18, color: C.ink, textAlign: 'right', minHeight: 40 }} />
+                <TextInput keyboardAppearance={isDark ? 'dark' : 'light'} value={title} onChangeText={setTitle} placeholder={t('العنوان')} placeholderTextColor={C.faint} style={{ fontFamily: F.title, fontSize: 18, color: C.ink, textAlign: ta, minHeight: 40 }} />
               )}
-              <TextInput value={body} onChangeText={setBody} multiline autoFocus
-                placeholder={isPost ? 'شو ببالك؟ اسأل، شارك ملخص، أو احكي للدفعة...' : 'اكتب على الستوري...'} placeholderTextColor={C.faint}
-                style={{ fontFamily: F.body, fontSize: 17, lineHeight: 28, color: C.ink, textAlign: 'right', minHeight: 120, textAlignVertical: 'top' }} accessibilityLabel="نص المنشور" />
+              <TextInput keyboardAppearance={isDark ? 'dark' : 'light'} value={body} onChangeText={setBody} multiline autoFocus
+                placeholder={isPost ? t('شو ببالك؟ اسأل، شارك ملخص، أو احكي للدفعة...') : t('اكتب على الستوري...')} placeholderTextColor={C.faint}
+                style={{ fontFamily: F.body, fontSize: 17, lineHeight: 28, color: C.ink, textAlign: ta, minHeight: 120, textAlignVertical: 'top' }} accessibilityLabel={t('نص المنشور')} />
             </View>
           </Row>
 
           {media && (
             <Animated.View entering={FadeIn} style={{ borderRadius: 22, overflow: 'hidden', height: 220, backgroundColor: C.bg }}>
               <Image source={{ uri: media.uri }} style={{ flex: 1 }} contentFit="cover" />
-              <Tap onPress={() => setMedia(null)} accessibilityLabel="شيل الصورة" style={{ position: 'absolute', top: 10, left: 10, width: 36, height: 36, borderRadius: 18, backgroundColor: 'rgba(14,20,48,0.6)', alignItems: 'center', justifyContent: 'center' }}><X size={18} color={C.white} /></Tap>
+              <Tap onPress={() => setMedia(null)} accessibilityLabel={t('شيل الصورة')} style={{ position: 'absolute', top: 10, left: 10, width: 36, height: 36, borderRadius: 18, backgroundColor: 'rgba(14,20,48,0.6)', alignItems: 'center', justifyContent: 'center' }}><X size={18} color={C.white} /></Tap>
             </Animated.View>
           )}
 
@@ -110,33 +111,33 @@ export default function NewPost() {
             <Row gap={10} style={{ backgroundColor: C.soft, borderRadius: 16, padding: 12 }}>
               <FileText size={22} color="#E11D48" />
               <T v="bold" numberOfLines={1} style={{ flex: 1, fontSize: 14 }}>{pdf.name}</T>
-              <Tap onPress={() => setPdf(null)} accessibilityLabel="شيل الملف" style={{ width: 36, height: 36, alignItems: 'center', justifyContent: 'center' }}><X size={18} color={C.muted} /></Tap>
+              <Tap onPress={() => setPdf(null)} accessibilityLabel={t('شيل الملف')} style={{ width: 36, height: 36, alignItems: 'center', justifyContent: 'center' }}><X size={18} color={C.muted} /></Tap>
             </Row>
           )}
           {isPost && poll && (
             <View style={{ gap: 8, backgroundColor: C.violetSoft, borderRadius: 18, padding: 12 }}>
-              <T v="bold" color={C.violet}>خيارات الاستطلاع (السؤال هو النص فوق)</T>
+              <T v="bold" color={C.violet}>{t('خيارات الاستطلاع (السؤال هو النص فوق)')}</T>
               {poll.map((o, i) => (
                 <Row key={i} gap={6}>
-                  <TextInput value={o} onChangeText={(t) => setPoll(poll.map((x, j) => (j === i ? t : x)))} maxLength={60} placeholder={`الخيار ${i + 1}`} placeholderTextColor={C.faint}
-                    style={{ flex: 1, minHeight: 44, borderRadius: 12, backgroundColor: C.card, paddingHorizontal: 12, fontFamily: F.body, fontSize: 15, color: C.ink, textAlign: 'right' }} />
-                  {poll.length > 2 && <Tap onPress={() => setPoll(poll.filter((_, j) => j !== i))} accessibilityLabel="شيل الخيار" style={{ width: 36, height: 44, alignItems: 'center', justifyContent: 'center' }}><X size={16} color={C.muted} /></Tap>}
+                  <TextInput keyboardAppearance={isDark ? 'dark' : 'light'} value={o} onChangeText={(t) => setPoll(poll.map((x, j) => (j === i ? t : x)))} maxLength={60} placeholder={t('الخيار {0}', [i + 1])} placeholderTextColor={C.faint}
+                    style={{ flex: 1, minHeight: 44, borderRadius: 12, backgroundColor: C.card, paddingHorizontal: 12, fontFamily: F.body, fontSize: 15, color: C.ink, textAlign: ta }} />
+                  {poll.length > 2 && <Tap onPress={() => setPoll(poll.filter((_, j) => j !== i))} accessibilityLabel={t('شيل الخيار')} style={{ width: 36, height: 44, alignItems: 'center', justifyContent: 'center' }}><X size={16} color={C.muted} /></Tap>}
                 </Row>
               ))}
-              {poll.length < 4 && <Tap onPress={() => setPoll([...poll, ''])} style={{ flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 40 }}><Plus size={16} color={C.violet} /><T v="bold" color={C.violet}>ضيف خيار</T></Tap>}
+              {poll.length < 4 && <Tap onPress={() => setPoll([...poll, ''])} style={{ flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 40 }}><Plus size={16} color={C.violet} /><T v="bold" color={C.violet}>{t('ضيف خيار')}</T></Tap>}
             </View>
           )}
 
           <Row gap={8}>
             {((isPost ? [
-              ['صورة', ImageIcon, C.green, C.greenSoft, () => pick()],
-              ['كاميرا', Camera, C.pink, C.pinkSoft, () => pick(true)],
-              ['ملف PDF', FileText, C.primary, C.primarySoft, async () => { const f = await pickPdf(); if (f) setPdf(f); }],
-              ['استطلاع', BarChart3, C.violet, C.violetSoft, () => setPoll(poll ? null : ['', ''])],
+              [t('صورة'), ImageIcon, C.green, C.greenSoft, () => pick()],
+              [t('كاميرا'), Camera, C.pink, C.pinkSoft, () => pick(true)],
+              [t('ملف PDF'), FileText, C.primary, C.primarySoft, async () => { const f = await pickPdf(); if (f) setPdf(f); }],
+              [t('استطلاع'), BarChart3, C.violet, C.violetSoft, () => setPoll(poll ? null : ['', ''])],
             ] : [
-              ['كاميرا', Camera, C.pink, C.pinkSoft, () => pick(true, true)],
-              ['فيديو 15ث', Video, C.ink, C.soft, () => pick(false, true)],
-              ['صورة', ImageIcon, C.green, C.greenSoft, () => pick()],
+              [t('كاميرا'), Camera, C.pink, C.pinkSoft, () => pick(true, true)],
+              [t('فيديو 15ث'), Video, C.ink, C.soft, () => pick(false, true)],
+              [t('صورة'), ImageIcon, C.green, C.greenSoft, () => pick()],
             ]) as [string, typeof Camera, string, string, () => void | Promise<void>][]).map(([label, Icon, fg, bg, fn]) => (
               <Tap key={label} onPress={fn} style={{ flex: 1, minHeight: 76, borderRadius: 20, backgroundColor: bg, alignItems: 'center', justifyContent: 'center', gap: 6 }}>
                 <Icon size={24} color={fg} /><T v="tiny" color={fg}>{label}</T>
@@ -146,29 +147,29 @@ export default function NewPost() {
 
           {isPost && !params.community && (
             <View style={{ gap: 10 }}>
-              <T v="bold">بأي قسم؟</T>
+              <T v="bold">{t('بأي قسم؟')}</T>
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
                 {Object.entries(CATEGORY).map(([k, v]) => <Chip key={k} label={v.label} dot={v.color} active={cat === k} onPress={() => setCat(k)} />)}
               </View>
             </View>
           )}
           {isPost && cat === 'lost_found' && (
-            <Row gap={8}><Chip label="لقيت" active={lf === 'found'} onPress={() => setLf('found')} /><Chip label="ضاع مني" active={lf === 'lost'} onPress={() => setLf('lost')} /></Row>
+            <Row gap={8}><Chip label={t('لقيت')} active={lf === 'found'} onPress={() => setLf('found')} /><Chip label={t('ضاع مني')} active={lf === 'lost'} onPress={() => setLf('lost')} /></Row>
           )}
           {isPost && cat === 'market' && (
-            <TextInput value={price} onChangeText={setPrice} keyboardType="decimal-pad" placeholder="السعر بالدينار" placeholderTextColor={C.faint}
-              style={{ minHeight: 50, borderRadius: 16, backgroundColor: C.field, paddingHorizontal: 16, fontFamily: F.body, fontSize: 16, textAlign: 'right' }} />
+            <TextInput keyboardAppearance={isDark ? 'dark' : 'light'} value={price} onChangeText={setPrice} keyboardType="decimal-pad" placeholder={t('السعر بالدينار')} placeholderTextColor={C.faint}
+              style={{ minHeight: 50, borderRadius: 16, backgroundColor: C.field, paddingHorizontal: 16, fontFamily: F.body, fontSize: 16, textAlign: ta }} />
           )}
           {!isPost && (
             <Row gap={8} center={false} style={{ backgroundColor: C.primarySoft, borderRadius: 16, padding: 12 }}>
               <MapPin size={17} color={C.primaryDark} />
-              <T v="small" color={C.primaryDark} style={{ flex: 1 }}>الستوري بتختفي بعد 24 ساعة. الفيديو لحد 15 ثانية، والصور بتقدر تثبّتها بأبرز القصص.</T>
+              <T v="small" color={C.primaryDark} style={{ flex: 1 }}>{t('الستوري بتختفي بعد 24 ساعة. الفيديو لحد 15 ثانية، والصور بتقدر تثبّتها بأبرز القصص.')}</T>
             </Row>
           )}
 
           {!params.community && (
             <View style={{ gap: 8 }}>
-              <T v="bold">مين بيشوفه؟</T>
+              <T v="bold">{t('مين بيشوفه؟')}</T>
               <Row gap={6}>
                 {auds.map(([k, l], i) => (
                   <Tap key={k} onPress={() => setAud(i)} accessibilityRole="radio" accessibilityState={{ selected: aud === i }}
@@ -185,8 +186,8 @@ export default function NewPost() {
         <Animated.View entering={FadeIn} style={{ position: 'absolute', top: 0, bottom: 0, left: 0, right: 0, backgroundColor: 'rgba(14,20,48,0.55)', alignItems: 'center', justifyContent: 'center' }}>
           <View style={{ backgroundColor: C.card, borderRadius: 26, paddingVertical: 26, paddingHorizontal: 34, alignItems: 'center', gap: 12 }}>
             <ActivityIndicator size="large" color={C.primary} />
-            <T v="bold">{isPost ? 'عم ننشر منشورك…' : 'عم نرفع قصتك…'}</T>
-            {media?.kind === 'video' && <T v="tiny" color={C.muted}>الفيديو بياخذ ثواني أكثر</T>}
+            <T v="bold">{isPost ? t('عم ننشر منشورك…') : t('عم نرفع قصتك…')}</T>
+            {media?.kind === 'video' && <T v="tiny" color={C.muted}>{t('الفيديو بياخذ ثواني أكثر')}</T>}
           </View>
         </Animated.View>
       )}

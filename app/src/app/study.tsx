@@ -7,14 +7,15 @@ import { Avatar, Button, Chip, Field, Header, Row, Screen, T, Tap, Toggle } from
 import { useAuth } from '@/lib/auth';
 import { supabase } from '@/lib/supabase';
 import { C } from '@/lib/theme';
+import { nm, t } from '@/lib/i18n';
 
 type Course = { id: string; name_ar: string; code: string };
 type Intent = { user_id: string; course_id: string; place_pref: string | null; time_pref: string | null; note: string | null; active: boolean };
 type Person = Intent & { p: { full_name: string; avatar_url: string | null; major: { name_ar: string } | null } | null };
 type SR = { id: string; from_id: string; to_id: string; course_id: string; status: string };
 
-const PLACES = ['المكتبة', 'الكافتيريا', 'قاعة فاضية', 'أونلاين'];
-const TIMES = ['الصبح', 'بين المحاضرات', 'العصر', 'بالليل'];
+const PLACES = [t('المكتبة'), t('الكافتيريا'), t('قاعة فاضية'), t('أونلاين')];
+const TIMES = [t('الصبح'), t('بين المحاضرات'), t('العصر'), t('بالليل')];
 
 export default function Study() {
   const { profile } = useAuth();
@@ -28,7 +29,7 @@ export default function Study() {
   const load = useCallback(async () => {
     if (!profile) return;
     setLoading(true);
-    const { data: enr } = await supabase.from('enrollments').select('section:sections(course:courses(id, name_ar, code))').eq('user_id', (profile?.id ?? ''));
+    const { data: enr } = await supabase.from('enrollments').select('section:sections(course:courses(id, name_ar, name_en, code))').eq('user_id', (profile?.id ?? ''));
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const cs = ((enr ?? []) as any[]).map((e) => e.section?.course).filter(Boolean) as Course[];
     setCourses(cs);
@@ -43,7 +44,7 @@ export default function Study() {
 
   useEffect(() => {
     if (!course || !profile) return;
-    supabase.from('study_intents').select('*, p:profiles!study_intents_user_id_fkey(full_name, avatar_url, major:majors(name_ar))')
+    supabase.from('study_intents').select('*, p:profiles!study_intents_user_id_fkey(full_name, avatar_url, major:majors(name_ar, name_en))')
       .eq('course_id', course).eq('active', true).neq('user_id', (profile?.id ?? '')).limit(50)
       .then(({ data }) => setPeople((data ?? []) as unknown as Person[]));
   }, [course, profile]);
@@ -59,7 +60,7 @@ export default function Study() {
 
   async function ask(to: string) {
     const { error } = await supabase.from('study_requests').insert({ from_id: (profile?.id ?? ''), to_id: to, course_id: course });
-    if (error) { Alert.alert('بعتله قبل'); return; }
+    if (error) { Alert.alert(t('بعتله قبل')); return; }
     load();
   }
   async function answer(r: SR, accept: boolean) {
@@ -68,7 +69,7 @@ export default function Study() {
   }
   async function talk(other: string) {
     const name = courses.find((c) => c.id === course)?.name_ar ?? '';
-    const { data } = await supabase.rpc('start_direct', { target: other, context: `ندرس سوا · ${name}` });
+    const { data } = await supabase.rpc('start_direct', { target: other, context: t('ندرس سوا · {0}', [name]) });
     if (data) router.push({ pathname: '/messages/[id]', params: { id: data as string } });
   }
 
@@ -77,39 +78,39 @@ export default function Study() {
 
   return (
     <Screen>
-      <Header title="ندرس سوا" subtitle="لاقي حدا من مادتك يدرس معك" />
+      <Header title={t('ندرس سوا')} subtitle={t('لاقي حدا من مادتك يدرس معك')} />
       <ScrollView refreshControl={<RefreshControl refreshing={loading} onRefresh={load} />} contentContainerStyle={{ padding: 18, paddingTop: 4, gap: 14, paddingBottom: 60 }}>
         {incoming.map((r) => (
           <Row key={r.id} gap={10} style={{ backgroundColor: C.violetSoft, borderRadius: 20, padding: 12 }}>
             <UserPlus size={20} color={C.violet} />
-            <T v="small" style={{ flex: 1 }}>في حدا بدّه يدرس معك {courses.find((c) => c.id === r.course_id)?.name_ar ?? ''}</T>
-            <Button title="يلا" onPress={() => answer(r, true)} style={{ minHeight: 36, paddingHorizontal: 14, borderRadius: 12 }} />
-            <Button kind="soft" title="لا" onPress={() => answer(r, false)} style={{ minHeight: 36, paddingHorizontal: 12, borderRadius: 12 }} />
+            <T v="small" style={{ flex: 1 }}>{t('في حدا بدّه يدرس معك')} {courses.find((c) => c.id === r.course_id)?.name_ar ?? ''}</T>
+            <Button title={t('يلا')} onPress={() => answer(r, true)} style={{ minHeight: 36, paddingHorizontal: 14, borderRadius: 12 }} />
+            <Button kind="soft" title={t('لا')} onPress={() => answer(r, false)} style={{ minHeight: 36, paddingHorizontal: 12, borderRadius: 12 }} />
           </Row>
         ))}
 
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
-          {courses.map((c) => <Chip key={c.id} label={c.name_ar} active={course === c.id} onPress={() => setCourse(c.id)} />)}
+          {courses.map((c) => <Chip key={c.id} label={nm(c)} active={course === c.id} onPress={() => setCourse(c.id)} />)}
         </ScrollView>
-        {courses.length === 0 && !loading && <T v="small" color={C.muted}>لما توصل موادك بتقدر تدوّر على حدا يدرس معك.</T>}
+        {courses.length === 0 && !loading && <T v="small" color={C.muted}>{t('لما توصل موادك بتقدر تدوّر على حدا يدرس معك.')}</T>}
 
         {course && (
           <View style={{ gap: 12, backgroundColor: C.card, borderRadius: 22, padding: 14 }}>
-            <Toggle icon={<BookOpen size={20} color={C.primary} />} label="بدي حدا أدرس معه هالمادة" hint="بتبيّن لطلاب نفس المادة بجامعتك" value={!!my?.active} onChange={(v) => saveIntent({ active: v })} />
+            <Toggle icon={<BookOpen size={20} color={C.primary} />} label={t('بدي حدا أدرس معه هالمادة')} hint={t('بتبيّن لطلاب نفس المادة بجامعتك')} value={!!my?.active} onChange={(v) => saveIntent({ active: v })} />
             {my?.active && (
               <>
-                <T v="small" color={C.muted}>وين؟</T>
+                <T v="small" color={C.muted}>{t('وين؟')}</T>
                 <Row gap={8} style={{ flexWrap: 'wrap' }}>{PLACES.map((x) => <Chip key={x} label={x} active={my.place_pref === x} onPress={() => saveIntent({ place_pref: x })} />)}</Row>
-                <T v="small" color={C.muted}>إمتى؟</T>
+                <T v="small" color={C.muted}>{t('إمتى؟')}</T>
                 <Row gap={8} style={{ flexWrap: 'wrap' }}>{TIMES.map((x) => <Chip key={x} label={x} active={my.time_pref === x} onPress={() => saveIntent({ time_pref: x })} />)}</Row>
-                <Field value={my.note ?? ''} onChangeText={(t) => setMine((m) => ({ ...m, [course]: { ...my, note: t } }))} onEndEditing={() => saveIntent({ note: my.note?.slice(0, 200) ?? null })} placeholder="ملاحظة (مثلاً: بدي أراجع الفصل 3 قبل الفيرست)" maxLength={200} />
+                <Field value={my.note ?? ''} onChangeText={(t) => setMine((m) => ({ ...m, [course]: { ...my, note: t } }))} onEndEditing={() => saveIntent({ note: my.note?.slice(0, 200) ?? null })} placeholder={t('ملاحظة (مثلاً: بدي أراجع الفصل 3 قبل الفيرست)')} maxLength={200} />
               </>
             )}
           </View>
         )}
 
-        {course && <T v="h3">بدهم يدرسوا هالمادة</T>}
-        {course && people.length === 0 && <T v="small" color={C.muted}>لسا ما حدا. فعّلها إنت وبيشوفوك.</T>}
+        {course && <T v="h3">{t('بدهم يدرسوا هالمادة')}</T>}
+        {course && people.length === 0 && <T v="small" color={C.muted}>{t('لسا ما حدا. فعّلها إنت وبيشوفوك.')}</T>}
         {people.map((p) => {
           const s = stateWith(p.user_id);
           return (
@@ -117,12 +118,12 @@ export default function Study() {
               <Tap onPress={() => router.push({ pathname: '/user/[id]', params: { id: p.user_id } })}><Avatar id={p.user_id} name={p.p?.full_name} url={p.p?.avatar_url} size={46} /></Tap>
               <View style={{ flex: 1, gap: 2 }}>
                 <T v="bodyMd">{p.p?.full_name}</T>
-                <T v="tiny" color={C.muted} numberOfLines={1}>{[p.p?.major?.name_ar, p.place_pref, p.time_pref].filter(Boolean).join(' · ')}</T>
+                <T v="tiny" color={C.muted} numberOfLines={1}>{[nm(p.p?.major), p.place_pref, p.time_pref].filter(Boolean).join(' · ')}</T>
                 {p.note ? <T v="tiny" color={C.ink2} numberOfLines={2}>{p.note}</T> : null}
               </View>
-              {s?.status === 'accepted' ? <Button kind="green" title="راسل" icon={<MessageCircle size={16} color={C.white} />} onPress={() => talk(p.user_id)} style={{ minHeight: 38, paddingHorizontal: 12, borderRadius: 12 }} />
-                : s ? <Row gap={4}><Check size={16} color={C.muted} /><T v="tiny" color={C.muted}>انبعت</T></Row>
-                : <Button title="ندرس سوا؟" onPress={() => ask(p.user_id)} style={{ minHeight: 38, paddingHorizontal: 12, borderRadius: 12 }} />}
+              {s?.status === 'accepted' ? <Button kind="green" title={t('راسل')} icon={<MessageCircle size={16} color={C.white} />} onPress={() => talk(p.user_id)} style={{ minHeight: 38, paddingHorizontal: 12, borderRadius: 12 }} />
+                : s ? <Row gap={4}><Check size={16} color={C.muted} /><T v="tiny" color={C.muted}>{t('انبعت')}</T></Row>
+                : <Button title={t('ندرس سوا؟')} onPress={() => ask(p.user_id)} style={{ minHeight: 38, paddingHorizontal: 12, borderRadius: 12 }} />}
             </View>
           );
         })}

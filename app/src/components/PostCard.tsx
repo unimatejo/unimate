@@ -14,6 +14,7 @@ import { mediaUrl, supabase } from '@/lib/supabase';
 import { CATEGORY, C, shadow } from '@/lib/theme';
 import type { Post } from '@/lib/types';
 import { timeAgo } from '@/lib/util';
+import { nm, t } from '@/lib/i18n';
 
 /** Post photo: one tap opens it full screen, double tap likes (like Instagram). */
 function Photo({ path, onDoubleTap }: { path: string; onDoubleTap: () => void }) {
@@ -38,7 +39,7 @@ function Photo({ path, onDoubleTap }: { path: string; onDoubleTap: () => void })
   }
   return (
     <>
-      <Tap haptic={false} scale={0.99} throttle={0} onPress={press} accessibilityLabel="افتح الصورة"
+      <Tap haptic={false} scale={0.99} throttle={0} onPress={press} accessibilityLabel={t('افتح الصورة')}
         style={{ marginHorizontal: 10, height: 260, borderRadius: 20, backgroundColor: C.primarySoft, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' }}>
         {uri && <Image source={{ uri }} style={{ position: 'absolute', top: 0, bottom: 0, left: 0, right: 0 }} contentFit="cover" transition={200} />}
         <Animated.View style={burstStyle} pointerEvents="none"><Heart size={90} color="#fff" fill="#fff" /></Animated.View>
@@ -50,8 +51,8 @@ function Photo({ path, onDoubleTap }: { path: string; onDoubleTap: () => void })
 
 async function openFile(path: string) {
   const uri = await mediaUrl('posts', path);
-  if (!uri) { Alert.alert('ما قدرنا نفتح الملف'); return; }
-  WebBrowser.openBrowserAsync(uri).catch(() => Alert.alert('ما قدرنا نفتح الملف'));
+  if (!uri) { Alert.alert(t('ما قدرنا نفتح الملف')); return; }
+  WebBrowser.openBrowserAsync(uri).catch(() => Alert.alert(t('ما قدرنا نفتح الملف')));
 }
 
 /** Poll: tap an option to vote, then see the results. One vote per person (poll_votes primary key). */
@@ -89,7 +90,7 @@ function Poll({ postId, options }: { postId: string; options: string[] }) {
           </Tap>
         );
       })}
-      <T v="tiny" color={C.muted}>{total} صوت{mine == null ? ' · اكبس على خيار لتصوّت' : ''}</T>
+      <T v="tiny" color={C.muted}>{total} {t('صوت')}{mine == null ? t(' · اكبس على خيار لتصوّت') : ''}</T>
     </View>
   );
 }
@@ -128,9 +129,9 @@ export function PostCard({ post, onLikes, compact, detail }: { post: Post; onLik
             <T v="bold" numberOfLines={1} style={{ fontSize: 14, flexShrink: 1 }}>{p.author?.full_name}</T>
             {p.author?.is_verified && <BadgeCheck size={15} color={C.white} fill={C.primary} />}
           </Row>
-          <T v="tiny" color={C.muted} style={{ fontFamily: 'Rubik_400Regular' }}>{[p.author?.major?.name_ar, timeAgo(p.created_at)].filter(Boolean).join(' · ')}</T>
+          <T v="tiny" color={C.muted} style={{ fontFamily: 'Rubik_400Regular' }}>{[nm(p.author?.major), timeAgo(p.created_at)].filter(Boolean).join(' · ')}</T>
         </View>
-        {p.lost_found ? <Tag label={p.lost_found === 'lost' ? 'ضاع مني' : 'لقيت'} bg={p.lost_found === 'lost' ? C.orangeSoft : C.greenSoft} fg={p.lost_found === 'lost' ? '#C2410C' : C.greenInk} />
+        {p.lost_found ? <Tag label={p.lost_found === 'lost' ? t('ضاع مني') : t('لقيت')} bg={p.lost_found === 'lost' ? C.orangeSoft : C.greenSoft} fg={p.lost_found === 'lost' ? '#C2410C' : C.greenInk} />
           : <Tag label={cat.label} bg={cat.soft} fg={cat.ink} />}
       </Row>
 
@@ -139,40 +140,40 @@ export function PostCard({ post, onLikes, compact, detail }: { post: Post; onLik
         <View style={{ paddingHorizontal: 16, paddingTop: 10, gap: 4 }}>
           {p.title ? <T v="h3">{p.title}</T> : null}
           {p.body ? <T v="body" color={C.ink2} numberOfLines={compact ? 3 : 8}>{p.body}</T> : null}
-          {p.price_jod != null && <T v="bold" color={C.greenInk}>{p.price_jod} دينار</T>}
+          {p.price_jod != null && <T v="bold" color={C.greenInk}>{p.price_jod} {t('دينار')}</T>}
         </View>
         {p.poll?.options?.length ? <Poll postId={p.id} options={p.poll.options} /> : null}
         {files.map((f) => (
-          <Tap key={f.id} haptic={false} scale={0.98} onPress={() => openFile(f.url)} accessibilityLabel={`افتح ${f.file_name ?? 'الملف'}`}
+          <Tap key={f.id} haptic={false} scale={0.98} onPress={() => openFile(f.url)} accessibilityLabel={t('افتح {0}', [f.file_name ?? t('الملف')])}
             style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginHorizontal: 14, marginTop: 10, backgroundColor: C.soft, borderRadius: 14, padding: 10 }}>
             <View style={{ width: 36, height: 40, borderRadius: 8, backgroundColor: C.redSoft, alignItems: 'center', justifyContent: 'center' }}><FileText size={18} color="#E11D48" /></View>
             <View style={{ flex: 1 }}>
-              <T v="bold" style={{ fontSize: 13 }} numberOfLines={1}>{f.file_name ?? 'ملف'}</T>
-              {f.size_bytes ? <T v="tiny" color={C.muted}>{(f.size_bytes / 1048576).toFixed(1)} ميجا · اكبس لتفتحه</T> : null}
+              <T v="bold" style={{ fontSize: 13 }} numberOfLines={1}>{f.file_name ?? t('ملف')}</T>
+              {f.size_bytes ? <T v="tiny" color={C.muted}>{(f.size_bytes / 1048576).toFixed(1)} {t('ميجا · اكبس لتفتحه')}</T> : null}
             </View>
           </Tap>
         ))}
       </Tap>
 
       <Row gap={2} style={{ paddingHorizontal: 8, paddingVertical: 8 }}>
-        <Tap onPress={like} accessibilityLabel="إعجاب" accessibilityState={{ selected: !!p.liked }}
+        <Tap onPress={like} accessibilityLabel={t('إعجاب')} accessibilityState={{ selected: !!p.liked }}
           style={{ flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 44, paddingHorizontal: 10, borderRadius: 14, backgroundColor: p.liked ? C.pinkSoft : 'transparent' }}>
           <Animated.View style={heartStyle}><Heart size={22} color={p.liked ? C.pink : C.ink2} fill={p.liked ? C.pink : 'none'} /></Animated.View>
         </Tap>
         {!p.hide_likes || p.author_id === profile?.id ? (
-          <Tap onPress={() => onLikes?.(p)} accessibilityLabel="مين عمل لايك" style={{ minHeight: 44, justifyContent: 'center', paddingHorizontal: 4 }}>
+          <Tap onPress={() => onLikes?.(p)} accessibilityLabel={t('مين عمل لايك')} style={{ minHeight: 44, justifyContent: 'center', paddingHorizontal: 4 }}>
             <T v="bold" color={C.ink2} style={{ fontSize: 13 }}>{p.like_count}</T>
           </Tap>
         ) : null}
-        <Tap onPress={() => { if (!detail) router.push({ pathname: '/post/[id]', params: { id: p.id } }); }} accessibilityLabel="التعليقات"
+        <Tap onPress={() => { if (!detail) router.push({ pathname: '/post/[id]', params: { id: p.id } }); }} accessibilityLabel={t('التعليقات')}
           style={{ flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 44, paddingHorizontal: 10 }}>
           <MessageCircle size={22} color={C.ink2} /><T v="bold" color={C.ink2} style={{ fontSize: 13 }}>{p.comment_count}</T>
         </Tap>
-        <Tap onPress={() => router.push({ pathname: '/share', params: { post: p.id } })} accessibilityLabel="أرسل لصديق" style={{ minHeight: 44, paddingHorizontal: 10, justifyContent: 'center' }}>
+        <Tap onPress={() => router.push({ pathname: '/share', params: { post: p.id } })} accessibilityLabel={t('أرسل لصديق')} style={{ minHeight: 44, paddingHorizontal: 10, justifyContent: 'center' }}>
           <Send size={21} color={C.ink2} />
         </Tap>
         <View style={{ flex: 1 }} />
-        <Tap onPress={save} accessibilityLabel="حفظ" accessibilityState={{ selected: !!p.saved }} style={{ minHeight: 44, paddingHorizontal: 10, justifyContent: 'center' }}>
+        <Tap onPress={save} accessibilityLabel={t('حفظ')} accessibilityState={{ selected: !!p.saved }} style={{ minHeight: 44, paddingHorizontal: 10, justifyContent: 'center' }}>
           <Bookmark size={22} color={p.saved ? C.primary : C.ink2} fill={p.saved ? C.primary : 'none'} />
         </Tap>
       </Row>

@@ -9,6 +9,7 @@ import { useAuth } from '@/lib/auth';
 import { supabase } from '@/lib/supabase';
 import { C } from '@/lib/theme';
 import type { Post } from '@/lib/types';
+import { nm, t } from '@/lib/i18n';
 
 type Liker = { user_id: string; profile: { id: string; full_name: string; avatar_url: string | null; major: { name_ar: string } | null } | null };
 
@@ -20,7 +21,7 @@ export function LikesSheet({ post, onClose }: { post: Post | null; onClose: () =
 
   useEffect(() => {
     if (!post || !profile) return;
-    supabase.from('post_likes').select('user_id, profile:profiles(id, full_name, avatar_url, major:majors(name_ar))').eq('post_id', post.id).order('created_at', { ascending: false }).limit(200)
+    supabase.from('post_likes').select('user_id, profile:profiles(id, full_name, avatar_url, major:majors(name_ar, name_en))').eq('post_id', post.id).order('created_at', { ascending: false }).limit(200)
       .then(({ data }) => setRows((data ?? []) as unknown as Liker[]));
     supabase.from('follows').select('followee_id').eq('follower_id', (profile?.id ?? ''))
       .then(({ data }) => setFollowing(new Set((data ?? []).map((x) => x.followee_id))));
@@ -39,11 +40,11 @@ export function LikesSheet({ post, onClose }: { post: Post | null; onClose: () =
 
   return (
     <Modal visible={!!post} transparent animationType="slide" onRequestClose={onClose}>
-      <Pressable style={{ flex: 1, backgroundColor: 'rgba(14,20,48,0.45)' }} onPress={onClose} accessibilityLabel="إغلاق" />
+      <Pressable style={{ flex: 1, backgroundColor: 'rgba(14,20,48,0.45)' }} onPress={onClose} accessibilityLabel={t('إغلاق')} />
       <View style={{ maxHeight: '70%', backgroundColor: C.card, borderTopLeftRadius: 30, borderTopRightRadius: 30, paddingHorizontal: 18, paddingTop: 10, paddingBottom: insets.bottom + 16 }}>
         <View style={{ alignSelf: 'center', width: 42, height: 5, borderRadius: 3, backgroundColor: C.line, marginBottom: 12 }} />
         <Row style={{ justifyContent: 'space-between', marginBottom: 8 }}>
-          <T v="h2">الإعجابات</T>
+          <T v="h2">{t('الإعجابات')}</T>
           <Row gap={5}><Heart size={16} color={C.pink} fill={C.pink} /><T v="bold" color="#D12C4F">{post?.like_count ?? 0}</T></Row>
         </Row>
         <FlatList
@@ -55,20 +56,20 @@ export function LikesSheet({ post, onClose }: { post: Post | null; onClose: () =
                 <Avatar id={item.user_id} name={item.profile?.full_name} url={item.profile?.avatar_url} size={46} />
                 <View style={{ flex: 1 }}>
                   <T v="bold">{item.profile?.full_name}</T>
-                  <T v="tiny" color={C.muted}>{item.profile?.major?.name_ar ?? ''}</T>
+                  <T v="tiny" color={C.muted}>{nm(item.profile?.major) ?? ''}</T>
                 </View>
               </Tap>
               {item.user_id !== profile?.id && (
-                <Button kind={following.has(item.user_id) ? 'soft' : 'primary'} title={following.has(item.user_id) ? 'تتابعه' : 'متابعة'}
+                <Button kind={following.has(item.user_id) ? 'soft' : 'primary'} title={following.has(item.user_id) ? t('تتابعه') : t('متابعة')}
                   onPress={() => follow(item.user_id)} style={{ minHeight: 38, paddingHorizontal: 14, borderRadius: 12 }} />
               )}
             </Row>
           )}
-          ListEmptyComponent={<T v="small" color={C.muted}>ما في إعجابات لهلأ.</T>}
+          ListEmptyComponent={<T v="small" color={C.muted}>{t('ما في إعجابات لهلأ.')}</T>}
         />
         <Row gap={6} style={{ marginTop: 10 }}>
           <Lock size={14} color={C.muted} />
-          <T v="tiny" color={C.muted}>صاحب المنشور بيقدر يخفي عدد اللايكات من الإعدادات</T>
+          <T v="tiny" color={C.muted}>{t('صاحب المنشور بيقدر يخفي عدد اللايكات من الإعدادات')}</T>
         </Row>
       </View>
     </Modal>

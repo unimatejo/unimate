@@ -7,9 +7,10 @@ import { useAuth } from '@/lib/auth';
 import { supabase } from '@/lib/supabase';
 import { C } from '@/lib/theme';
 import { timeAgo } from '@/lib/util';
+import { t } from '@/lib/i18n';
 
 type Ticket = { id: string; subject: string; body: string; status: string; reply: string | null; created_at: string };
-const TOPICS = ['مشكلة بالجدول', 'مشكلة بالدخول', 'بلاغ عن شخص', 'اقتراح', 'إعلان لمحلي', 'إشي تاني'];
+const TOPICS = [t('مشكلة بالجدول'), t('مشكلة بالدخول'), t('بلاغ عن شخص'), t('اقتراح'), t('إعلان لمحلي'), t('إشي تاني')];
 
 export default function Support() {
   const { profile } = useAuth();
@@ -26,42 +27,42 @@ export default function Support() {
   useEffect(() => { load(); }, [load]);
 
   async function send() {
-    if (body.trim().length < 5) { Alert.alert('اكتب تفاصيل أكتر شوي'); return; }
+    if (body.trim().length < 5) { Alert.alert(t('اكتب تفاصيل أكتر شوي')); return; }
     setBusy(true);
     const { error } = await supabase.from('support_tickets').insert({ user_id: (profile?.id ?? ''), subject: topic, body: body.trim() });
     setBusy(false);
-    if (error) { Alert.alert('ما زبط', 'جرّب كمان مرة.'); return; }
+    if (error) { Alert.alert(t('ما زبط'), t('جرّب كمان مرة.')); return; }
     setBody(''); load();
-    Alert.alert('وصلتنا ✓', 'بنرد عليك هون بأسرع وقت.');
+    Alert.alert(t('وصلتنا ✓'), t('بنرد عليك هون بأسرع وقت.'));
   }
 
   return (
     <Screen>
-      <Header title="الدعم والمساعدة" />
+      <Header title={t('الدعم والمساعدة')} />
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView contentContainerStyle={{ padding: 18, paddingTop: 4, gap: 14, paddingBottom: 60 }} keyboardShouldPersistTaps="handled">
           <View style={{ gap: 12, backgroundColor: C.card, borderRadius: 22, padding: 14 }}>
-            <Row gap={10}><LifeBuoy size={22} color={C.primary} /><T v="h3">احكيلنا شو صاير</T></Row>
-            <Row gap={8} style={{ flexWrap: 'wrap' }}>{TOPICS.map((t) => <Chip key={t} label={t} active={topic === t} onPress={() => setTopic(t)} />)}</Row>
-            <Field value={body} onChangeText={setBody} multiline maxLength={1500} placeholder="اكتب التفاصيل..." style={{ minHeight: 120, textAlignVertical: 'top', paddingTop: 12 }} />
-            <Button title="ابعت" onPress={send} loading={busy} />
+            <Row gap={10}><LifeBuoy size={22} color={C.primary} /><T v="h3">{t('احكيلنا شو صاير')}</T></Row>
+            <Row gap={8} style={{ flexWrap: 'wrap' }}>{TOPICS.map((tp) => <Chip key={tp} label={tp} active={topic === tp} onPress={() => setTopic(tp)} />)}</Row>
+            <Field value={body} onChangeText={setBody} multiline maxLength={1500} placeholder={t('اكتب التفاصيل...')} style={{ minHeight: 120, textAlignVertical: 'top', paddingTop: 12 }} />
+            <Button title={t('ابعت')} onPress={send} loading={busy} />
           </View>
 
-          {tickets.length > 0 && <T v="h3" style={{ paddingHorizontal: 4 }}>طلباتك</T>}
-          {tickets.map((t) => (
-            <View key={t.id} style={{ gap: 8, backgroundColor: C.card, borderRadius: 20, padding: 14 }}>
+          {tickets.length > 0 && <T v="h3" style={{ paddingHorizontal: 4 }}>{t('طلباتك')}</T>}
+          {tickets.map((tk) => (
+            <View key={tk.id} style={{ gap: 8, backgroundColor: C.card, borderRadius: 20, padding: 14 }}>
               <Row gap={8}>
-                {t.status === 'open' ? <Clock size={16} color={C.orange} /> : <CheckCircle2 size={16} color={C.green} />}
-                <T v="bold" style={{ flex: 1 }}>{t.subject}</T>
-                <T v="tiny" color={C.muted}>{timeAgo(t.created_at)}</T>
+                {tk.status === 'open' ? <Clock size={16} color={C.orange} /> : <CheckCircle2 size={16} color={C.green} />}
+                <T v="bold" style={{ flex: 1 }}>{tk.subject}</T>
+                <T v="tiny" color={C.muted}>{timeAgo(tk.created_at)}</T>
               </Row>
-              <T v="small" color={C.ink2}>{t.body}</T>
-              {t.reply ? (
+              <T v="small" color={C.ink2}>{tk.body}</T>
+              {tk.reply ? (
                 <View style={{ backgroundColor: C.primarySoft, borderRadius: 14, padding: 10 }}>
-                  <T v="tiny" color={C.primary}>رد فريق يونيميت</T>
-                  <T v="small">{t.reply}</T>
+                  <T v="tiny" color={C.primary}>{t('رد فريق يونيميت')}</T>
+                  <T v="small">{tk.reply}</T>
                 </View>
-              ) : <T v="tiny" color={C.muted}>بانتظار الرد</T>}
+              ) : <T v="tiny" color={C.muted}>{t('بانتظار الرد')}</T>}
             </View>
           ))}
         </ScrollView>

@@ -11,9 +11,10 @@ import { Avatar, Header, IconButton, Row, Screen, T, Tap } from '@/components/ui
 import { useAuth } from '@/lib/auth';
 import { POST_SELECT, withMine } from '@/lib/posts';
 import { supabase } from '@/lib/supabase';
-import { C, F } from '@/lib/theme';
+import { C, F, isDark } from '@/lib/theme';
 import type { Post } from '@/lib/types';
 import { timeAgo } from '@/lib/util';
+import { isAR, t, ta } from '@/lib/i18n';
 
 type Comment = { id: string; author_id: string; parent_id: string | null; body: string; created_at: string; author: { full_name: string; avatar_url: string | null } | null };
 
@@ -46,22 +47,22 @@ export default function PostScreen() {
   }
 
   async function remove() {
-    Alert.alert('حذف المنشور؟', 'ما بترجع.', [{ text: 'إلغاء', style: 'cancel' }, { text: 'حذف', style: 'destructive', onPress: async () => { await supabase.from('posts').delete().eq('id', id); router.back(); } }]);
+    Alert.alert(t('حذف المنشور؟'), t('ما بترجع.'), [{ text: t('إلغاء'), style: 'cancel' }, { text: t('حذف'), style: 'destructive', onPress: async () => { await supabase.from('posts').delete().eq('id', id); router.back(); } }]);
   }
 
   const ordered = comments.filter((c) => !c.parent_id).flatMap((c) => [c, ...comments.filter((r) => r.parent_id === c.id)]);
 
   return (
     <Screen>
-      <Header title="المنشور" right={post && (post.author_id === profile?.id
-        ? <IconButton label="حذف" onPress={remove}><Trash2 size={19} color={C.danger} /></IconButton>
-        : <IconButton label="إبلاغ" onPress={() => router.push({ pathname: '/report', params: { type: 'post', id, user: post.author_id } })}><Flag size={19} color={C.ink} /></IconButton>)} />
+      <Header title={t('المنشور')} right={post && (post.author_id === profile?.id
+        ? <IconButton label={t('حذف')} onPress={remove}><Trash2 size={19} color={C.danger} /></IconButton>
+        : <IconButton label={t('إبلاغ')} onPress={() => router.push({ pathname: '/report', params: { type: 'post', id, user: post.author_id } })}><Flag size={19} color={C.ink} /></IconButton>)} />
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
         <FlatList
           data={ordered}
           keyExtractor={(c) => c.id}
           contentContainerStyle={{ padding: 18, paddingTop: 4, gap: 12 }}
-          ListHeaderComponent={post ? <View style={{ gap: 16 }}><PostCard detail post={post} onLikes={setLikesOf} /><T v="h3">التعليقات</T></View> : undefined}
+          ListHeaderComponent={post ? <View style={{ gap: 16 }}><PostCard detail post={post} onLikes={setLikesOf} /><T v="h3">{t('التعليقات')}</T></View> : undefined}
           renderItem={({ item }) => {
             const own = item.author_id === post?.author_id;
             return (
@@ -71,27 +72,27 @@ export default function PostScreen() {
                   <View style={{ backgroundColor: C.card, borderRadius: 18, borderTopRightRadius: 6, paddingHorizontal: 12, paddingVertical: 8, alignSelf: 'flex-start' }}>
                     <Row gap={6}>
                       <T v="bold" style={{ fontSize: 13 }}>{item.author?.full_name}</T>
-                      {own && <View style={{ backgroundColor: C.primarySoft, borderRadius: 999, paddingHorizontal: 6 }}><T v="tiny" color={C.primary} style={{ fontSize: 10 }}>صاحب المنشور</T></View>}
+                      {own && <View style={{ backgroundColor: C.primarySoft, borderRadius: 999, paddingHorizontal: 6 }}><T v="tiny" color={C.primary} style={{ fontSize: 10 }}>{t('صاحب المنشور')}</T></View>}
                     </Row>
                     <T v="small">{item.body}</T>
                   </View>
                   <Row gap={12}>
                     <T v="tiny" color={C.muted}>{timeAgo(item.created_at)}</T>
-                    {!item.parent_id && <Tap onPress={() => setReplyTo(item)}><T v="tiny" color={C.ink2}>رد</T></Tap>}
+                    {!item.parent_id && <Tap onPress={() => setReplyTo(item)}><T v="tiny" color={C.ink2}>{t('رد')}</T></Tap>}
                   </Row>
                 </View>
               </Animated.View>
             );
           }}
-          ListEmptyComponent={<T v="small" color={C.muted}>كون أول واحد بيعلّق.</T>}
+          ListEmptyComponent={<T v="small" color={C.muted}>{t('كون أول واحد بيعلّق.')}</T>}
         />
         <View style={{ backgroundColor: C.card, paddingHorizontal: 12, paddingTop: 8, paddingBottom: insets.bottom + 8, borderTopWidth: 1, borderTopColor: C.line, gap: 6 }}>
-          {replyTo && <Row gap={6}><T v="tiny" color={C.muted} style={{ flex: 1 }}>رد على {replyTo.author?.full_name}</T><Tap onPress={() => setReplyTo(null)}><T v="tiny" color={C.primary}>إلغاء</T></Tap></Row>}
+          {replyTo && <Row gap={6}><T v="tiny" color={C.muted} style={{ flex: 1 }}>{t('رد على')} {replyTo.author?.full_name}</T><Tap onPress={() => setReplyTo(null)}><T v="tiny" color={C.primary}>{t('إلغاء')}</T></Tap></Row>}
           <Row gap={8}>
-            <TextInput value={draft} onChangeText={setDraft} placeholder="اكتب تعليق..." placeholderTextColor={C.faint} multiline
-              style={{ flex: 1, minHeight: 46, maxHeight: 110, borderRadius: 23, backgroundColor: C.field, paddingHorizontal: 16, paddingVertical: 11, fontFamily: F.body, fontSize: 15, textAlign: 'right', color: C.ink }} accessibilityLabel="اكتب تعليق" />
-            <Tap onPress={send} accessibilityLabel="إرسال" style={{ width: 46, height: 46, borderRadius: 23, backgroundColor: draft.trim() ? C.primary : C.line, alignItems: 'center', justifyContent: 'center' }}>
-              <Send size={19} color={C.white} style={{ transform: [{ scaleX: -1 }] }} />
+            <TextInput keyboardAppearance={isDark ? 'dark' : 'light'} value={draft} onChangeText={setDraft} placeholder={t('اكتب تعليق...')} placeholderTextColor={C.faint} multiline
+              style={{ flex: 1, minHeight: 46, maxHeight: 110, borderRadius: 23, backgroundColor: C.field, paddingHorizontal: 16, paddingVertical: 11, fontFamily: F.body, fontSize: 15, textAlign: ta, color: C.ink }} accessibilityLabel={t('اكتب تعليق')} />
+            <Tap onPress={send} accessibilityLabel={t('إرسال')} style={{ width: 46, height: 46, borderRadius: 23, backgroundColor: draft.trim() ? C.primary : C.line, alignItems: 'center', justifyContent: 'center' }}>
+              <Send size={19} color={C.white} style={isAR ? { transform: [{ scaleX: -1 }] } : undefined} />
             </Tap>
           </Row>
         </View>

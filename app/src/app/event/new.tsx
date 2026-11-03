@@ -8,10 +8,11 @@ import { Button, Chip, Field, Header, Row, Screen, T, Tap, Toggle } from '@/comp
 import { useAuth } from '@/lib/auth';
 import { supabase } from '@/lib/supabase';
 import { C } from '@/lib/theme';
+import { LOCALE, nm, t } from '@/lib/i18n';
 
 const KINDS: [string, string][] = [
-  ['exam_first', 'فيرست'], ['exam_second', 'سكند'], ['exam_mid', 'ميد'], ['exam_final', 'فاينل'],
-  ['quiz', 'كويز'], ['assignment', 'واجب'], ['project', 'مشروع'], ['custom', 'تذكير خاص'],
+  ['exam_first', t('فيرست')], ['exam_second', t('سكند')], ['exam_mid', t('ميد')], ['exam_final', t('فاينل')],
+  ['quiz', t('كويز')], ['assignment', t('واجب')], ['project', t('مشروع')], ['custom', t('تذكير خاص')],
 ];
 type Sec = { id: string; course: { name_ar: string } };
 
@@ -29,7 +30,7 @@ export default function NewEvent() {
 
   useEffect(() => {
     if (!profile) return;
-    supabase.from('enrollments').select('section:sections(id, course:courses(name_ar))').eq('user_id', (profile?.id ?? ''))
+    supabase.from('enrollments').select('section:sections(id, course:courses(name_ar, name_en))').eq('user_id', (profile?.id ?? ''))
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       .then(({ data }) => { const s = ((data ?? []) as any[]).map((e) => e.section).filter(Boolean) as Sec[]; setSecs(s); setSection(s[0]?.id ?? null); });
   }, [profile]);
@@ -39,38 +40,38 @@ export default function NewEvent() {
 
   async function save() {
     if (!profile) return;
-    const t = title.trim() || [label, courseName].filter(Boolean).join(' · ');
-    if (!t) { Alert.alert('اكتب عنوان'); return; }
+    const ttl = title.trim() || [label, courseName].filter(Boolean).join(' · ');
+    if (!ttl) { Alert.alert(t('اكتب عنوان')); return; }
     const shared = share && !!section && kind !== 'custom';
     setBusy(true);
     const { data, error } = await supabase.from('academic_events').insert({
-      kind, title: t, starts_at: date.toISOString(), location: location.trim() || null, created_by: (profile?.id ?? ''),
+      kind, title: ttl, starts_at: date.toISOString(), location: location.trim() || null, created_by: (profile?.id ?? ''),
       section_id: section, owner_id: shared ? null : (profile?.id ?? ''),
     }).select('id').single();
     if (!error && data) await supabase.from('reminders').upsert({ user_id: (profile?.id ?? ''), event_id: data.id, minutes: kind.startsWith('exam') ? 1440 : 120, enabled: true }, { onConflict: 'user_id,event_id' });
     setBusy(false);
-    if (error) { Alert.alert('ما زبط', 'جرّب كمان مرة.'); return; }
+    if (error) { Alert.alert(t('ما زبط'), t('جرّب كمان مرة.')); return; }
     router.back();
   }
 
-  const fmtDate = date.toLocaleDateString('ar-JO', { weekday: 'long', day: 'numeric', month: 'long' });
-  const fmtTime = date.toLocaleTimeString('ar-JO', { hour: 'numeric', minute: '2-digit' });
+  const fmtDate = date.toLocaleDateString(LOCALE, { weekday: 'long', day: 'numeric', month: 'long' });
+  const fmtTime = date.toLocaleTimeString(LOCALE, { hour: 'numeric', minute: '2-digit' });
 
   return (
     <Screen>
-      <Header title="أضف موعد" />
+      <Header title={t('أضف موعد')} />
       <ScrollView contentContainerStyle={{ padding: 18, paddingTop: 4, gap: 14, paddingBottom: 60 }} keyboardShouldPersistTaps="handled">
         <View style={{ gap: 10 }}>
-          <T v="bold" style={{ fontSize: 14 }}>شو نوعه؟</T>
+          <T v="bold" style={{ fontSize: 14 }}>{t('شو نوعه؟')}</T>
           <Row gap={8} style={{ flexWrap: 'wrap' }}>{KINDS.map(([k, l]) => <Chip key={k} label={l} active={kind === k} onPress={() => setKind(k)} />)}</Row>
         </View>
         {secs.length > 0 && (
           <View style={{ gap: 10 }}>
-            <T v="bold" style={{ fontSize: 14 }}>المادة</T>
-            <Row gap={8} style={{ flexWrap: 'wrap' }}>{secs.map((s) => <Chip key={s.id} label={s.course.name_ar} active={section === s.id} onPress={() => setSection(s.id)} />)}</Row>
+            <T v="bold" style={{ fontSize: 14 }}>{t('المادة')}</T>
+            <Row gap={8} style={{ flexWrap: 'wrap' }}>{secs.map((s) => <Chip key={s.id} label={nm(s.course)} active={section === s.id} onPress={() => setSection(s.id)} />)}</Row>
           </View>
         )}
-        <Field label="العنوان" value={title} onChangeText={setTitle} placeholder={[label, courseName].filter(Boolean).join(' · ')} maxLength={80} />
+        <Field label={t('العنوان')} value={title} onChangeText={setTitle} placeholder={[label, courseName].filter(Boolean).join(' · ')} maxLength={80} />
         <Row gap={10}>
           <Tap onPress={() => setShow('date')} style={{ flex: 1.4, flexDirection: 'row', alignItems: 'center', gap: 8, minHeight: 52, borderRadius: 16, backgroundColor: C.card, paddingHorizontal: 14 }}>
             <CalendarDays size={18} color={C.primary} /><T v="bodyMd">{fmtDate}</T>
@@ -83,14 +84,14 @@ export default function NewEvent() {
           <DateTimePicker value={date} mode={show} display={Platform.OS === 'ios' ? 'spinner' : 'default'} minimumDate={new Date()} locale="ar-JO"
             onChange={(_, d) => { if (Platform.OS !== 'ios') setShow(null); if (d) setDate(d); }} />
         )}
-        {show && Platform.OS === 'ios' && <Button kind="soft" title="تم" onPress={() => setShow(null)} />}
-        <Field label="المكان (اختياري)" value={location} onChangeText={setLocation} placeholder="مثلاً قاعة 204 أو المدرج الكبير" />
+        {show && Platform.OS === 'ios' && <Button kind="soft" title={t('تم')} onPress={() => setShow(null)} />}
+        <Field label={t('المكان (اختياري)')} value={location} onChangeText={setLocation} placeholder={t('مثلاً قاعة 204 أو المدرج الكبير')} />
         {section && kind !== 'custom' && (
           <View style={{ backgroundColor: C.card, borderRadius: 18, padding: 12 }}>
-            <Toggle label="شاركه مع طلاب الشعبة" hint="بيطلع بجدولهم، وكل ما أكّده حدا بيصير موثوق أكتر" value={share} onChange={setShare} />
+            <Toggle label={t('شاركه مع طلاب الشعبة')} hint={t('بيطلع بجدولهم، وكل ما أكّده حدا بيصير موثوق أكتر')} value={share} onChange={setShare} />
           </View>
         )}
-        <Button title="احفظ" onPress={save} loading={busy} />
+        <Button title={t('احفظ')} onPress={save} loading={busy} />
       </ScrollView>
     </Screen>
   );

@@ -7,7 +7,8 @@ import Animated, { FadeIn } from 'react-native-reanimated';
 import { Avatar, Chip, Empty, Header, Row, Screen, T, Tap } from '@/components/ui';
 import { useAuth } from '@/lib/auth';
 import { supabase } from '@/lib/supabase';
-import { C, F, shadow } from '@/lib/theme';
+import { C, F, isDark, shadow } from '@/lib/theme';
+import { nm, t, ta } from '@/lib/i18n';
 
 type R = { kind: string; id: string; title: string; subtitle: string; avatar?: string | null; lat?: number | null };
 
@@ -29,9 +30,9 @@ export default function Search() {
       if (s.length < 2) { setRows([]); return; }
       const out: R[] = [];
       if (kind !== 'campus') {
-        const { data } = await supabase.from('profiles').select('id, full_name, username, is_verified, avatar_url, major:majors(name_ar)').or(`full_name.ilike.%${s.replace(/[,()]/g, ' ')}%,username.ilike.%${s.replace(/^@/, '').replace(/[,()]/g, ' ').toLowerCase()}%`).neq('id', profile?.id ?? '').limit(15);
+        const { data } = await supabase.from('profiles').select('id, full_name, username, is_verified, avatar_url, major:majors(name_ar, name_en)').or(`full_name.ilike.%${s.replace(/[,()]/g, ' ')}%,username.ilike.%${s.replace(/^@/, '').replace(/[,()]/g, ' ').toLowerCase()}%`).neq('id', profile?.id ?? '').limit(15);
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        out.push(...((data ?? []) as any[]).map((p) => ({ kind: 'person', id: p.id, title: p.full_name, subtitle: [p.username ? '@' + p.username : null, p.major?.name_ar].filter(Boolean).join(' · '), avatar: p.avatar_url })));
+        out.push(...((data ?? []) as any[]).map((p) => ({ kind: 'person', id: p.id, title: p.full_name, subtitle: [p.username ? '@' + p.username : null, nm(p.major)].filter(Boolean).join(' · '), avatar: p.avatar_url })));
       }
       if (kind !== 'people') {
         const { data } = await supabase.rpc('campus_search', { q: s, lim: 20 });
@@ -53,17 +54,17 @@ export default function Search() {
 
   return (
     <Screen>
-      <Header title="بحث" />
+      <Header title={t('بحث')} />
       <View style={{ paddingHorizontal: 18, gap: 12 }}>
         <Row gap={8} style={[{ minHeight: 50, borderRadius: 16, backgroundColor: C.card, paddingHorizontal: 14 }, shadow]}>
           <SearchIcon size={20} color={C.muted} />
-          <TextInput value={q} onChangeText={setQ} autoFocus placeholder="طلاب، مواد، مباني، ألقاب، روابط الجامعة" placeholderTextColor={C.faint}
-            style={{ flex: 1, fontFamily: F.body, fontSize: 15, color: C.ink, textAlign: 'right' }} accessibilityLabel="بحث" />
+          <TextInput keyboardAppearance={isDark ? 'dark' : 'light'} value={q} onChangeText={setQ} autoFocus placeholder={t('طلاب، مواد، مباني، ألقاب، روابط الجامعة')} placeholderTextColor={C.faint}
+            style={{ flex: 1, fontFamily: F.body, fontSize: 15, color: C.ink, textAlign: ta }} accessibilityLabel={t('بحث')} />
         </Row>
         <Row gap={8}>
-          <Chip label="الكل" active={kind === 'all'} onPress={() => setKind('all')} />
-          <Chip label="طلاب" active={kind === 'people'} onPress={() => setKind('people')} />
-          <Chip label="الحرم والمواد" active={kind === 'campus'} onPress={() => setKind('campus')} />
+          <Chip label={t('الكل')} active={kind === 'all'} onPress={() => setKind('all')} />
+          <Chip label={t('طلاب')} active={kind === 'people'} onPress={() => setKind('people')} />
+          <Chip label={t('الحرم والمواد')} active={kind === 'campus'} onPress={() => setKind('campus')} />
         </Row>
       </View>
       <FlatList
@@ -78,15 +79,15 @@ export default function Search() {
                 <View style={{ width: 44, height: 44, borderRadius: 15, backgroundColor: C.bg, alignItems: 'center', justifyContent: 'center' }}>{icon(item.kind)}</View>}
               <View style={{ flex: 1 }}>
                 <T v="bodyMd">{item.title}</T>
-                {item.subtitle ? <T v="tiny" color={C.muted} numberOfLines={1}>{item.kind === 'alias' ? `لقب لـ ${item.subtitle}` : item.subtitle}</T> : null}
+                {item.subtitle ? <T v="tiny" color={C.muted} numberOfLines={1}>{item.kind === 'alias' ? t('لقب لـ {0}', [item.subtitle]) : item.subtitle}</T> : null}
               </View>
             </Tap>
           </Animated.View>
         )}
-        ListEmptyComponent={q.trim().length >= 2 ? <Empty title="ما لقينا إشي" body="جرّب اسم المادة أو المبنى أو لقب المكان." /> : (
+        ListEmptyComponent={q.trim().length >= 2 ? <Empty title={t('ما لقينا إشي')} body={t('جرّب اسم المادة أو المبنى أو لقب المكان.')} /> : (
           <View style={{ gap: 10 }}>
-            <T v="h3">روابط جامعتك</T>
-            {links.length === 0 ? <T v="small" color={C.muted}>بتنضاف قريباً.</T> : links.map((l) => (
+            <T v="h3">{t('روابط جامعتك')}</T>
+            {links.length === 0 ? <T v="small" color={C.muted}>{t('بتنضاف قريباً.')}</T> : links.map((l) => (
               <Tap key={l.id} onPress={() => Linking.openURL(l.url)} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 56, backgroundColor: C.card, borderRadius: 18, paddingHorizontal: 14 }}>
                 <LinkIcon size={19} color={C.violet} /><T v="bodyMd">{l.title}</T>
               </Tap>

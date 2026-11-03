@@ -9,6 +9,7 @@ import { useAuth } from '@/lib/auth';
 import { supabase } from '@/lib/supabase';
 import { C } from '@/lib/theme';
 import { timeAgo } from '@/lib/util';
+import { nm, t } from '@/lib/i18n';
 
 type N = { id: string; kind: string; title: string; body: string | null; data: Record<string, string>; read_at: string | null; created_at: string };
 type FR = { follower_id: string; profile: { id: string; full_name: string; avatar_url: string | null; major: { name_ar: string } | null } | null };
@@ -29,7 +30,7 @@ export default function Notifications() {
     setLoading(true);
     const [{ data: n }, { data: f }] = await Promise.all([
       supabase.from('notifications').select('*').eq('user_id', (profile?.id ?? '')).order('created_at', { ascending: false }).limit(60),
-      supabase.from('follows').select('follower_id, profile:profiles!follows_follower_id_fkey(id, full_name, avatar_url, major:majors(name_ar))').eq('followee_id', (profile?.id ?? '')).eq('status', 'pending'),
+      supabase.from('follows').select('follower_id, profile:profiles!follows_follower_id_fkey(id, full_name, avatar_url, major:majors(name_ar, name_en))').eq('followee_id', (profile?.id ?? '')).eq('status', 'pending'),
     ]);
     setItems((n ?? []) as N[]); setReqs((f ?? []) as unknown as FR[]); setLoading(false);
     await supabase.from('notifications').update({ read_at: new Date().toISOString() }).eq('user_id', (profile?.id ?? '')).is('read_at', null);
@@ -47,7 +48,7 @@ export default function Notifications() {
 
   return (
     <Screen>
-      <Header title="الإشعارات" />
+      <Header title={t('الإشعارات')} />
       <FlatList
         data={shown}
         keyExtractor={(n) => n.id}
@@ -56,19 +57,19 @@ export default function Notifications() {
         ListHeaderComponent={
           <View style={{ gap: 12, marginBottom: 6 }}>
             <Row gap={8}>
-              <Chip label="الكل" active={filter === 'all'} onPress={() => setFilter('all')} />
-              <Chip label="دراسة" active={filter === 'study'} onPress={() => setFilter('study')} />
-              <Chip label="اجتماعي" active={filter === 'social'} onPress={() => setFilter('social')} />
+              <Chip label={t('الكل')} active={filter === 'all'} onPress={() => setFilter('all')} />
+              <Chip label={t('دراسة')} active={filter === 'study'} onPress={() => setFilter('study')} />
+              <Chip label={t('اجتماعي')} active={filter === 'social'} onPress={() => setFilter('social')} />
             </Row>
             {filter !== 'study' && reqs.map((r) => (
               <Row key={r.follower_id} gap={12} style={{ backgroundColor: C.card, borderRadius: 22, padding: 12 }}>
                 <Tap onPress={() => router.push({ pathname: '/user/[id]', params: { id: r.follower_id } })}><Avatar id={r.follower_id} name={r.profile?.full_name} url={r.profile?.avatar_url} size={46} /></Tap>
                 <View style={{ flex: 1 }}>
-                  <T v="small"><T v="bold" style={{ fontSize: 14 }}>{r.profile?.full_name}</T> بده يتابعك</T>
-                  <T v="tiny" color={C.muted}>{r.profile?.major?.name_ar ?? ''}</T>
+                  <T v="small"><T v="bold" style={{ fontSize: 14 }}>{r.profile?.full_name}</T> {t('بده يتابعك')}</T>
+                  <T v="tiny" color={C.muted}>{nm(r.profile?.major) ?? ''}</T>
                 </View>
-                <Button title="قبول" onPress={() => answer(r, true)} style={{ minHeight: 38, paddingHorizontal: 14, borderRadius: 12 }} />
-                <Button kind="soft" title="رفض" onPress={() => answer(r, false)} style={{ minHeight: 38, paddingHorizontal: 12, borderRadius: 12 }} />
+                <Button title={t('قبول')} onPress={() => answer(r, true)} style={{ minHeight: 38, paddingHorizontal: 14, borderRadius: 12 }} />
+                <Button kind="soft" title={t('رفض')} onPress={() => answer(r, false)} style={{ minHeight: 38, paddingHorizontal: 12, borderRadius: 12 }} />
               </Row>
             ))}
           </View>
@@ -89,7 +90,7 @@ export default function Notifications() {
             </Animated.View>
           );
         }}
-        ListEmptyComponent={loading || reqs.length ? undefined : <Empty icon={<Bell size={28} color={C.primary} />} title="ما في إشعارات" body="بنخبرك هون بالمحاضرات والامتحانات والتبديلات والتعليقات." />}
+        ListEmptyComponent={loading || reqs.length ? undefined : <Empty icon={<Bell size={28} color={C.primary} />} title={t('ما في إشعارات')} body={t('بنخبرك هون بالمحاضرات والامتحانات والتبديلات والتعليقات.')} />}
       />
     </Screen>
   );

@@ -13,6 +13,7 @@ import { placeLine, useSchedule } from '@/lib/schedule';
 import { supabase } from '@/lib/supabase';
 import { C, F } from '@/lib/theme';
 import { clock, greeting } from '@/lib/util';
+import { nm, t } from '@/lib/i18n';
 
 function Glow({ color, size, style, dur }: { color: string; size: number; style: object; dur: number }) {
   const t = useSharedValue(0);
@@ -34,14 +35,14 @@ function Pulse() {
 }
 
 const QUICK = [
-  { label: 'وين قاعتي', icon: MapPin, g: GRAD.green, to: '/map' },
-  { label: 'تبديل شعب', icon: Repeat, g: GRAD.blue, to: '/swap' },
-  { label: 'ملخصات', icon: BookOpen, g: GRAD.violet, to: '/section/summaries' },
-  { label: 'السوق', icon: ShoppingBag, g: GRAD.pink, to: '/section/market' },
-  { label: 'ندرس سوا', icon: GraduationCap, g: GRAD.indigo, to: '/study' },
-  { label: 'فعاليات', icon: PartyPopper, g: GRAD.orange, to: '/section/events' },
-  { label: 'مفقودات', icon: SearchCheck, g: GRAD.teal, to: '/section/lost_found' },
-  { label: 'كل الأقسام', icon: Sparkles, g: GRAD.yellow, to: '/sections' },
+  { label: t('وين قاعتي'), icon: MapPin, g: GRAD.green, to: '/map' },
+  { label: t('تبديل شعب'), icon: Repeat, g: GRAD.blue, to: '/swap' },
+  { label: t('ملخصات'), icon: BookOpen, g: GRAD.violet, to: '/section/summaries' },
+  { label: t('السوق'), icon: ShoppingBag, g: GRAD.pink, to: '/section/market' },
+  { label: t('ندرس سوا'), icon: GraduationCap, g: GRAD.indigo, to: '/study' },
+  { label: t('فعاليات'), icon: PartyPopper, g: GRAD.orange, to: '/section/events' },
+  { label: t('مفقودات'), icon: SearchCheck, g: GRAD.teal, to: '/section/lost_found' },
+  { label: t('كل الأقسام'), icon: Sparkles, g: GRAD.yellow, to: '/sections' },
 ] as const;
 
 export default function Home() {
@@ -57,49 +58,49 @@ export default function Home() {
       .then(({ count }) => setUnread(count ?? 0));
   }, [profile]);
 
-  const nm = next?.m;
+  const nxt = next?.m;
   const mins = next?.mins ?? 0;
   const countdown = mins < 60 ? `${mins}` : mins < 1440 ? `${Math.floor(mins / 60)}` : `${Math.floor(mins / 1440)}`;
-  const unit = mins < 60 ? 'دقيقة' : mins < 1440 ? 'ساعة' : 'يوم';
+  const unit = mins < 60 ? t('دقيقة') : mins < 1440 ? t('ساعة') : t('يوم');
 
   return (
     <Screen>
       <ScrollView contentContainerStyle={{ padding: 18, gap: 18, paddingBottom: 130 }} refreshControl={<RefreshControl refreshing={loading} onRefresh={reload} />}>
         <Row gap={12}>
-          <View accessibilityLabel={`شعار ${university?.name_ar ?? 'الجامعة'}`} style={{ width: 48, height: 48, borderRadius: 24, padding: 3, backgroundColor: university?.brand_color ?? C.primary }}>
+          <View accessibilityLabel={t('شعار {0}', [nm(university) ?? t('الجامعة')])} style={{ width: 48, height: 48, borderRadius: 24, padding: 3, backgroundColor: university?.brand_color ?? C.primary }}>
             <View style={{ flex: 1, borderRadius: 21, backgroundColor: C.card, alignItems: 'center', justifyContent: 'center' }}>
-              <T v="tiny" color={university?.brand_color ?? C.primary} style={{ textAlign: 'center', fontFamily: F.title }}>{university?.name_ar?.replace('الجامعة ', '').replace('جامعة ', '').slice(0, 6)}</T>
+              <T v="tiny" color={university?.brand_color ?? C.primary} style={{ textAlign: 'center', fontFamily: F.title }}>{nm(university)?.replace(t('الجامعة '), '').replace(t('جامعة '), '').slice(0, 6)}</T>
             </View>
           </View>
           <View style={{ flex: 1 }}>
-            <T v="tiny" color={university?.brand_color ?? C.primary}>{university?.name_ar}</T>
-            <T v="h2" style={{ fontFamily: F.display, fontSize: 22 }}>{greeting()}، {profile?.full_name?.split(' ')[0]}</T>
+            <T v="tiny" color={university?.brand_color ?? C.primary}>{nm(university)}</T>
+            <T v="h2" style={{ fontFamily: F.display, fontSize: 22 }}>{greeting()}{t('،')} {profile?.full_name?.split(' ')[0]}</T>
           </View>
-          <IconButton label="بحث" onPress={() => router.push('/search')}><Search size={21} color={C.ink} /></IconButton>
-          <IconButton label="الإشعارات" badge={unread} onPress={() => router.push('/notifications')}><Wiggle trigger={unread}><Bell size={21} color={C.ink} /></Wiggle></IconButton>
+          <IconButton label={t('بحث')} onPress={() => router.push('/search')}><Search size={21} color={C.ink} /></IconButton>
+          <IconButton label={t('الإشعارات')} badge={unread} onPress={() => router.push('/notifications')}><Wiggle trigger={unread}><Bell size={21} color={C.ink} /></Wiggle></IconButton>
         </Row>
 
         <Animated.View entering={FadeInDown.duration(500)}>
           <View style={{ borderRadius: 30, backgroundColor: '#101633', padding: 20, overflow: 'hidden', gap: 14 }}>
             <Glow color={C.primary} size={260} style={{ top: -120, left: -90 }} dur={8000} />
             <Glow color={C.pink} size={200} style={{ bottom: -100, left: 40 }} dur={10000} />
-            {nm ? (
+            {nxt ? (
               <>
-                <Row gap={8}><Pulse /><T v="small" color="#C9D1F0">محاضرتك الجاية بعد</T></Row>
+                <Row gap={8}><Pulse /><T v="small" color="#C9D1F0">{t('محاضرتك الجاية بعد')}</T></Row>
                 <Row gap={8} style={{ alignItems: 'baseline' }}>
                   <T style={{ fontFamily: F.display, fontSize: 60, lineHeight: 72 }} color={C.white}>{countdown}</T>
                   <T v="h3" color={C.white}>{unit}</T>
                 </Row>
                 <View style={{ gap: 2 }}>
-                  <T v="h2" color={C.white}>{nm.course_name}</T>
-                  <T v="small" color="#C9D1F0">{placeLine(nm)} · {clock(nm.starts_at)}</T>
+                  <T v="h2" color={C.white}>{nxt.course_name}</T>
+                  <T v="small" color="#C9D1F0">{placeLine(nxt)} · {clock(nxt.starts_at)}</T>
                 </View>
                 <Row gap={8}>
-                  <Tap onPress={() => router.push({ pathname: '/map', params: { building: nm.building_id ?? '' } })}
+                  <Tap onPress={() => router.push({ pathname: '/map', params: { building: nxt.building_id ?? '' } })}
                     style={{ flex: 1, minHeight: 48, borderRadius: 16, backgroundColor: C.card, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-                    <Navigation size={18} color={C.ink} /><T v="bold">وديني عالقاعة</T>
+                    <Navigation size={18} color={C.ink} /><T v="bold">{t('وديني عالقاعة')}</T>
                   </Tap>
-                  <Tap onPress={() => router.push('/(tabs)/schedule')} accessibilityLabel="جدول اليوم"
+                  <Tap onPress={() => router.push('/(tabs)/schedule')} accessibilityLabel={t('جدول اليوم')}
                     style={{ width: 48, minHeight: 48, borderRadius: 16, backgroundColor: 'rgba(255,255,255,0.14)', alignItems: 'center', justifyContent: 'center' }}>
                     <CalendarDays size={20} color={C.white} />
                   </Tap>
@@ -107,10 +108,10 @@ export default function Home() {
               </>
             ) : (
               <View style={{ gap: 8 }}>
-                <T v="h2" color={C.white}>جدولك بيطلع هون</T>
-                <T v="small" color="#C9D1F0">أول ما تنضاف موادك من حسابك الجامعي، بتشوف محاضرتك الجاية مع العد التنازلي والقاعة.</T>
+                <T v="h2" color={C.white}>{t('جدولك بيطلع هون')}</T>
+                <T v="small" color="#C9D1F0">{t('أول ما تنضاف موادك من حسابك الجامعي، بتشوف محاضرتك الجاية مع العد التنازلي والقاعة.')}</T>
                 <Tap onPress={() => router.push('/(tabs)/schedule')} style={{ alignSelf: 'flex-start', marginTop: 6, minHeight: 44, paddingHorizontal: 16, borderRadius: 14, backgroundColor: C.card, justifyContent: 'center' }}>
-                  <T v="bold">افتح الجدول</T>
+                  <T v="bold">{t('افتح الجدول')}</T>
                 </Tap>
               </View>
             )}
@@ -131,10 +132,10 @@ export default function Home() {
         <Animated.View entering={FadeInDown.delay(160).duration(500)}>
           <Card>
             <Row style={{ justifyContent: 'space-between', marginBottom: 6 }}>
-              <T v="h3">اليوم</T>
-              <Tap onPress={() => router.push('/(tabs)/schedule')}><T v="small" color={C.primary}>الجدول كامل</T></Tap>
+              <T v="h3">{t('اليوم')}</T>
+              <Tap onPress={() => router.push('/(tabs)/schedule')}><T v="small" color={C.primary}>{t('الجدول كامل')}</T></Tap>
             </Row>
-            {todays.length === 0 ? <T v="small" color={C.muted}>ما عندك محاضرات اليوم.</T> : todays.map((m) => (
+            {todays.length === 0 ? <T v="small" color={C.muted}>{t('ما عندك محاضرات اليوم.')}</T> : todays.map((m) => (
               <Row key={m.id} gap={12} style={{ minHeight: 54 }}>
                 <View style={{ width: 4, height: 34, borderRadius: 2, backgroundColor: m.kind === 'lab' ? C.green : m.kind === 'online' ? C.violet : C.primary }} />
                 <View style={{ flex: 1 }}>
@@ -151,8 +152,8 @@ export default function Home() {
           <LinearGradient colors={['#8B5CF6', '#EC4899']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={{ padding: 16, flexDirection: 'row', alignItems: 'center', gap: 12 }}>
             <GlyphTile icon={Users} colors={['rgba(255,255,255,0.35)', 'rgba(255,255,255,0.15)']} size={48} live />
             <View style={{ flex: 1 }}>
-              <T v="bold" color={C.white}>مجتمع {university?.name_ar?.replace('الجامعة ', '').replace('جامعة ', '') ?? 'جامعتك'}</T>
-              <T v="small" color="#FBE7FF">منشورات، قصص وجروبات كليتك ودفعتك</T>
+              <T v="bold" color={C.white}>{t('مجتمع')} {nm(university)?.replace(t('الجامعة '), '').replace(t('جامعة '), '') ?? t('جامعتك')}</T>
+              <T v="small" color="#FBE7FF">{t('منشورات، قصص وجروبات كليتك ودفعتك')}</T>
             </View>
           </LinearGradient>
         </Tap>

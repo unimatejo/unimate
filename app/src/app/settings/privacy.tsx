@@ -6,6 +6,7 @@ import { Chip, Header, Row, Screen, T, Toggle } from '@/components/ui';
 import { useProfilePatch } from '@/lib/settings';
 import { C } from '@/lib/theme';
 import type { Profile, VanishMode } from '@/lib/types';
+import { t } from '@/lib/i18n';
 
 function Box({ title, hint, children }: { title: string; hint?: string; children: ReactNode }) {
   return (
@@ -28,46 +29,46 @@ export default function Privacy() {
 
   return (
     <Screen>
-      <Header title="الخصوصية" />
+      <Header title={t('الخصوصية')} />
       <ScrollView contentContainerStyle={{ padding: 18, paddingTop: 4, gap: 14, paddingBottom: 60 }}>
-        <Box title="الحساب">
-          <Toggle icon={ic(<Lock size={18} color={C.violet} />)} label="حساب خاص" hint="بس اللي بتقبلهم بيشوفوا منشوراتك بالساحة وستوريّاتك" value={p.is_private} onChange={(v) => patch({ is_private: v })} />
-          <Toggle icon={ic(<Users size={18} color={C.primary} />)} label="خبّي قائمة المتابِعين" hint="الرقم بيضل ظاهر، الأسماء لا" value={p.hide_followers} onChange={(v) => patch({ hide_followers: v })} />
-          <Toggle icon={ic(<Users size={18} color={C.green} />)} label="خبّي قائمة اللي بتتابعهم" value={p.hide_following} onChange={(v) => patch({ hide_following: v })} />
-          <Toggle icon={ic(<Heart size={18} color={C.pink} />)} label="خبّي عدد اللايكات" hint="على منشوراتك، إنت بس بتشوفه" value={p.hide_like_counts} onChange={(v) => patch({ hide_like_counts: v })} />
+        <Box title={t('الحساب')}>
+          <Toggle icon={ic(<Lock size={18} color={C.violet} />)} label={t('حساب خاص')} hint={t('بس اللي بتقبلهم بيشوفوا منشوراتك بالساحة وستوريّاتك')} value={p.is_private} onChange={(v) => patch({ is_private: v })} />
+          <Toggle icon={ic(<Users size={18} color={C.primary} />)} label={t('خبّي قائمة المتابِعين')} hint={t('الرقم بيضل ظاهر، الأسماء لا')} value={p.hide_followers} onChange={(v) => patch({ hide_followers: v })} />
+          <Toggle icon={ic(<Users size={18} color={C.green} />)} label={t('خبّي قائمة اللي بتتابعهم')} value={p.hide_following} onChange={(v) => patch({ hide_following: v })} />
+          <Toggle icon={ic(<Heart size={18} color={C.pink} />)} label={t('خبّي عدد اللايكات')} hint={t('على منشوراتك، إنت بس بتشوفه')} value={p.hide_like_counts} onChange={(v) => patch({ hide_like_counts: v })} />
         </Box>
 
-        <Box title="مين بيقدر يراسلني" hint="اللي مش متابعينك بتوصلك رسالتهم كطلب، وإنت بتقرر">
+        <Box title={t('مين بيقدر يراسلني')} hint={t('اللي مش متابعينك بتوصلك رسالتهم كطلب، وإنت بتقرر')}>
           <Choice<Profile['who_can_message']> value={p.who_can_message} onChange={(v) => patch({ who_can_message: v })}
-            items={[['everyone', 'كل الجامعة'], ['college', 'كليتي'], ['major', 'تخصصي'], ['nobody', 'ولا حدا']]} />
+            items={[['everyone', t('كل الجامعة')], ['college', t('كليتي')], ['major', t('تخصصي')], ['nobody', t('ولا حدا')]]} />
         </Box>
 
-        <Box title="مين بيشوف إنستغرام وسناب" hint="الأزرار بتطلع على بروفايلك">
+        <Box title={t('مين بيشوف إنستغرام وسناب')} hint={t('الأزرار بتطلع على بروفايلك')}>
           <Choice<Profile['socials_visible_to']> value={p.socials_visible_to} onChange={(v) => patch({ socials_visible_to: v })}
-            items={[['everyone', 'الكل'], ['friends', 'المتابعين'], ['close_friends', 'المقربين'], ['nobody', 'ولا حدا']]} />
+            items={[['everyone', t('الكل')], ['friends', t('المتابعين')], ['close_friends', t('المقربين')], ['nobody', t('ولا حدا')]]} />
         </Box>
 
-        <Box title="الرسائل" hint="الإعداد الافتراضي لكل محادثة جديدة، وبتقدر تغيره جوا أي محادثة">
-          <Row gap={8}><Timer size={18} color={C.ink2} /><T v="bodyMd">اختفاء الرسائل</T></Row>
+        <Box title={t('الرسائل')} hint={t('الإعداد الافتراضي لكل محادثة جديدة، وبتقدر تغيره جوا أي محادثة')}>
+          <Row gap={8}><Timer size={18} color={C.ink2} /><T v="bodyMd">{t('اختفاء الرسائل')}</T></Row>
           <Choice<VanishMode> value={p.default_vanish} onChange={(v) => patch({ default_vanish: v })}
-            items={[['after_view', 'بعد المشاهدة'], ['h24', 'بعد 24 ساعة'], ['d7', 'بعد أسبوع'], ['never', 'ما تختفي']]} />
-          <Toggle icon={ic(<Camera size={18} color={C.red} />)} label="امنع لقطة الشاشة" hint="شاشة المحادثة بتطلع فاضية بالسكرين شوت، وبنخبرك لو حدا حاول" value={p.block_screenshots} onChange={(v) => patch({ block_screenshots: v })} />
+            items={[['after_view', t('بعد المشاهدة')], ['h24', t('بعد 24 ساعة')], ['d7', t('بعد أسبوع')], ['never', t('ما تختفي')]]} />
+          <Toggle icon={ic(<Camera size={18} color={C.red} />)} label={t('امنع لقطة الشاشة')} hint={t('شاشة المحادثة بتطلع فاضية بالسكرين شوت، وبنخبرك لو حدا حاول')} value={p.block_screenshots} onChange={(v) => patch({ block_screenshots: v })} />
         </Box>
 
-        <Box title="الأصحاب القريبين">
-          <Toggle icon={ic(<MapPin size={18} color={C.orange} />)} label="خبّرني لما صاحب قريب مني" hint="بس للأصحاب المتبادلين اللي مفعلينها كمان، وبنبيّن المبنى مش موقعك الدقيق" value={p.nearby_enabled} onChange={(v) => patch({ nearby_enabled: v })} />
+        <Box title={t('الأصحاب القريبين')}>
+          <Toggle icon={ic(<MapPin size={18} color={C.orange} />)} label={t('خبّرني لما صاحب قريب مني')} hint={t('بس للأصحاب المتبادلين اللي مفعلينها كمان، وبنبيّن المبنى مش موقعك الدقيق')} value={p.nearby_enabled} onChange={(v) => patch({ nearby_enabled: v })} />
         </Box>
 
         <View style={{ flexDirection: 'row', gap: 10, backgroundColor: C.primarySoft, borderRadius: 18, padding: 14 }}>
           {p.is_private ? <EyeOff size={18} color={C.primary} /> : <Eye size={18} color={C.primary} />}
           <T v="small" color={C.ink2} style={{ flex: 1 }}>
-            منشوراتك بأقسام الجامعة (ملخصات، مفقودات، سوق...) بتضل ظاهرة لطلاب جامعتك حتى لو حسابك خاص، عشان هيك هي معمولة.
+            {t('منشوراتك بأقسام الجامعة (ملخصات، مفقودات، سوق...) بتضل ظاهرة لطلاب جامعتك حتى لو حسابك خاص، عشان هيك هي معمولة.')}
           </T>
         </View>
         <View style={{ flexDirection: 'row', gap: 10, backgroundColor: C.card, borderRadius: 18, padding: 14 }}>
           <MessageCircle size={18} color={C.muted} />
           <T v="small" color={C.muted} style={{ flex: 1 }}>
-            إدارة يونيميت بتقدر تفتح أي محادثة لما يوصلها بلاغ أو للحماية والأمان، وكل فتح بينسجل. التفاصيل بسياسة الخصوصية.
+            {t('إدارة يونيميت بتقدر تفتح أي محادثة لما يوصلها بلاغ أو للحماية والأمان، وكل فتح بينسجل. التفاصيل بسياسة الخصوصية.')}
           </T>
         </View>
       </ScrollView>

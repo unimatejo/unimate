@@ -11,6 +11,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button, Field, Row, T } from '@/components/ui';
 import { sendEmailCode, signInWithMicrosoft, universityForEmail } from '@/lib/auth';
 import { C, F } from '@/lib/theme';
+import { nm, t } from '@/lib/i18n';
 
 // Microsoft sign-in shows only once the Azure app is set up (EXPO_PUBLIC_MS_LOGIN=1).
 const MS_READY = process.env.EXPO_PUBLIC_MS_LOGIN === '1';
@@ -37,21 +38,21 @@ export default function Login() {
     setError(null); setBusy(true);
     const res = await signInWithMicrosoft();
     setBusy(false);
-    if ('error' in res && res.error && res.error.message !== 'cancelled') setError('ما زبط الدخول بمايكروسوفت. ممكن جامعتك بتطلب موافقة، جرّب رابط على الإيميل.');
+    if ('error' in res && res.error && res.error.message !== 'cancelled') setError(t('ما زبط الدخول بمايكروسوفت. ممكن جامعتك بتطلب موافقة، جرّب رابط على الإيميل.'));
   }
 
   async function sendCode() {
     setError(null);
     const uni = await universityForEmail(email);
-    if (!uni) { setError('اكتب إيميلك الجامعي، مثلاً 2021xxxx@hu.edu.jo'); return; }
+    if (!uni) { setError(t('اكتب إيميلك الجامعي، مثلاً 2021xxxx@hu.edu.jo')); return; }
     setBusy(true);
     const { error: e } = await sendEmailCode(email);
     setBusy(false);
     if (e) {
-      setError(/rate|limit/i.test(e.message) ? 'وصلنا الحد المسموح من الإيميلات هلأ. جرّب بعد شوي.' : 'ما قدرنا نبعث الرسالة. تأكد من الإنترنت وجرّب مرة ثانية.');
+      setError(/rate|limit/i.test(e.message) ? t('وصلنا الحد المسموح من الإيميلات هلأ. جرّب بعد شوي.') : t('ما قدرنا نبعث الرسالة. تأكد من الإنترنت وجرّب مرة ثانية.'));
       return;
     }
-    router.push({ pathname: '/(auth)/verify', params: { email, uni: uni.name_ar } });
+    router.push({ pathname: '/(auth)/verify', params: { email, uni: nm(uni) } });
   }
 
   return (
@@ -64,43 +65,43 @@ export default function Login() {
             <SafeAreaView edges={['top']} style={{ flex: 1 }}>
               <Row gap={10} style={{ paddingHorizontal: 24, paddingTop: 12 }}>
                 <Image source={require('../../../assets/images/icon.png')} style={{ width: 42, height: 42, borderRadius: 12, borderWidth: 1, borderColor: 'rgba(255,255,255,0.18)' }} />
-                <T v="h2" color={C.white}>يونيميت</T>
+                <T v="h2" color={C.white}>{t('يونيميت')}</T>
               </Row>
               <View style={{ flex: 1 }}>
-                <Bubble label="جدولي" color={C.primary} style={{ top: 34, right: 26 }} delay={0}><CalendarDays size={16} color={C.white} /></Bubble>
-                <Bubble label="ملخصات" color={C.green} style={{ top: 96, left: 24 }} delay={500}><BookOpen size={16} color={C.white} /></Bubble>
-                <Bubble label="مجتمع جامعتي" color={C.orange} style={{ top: 160, right: 54 }} delay={900}><Users size={16} color={C.white} /></Bubble>
-                <Bubble label="رسائل" color={C.pink} style={{ top: 214, left: 60 }} delay={300}><MessageCircle size={16} color={C.white} /></Bubble>
+                <Bubble label={t('جدولي')} color={C.primary} style={{ top: 34, right: 26 }} delay={0}><CalendarDays size={16} color={C.white} /></Bubble>
+                <Bubble label={t('ملخصات')} color={C.green} style={{ top: 96, left: 24 }} delay={500}><BookOpen size={16} color={C.white} /></Bubble>
+                <Bubble label={t('مجتمع جامعتي')} color={C.orange} style={{ top: 160, right: 54 }} delay={900}><Users size={16} color={C.white} /></Bubble>
+                <Bubble label={t('رسائل')} color={C.pink} style={{ top: 214, left: 60 }} delay={300}><MessageCircle size={16} color={C.white} /></Bubble>
               </View>
             </SafeAreaView>
           </LinearGradient>
 
           <SafeAreaView edges={['bottom']} style={{ flex: 1, paddingHorizontal: 24, paddingTop: 26, paddingBottom: 16, gap: 18 }}>
             <Animated.View entering={FadeInDown.delay(100).duration(500)} style={{ gap: 8 }}>
-              <T v="h1">جامعتك كلها بجيبتك</T>
-              <T v="body" color={C.muted}>جدولك بيطلع لحاله، ومجتمع جامعتك كله بمكان واحد، ورسائل بدون رقم جوال.</T>
+              <T v="h1">{t('جامعتك كلها بجيبتك')}</T>
+              <T v="body" color={C.muted}>{t('جدولك بيطلع لحاله، ومجتمع جامعتك كله بمكان واحد، ورسائل بدون رقم جوال.')}</T>
             </Animated.View>
 
             <Animated.View entering={FadeInDown.delay(200).duration(500)} style={{ gap: 10 }}>
               {MS_READY && (
                 <>
-                  <Button title="ادخل بحساب الجامعة (مايكروسوفت)" loading={busy && !email} onPress={microsoft} icon={<GraduationCap size={20} color={C.white} />} />
-                  <Row gap={10} style={{ marginVertical: 2 }}><View style={{ flex: 1, height: 1, backgroundColor: C.line }} /><T v="tiny" color={C.faint}>أو</T><View style={{ flex: 1, height: 1, backgroundColor: C.line }} /></Row>
+                  <Button title={t('ادخل بحساب الجامعة (مايكروسوفت)')} loading={busy && !email} onPress={microsoft} icon={<GraduationCap size={20} color={C.white} />} />
+                  <Row gap={10} style={{ marginVertical: 2 }}><View style={{ flex: 1, height: 1, backgroundColor: C.line }} /><T v="tiny" color={C.faint}>{t('أو')}</T><View style={{ flex: 1, height: 1, backgroundColor: C.line }} /></Row>
                 </>
               )}
               <Field
-                value={email} onChangeText={setEmail} placeholder="إيميلك الجامعي"
+                value={email} onChangeText={setEmail} placeholder={t('إيميلك الجامعي')}
                 keyboardType="email-address" autoCapitalize="none" autoComplete="email" textContentType="emailAddress"
                 style={{ textAlign: 'left', writingDirection: 'ltr' }} onSubmitEditing={sendCode} returnKeyType="send"
               />
-              <Button kind={MS_READY ? 'soft' : 'primary'} title="ابعتلي رابط على إيميلي" loading={busy && !!email} onPress={sendCode} disabled={!email.includes('@')} icon={<Mail size={19} color={MS_READY ? C.ink : C.white} />} />
+              <Button kind={MS_READY ? 'soft' : 'primary'} title={t('ابعتلي رابط على إيميلي')} loading={busy && !!email} onPress={sendCode} disabled={!email.includes('@')} icon={<Mail size={19} color={MS_READY ? C.ink : C.white} />} />
               {error && <T v="small" color={C.danger} style={{ textAlign: 'center' }}>{error}</T>}
             </Animated.View>
 
             <View style={{ flex: 1 }} />
             <Row gap={6} style={{ justifyContent: 'center' }}>
               <Lock size={13} color={C.faint} />
-              <T v="tiny" color={C.faint} style={{ fontFamily: F.body }}>بنبعتلك رابط دخول على إيميل جامعتك. ما في كلمة سر.</T>
+              <T v="tiny" color={C.faint} style={{ fontFamily: F.body }}>{t('بنبعتلك رابط دخول على إيميل جامعتك. ما في كلمة سر.')}</T>
             </Row>
           </SafeAreaView>
         </ScrollView>

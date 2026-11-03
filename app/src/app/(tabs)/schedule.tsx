@@ -14,14 +14,15 @@ import { placeLine, useSchedule } from '@/lib/schedule';
 import { supabase } from '@/lib/supabase';
 import { C, F, shadow } from '@/lib/theme';
 import { WEEKDAYS_SHORT, clock } from '@/lib/util';
+import { LOCALE, t } from '@/lib/i18n';
 
 const KIND: Record<string, [string, string, string]> = {
-  lecture: ['محاضرة', C.primarySoft, C.primary],
-  lab: ['مختبر', C.greenSoft, C.greenInk],
-  online: ['أونلاين', C.violetSoft, C.violetInk],
-  tutorial: ['مناقشة', C.orangeSoft, C.orangeInk],
+  lecture: [t('محاضرة'), C.primarySoft, C.primary],
+  lab: [t('مختبر'), C.greenSoft, C.greenInk],
+  online: [t('أونلاين'), C.violetSoft, C.violetInk],
+  tutorial: [t('مناقشة'), C.orangeSoft, C.orangeInk],
 };
-const EVENT: Record<string, string> = { exam_first: 'امتحان أول', exam_second: 'امتحان ثاني', exam_mid: 'امتحان نصفي', exam_final: 'امتحان نهائي', quiz: 'كويز', assignment: 'تسليم واجب', project: 'مشروع', custom: 'موعد' };
+const EVENT: Record<string, string> = { exam_first: t('امتحان أول'), exam_second: t('امتحان ثاني'), exam_mid: t('امتحان نصفي'), exam_final: t('امتحان نهائي'), quiz: t('كويز'), assignment: t('تسليم واجب'), project: t('مشروع'), custom: t('موعد') };
 
 const KIND_ICON = { lecture: BookOpen, lab: FlaskConical, online: Video, tutorial: MessagesSquare } as const;
 const PALETTE = [GRAD.blue, GRAD.pink, GRAD.green, GRAD.orange, GRAD.violet, GRAD.teal, GRAD.indigo, GRAD.red];
@@ -75,13 +76,13 @@ export default function Schedule() {
       <ScrollView contentContainerStyle={{ padding: 18, gap: 16, paddingBottom: 130 }} refreshControl={<RefreshControl refreshing={loading} onRefresh={reload} />}>
         <Row style={{ justifyContent: 'space-between' }}>
           <View>
-            <T v="h1">جدولي</T>
-            <Row gap={6}><View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: C.green }} /><T v="tiny" color={C.greenInk}>بيتحدّث تلقائياً</T></Row>
+            <T v="h1">{t('جدولي')}</T>
+            <Row gap={6}><View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: C.green }} /><T v="tiny" color={C.greenInk}>{t('بيتحدّث تلقائياً')}</T></Row>
           </View>
           <Row gap={8}>
-            <IconButton label="موادي" onPress={() => router.push('/courses')}><BookOpen size={21} color={C.ink} /></IconButton>
-            <IconButton label="أضف موعد أو امتحان" onPress={() => router.push('/event/new')}><CalendarPlus size={21} color={C.ink} /></IconButton>
-            <IconButton label="إعدادات التنبيهات" onPress={() => router.push('/settings/reminders')}><Bell size={21} color={C.ink} /></IconButton>
+            <IconButton label={t('موادي')} onPress={() => router.push('/courses')}><BookOpen size={21} color={C.ink} /></IconButton>
+            <IconButton label={t('أضف موعد أو امتحان')} onPress={() => router.push('/event/new')}><CalendarPlus size={21} color={C.ink} /></IconButton>
+            <IconButton label={t('إعدادات التنبيهات')} onPress={() => router.push('/settings/reminders')}><Bell size={21} color={C.ink} /></IconButton>
           </Row>
         </Row>
 
@@ -90,8 +91,8 @@ export default function Schedule() {
             <View style={{ position: 'absolute', top: -60, left: -40, width: 180, height: 180, borderRadius: 90, backgroundColor: 'rgba(255,255,255,0.12)' }} />
             <Row gap={12}>
               <View style={{ flex: 1, gap: 2 }}>
-                <T v="small" color="#DCE3FF">{new Date().toLocaleDateString('ar-JO', { weekday: 'long', day: 'numeric', month: 'long' })}</T>
-                <T v="h2" color={C.white} style={{ fontFamily: F.display, fontSize: 22 }}>{todayCount ? `عندك ${todayCount} ${todayCount === 1 ? 'محاضرة' : todayCount === 2 ? 'محاضرتين' : 'محاضرات'} اليوم` : 'اليوم فاضي'}</T>
+                <T v="small" color="#DCE3FF">{new Date().toLocaleDateString(LOCALE, { weekday: 'long', day: 'numeric', month: 'long' })}</T>
+                <T v="h2" color={C.white} style={{ fontFamily: F.display, fontSize: 22 }}>{todayCount ? t('عندك {0} {1} اليوم', [todayCount, todayCount === 1 ? t('محاضرة') : todayCount === 2 ? t('محاضرتين') : t('محاضرات')]) : t('اليوم فاضي')}</T>
               </View>
               <GlyphTile icon={Clock} colors={['rgba(255,255,255,0.35)', 'rgba(255,255,255,0.12)']} size={52} live />
             </Row>
@@ -99,11 +100,11 @@ export default function Schedule() {
               <Row gap={10} style={{ backgroundColor: 'rgba(255,255,255,0.16)', borderRadius: 18, padding: 10 }}>
                 <View style={{ width: 46, height: 46, borderRadius: 15, backgroundColor: C.card, alignItems: 'center', justifyContent: 'center' }}>
                   <T style={{ fontFamily: F.display, fontSize: 19, lineHeight: 22 }} color={C.orange}>{daysLeft}</T>
-                  <T v="tiny" color={C.orange} style={{ fontSize: 10 }}>{daysLeft === 1 ? 'يوم' : 'أيام'}</T>
+                  <T v="tiny" color={C.orange} style={{ fontSize: 10 }}>{daysLeft === 1 ? t('يوم') : t('أيام')}</T>
                 </View>
                 <View style={{ flex: 1 }}>
                   <T v="bold" color={C.white} numberOfLines={1}>{EVENT[nextExam.kind] ?? nextExam.title}: {nextExam.course_name ?? nextExam.title}</T>
-                  <T v="tiny" color="#DCE3FF">{new Date(nextExam.starts_at).toLocaleString('ar-JO', { weekday: 'long', hour: 'numeric', minute: '2-digit' })}</T>
+                  <T v="tiny" color="#DCE3FF">{new Date(nextExam.starts_at).toLocaleString(LOCALE, { weekday: 'long', hour: 'numeric', minute: '2-digit' })}</T>
                 </View>
               </Row>
             )}
@@ -125,9 +126,9 @@ export default function Schedule() {
         </View>
 
         {list.length === 0 ? (
-          <Empty icon={<Clock size={28} color={C.primary} />} title="ما عندك محاضرات هاليوم"
-            body={meetings.length === 0 ? 'جيب موادك من Teams بكبسة، أو ضيفها مرة وحدة. وقت المحاضرة اللي بيضيفه أي زميل بشعبتك بيطلع للكل.' : 'استمتع بيومك.'}
-            action={meetings.length === 0 ? <Button title="ضيف موادي" icon={<BookOpen size={18} color={C.white} />} onPress={() => router.push('/courses')} style={{ marginTop: 8, paddingHorizontal: 22 }} /> : undefined} />
+          <Empty icon={<Clock size={28} color={C.primary} />} title={t('ما عندك محاضرات هاليوم')}
+            body={meetings.length === 0 ? t('جيب موادك من Teams بكبسة، أو ضيفها مرة وحدة. وقت المحاضرة اللي بيضيفه أي زميل بشعبتك بيطلع للكل.') : t('استمتع بيومك.')}
+            action={meetings.length === 0 ? <Button title={t('ضيف موادي')} icon={<BookOpen size={18} color={C.white} />} onPress={() => router.push('/courses')} style={{ marginTop: 8, paddingHorizontal: 22 }} /> : undefined} />
         ) : list.map((m, i) => {
           const k = KIND[m.kind] ?? KIND.lecture;
           const Icon = KIND_ICON[m.kind as keyof typeof KIND_ICON] ?? BookOpen;
@@ -153,10 +154,10 @@ export default function Schedule() {
                     <GlyphTile icon={Icon} colors={g} size={46} live={live} />
                     <View style={{ flex: 1, gap: 2 }}>
                       <T v="bold" numberOfLines={2}>{m.course_name}</T>
-                      <T v="tiny" color={C.muted} numberOfLines={1}>{[m.instructor, `شعبة ${m.section_no}`].filter(Boolean).join(' · ')}</T>
+                      <T v="tiny" color={C.muted} numberOfLines={1}>{[m.instructor, t('شعبة {0}', [m.section_no])].filter(Boolean).join(' · ')}</T>
                     </View>
                     {live ? (
-                      <Row gap={6} style={{ backgroundColor: g[1], paddingHorizontal: 10, paddingVertical: 5, borderRadius: 999 }}><LiveDot /><T v="tiny" color={C.white}>هلأ</T></Row>
+                      <Row gap={6} style={{ backgroundColor: g[1], paddingHorizontal: 10, paddingVertical: 5, borderRadius: 999 }}><LiveDot /><T v="tiny" color={C.white}>{t('هلأ')}</T></Row>
                     ) : <Tag label={k[0]} bg={k[1]} fg={k[2]} />}
                   </Row>
                   {live && (
@@ -167,14 +168,14 @@ export default function Schedule() {
                   <Row gap={8}>
                     {m.kind === 'online' && m.online_url ? (
                       <Tap onPress={() => Linking.openURL(m.online_url!)} style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 38, paddingHorizontal: 12, borderRadius: 12, backgroundColor: C.violetSoft }}>
-                        <Video size={15} color={C.violet} /><T v="small" color={C.violet}>ادخل المحاضرة</T>
+                        <Video size={15} color={C.violet} /><T v="small" color={C.violet}>{t('ادخل المحاضرة')}</T>
                       </Tap>
                     ) : (
                       <Tap onPress={() => router.push({ pathname: '/map', params: { building: m.building_id ?? '' } })} style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 38, paddingHorizontal: 12, borderRadius: 12, backgroundColor: C.primarySoft }}>
                         <MapPin size={15} color={C.primary} /><T v="small" color={C.primary} numberOfLines={1} style={{ flexShrink: 1 }}>{placeLine(m)}</T>
                       </Tap>
                     )}
-                    <Tap onPress={() => flip(m.id, !enabled)} accessibilityLabel={enabled ? 'وقّف التنبيه' : 'شغّل التنبيه'} accessibilityState={{ checked: enabled }}
+                    <Tap onPress={() => flip(m.id, !enabled)} accessibilityLabel={enabled ? t('وقّف التنبيه') : t('شغّل التنبيه')} accessibilityState={{ checked: enabled }}
                       style={{ width: 38, height: 38, borderRadius: 12, backgroundColor: enabled ? C.orangeSoft : C.soft, alignItems: 'center', justifyContent: 'center' }}>
                       {enabled ? <Bell size={17} color={C.orange} fill={C.orange} /> : <BellOff size={17} color={C.muted} />}
                     </Tap>
@@ -187,12 +188,12 @@ export default function Schedule() {
 
         {events.length > 0 && (
           <Card>
-            <T v="h3" style={{ marginBottom: 6 }}>امتحانات ومواعيد</T>
+            <T v="h3" style={{ marginBottom: 6 }}>{t('امتحانات ومواعيد')}</T>
             {events.slice(0, 6).map((e) => (
               <Row key={e.id} gap={10} style={{ minHeight: 48 }}>
-                <Tag label={EVENT[e.kind] ?? 'موعد'} bg={C.orangeSoft} fg={C.orangeInk} />
+                <Tag label={EVENT[e.kind] ?? t('موعد')} bg={C.orangeSoft} fg={C.orangeInk} />
                 <T v="small" style={{ flex: 1 }}>{e.course_name ?? e.title}</T>
-                <T v="tiny" color={C.muted}>{new Date(e.starts_at).toLocaleDateString('ar-JO', { day: 'numeric', month: 'short' })}</T>
+                <T v="tiny" color={C.muted}>{new Date(e.starts_at).toLocaleDateString(LOCALE, { day: 'numeric', month: 'short' })}</T>
               </Row>
             ))}
           </Card>

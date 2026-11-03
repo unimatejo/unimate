@@ -1,14 +1,15 @@
+import { LOCALE, t } from './i18n';
 export function timeAgo(iso: string): string {
   const s = Math.max(0, (Date.now() - new Date(iso).getTime()) / 1000);
-  if (s < 60) return 'الآن';
+  if (s < 60) return t('الآن');
   const m = Math.floor(s / 60);
-  if (m < 60) return m === 1 ? 'قبل دقيقة' : m === 2 ? 'قبل دقيقتين' : `قبل ${m} دقيقة`;
+  if (m < 60) return m === 1 ? t('قبل دقيقة') : m === 2 ? t('قبل دقيقتين') : t('قبل {0} دقيقة', [m]);
   const h = Math.floor(m / 60);
-  if (h < 24) return h === 1 ? 'قبل ساعة' : h === 2 ? 'قبل ساعتين' : `قبل ${h} ساعات`;
+  if (h < 24) return h === 1 ? t('قبل ساعة') : h === 2 ? t('قبل ساعتين') : t('قبل {0} ساعات', [h]);
   const d = Math.floor(h / 24);
-  if (d === 1) return 'أمس';
-  if (d < 7) return `قبل ${d} أيام`;
-  return new Date(iso).toLocaleDateString('ar-JO', { day: 'numeric', month: 'short' });
+  if (d === 1) return t('أمس');
+  if (d < 7) return t('قبل {0} أيام', [d]);
+  return new Date(iso).toLocaleDateString(LOCALE, { day: 'numeric', month: 'short' });
 }
 
 export function clock(t: string): string {
@@ -18,8 +19,8 @@ export function clock(t: string): string {
   return `${hh}:${String(m).padStart(2, '0')}`;
 }
 
-export const WEEKDAYS = ['الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
-export const WEEKDAYS_SHORT = ['أحد', 'اثنين', 'ثلاثاء', 'أربعاء', 'خميس', 'جمعة', 'سبت'];
+export const WEEKDAYS = [t('الأحد'), t('الاثنين'), t('الثلاثاء'), t('الأربعاء'), t('الخميس'), t('الجمعة'), t('السبت')];
+export const WEEKDAYS_SHORT = [t('أحد'), t('اثنين'), t('ثلاثاء'), t('أربعاء'), t('خميس'), t('جمعة'), t('سبت')];
 
 export function minutesUntil(weekday: number, time: string, now = new Date()): number {
   const [h, m] = time.split(':').map(Number);
@@ -33,9 +34,9 @@ export function minutesUntil(weekday: number, time: string, now = new Date()): n
 
 export function greeting(d = new Date()): string {
   const h = d.getHours();
-  if (h < 12) return 'صباح الخير';
-  if (h < 18) return 'مسا الخير';
-  return 'مسا النور';
+  if (h < 12) return t('صباح الخير');
+  if (h < 18) return t('مسا الخير');
+  return t('مسا النور');
 }
 
 /** Accepts "@name", "name", or any instagram.com / snapchat.com link and returns just the username. */

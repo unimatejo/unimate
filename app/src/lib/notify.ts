@@ -4,6 +4,7 @@ import { Platform } from 'react-native';
 import type { Meeting } from './schedule';
 import { supabase } from './supabase';
 import { clock } from './util';
+import { t } from './i18n';
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({ shouldShowBanner: true, shouldShowList: true, shouldPlaySound: true, shouldSetBadge: false }),
@@ -14,7 +15,7 @@ export async function ensurePermission(): Promise<boolean> {
   if (cur.granted) return true;
   const req = await Notifications.requestPermissionsAsync();
   if (Platform.OS === 'android') {
-    await Notifications.setNotificationChannelAsync('lectures', { name: 'المحاضرات', importance: Notifications.AndroidImportance.HIGH });
+    await Notifications.setNotificationChannelAsync('lectures', { name: t('المحاضرات'), importance: Notifications.AndroidImportance.HIGH });
   }
   return req.granted;
 }
@@ -40,12 +41,12 @@ export async function scheduleLectureReminders(meetings: Meeting[], off: Record<
     let total = h * 60 + mm - minutes;
     let weekday = m.weekday;
     if (total < 0) { total += 1440; weekday = (weekday + 6) % 7; }
-    const where = m.kind === 'online' ? 'أونلاين' : [m.building_name, m.room_code ? `قاعة ${m.room_code}` : null].filter(Boolean).join(' · ');
+    const where = m.kind === 'online' ? t('أونلاين') : [m.building_name, m.room_code ? t('قاعة {0}', [m.room_code]) : null].filter(Boolean).join(' · ');
     await Notifications.scheduleNotificationAsync({
       identifier: `lec-${m.id}`,
       content: {
-        title: `بعد ${minutes} دقايق: ${m.course_name}`,
-        body: `${where || 'شوف القاعة بالجدول'} · ${clock(m.starts_at)}`,
+        title: t('بعد {0} دقايق: {1}', [minutes, m.course_name]),
+        body: t('{0} · {1}', [where || t('شوف القاعة بالجدول'), clock(m.starts_at)]),
         data: { kind: 'lecture', meeting: m.id, building: m.building_id },
       },
       trigger: {

@@ -10,6 +10,7 @@ import { POST_SELECT, withMine } from '@/lib/posts';
 import { supabase } from '@/lib/supabase';
 import { C } from '@/lib/theme';
 import type { Post } from '@/lib/types';
+import { t } from '@/lib/i18n';
 
 export default function Saved() {
   const { profile } = useAuth();
@@ -33,14 +34,14 @@ export default function Saved() {
 
   return (
     <Screen>
-      <Header title="المحفوظات" subtitle="إنت بس بتشوفها" />
+      <Header title={t('المحفوظات')} subtitle={t('إنت بس بتشوفها')} />
       <FlatList
         data={posts}
         keyExtractor={(p) => p.id}
         refreshControl={<RefreshControl refreshing={loading} onRefresh={load} />}
         contentContainerStyle={{ padding: 18, paddingTop: 4, gap: 14, paddingBottom: 60 }}
         renderItem={({ item }) => <PostCard post={item} onLikes={setLikesOf} compact />}
-        ListEmptyComponent={loading ? undefined : <Empty icon={<Bookmark size={28} color={C.primary} />} title="ما حفظت إشي" body="اضغط علامة الحفظ على أي ملخص أو منشور وبيطلع هون." />}
+        ListEmptyComponent={loading ? undefined : <Empty icon={<Bookmark size={28} color={C.primary} />} title={t('ما حفظت إشي')} body={t('اضغط علامة الحفظ على أي ملخص أو منشور وبيطلع هون.')} />}
       />
       <LikesSheet post={likesOf} onClose={() => setLikesOf(null)} />
     </Screen>

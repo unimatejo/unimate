@@ -8,8 +8,9 @@ import { Button, Field, Row, T, Tap, Toggle } from '@/components/ui';
 import { useAuth } from '@/lib/auth';
 import { supabase } from '@/lib/supabase';
 import { C } from '@/lib/theme';
+import { t } from '@/lib/i18n';
 
-const REASONS = ['تحرش أو إزعاج', 'تنمر أو إهانة', 'نشر صور أو معلومات خاصة', 'حساب مزيف أو انتحال', 'احتيال أو نصب', 'محتوى غير لائق', 'بيع واجبات أو غش', 'سبام', 'إشي تاني'];
+const REASONS = [t('تحرش أو إزعاج'), t('تنمر أو إهانة'), t('نشر صور أو معلومات خاصة'), t('حساب مزيف أو انتحال'), t('احتيال أو نصب'), t('محتوى غير لائق'), t('بيع واجبات أو غش'), t('سبام'), t('إشي تاني')];
 
 export default function Report() {
   const { type = 'user', id, user } = useLocalSearchParams<{ type?: string; id: string; user?: string }>();
@@ -27,20 +28,20 @@ export default function Report() {
     });
     if (!error && block && user && user !== (profile?.id ?? '')) await supabase.from('blocks').insert({ blocker_id: (profile?.id ?? ''), blocked_id: user });
     setBusy(false);
-    if (error) { Alert.alert('ما زبط', 'جرّب كمان مرة.'); return; }
-    Alert.alert('وصل بلاغك', 'فريق يونيميت رح يراجعه، وما حدا بيعرف إنك بلّغت.', [{ text: 'تمام', onPress: () => router.back() }]);
+    if (error) { Alert.alert(t('ما زبط'), t('جرّب كمان مرة.')); return; }
+    Alert.alert(t('وصل بلاغك'), t('فريق يونيميت رح يراجعه، وما حدا بيعرف إنك بلّغت.'), [{ text: t('تمام'), onPress: () => router.back() }]);
   }
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: C.bg }} edges={['top', 'bottom']}>
       <Row gap={10} style={{ paddingHorizontal: 18, paddingVertical: 10 }}>
         <Flag size={22} color={C.red} />
-        <T v="h2" style={{ flex: 1 }}>بلاغ</T>
-        <Tap onPress={() => router.back()} accessibilityLabel="إغلاق" style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}><X size={24} color={C.ink} /></Tap>
+        <T v="h2" style={{ flex: 1 }}>{t('بلاغ')}</T>
+        <Tap onPress={() => router.back()} accessibilityLabel={t('إغلاق')} style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}><X size={24} color={C.ink} /></Tap>
       </Row>
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView contentContainerStyle={{ padding: 18, paddingTop: 4, gap: 8, paddingBottom: 40 }} keyboardShouldPersistTaps="handled">
-          <T v="small" color={C.muted} style={{ marginBottom: 6 }}>شو المشكلة؟ البلاغ سري.</T>
+          <T v="small" color={C.muted} style={{ marginBottom: 6 }}>{t('شو المشكلة؟ البلاغ سري.')}</T>
           {REASONS.map((r) => (
             <Tap key={r} scale={0.98} onPress={() => setReason(r)}
               style={{ flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 54, borderRadius: 16, paddingHorizontal: 14, backgroundColor: reason === r ? C.redSoft : C.card, borderWidth: reason === r ? 1.5 : 0, borderColor: C.red }}>
@@ -52,13 +53,13 @@ export default function Report() {
           ))}
           {reason && (
             <View style={{ gap: 12, marginTop: 10 }}>
-              <Field value={details} onChangeText={setDetails} multiline maxLength={1000} placeholder="تفاصيل تساعدنا (اختياري)" style={{ minHeight: 90, textAlignVertical: 'top', paddingTop: 12 }} />
+              <Field value={details} onChangeText={setDetails} multiline maxLength={1000} placeholder={t('تفاصيل تساعدنا (اختياري)')} style={{ minHeight: 90, textAlignVertical: 'top', paddingTop: 12 }} />
               {user && user !== profile?.id && (
                 <View style={{ backgroundColor: C.card, borderRadius: 18, padding: 12 }}>
-                  <Toggle label="احظر هالشخص كمان" hint="ما بيقدر يشوفك ولا يراسلك" value={block} onChange={setBlock} />
+                  <Toggle label={t('احظر هالشخص كمان')} hint={t('ما بيقدر يشوفك ولا يراسلك')} value={block} onChange={setBlock} />
                 </View>
               )}
-              <Button kind="danger" title="ابعت البلاغ" onPress={send} loading={busy} />
+              <Button kind="danger" title={t('ابعت البلاغ')} onPress={send} loading={busy} />
             </View>
           )}
         </ScrollView>

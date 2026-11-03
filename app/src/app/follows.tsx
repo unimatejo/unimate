@@ -6,7 +6,8 @@ import { FlatList, TextInput, View } from 'react-native';
 import { Avatar, Button, Empty, Header, Row, Screen, Segmented, T, Tap } from '@/components/ui';
 import { useAuth } from '@/lib/auth';
 import { supabase } from '@/lib/supabase';
-import { C, F } from '@/lib/theme';
+import { C, F, isDark } from '@/lib/theme';
+import { nm, t, ta } from '@/lib/i18n';
 
 type P = { id: string; full_name: string; avatar_url: string | null; username: string | null; major: { name_ar: string } | null };
 
@@ -25,8 +26,8 @@ export default function Follows() {
       setLoading(true);
       const followers = tab === 0;
       const sel = followers
-        ? 'p:profiles!follows_follower_id_fkey(id, full_name, avatar_url, username, major:majors(name_ar))'
-        : 'p:profiles!follows_followee_id_fkey(id, full_name, avatar_url, username, major:majors(name_ar))';
+        ? 'p:profiles!follows_follower_id_fkey(id, full_name, avatar_url, username, major:majors(name_ar, name_en))'
+        : 'p:profiles!follows_followee_id_fkey(id, full_name, avatar_url, username, major:majors(name_ar, name_en))';
       const { data } = await supabase.from('follows').select(sel).eq(followers ? 'followee_id' : 'follower_id', params.user).eq('status', 'accepted').limit(500);
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       setRows(((data ?? []) as any[]).map((x) => x.p).filter(Boolean));
@@ -52,10 +53,10 @@ export default function Follows() {
     <Screen>
       <Header title={params.name ?? ''} />
       <View style={{ paddingHorizontal: 18, gap: 10 }}>
-        <Segmented items={['المتابِعين', 'يتابع']} value={tab} onChange={setTab} />
+        <Segmented items={[t('المتابِعين'), t('يتابع')]} value={tab} onChange={setTab} />
         <Row gap={8} style={{ minHeight: 44, borderRadius: 14, backgroundColor: C.card, paddingHorizontal: 12 }}>
           <Search size={18} color={C.muted} />
-          <TextInput value={q} onChangeText={setQ} placeholder="دوّر" placeholderTextColor={C.faint} style={{ flex: 1, fontFamily: F.body, fontSize: 14, color: C.ink, textAlign: 'right' }} />
+          <TextInput keyboardAppearance={isDark ? 'dark' : 'light'} value={q} onChangeText={setQ} placeholder={t('دوّر')} placeholderTextColor={C.faint} style={{ flex: 1, fontFamily: F.body, fontSize: 14, color: C.ink, textAlign: ta }} />
         </Row>
       </View>
       <FlatList
@@ -68,15 +69,15 @@ export default function Follows() {
               <Avatar id={item.id} name={item.full_name} url={item.avatar_url} size={46} />
               <View style={{ flex: 1 }}>
                 <T v="bodyMd" numberOfLines={1}>{item.full_name}</T>
-                <T v="tiny" color={C.muted} numberOfLines={1}>{item.username ? `@${item.username}` : item.major?.name_ar ?? ''}</T>
+                <T v="tiny" color={C.muted} numberOfLines={1}>{item.username ? `@${item.username}` : nm(item.major) ?? ''}</T>
               </View>
             </Tap>
             {item.id !== profile?.id && (
-              <Button kind={mineFollow.has(item.id) ? 'soft' : 'primary'} title={mineFollow.has(item.id) ? 'تتابعه' : 'متابعة'} onPress={() => toggle(item.id)} style={{ minHeight: 38, paddingHorizontal: 14, borderRadius: 12 }} />
+              <Button kind={mineFollow.has(item.id) ? 'soft' : 'primary'} title={mineFollow.has(item.id) ? t('تتابعه') : t('متابعة')} onPress={() => toggle(item.id)} style={{ minHeight: 38, paddingHorizontal: 14, borderRadius: 12 }} />
             )}
           </Row>
         )}
-        ListEmptyComponent={loading ? undefined : <Empty title={tab === 0 ? 'ما في متابعين لهلأ' : 'ما بيتابع حدا لهلأ'} />}
+        ListEmptyComponent={loading ? undefined : <Empty title={tab === 0 ? t('ما في متابعين لهلأ') : t('ما بيتابع حدا لهلأ')} />}
       />
     </Screen>
   );

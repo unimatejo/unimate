@@ -10,8 +10,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Avatar, Row, T, Tap } from '@/components/ui';
 import { useAuth } from '@/lib/auth';
 import { mediaUrl, supabase } from '@/lib/supabase';
-import { C, F } from '@/lib/theme';
+import { C, F, isDark } from '@/lib/theme';
 import { timeAgo } from '@/lib/util';
+import { isAR, t, ta } from '@/lib/i18n';
 
 type S = { id: string; media_url: string; kind: string; caption: string | null; created_at: string; duration_sec: number | null };
 type Viewer = { viewer_id: string; liked: boolean; p: { full_name: string; avatar_url: string | null } | null };
@@ -87,16 +88,16 @@ export default function StoryViewer() {
   async function sendReply() {
     if (!reply.trim() || !s) return;
     const text = reply.trim(); setReply('');
-    const { data: conv, error } = await supabase.rpc('start_direct', { target: id, context: 'رد على ستوري' });
-    if (error || !conv) { Alert.alert('ما انبعت الرد', 'هاد الشخص مسكّر الرسائل.'); return; }
+    const { data: conv, error } = await supabase.rpc('start_direct', { target: id, context: t('رد على ستوري') });
+    if (error || !conv) { Alert.alert(t('ما انبعت الرد'), t('هاد الشخص مسكّر الرسائل.')); return; }
     await supabase.from('messages').insert({ conversation_id: conv, sender_id: profile?.id ?? '', kind: 'story_reply', body: text, ref_id: s.id });
-    Alert.alert('انبعت ✓');
+    Alert.alert(t('انبعت ✓'));
   }
 
   function remove() {
     if (!s) return;
-    Alert.alert('حذف القصة', 'أكيد بدك تحذفها؟', [{ text: 'لا', style: 'cancel' }, {
-      text: 'احذف', style: 'destructive', onPress: async () => {
+    Alert.alert(t('حذف القصة'), t('أكيد بدك تحذفها؟'), [{ text: t('لا'), style: 'cancel' }, {
+      text: t('احذف'), style: 'destructive', onPress: async () => {
         await supabase.from('stories').delete().eq('id', s.id);
         const rest = (items ?? []).filter((x) => x.id !== s.id);
         if (rest.length === 0) router.back(); else { setItems(rest); setI(Math.min(i, rest.length - 1)); }
@@ -109,8 +110,8 @@ export default function StoryViewer() {
       {!uri && <View style={{ position: 'absolute', top: 0, bottom: 0, left: 0, right: 0, alignItems: 'center', justifyContent: 'center' }}><ActivityIndicator color={C.white} size="large" /></View>}
       {uri && s?.kind === 'video' ? <StoryVideo key={s.id} uri={uri} onEnd={next} />
         : uri ? <Image source={{ uri }} style={{ position: 'absolute', top: 0, bottom: 0, left: 0, right: 0 }} contentFit="cover" transition={150} /> : null}
-      <Pressable style={{ position: 'absolute', top: 110, bottom: 130, left: 0, width: '40%' }} onPress={next} onLongPress={pause} onPressOut={resume} delayLongPress={200} accessibilityLabel="التالي" />
-      <Pressable style={{ position: 'absolute', top: 110, bottom: 130, right: 0, width: '40%' }} onPress={() => setI((x) => Math.max(0, x - 1))} onLongPress={pause} onPressOut={resume} delayLongPress={200} accessibilityLabel="السابق" />
+      <Pressable style={{ position: 'absolute', top: 110, bottom: 130, left: 0, width: '40%' }} onPress={next} onLongPress={pause} onPressOut={resume} delayLongPress={200} accessibilityLabel={t('التالي')} />
+      <Pressable style={{ position: 'absolute', top: 110, bottom: 130, right: 0, width: '40%' }} onPress={() => setI((x) => Math.max(0, x - 1))} onLongPress={pause} onPressOut={resume} delayLongPress={200} accessibilityLabel={t('السابق')} />
       <SafeAreaView edges={['top']} style={{ paddingHorizontal: 12, gap: 12, paddingBottom: 12 }}>
         <Row gap={4} style={{ marginTop: 6 }}>
           {(items ?? []).map((it, k) => (
@@ -123,12 +124,12 @@ export default function StoryViewer() {
           <Tap onPress={() => router.push({ pathname: '/user/[id]', params: { id } })} style={{ flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1 }}>
             <Avatar id={id} name={author?.full_name} url={author?.avatar_url} size={40} />
             <View style={{ flex: 1 }}>
-              <T v="bold" color={C.white}>{mine ? 'قصتك' : author?.full_name}</T>
+              <T v="bold" color={C.white}>{mine ? t('قصتك') : author?.full_name}</T>
               {s && <T v="tiny" color="#E3E7F5">{timeAgo(s.created_at)}</T>}
             </View>
           </Tap>
-          {mine && <Tap onPress={remove} accessibilityLabel="احذف القصة" style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}><Trash2 size={22} color={C.white} /></Tap>}
-          <Tap onPress={() => router.back()} accessibilityLabel="إغلاق" style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}><X size={26} color={C.white} /></Tap>
+          {mine && <Tap onPress={remove} accessibilityLabel={t('احذف القصة')} style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}><Trash2 size={22} color={C.white} /></Tap>}
+          <Tap onPress={() => router.back()} accessibilityLabel={t('إغلاق')} style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}><X size={26} color={C.white} /></Tap>
         </Row>
       </SafeAreaView>
       {s?.caption ? (
@@ -140,15 +141,15 @@ export default function StoryViewer() {
         {mine ? (
           <Tap onPress={() => { pause(); setShowViewers(true); }} style={{ alignSelf: 'center', flexDirection: 'row', alignItems: 'center', gap: 8, minHeight: 46, paddingHorizontal: 18, borderRadius: 23, backgroundColor: 'rgba(14,20,48,0.55)' }}>
             <Eye size={20} color={C.white} />
-            <T v="bold" color={C.white}>{viewers.length} مشاهدة</T>
+            <T v="bold" color={C.white}>{viewers.length} {t('مشاهدة')}</T>
             {viewers.some((v) => v.liked) && <Row gap={4}><Heart size={16} color={C.pink} fill={C.pink} /><T v="bold" color={C.white}>{viewers.filter((v) => v.liked).length}</T></Row>}
           </Tap>
         ) : (
           <Row gap={8}>
-            <TextInput value={reply} onChangeText={setReply} onSubmitEditing={sendReply} onFocus={pause} onBlur={resume} placeholder="رد بالخاص..." placeholderTextColor="#D5DAEA"
-              style={{ flex: 1, minHeight: 48, borderRadius: 24, borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.55)', backgroundColor: 'rgba(14,20,48,0.35)', paddingHorizontal: 16, fontFamily: F.body, fontSize: 14, color: C.white, textAlign: 'right' }} accessibilityLabel="رد على الستوري" />
-            <Tap onPress={like} accessibilityLabel="إعجاب" style={{ width: 48, height: 48, alignItems: 'center', justifyContent: 'center' }}><Heart size={28} color={liked ? C.pink : C.white} fill={liked ? C.pink : 'none'} /></Tap>
-            <Tap onPress={sendReply} accessibilityLabel="إرسال" style={{ width: 48, height: 48, alignItems: 'center', justifyContent: 'center' }}><Send size={26} color={C.white} style={{ transform: [{ scaleX: -1 }] }} /></Tap>
+            <TextInput keyboardAppearance={isDark ? 'dark' : 'light'} value={reply} onChangeText={setReply} onSubmitEditing={sendReply} onFocus={pause} onBlur={resume} placeholder={t('رد بالخاص...')} placeholderTextColor="#D5DAEA"
+              style={{ flex: 1, minHeight: 48, borderRadius: 24, borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.55)', backgroundColor: 'rgba(14,20,48,0.35)', paddingHorizontal: 16, fontFamily: F.body, fontSize: 14, color: C.white, textAlign: ta }} accessibilityLabel={t('رد على الستوري')} />
+            <Tap onPress={like} accessibilityLabel={t('إعجاب')} style={{ width: 48, height: 48, alignItems: 'center', justifyContent: 'center' }}><Heart size={28} color={liked ? C.pink : C.white} fill={liked ? C.pink : 'none'} /></Tap>
+            <Tap onPress={sendReply} accessibilityLabel={t('إرسال')} style={{ width: 48, height: 48, alignItems: 'center', justifyContent: 'center' }}><Send size={26} color={C.white} style={isAR ? { transform: [{ scaleX: -1 }] } : undefined} /></Tap>
           </Row>
         )}
       </SafeAreaView>
@@ -156,9 +157,9 @@ export default function StoryViewer() {
       <Modal visible={showViewers} transparent animationType="slide" onRequestClose={() => { setShowViewers(false); resume(); }}>
         <Pressable style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.4)' }} onPress={() => { setShowViewers(false); resume(); }} />
         <Animated.View entering={FadeIn} style={{ backgroundColor: C.card, borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: 18, maxHeight: '60%', gap: 12 }}>
-          <T v="h3">مين شاف قصتك</T>
+          <T v="h3">{t('مين شاف قصتك')}</T>
           <ScrollView contentContainerStyle={{ gap: 10, paddingBottom: 30 }}>
-            {viewers.length === 0 ? <T v="small" color={C.muted}>ما حدا شافها لهلأ.</T> : viewers.map((v) => (
+            {viewers.length === 0 ? <T v="small" color={C.muted}>{t('ما حدا شافها لهلأ.')}</T> : viewers.map((v) => (
               <Row key={v.viewer_id} gap={12}>
                 <Avatar id={v.viewer_id} name={v.p?.full_name} url={v.p?.avatar_url} size={42} />
                 <T v="bodyMd" style={{ flex: 1 }}>{v.p?.full_name}</T>

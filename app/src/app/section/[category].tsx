@@ -11,6 +11,7 @@ import { useAuth } from '@/lib/auth';
 import { loadFeed } from '@/lib/posts';
 import { CATEGORY, C } from '@/lib/theme';
 import type { Post } from '@/lib/types';
+import { t } from '@/lib/i18n';
 
 export default function SectionScreen() {
   const { category } = useLocalSearchParams<{ category: string }>();
@@ -41,14 +42,14 @@ export default function SectionScreen() {
         contentContainerStyle={{ padding: 18, paddingTop: 4, gap: 14, paddingBottom: 110 }}
         ListHeaderComponent={
           <View style={{ gap: 12 }}>
-            {category === 'lost_found' && <Segmented items={['الكل', 'ضاع مني', 'لقيت']} value={lf} onChange={setLf} />}
+            {category === 'lost_found' && <Segmented items={[t('الكل'), t('ضاع مني'), t('لقيت')]} value={lf} onChange={setLf} />}
             {category === 'market' && <AdBanner placement="market_banner" />}
           </View>
         }
         renderItem={({ item }) => <PostCard post={item} onLikes={setLikesOf} compact />}
-        ListEmptyComponent={loading ? undefined : <Empty title="ما في إشي هون لهلأ" body="كون أول واحد بينشر بهالقسم." />}
+        ListEmptyComponent={loading ? undefined : <Empty title={t('ما في إشي هون لهلأ')} body={t('كون أول واحد بينشر بهالقسم.')} />}
       />
-      <Tap onPress={() => router.push({ pathname: '/post/new', params: { category } })} accessibilityLabel="أضف"
+      <Tap onPress={() => router.push({ pathname: '/post/new', params: { category } })} accessibilityLabel={t('أضف')}
         style={{ position: 'absolute', left: 18, bottom: 30, width: 60, height: 60, borderRadius: 22, backgroundColor: meta.color, alignItems: 'center', justifyContent: 'center', shadowColor: meta.color, shadowOpacity: 0.45, shadowRadius: 16, shadowOffset: { width: 0, height: 10 }, elevation: 8 }}>
         <Plus size={28} color={C.white} strokeWidth={2.4} />
       </Tap>

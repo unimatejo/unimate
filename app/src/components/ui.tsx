@@ -11,7 +11,8 @@ import {
 import Animated, { useAnimatedStyle, useSharedValue, withRepeat, withSequence, withSpring, withTiming } from 'react-native-reanimated';
 import { SafeAreaView, type Edge } from 'react-native-safe-area-context';
 
-import { C, F, R, avatarColors, shadow } from '@/lib/theme';
+import { C, F, R, avatarColors, isDark, shadow } from '@/lib/theme';
+import { flip, isAR, t, ta } from '@/lib/i18n';
 
 // ---------- text ----------
 type Variant = 'display' | 'h1' | 'h2' | 'h3' | 'body' | 'bodyMd' | 'bold' | 'small' | 'tiny';
@@ -27,7 +28,7 @@ const V: Record<Variant, TextStyle> = {
   tiny: { fontFamily: F.bodyMd, fontSize: 11, lineHeight: 16 },
 };
 export function T({ v = 'body', color = C.ink, style, ...p }: TextProps & { v?: Variant; color?: string }) {
-  return <Text {...p} style={[V[v], { color, textAlign: 'right', writingDirection: 'rtl' }, style]} />;
+  return <Text {...p} style={[V[v], { color, textAlign: ta, writingDirection: isAR ? 'rtl' : 'ltr' }, style]} />;
 }
 
 // ---------- layout ----------
@@ -154,7 +155,7 @@ export function Avatar({ id, name, url, size = 44, ring, radius }: { id?: string
   const inner = (
     <View style={{ width: size, height: size, borderRadius: r, backgroundColor: bg, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
       {url ? <Image source={{ uri: url }} style={{ width: size, height: size }} contentFit="cover" transition={150} /> : (
-        <Text style={{ fontFamily: F.title, fontSize: size * 0.4, color: fg }}>{(name ?? '؟').trim().charAt(0)}</Text>
+        <Text style={{ fontFamily: F.title, fontSize: size * 0.4, color: fg }}>{(name ?? t('؟')).trim().charAt(0)}</Text>
       )}
     </View>
   );
@@ -171,8 +172,8 @@ export function Header({ title, subtitle, right, back = true, onBack }: { title:
   return (
     <Row gap={10} style={{ paddingHorizontal: 18, paddingTop: 6, paddingBottom: 10 }}>
       {back && (
-        <IconButton label="رجوع" onPress={onBack ?? (() => (router.canGoBack() ? router.back() : router.replace('/')))}>
-          <ChevronRight size={22} color={C.ink} strokeWidth={2.2} />
+        <IconButton label={t('رجوع')} onPress={onBack ?? (() => (router.canGoBack() ? router.back() : router.replace('/')))}>
+          <ChevronRight size={22} color={C.ink} strokeWidth={2.2} style={flip} />
         </IconButton>
       )}
       <View style={{ flex: 1 }}>
@@ -189,11 +190,11 @@ export const Field = forwardRef<ComponentRef<typeof TextInput>, TextInputProps &
   return (
     <View style={{ gap: 6 }}>
       {label && <T v="bold" style={{ fontSize: 14 }}>{label}</T>}
-      <TextInput
+      <TextInput keyboardAppearance={isDark ? 'dark' : 'light'}
         ref={ref}
         placeholderTextColor={C.faint}
         {...p}
-        style={[{ minHeight: 52, borderRadius: 16, backgroundColor: C.field, paddingHorizontal: 16, fontFamily: F.body, fontSize: 16, color: C.ink, textAlign: 'right', writingDirection: 'rtl' }, style]}
+        style={[{ minHeight: 52, borderRadius: 16, backgroundColor: C.field, paddingHorizontal: 16, fontFamily: F.body, fontSize: 16, color: C.ink, textAlign: ta, writingDirection: isAR ? 'rtl' : 'ltr' }, style]}
       />
     </View>
   );
@@ -242,7 +243,7 @@ export function ListRow({ icon, label, value, onPress, danger }: { icon?: ReactN
       {icon}
       <T v="bodyMd" color={danger ? C.danger : C.ink} style={{ flex: 1 }}>{label}</T>
       {value ? <T v="small" color={C.muted}>{value}</T> : null}
-      <ChevronRight size={18} color={C.faint} style={{ transform: [{ scaleX: -1 }] }} />
+      <ChevronRight size={18} color={C.faint} style={isAR ? { transform: [{ scaleX: -1 }] } : undefined} />
     </Tap>
   );
 }

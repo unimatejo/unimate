@@ -4,6 +4,7 @@ import { Alert } from 'react-native';
 import { useAuth } from './auth';
 import { supabase } from './supabase';
 import type { Profile } from './types';
+import { t } from './i18n';
 
 /** Update a field on my profile with an optimistic UI and refresh the session copy. */
 export function useProfilePatch() {
@@ -15,7 +16,7 @@ export function useProfilePatch() {
     if (!profile) return;
     setDraft((d) => ({ ...d, ...p }));
     const { error } = await supabase.from('profiles').update(p).eq('id', (profile?.id ?? ''));
-    if (error) { setDraft({}); Alert.alert('ما زبط الحفظ', 'تأكد من الإنترنت وجرب كمان مرة.'); return; }
+    if (error) { setDraft({}); Alert.alert(t('ما زبط الحفظ'), t('تأكد من الإنترنت وجرب كمان مرة.')); return; }
     await refreshProfile();
     setDraft({});
   }, [profile, refreshProfile]);

@@ -8,7 +8,8 @@ import { GlyphTile, GRAD } from '@/components/Glyph';
 import { Avatar, Button, Empty, Field, Header, Row, Screen, T, Tap } from '@/components/ui';
 import { useAuth } from '@/lib/auth';
 import { supabase } from '@/lib/supabase';
-import { C, F } from '@/lib/theme';
+import { C, F, isDark } from '@/lib/theme';
+import { nm, t, ta } from '@/lib/i18n';
 
 type P = { id: string; full_name: string; username: string | null; avatar_url: string | null; is_verified: boolean; major: { name_ar: string } | null };
 
@@ -27,7 +28,7 @@ export default function NewMessage() {
     if (!profile) return;
     const t = setTimeout(async () => {
       const s = q.trim().replace(/^@/, '').replace(/[,()]/g, ' ');
-      const sel = 'id, full_name, username, avatar_url, is_verified, major:majors(name_ar)';
+      const sel = 'id, full_name, username, avatar_url, is_verified, major:majors(name_ar, name_en)';
       if (!s) {
         const { data } = await supabase.from('follows').select(`p:profiles!follows_followee_id_fkey(${sel})`).eq('follower_id', profile.id).eq('status', 'accepted').limit(100);
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -42,7 +43,7 @@ export default function NewMessage() {
 
   async function openChat(p: P) {
     const { data, error } = await supabase.rpc('start_direct', { target: p.id, context: null });
-    if (error) { Alert.alert('ما بتقدر تراسله', error.message.includes('not accepting') ? 'هاد الطالب مسكّر الرسائل.' : 'جرّب بعدين.'); return; }
+    if (error) { Alert.alert(t('ما بتقدر تراسله'), error.message.includes('not accepting') ? t('هاد الطالب مسكّر الرسائل.') : t('جرّب بعدين.')); return; }
     router.replace({ pathname: '/messages/[id]', params: { id: data as string } });
   }
 
@@ -51,12 +52,12 @@ export default function NewMessage() {
   }
 
   async function createGroup() {
-    if (title.trim().length < 2) { Alert.alert('سمّي الجروب'); return; }
-    if (picked.length < 1) { Alert.alert('اختار شخص واحد على الأقل'); return; }
+    if (title.trim().length < 2) { Alert.alert(t('سمّي الجروب')); return; }
+    if (picked.length < 1) { Alert.alert(t('اختار شخص واحد على الأقل')); return; }
     setBusy(true);
     const { data, error } = await supabase.rpc('create_group', { title: title.trim(), members: picked.map((p) => p.id) });
     setBusy(false);
-    if (error) { Alert.alert('ما انعمل الجروب', 'جرّب كمان مرة.'); return; }
+    if (error) { Alert.alert(t('ما انعمل الجروب'), t('جرّب كمان مرة.')); return; }
     router.replace({ pathname: '/messages/[id]', params: { id: data as string } });
   }
 
@@ -64,17 +65,17 @@ export default function NewMessage() {
 
   return (
     <Screen>
-      <Header title={group ? 'جروب جديد' : 'رسالة جديدة'} />
+      <Header title={group ? t('جروب جديد') : t('رسالة جديدة')} />
       <View style={{ paddingHorizontal: 18, gap: 12 }}>
         {!group && (
           <Tap onPress={() => setGroup(true)} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: C.card, borderRadius: 18, padding: 12 }}>
             <GlyphTile icon={UsersRound} colors={GRAD.violet} size={44} />
-            <T v="bold" style={{ flex: 1 }}>اعمل جروب</T>
+            <T v="bold" style={{ flex: 1 }}>{t('اعمل جروب')}</T>
           </Tap>
         )}
         {group && (
           <>
-            <Field label="اسم الجروب" value={title} onChangeText={setTitle} maxLength={60} placeholder="مثلاً شلة مشروع التخرج" />
+            <Field label={t('اسم الجروب')} value={title} onChangeText={setTitle} maxLength={60} placeholder={t('مثلاً شلة مشروع التخرج')} />
             {picked.length > 0 && (
               <Row gap={8} style={{ flexWrap: 'wrap' }}>
                 {picked.map((p) => (
@@ -88,9 +89,9 @@ export default function NewMessage() {
         )}
         <Row gap={8} style={{ minHeight: 46, borderRadius: 15, backgroundColor: C.soft, paddingHorizontal: 14 }}>
           <Search size={19} color={C.muted} />
-          <TextInput value={q} onChangeText={setQ} autoCapitalize="none" placeholder="دوّر بالاسم أو اليوزر" placeholderTextColor={C.faint} style={{ flex: 1, fontFamily: F.body, fontSize: 15, textAlign: 'right', color: C.ink }} />
+          <TextInput keyboardAppearance={isDark ? 'dark' : 'light'} value={q} onChangeText={setQ} autoCapitalize="none" placeholder={t('دوّر بالاسم أو اليوزر')} placeholderTextColor={C.faint} style={{ flex: 1, fontFamily: F.body, fontSize: 15, textAlign: ta, color: C.ink }} />
         </Row>
-        {!q && <T v="tiny" color={C.muted}>اللي بتتابعهم</T>}
+        {!q && <T v="tiny" color={C.muted}>{t('اللي بتتابعهم')}</T>}
       </View>
       <FlatList
         data={people}
@@ -102,7 +103,7 @@ export default function NewMessage() {
             <Avatar id={item.id} name={item.full_name} url={item.avatar_url} size={46} />
             <View style={{ flex: 1 }}>
               <Row gap={4}><T v="bodyMd" numberOfLines={1} style={{ flexShrink: 1 }}>{item.full_name}</T>{item.is_verified && <BadgeCheck size={14} color={C.white} fill={C.primary} />}</Row>
-              <T v="tiny" color={C.muted} numberOfLines={1}>{[item.username ? `@${item.username}` : null, item.major?.name_ar].filter(Boolean).join(' · ')}</T>
+              <T v="tiny" color={C.muted} numberOfLines={1}>{[item.username ? `@${item.username}` : null, nm(item.major)].filter(Boolean).join(' · ')}</T>
             </View>
             {group && (
               <View style={{ width: 26, height: 26, borderRadius: 13, borderWidth: 2, borderColor: ids.has(item.id) ? C.primary : C.line, backgroundColor: ids.has(item.id) ? C.primary : C.card, alignItems: 'center', justifyContent: 'center' }}>
@@ -111,7 +112,7 @@ export default function NewMessage() {
             )}
           </Tap>
         )}
-        ListEmptyComponent={<Empty title={q ? 'ما لقينا حدا' : 'ما بتتابع حدا لهلأ'} body={q ? 'جرّب اسم ثاني أو اليوزر.' : 'دوّر على زميلك بالاسم أو اليوزر.'} />}
+        ListEmptyComponent={<Empty title={q ? t('ما لقينا حدا') : t('ما بتتابع حدا لهلأ')} body={q ? t('جرّب اسم ثاني أو اليوزر.') : t('دوّر على زميلك بالاسم أو اليوزر.')} />}
       />
       {group && (
         <View style={{ position: 'absolute', bottom: 30, left: 18, right: 18 }}>

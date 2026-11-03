@@ -2,6 +2,7 @@ import Constants from 'expo-constants';
 import { Alert, Platform } from 'react-native';
 
 import { supabase } from './supabase';
+import { t } from './i18n';
 
 let current = '';
 export function setScreen(s: string) { current = s; }
@@ -24,7 +25,7 @@ export function installGlobalErrorHandler() {
   const prev = g.ErrorUtils.getGlobalHandler();
   g.ErrorUtils.setGlobalHandler((error, isFatal) => {
     reportError(error, !!isFatal);
-    if (isFatal) Alert.alert('صار خطأ', `انبعت تقرير للفريق.\n\n${error?.message ?? ''}`);
+    if (isFatal) Alert.alert(t('صار خطأ'), t('انبعت تقرير للفريق.\n\n{0}', [error?.message ?? '']));
     else prev(error, isFatal);
   });
 }

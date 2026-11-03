@@ -9,6 +9,7 @@ import { Avatar, T, Tap } from './ui';
 import { useAuth } from '@/lib/auth';
 import { supabase } from '@/lib/supabase';
 import { C } from '@/lib/theme';
+import { t } from '@/lib/i18n';
 
 type Group = { author_id: string; name: string; avatar_url: string | null; seen: boolean };
 
@@ -58,21 +59,21 @@ export function StoriesRow() {
     <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 12, paddingHorizontal: 18 }}>
       {mineCount > 0 ? (
         <View style={{ alignItems: 'center', gap: 6, width: 68 }}>
-          <Tap onPress={() => router.push({ pathname: '/story/[id]', params: { id: profile?.id ?? '' } })} accessibilityLabel="شوف قصتك">
+          <Tap onPress={() => router.push({ pathname: '/story/[id]', params: { id: profile?.id ?? '' } })} accessibilityLabel={t('شوف قصتك')}>
             <Ring seen={false}><Avatar id={profile?.id} name={profile?.full_name} url={profile?.avatar_url} size={56} radius={19} /></Ring>
           </Tap>
-          <Tap onPress={() => router.push({ pathname: '/post/new', params: { mode: 'story' } })} accessibilityLabel="ضيف قصة"
+          <Tap onPress={() => router.push({ pathname: '/post/new', params: { mode: 'story' } })} accessibilityLabel={t('ضيف قصة')}
             style={{ position: 'absolute', top: 44, left: 0, width: 24, height: 24, borderRadius: 12, backgroundColor: C.primary, borderWidth: 2, borderColor: C.bg, alignItems: 'center', justifyContent: 'center' }}>
             <Plus size={14} color={C.white} strokeWidth={3} />
           </Tap>
-          <T v="tiny">قصتك</T>
+          <T v="tiny">{t('قصتك')}</T>
         </View>
       ) : (
         <Tap onPress={() => router.push({ pathname: '/post/new', params: { mode: 'story' } })} style={{ alignItems: 'center', gap: 6, width: 68 }}>
           <View style={{ width: 66, height: 66, borderRadius: 24, borderWidth: 1.5, borderStyle: 'dashed', borderColor: C.faint, backgroundColor: C.card, alignItems: 'center', justifyContent: 'center' }}>
             <Camera size={26} color={C.primary} />
           </View>
-          <T v="tiny">قصتك</T>
+          <T v="tiny">{t('قصتك')}</T>
         </Tap>
       )}
       {groups.map((g) => (

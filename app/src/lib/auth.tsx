@@ -30,7 +30,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!uid) { setProfile(null); setUniversity(null); return; }
     const { data } = await supabase
       .from('profiles')
-      .select('*, university:universities(*), college:colleges(id,name_ar), major:majors(id,name_ar)')
+      .select('*, university:universities(*), college:colleges(id, name_ar, name_en), major:majors(id, name_ar, name_en)')
       .eq('id', uid)
       .single();
     setProfile((data as Profile) ?? null);

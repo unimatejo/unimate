@@ -4,6 +4,7 @@ import { View } from 'react-native';
 import { Button, Empty, Screen } from '@/components/ui';
 import { useAuth } from '@/lib/auth';
 import { C } from '@/lib/theme';
+import { t } from '@/lib/i18n';
 
 export default function Unsupported() {
   const { signOut } = useAuth();
@@ -12,10 +13,10 @@ export default function Unsupported() {
       <View style={{ flex: 1, justifyContent: 'center', padding: 24 }}>
         <Empty
           icon={<School size={30} color={C.primary} />}
-          title="جامعتك لسا مش على يونيميت"
-          body="بنضيف الجامعات وحدة وحدة. ادخل بإيميلك الجامعي الرسمي، وإذا جامعتك مش موجودة رح نخبرك أول ما تنضاف."
+          title={t('جامعتك لسا مش على يونيميت')}
+          body={t('بنضيف الجامعات وحدة وحدة. ادخل بإيميلك الجامعي الرسمي، وإذا جامعتك مش موجودة رح نخبرك أول ما تنضاف.')}
         />
-        <Button kind="dark" title="ادخل بإيميل ثاني" onPress={signOut} />
+        <Button kind="dark" title={t('ادخل بإيميل ثاني')} onPress={signOut} />
       </View>
     </Screen>
   );

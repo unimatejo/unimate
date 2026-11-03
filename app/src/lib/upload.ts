@@ -7,6 +7,7 @@ import { Alert, Linking, Platform } from 'react-native';
 
 import { reportError } from './errors';
 import { supabase } from './supabase';
+import { t } from './i18n';
 
 export type Picked = { uri: string; mime: string; kind: 'image' | 'video'; duration?: number | null; size?: number | null; width?: number; height?: number };
 
@@ -17,8 +18,8 @@ export type Picked = { uri: string; mime: string; kind: 'image' | 'video'; durat
 export async function pickMedia(opts: { video?: boolean; camera?: boolean; square?: boolean; maxWidth?: number } = {}): Promise<Picked | null> {
   const perm = opts.camera ? await ImagePicker.requestCameraPermissionsAsync() : await ImagePicker.requestMediaLibraryPermissionsAsync();
   if (!perm.granted) {
-    Alert.alert(opts.camera ? 'الكاميرا مسكّرة' : 'الصور مسكّرة', 'افتح الإعدادات واسمح ليونيميت يوصل للصور والكاميرا.', [
-      { text: 'لاحقاً', style: 'cancel' }, { text: 'افتح الإعدادات', onPress: () => Linking.openSettings() },
+    Alert.alert(opts.camera ? t('الكاميرا مسكّرة') : t('الصور مسكّرة'), t('افتح الإعدادات واسمح ليونيميت يوصل للصور والكاميرا.'), [
+      { text: t('لاحقاً'), style: 'cancel' }, { text: t('افتح الإعدادات'), onPress: () => Linking.openSettings() },
     ]);
     return null;
   }
@@ -34,8 +35,8 @@ export async function pickMedia(opts: { video?: boolean; camera?: boolean; squar
   if (res.canceled || !res.assets?.[0]) return null;
   const a = res.assets[0];
   if (a.type === 'video') {
-    if ((a.duration ?? 0) > 15500) { Alert.alert('الفيديو طويل', 'الفيديو لازم يكون 15 ثانية أو أقل.'); return null; }
-    if ((a.fileSize ?? 0) > 50 * 1048576) { Alert.alert('الفيديو كبير', 'جرّب فيديو أقصر.'); return null; }
+    if ((a.duration ?? 0) > 15500) { Alert.alert(t('الفيديو طويل'), t('الفيديو لازم يكون 15 ثانية أو أقل.')); return null; }
+    if ((a.fileSize ?? 0) > 50 * 1048576) { Alert.alert(t('الفيديو كبير'), t('جرّب فيديو أقصر.')); return null; }
     return { uri: a.uri, mime: a.mimeType ?? 'video/mp4', kind: 'video', duration: a.duration, size: a.fileSize };
   }
   // resize + JPEG: smaller uploads, no HEIC surprises
@@ -57,8 +58,8 @@ export async function pickPdf(): Promise<{ uri: string; mime: string; name: stri
   const res = await DocumentPicker.getDocumentAsync({ type: 'application/pdf', copyToCacheDirectory: true, multiple: false });
   if (res.canceled || !res.assets?.[0]) return null;
   const a = res.assets[0];
-  if ((a.size ?? 0) > 10 * 1048576) { Alert.alert('الملف كبير', 'أكبر حجم 10 ميجا.'); return null; }
-  return { uri: a.uri, mime: 'application/pdf', name: a.name ?? 'ملف.pdf', size: a.size ?? null };
+  if ((a.size ?? 0) > 10 * 1048576) { Alert.alert(t('الملف كبير'), t('أكبر حجم 10 ميجا.')); return null; }
+  return { uri: a.uri, mime: 'application/pdf', name: a.name ?? t('ملف.pdf'), size: a.size ?? null };
 }
 
 async function readBytes(uri: string): Promise<ArrayBuffer> {
@@ -78,7 +79,7 @@ export async function uploadFile(bucket: string, folder: string, file: { uri: st
     return path;
   } catch (e) {
     reportError(e);
-    const msg = e instanceof Error && e.message === 'timeout' ? 'الإنترنت بطيء، جرّب كمان مرة.' : 'ما زبط رفع الملف، تأكد من الإنترنت وجرّب كمان مرة.';
+    const msg = e instanceof Error && e.message === 'timeout' ? t('الإنترنت بطيء، جرّب كمان مرة.') : t('ما زبط رفع الملف، تأكد من الإنترنت وجرّب كمان مرة.');
     throw new Error(msg);
   }
 }

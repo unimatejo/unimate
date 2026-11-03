@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 
 import { supabase } from './supabase';
 import { minutesUntil } from './util';
+import { t } from './i18n';
 
 export type Meeting = {
   id: string; section_id: string; kind: 'lecture' | 'lab' | 'online' | 'tutorial';
@@ -27,7 +28,7 @@ export function useSchedule(userId?: string) {
     const { data: enr } = await supabase
       .from('enrollments')
       .select(`section:sections(id, section_no, instructor,
-        course:courses(name_ar, code),
+        course:courses(name_ar, name_en, code),
         meetings:section_meetings(id, kind, weekday, starts_at, ends_at, online_url, room_text, source, confirmations,
           room:rooms(code, floor, directions, building:buildings(id, name_ar, lat, lng))))`)
       .eq('user_id', userId);
@@ -52,7 +53,7 @@ export function useSchedule(userId?: string) {
 
     const { data: ev } = await supabase
       .from('academic_events')
-      .select('id, section_id, owner_id, kind, title, starts_at, location, section:sections(course:courses(name_ar))')
+      .select('id, section_id, owner_id, kind, title, starts_at, location, section:sections(course:courses(name_ar, name_en))')
       .gte('starts_at', new Date(Date.now() - 86400000).toISOString())
       .order('starts_at');
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -70,8 +71,8 @@ export function useSchedule(userId?: string) {
 }
 
 export function placeLine(m: Pick<Meeting, 'kind' | 'building_name' | 'room_floor' | 'room_code'> & { room_text?: string | null }): string {
-  if (m.kind === 'online') return 'أونلاين على التيمز';
+  if (m.kind === 'online') return t('أونلاين على التيمز');
   if (!m.room_code && m.room_text) return m.room_text;
-  const parts = [m.building_name, m.room_floor != null ? (m.room_floor === 0 ? 'الطابق الأرضي' : `الطابق ${m.room_floor}`) : null, m.room_code ? `قاعة ${m.room_code}` : null];
-  return parts.filter(Boolean).join('، ') || 'القاعة بتنضاف لما يأكدها زملاءك';
+  const parts = [m.building_name, m.room_floor != null ? (m.room_floor === 0 ? t('الطابق الأرضي') : t('الطابق {0}', [m.room_floor])) : null, m.room_code ? t('قاعة {0}', [m.room_code]) : null];
+  return parts.filter(Boolean).join(t('، ')) || t('القاعة بتنضاف لما يأكدها زملاءك');
 }

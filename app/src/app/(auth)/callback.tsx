@@ -5,6 +5,7 @@ import { ActivityIndicator, View } from 'react-native';
 import { Button, Screen, T } from '@/components/ui';
 import { supabase } from '@/lib/supabase';
 import { C } from '@/lib/theme';
+import { t } from '@/lib/i18n';
 
 /** Opened from the sign-in email link: finishes the sign-in and continues. */
 export default function Callback() {
@@ -13,13 +14,13 @@ export default function Callback() {
 
   useEffect(() => {
     (async () => {
-      if (p.error_description) { setError('الرابط انتهى أو انستخدم قبل. اطلب رابط جديد.'); return; }
+      if (p.error_description) { setError(t('الرابط انتهى أو انستخدم قبل. اطلب رابط جديد.')); return; }
       const r = p.code
         ? await supabase.auth.exchangeCodeForSession(p.code)
         : p.token_hash
           ? await supabase.auth.verifyOtp({ token_hash: p.token_hash, type: (p.type as 'email' | 'magiclink') ?? 'email' })
           : { error: new Error('no code') };
-      if (r.error) { setError('ما زبط الدخول بهالرابط. افتح الرابط على نفس التلفون اللي طلبت منه، أو اطلب رابط جديد.'); return; }
+      if (r.error) { setError(t('ما زبط الدخول بهالرابط. افتح الرابط على نفس التلفون اللي طلبت منه، أو اطلب رابط جديد.')); return; }
       router.replace('/(auth)/welcome');
     })();
   }, [p.code, p.token_hash, p.type, p.error_description]);
@@ -30,12 +31,12 @@ export default function Callback() {
         {error ? (
           <>
             <T v="h2" style={{ textAlign: 'center' }}>{error}</T>
-            <Button title="رجوع لتسجيل الدخول" onPress={() => router.replace('/(auth)/login')} />
+            <Button title={t('رجوع لتسجيل الدخول')} onPress={() => router.replace('/(auth)/login')} />
           </>
         ) : (
           <>
             <ActivityIndicator size="large" color={C.primary} />
-            <T v="body" color={C.muted}>بندخّلك…</T>
+            <T v="body" color={C.muted}>{t('بندخّلك…')}</T>
           </>
         )}
       </View>

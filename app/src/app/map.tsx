@@ -11,16 +11,17 @@ import { GlyphTile, GRAD } from '@/components/Glyph';
 import { Button, Chip, Row, T, Tap } from '@/components/ui';
 import { useAuth } from '@/lib/auth';
 import { supabase } from '@/lib/supabase';
-import { C, F, shadow } from '@/lib/theme';
+import { C, F, isDark, shadow } from '@/lib/theme';
+import { flip, nm, t, ta } from '@/lib/i18n';
 
 type Pin = { id: string; kind: string; name: string; sub?: string | null; lat: number; lng: number; advertiser_id?: string | null };
 type Hit = { kind: string; id: string; title: string; subtitle: string; lat: number | null; lng: number | null };
 
 const FILTERS = [
-  { key: 'all', label: 'الكل' },
-  { key: 'building', label: 'المباني' },
-  { key: 'food', label: 'أكل وقهوة' },
-  { key: 'service', label: 'خدمات' },
+  { key: 'all', label: t('الكل') },
+  { key: 'building', label: t('المباني') },
+  { key: 'food', label: t('أكل وقهوة') },
+  { key: 'service', label: t('خدمات') },
 ] as const;
 const FOOD = ['cafeteria', 'restaurant'];
 const SERVICE = ['mosque', 'library', 'parking', 'gate', 'clinic', 'bank', 'print', 'service', 'sports'];
@@ -54,8 +55,8 @@ export default function CampusMap() {
         supabase.from('places').select('id, kind, name_ar, description, lat, lng, advertiser_id').eq('university_id', university.id).eq('state', 'approved'),
       ]);
       setPins([
-        ...(b ?? []).map((x) => ({ id: x.id, kind: 'building', name: x.name_ar, sub: x.code, lat: x.lat!, lng: x.lng! })),
-        ...(p ?? []).map((x) => ({ id: x.id, kind: x.kind, name: x.name_ar, sub: x.description, lat: x.lat, lng: x.lng, advertiser_id: x.advertiser_id })),
+        ...(b ?? []).map((x) => ({ id: x.id, kind: 'building', name: nm(x), sub: x.code, lat: x.lat!, lng: x.lng! })),
+        ...(p ?? []).map((x) => ({ id: x.id, kind: x.kind, name: nm(x), sub: x.description, lat: x.lat, lng: x.lng, advertiser_id: x.advertiser_id })),
       ]);
     })();
   }, [university]);
@@ -134,15 +135,15 @@ export default function CampusMap() {
 
       <SafeAreaView edges={['top']} style={{ position: 'absolute', top: 0, left: 0, right: 0, paddingHorizontal: 16, gap: 10 }} pointerEvents="box-none">
         <Row gap={8} style={{ marginTop: 6 }}>
-        <Tap onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))} accessibilityLabel="رجوع"
+        <Tap onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))} accessibilityLabel={t('رجوع')}
           style={[{ width: 52, height: 52, borderRadius: 18, backgroundColor: C.card, alignItems: 'center', justifyContent: 'center' }, shadow]}>
-          <ChevronRight size={22} color={C.ink} />
+          <ChevronRight size={22} color={C.ink} style={flip} />
         </Tap>
         <Row gap={8} style={[{ flex: 1, minHeight: 52, borderRadius: 18, backgroundColor: C.card, paddingHorizontal: 16 }, shadow]}>
           <Search size={20} color={C.muted} />
-          <TextInput value={q} onChangeText={setQ} placeholder="ابحث عن مبنى، قاعة، أو لقب زي «الكراج»" placeholderTextColor={C.faint}
-            style={{ flex: 1, fontFamily: F.body, fontSize: 15, color: C.ink, textAlign: 'right', minHeight: 48 }} accessibilityLabel="ابحث بالخريطة" />
-          {q ? <Tap onPress={() => setQ('')} accessibilityLabel="مسح"><X size={18} color={C.muted} /></Tap> : null}
+          <TextInput keyboardAppearance={isDark ? 'dark' : 'light'} value={q} onChangeText={setQ} placeholder={t('ابحث عن مبنى، قاعة، أو لقب زي «الكراج»')} placeholderTextColor={C.faint}
+            style={{ flex: 1, fontFamily: F.body, fontSize: 15, color: C.ink, textAlign: ta, minHeight: 48 }} accessibilityLabel={t('ابحث بالخريطة')} />
+          {q ? <Tap onPress={() => setQ('')} accessibilityLabel={t('مسح')}><X size={18} color={C.muted} /></Tap> : null}
         </Row>
         </Row>
         {hits.length > 0 ? (
@@ -152,7 +153,7 @@ export default function CampusMap() {
                 <Tap onPress={() => { setQ(''); setHits([]); Keyboard.dismiss(); focus({ id: item.id, kind: item.kind, name: item.title, sub: item.subtitle, lat: item.lat!, lng: item.lng! }); }}
                   style={{ minHeight: 54, paddingHorizontal: 16, justifyContent: 'center', borderBottomWidth: 1, borderBottomColor: C.line }}>
                   <T v="bodyMd">{item.title}</T>
-                  {item.subtitle ? <T v="tiny" color={C.muted}>{item.kind === 'alias' ? `لقب لـ ${item.subtitle}` : item.subtitle}</T> : null}
+                  {item.subtitle ? <T v="tiny" color={C.muted}>{item.kind === 'alias' ? t('لقب لـ {0}', [item.subtitle]) : item.subtitle}</T> : null}
                 </Tap>
               )} />
           </Animated.View>
@@ -165,16 +166,16 @@ export default function CampusMap() {
 
       {!sel && (
         <View style={{ position: 'absolute', left: 16, bottom: 40, gap: 10 }}>
-          <Tap onPress={() => setSat((x) => !x)} accessibilityLabel="غيّر شكل الخريطة"
+          <Tap onPress={() => setSat((x) => !x)} accessibilityLabel={t('غيّر شكل الخريطة')}
             style={[{ width: 48, height: 48, borderRadius: 16, backgroundColor: sat ? C.inverse : C.card, alignItems: 'center', justifyContent: 'center' }, shadow]}>
             <Layers size={21} color={sat ? C.onInverse : C.ink} />
           </Tap>
-          <Tap onPress={fitAll} accessibilityLabel="شوف الجامعة كاملة"
+          <Tap onPress={fitAll} accessibilityLabel={t('شوف الجامعة كاملة')}
             style={[{ width: 48, height: 48, borderRadius: 16, backgroundColor: C.card, alignItems: 'center', justifyContent: 'center' }, shadow]}>
             <Maximize2 size={20} color={C.ink} />
           </Tap>
           {me && (
-            <Tap onPress={() => map.current?.animateCamera({ center: { latitude: me.lat, longitude: me.lng }, zoom: 17.5 }, { duration: 600 })} accessibilityLabel="موقعي"
+            <Tap onPress={() => map.current?.animateCamera({ center: { latitude: me.lat, longitude: me.lng }, zoom: 17.5 }, { duration: 600 })} accessibilityLabel={t('موقعي')}
               style={[{ width: 48, height: 48, borderRadius: 16, backgroundColor: C.card, alignItems: 'center', justifyContent: 'center' }, shadow]}>
               <Crosshair size={22} color={C.primary} />
             </Tap>
@@ -191,21 +192,21 @@ export default function CampusMap() {
               <T v="h2">{sel.name}</T>
               {sel.sub ? <T v="small" color={C.muted}>{sel.sub}</T> : null}
             </View>
-            <Tap onPress={() => { setSel(null); setRouting(false); }} accessibilityLabel="إغلاق"><X size={22} color={C.muted} /></Tap>
+            <Tap onPress={() => { setSel(null); setRouting(false); }} accessibilityLabel={t('إغلاق')}><X size={22} color={C.muted} /></Tap>
           </Row>
           {walk != null && (
             <Row gap={10}>
               <View style={{ flex: 1, alignItems: 'center', backgroundColor: C.primarySoft, borderRadius: 16, padding: 10 }}>
-                <T style={{ fontFamily: F.display, fontSize: 20 }} color={C.primary}>{walk}</T><T v="tiny" color={C.ink2}>دقايق مشي</T>
+                <T style={{ fontFamily: F.display, fontSize: 20 }} color={C.primary}>{walk}</T><T v="tiny" color={C.ink2}>{t('دقايق مشي')}</T>
               </View>
               <View style={{ flex: 1, alignItems: 'center', backgroundColor: C.bg, borderRadius: 16, padding: 10 }}>
-                <T style={{ fontFamily: F.display, fontSize: 20 }}>{meters}</T><T v="tiny" color={C.ink2}>متر</T>
+                <T style={{ fontFamily: F.display, fontSize: 20 }}>{meters}</T><T v="tiny" color={C.ink2}>{t('متر')}</T>
               </View>
             </Row>
           )}
           <Row gap={8}>
           <View style={{ flex: 1 }}>
-          <Button kind={routing ? 'dark' : 'primary'} title={routing ? 'إيقاف' : me ? 'وريني الطريق' : 'فعّل الموقع'}
+          <Button kind={routing ? 'dark' : 'primary'} title={routing ? t('إيقاف') : me ? t('وريني الطريق') : t('فعّل الموقع')}
             icon={<Navigation size={19} color={C.white} />}
             onPress={async () => {
               if (!me) { await Location.requestForegroundPermissionsAsync(); return; }
@@ -216,7 +217,7 @@ export default function CampusMap() {
           <Tap onPress={() => {
             const url = Platform.OS === 'ios' ? `maps://?daddr=${sel.lat},${sel.lng}&dirflg=w` : `https://www.google.com/maps/dir/?api=1&destination=${sel.lat},${sel.lng}&travelmode=walking`;
             Linking.openURL(url).catch(() => Linking.openURL(`https://www.google.com/maps/dir/?api=1&destination=${sel.lat},${sel.lng}&travelmode=walking`));
-          }} accessibilityLabel="افتح بالخرائط" style={{ width: 54, minHeight: 54, borderRadius: 18, backgroundColor: C.primarySoft, alignItems: 'center', justifyContent: 'center' }}>
+          }} accessibilityLabel={t('افتح بالخرائط')} style={{ width: 54, minHeight: 54, borderRadius: 18, backgroundColor: C.primarySoft, alignItems: 'center', justifyContent: 'center' }}>
             <ExternalLink size={20} color={C.primary} />
           </Tap>
           </Row>

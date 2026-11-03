@@ -8,6 +8,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Avatar, T, Tap } from '@/components/ui';
 import { supabase } from '@/lib/supabase';
 import { C, F } from '@/lib/theme';
+import { t } from '@/lib/i18n';
 
 function RingPulse({ delay }: { delay: number }) {
   const t = useSharedValue(0);
@@ -47,7 +48,7 @@ export default function CallScreen() {
     router.back();
   }
 
-  const label = status === 'active' ? `${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, '0')}` : status === 'missed' ? 'ما رد' : status === 'declined' ? 'رفض المكالمة' : status === 'ended' ? 'انتهت المكالمة' : kind === 'video' ? 'مكالمة فيديو... بترن' : 'مكالمة صوتية... بترن';
+  const label = status === 'active' ? `${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, '0')}` : status === 'missed' ? t('ما رد') : status === 'declined' ? t('رفض المكالمة') : status === 'ended' ? t('انتهت المكالمة') : kind === 'video' ? t('مكالمة فيديو... بترن') : t('مكالمة صوتية... بترن');
 
   return (
     <View style={{ flex: 1, backgroundColor: '#0E1430' }}>
@@ -61,13 +62,13 @@ export default function CallScreen() {
         <T style={{ fontFamily: F.display, fontSize: 28, marginTop: 26 }} color={C.white}>{name}</T>
         <T v="body" color="#C9D1F0" style={{ marginTop: 6 }}>{label}</T>
         <View style={{ marginTop: 'auto', flexDirection: 'row', gap: 22 }}>
-          <Tap onPress={() => setMuted((m) => !m)} accessibilityLabel={muted ? 'إلغاء الكتم' : 'كتم'} style={{ width: 64, height: 64, borderRadius: 32, backgroundColor: muted ? C.card : 'rgba(255,255,255,0.14)', alignItems: 'center', justifyContent: 'center' }}>
+          <Tap onPress={() => setMuted((m) => !m)} accessibilityLabel={muted ? t('إلغاء الكتم') : t('كتم')} style={{ width: 64, height: 64, borderRadius: 32, backgroundColor: muted ? C.card : 'rgba(255,255,255,0.14)', alignItems: 'center', justifyContent: 'center' }}>
             {muted ? <MicOff size={26} color={C.ink} /> : <Mic size={26} color={C.white} />}
           </Tap>
-          <Tap accessibilityLabel="كاميرا" style={{ width: 64, height: 64, borderRadius: 32, backgroundColor: 'rgba(255,255,255,0.14)', alignItems: 'center', justifyContent: 'center' }}>
+          <Tap accessibilityLabel={t('كاميرا')} style={{ width: 64, height: 64, borderRadius: 32, backgroundColor: 'rgba(255,255,255,0.14)', alignItems: 'center', justifyContent: 'center' }}>
             <Video size={28} color={C.white} />
           </Tap>
-          <Tap onPress={hangUp} accessibilityLabel="إنهاء المكالمة" style={{ width: 64, height: 64, borderRadius: 32, backgroundColor: '#FF3B5C', alignItems: 'center', justifyContent: 'center' }}>
+          <Tap onPress={hangUp} accessibilityLabel={t('إنهاء المكالمة')} style={{ width: 64, height: 64, borderRadius: 32, backgroundColor: '#FF3B5C', alignItems: 'center', justifyContent: 'center' }}>
             <Phone size={28} color={C.white} style={{ transform: [{ rotate: '135deg' }] }} />
           </Tap>
         </View>

@@ -7,6 +7,7 @@ import { useAuth } from '@/lib/auth';
 import { supabase } from '@/lib/supabase';
 import { C } from '@/lib/theme';
 import { timeAgo } from '@/lib/util';
+import { t } from '@/lib/i18n';
 
 type B = { blocked_id: string; created_at: string; p: { full_name: string; avatar_url: string | null } | null };
 
@@ -27,7 +28,7 @@ export default function Blocked() {
 
   return (
     <Screen>
-      <Header title="المحظورين" />
+      <Header title={t('المحظورين')} />
       <FlatList
         data={rows}
         keyExtractor={(r) => r.blocked_id}
@@ -35,11 +36,11 @@ export default function Blocked() {
         renderItem={({ item }) => (
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 64, backgroundColor: C.card, borderRadius: 18, paddingHorizontal: 12 }}>
             <Avatar id={item.blocked_id} name={item.p?.full_name} url={item.p?.avatar_url} size={44} />
-            <View style={{ flex: 1 }}><T v="bodyMd">{item.p?.full_name ?? 'مستخدم'}</T><T v="tiny" color={C.muted}>انحظر {timeAgo(item.created_at)}</T></View>
-            <Button kind="soft" title="فك الحظر" onPress={() => unblock(item.blocked_id)} style={{ minHeight: 38, paddingHorizontal: 14, borderRadius: 12 }} />
+            <View style={{ flex: 1 }}><T v="bodyMd">{item.p?.full_name ?? t('مستخدم')}</T><T v="tiny" color={C.muted}>{t('انحظر')} {timeAgo(item.created_at)}</T></View>
+            <Button kind="soft" title={t('فك الحظر')} onPress={() => unblock(item.blocked_id)} style={{ minHeight: 38, paddingHorizontal: 14, borderRadius: 12 }} />
           </View>
         )}
-        ListEmptyComponent={<Empty icon={<Ban size={28} color={C.primary} />} title="ما حظرت حدا" body="اللي بتحظره ما بيقدر يشوف بروفايلك ولا يراسلك، وما بيعرف إنك حظرته." />}
+        ListEmptyComponent={<Empty icon={<Ban size={28} color={C.primary} />} title={t('ما حظرت حدا')} body={t('اللي بتحظره ما بيقدر يشوف بروفايلك ولا يراسلك، وما بيعرف إنك حظرته.')} />}
       />
     </Screen>
   );
