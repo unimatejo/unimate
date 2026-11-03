@@ -50,6 +50,8 @@ function Gate() {
     const inAuth = seg[0] === '(auth)';
     if (!session && !inAuth) router.replace('/(auth)/login');
     else if (session && profile && !profile.university_id && seg[1] !== 'unsupported') router.replace('/(auth)/unsupported');
+    // signed in by email: the name is still the student number, so finish the profile first
+    else if (session && profile?.university_id && /^\d+$/.test(profile.full_name ?? '') && seg[1] !== 'welcome') router.replace('/(auth)/welcome');
     else if (session && profile?.university_id && inAuth && seg[1] !== 'welcome') router.replace('/(tabs)');
   }, [session, profile, loading, seg]);
 

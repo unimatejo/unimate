@@ -1,10 +1,11 @@
 import { router } from 'expo-router';
 import { Check, Users } from 'lucide-react-native';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, View } from 'react-native';
+import { ActivityIndicator, Alert, KeyboardAvoidingView, Platform, ScrollView, View } from 'react-native';
 import Animated, { FadeIn, ZoomIn } from 'react-native-reanimated';
 
-import { Avatar, Button, Card, Row, Screen, T } from '@/components/ui';
+import { MajorPicker } from '@/components/MajorPicker';
+import { Avatar, Button, Card, Field, Row, Screen, T } from '@/components/ui';
 import { useAuth } from '@/lib/auth';
 import { supabase } from '@/lib/supabase';
 import { C } from '@/lib/theme';
@@ -14,6 +15,11 @@ export default function Welcome() {
   const [step, setStep] = useState(0);
   const [courses, setCourses] = useState<number | null>(null);
   const [studentNo, setStudentNo] = useState<string | null>(null);
+  const [name, setName] = useState('');
+  const [col, setCol] = useState<string | null>(null);
+  const [maj, setMaj] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
 
   useEffect(() => { refreshProfile(); }, [refreshProfile]);
   useEffect(() => {
@@ -22,6 +28,11 @@ export default function Welcome() {
       .then(({ count }) => setCourses(count ?? 0));
     supabase.from('profile_private').select('student_number').eq('user_id', profile.id).single()
       .then(({ data }) => setStudentNo(data?.student_number ?? null));
+  }, [profile]);
+  useEffect(() => {
+    if (!profile) return;
+    setName((n) => n || (/^\d+$/.test(profile.full_name ?? '') ? '' : profile.full_name ?? ''));
+    setCol((c) => c ?? profile.college_id); setMaj((m) => m ?? profile.major_id);
   }, [profile]);
   useEffect(() => {
     const t = setInterval(() => setStep((s) => (s >= 5 ? s : s + 1)), 600);
@@ -36,11 +47,26 @@ export default function Welcome() {
     ['موادك هالفصل', courses === null ? null : courses > 0 ? `${courses} مواد` : 'بتنضاف من حسابك الجامعي'],
   ];
   const done = step >= 5;
-  const first = profile?.full_name?.split(' ')[0] ?? '';
+  const needsSetup = !!profile && !saved && (/^\d+$/.test(profile.full_name ?? '') || !profile.major_id);
+  const first = needsSetup ? '' : (profile?.full_name?.split(' ')[0] ?? '');
+
+  async function save() {
+    if (name.trim().length < 3) { Alert.alert('اكتب اسمك الكامل'); return; }
+    if (!maj) {
+      const { count } = await supabase.from('colleges').select('id', { count: 'exact', head: true }).eq('university_id', university?.id ?? '');
+      if (count) { Alert.alert('اختار كليتك وتخصصك'); return; }
+    }
+    setSaving(true);
+    const { error } = await supabase.from('profiles').update({ full_name: name.trim(), college_id: col, major_id: maj }).eq('id', profile!.id);
+    setSaving(false);
+    if (error) { Alert.alert('ما زبط الحفظ', 'جرّب كمان مرة.'); return; }
+    await refreshProfile(); setSaved(true);
+  }
 
   return (
     <Screen>
-      <View style={{ flex: 1, padding: 22, paddingTop: 40, gap: 22 }}>
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ flexGrow: 1, padding: 22, paddingTop: 40, gap: 22 }}>
         <View style={{ alignItems: 'center', gap: 14 }}>
           <Avatar id={profile?.id} name={profile?.full_name} url={profile?.avatar_url} size={92} ring />
           <T v="h1" style={{ textAlign: 'center' }}>{done ? `أهلاً ${first}، حسابك جاهز` : 'بنجهّز حسابك...'}</T>
@@ -59,7 +85,17 @@ export default function Welcome() {
             </Row>
           ))}
         </Card>
-        {done && (
+        {done && needsSetup && (
+          <Animated.View entering={FadeIn.duration(400)}>
+            <Card style={{ gap: 12 }}>
+              <T v="h3">خطوة أخيرة</T>
+              <Field label="اسمك الكامل" value={name} onChangeText={setName} placeholder="مثلاً سارة أحمد" maxLength={60} />
+              <MajorPicker universityId={university?.id} collegeId={col} majorId={maj} onChange={(c, m) => { setCol(c); setMaj(m); }} />
+              <Button title="احفظ" loading={saving} onPress={save} />
+            </Card>
+          </Animated.View>
+        )}
+        {done && !needsSetup && (
           <Animated.View entering={FadeIn.duration(400)}>
             <Row gap={10} center={false} style={{ backgroundColor: C.greenSoft, borderRadius: 18, padding: 14 }}>
               <Users size={20} color={C.greenInk} />
@@ -68,10 +104,11 @@ export default function Welcome() {
           </Animated.View>
         )}
         <View style={{ marginTop: 'auto', gap: 8 }}>
-          <Button title="يلا نبلش" disabled={!done} onPress={() => router.replace('/(tabs)')} />
+          <Button title="يلا نبلش" disabled={!done || needsSetup} onPress={() => router.replace('/(tabs)')} />
           <Button kind="ghost" title="ضيف صورة ونبذة (اختياري)" onPress={() => router.push('/settings/edit-profile')} style={{ minHeight: 44 }} />
         </View>
-      </View>
+      </ScrollView>
+      </KeyboardAvoidingView>
     </Screen>
   );
 }

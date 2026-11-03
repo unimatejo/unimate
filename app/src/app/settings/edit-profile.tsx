@@ -2,6 +2,7 @@ import { Camera } from 'lucide-react-native';
 import { useState } from 'react';
 import { Alert, KeyboardAvoidingView, Platform, ScrollView, View } from 'react-native';
 
+import { MajorPicker } from '@/components/MajorPicker';
 import { Avatar, Button, Chip, Field, Header, Row, Screen, T, Tap } from '@/components/ui';
 import { useAuth } from '@/lib/auth';
 import { supabase } from '@/lib/supabase';
@@ -11,7 +12,7 @@ import { pickMedia, uploadFile } from '@/lib/upload';
 const clean = (s: string) => s.trim().replace(/^@/, '').replace(/^https?:\/\/(www\.)?(instagram\.com|snapchat\.com\/add)\//i, '').replace(/\/$/, '');
 
 export default function EditProfile() {
-  const { profile, refreshProfile } = useAuth();
+  const { profile, university, refreshProfile } = useAuth();
   const [name, setName] = useState(profile?.full_name ?? '');
   const [username, setUsername] = useState(profile?.username ?? '');
   const [bio, setBio] = useState(profile?.bio ?? '');
@@ -20,6 +21,8 @@ export default function EditProfile() {
   const [snap, setSnap] = useState(profile?.snapchat ?? '');
   const [avatar, setAvatar] = useState(profile?.avatar_url ?? null);
   const [busy, setBusy] = useState(false);
+  const [col, setCol] = useState<string | null>(profile?.college_id ?? null);
+  const [maj, setMaj] = useState<string | null>(profile?.major_id ?? null);
 
   async function changePhoto() {
     const f = await pickMedia();
@@ -41,7 +44,7 @@ export default function EditProfile() {
     setBusy(true);
     const { error } = await supabase.from('profiles').update({
       full_name: name.trim(), username: u || null, bio: bio.trim().slice(0, 150), study_year: year,
-      instagram: clean(ig) || null, snapchat: clean(snap) || null, avatar_url: avatar,
+      instagram: clean(ig) || null, snapchat: clean(snap) || null, avatar_url: avatar, college_id: col, major_id: maj,
     }).eq('id', profile.id);
     setBusy(false);
     if (error) { Alert.alert('ما زبط', error.code === '23505' ? 'اسم المستخدم مأخوذ، جرّب غيره.' : 'جرّب كمان مرة.'); return; }
@@ -83,9 +86,9 @@ export default function EditProfile() {
             <Field label="سناب شات" value={snap} onChangeText={setSnap} autoCapitalize="none" placeholder="username" style={{ textAlign: 'left' }} />
           </View>
 
-          <View style={{ gap: 4, backgroundColor: C.white, borderRadius: 22, padding: 14 }}>
-            <T v="small" color={C.muted}>الجامعة والكلية والتخصص بيجوا تلقائياً من حساب الجامعة.</T>
-            <T v="bodyMd">{[profile?.college?.name_ar, profile?.major?.name_ar].filter(Boolean).join(' · ') || 'بيتحدّثوا أول ما يوصل جدولك'}</T>
+          <View style={{ gap: 10, backgroundColor: C.white, borderRadius: 22, padding: 14 }}>
+            <T v="h3">الكلية والتخصص</T>
+            <MajorPicker universityId={university?.id} collegeId={col} majorId={maj} onChange={(c, m) => { setCol(c); setMaj(m); }} />
           </View>
 
           <Button title="احفظ" onPress={save} loading={busy} />
