@@ -9,8 +9,16 @@ import { useAuth } from '@/lib/auth';
 import { supabase } from '@/lib/supabase';
 import { C } from '@/lib/theme';
 import { timeAgo } from '@/lib/util';
-import { nm, t } from '@/lib/i18n';
+import { isAR, nm, t } from '@/lib/i18n';
 import { ListSkeleton } from '@/components/Skeleton';
+
+// Server-made notification texts are Arabic; show them in English when the app is in English.
+const NOTE_EN: [RegExp, string][] = [
+  [/^حدا /, 'Someone '], [/ عجبه منشورك$/, ' liked your post'], [/ علّق على منشورك$/, ' commented on your post'],
+  [/ صار يتابعك$/, ' started following you'], [/ قبل طلب متابعتك$/, ' accepted your follow request'],
+  [/^لقينا تبديل مطابق$/, 'We found a matching swap'], [/^في حدا بدّه نفس التبديل بالعكس$/, 'Someone wants the same swap the other way'],
+];
+function localizeNote(s: string) { return isAR ? s : NOTE_EN.reduce((x, [re, en]) => x.replace(re, en), s); }
 
 type N = { id: string; kind: string; title: string; body: string | null; data: Record<string, string>; read_at: string | null; created_at: string };
 type FR = { follower_id: string; profile: { id: string; full_name: string; avatar_url: string | null; major: { name_ar: string } | null } | null };
@@ -83,7 +91,7 @@ export default function Notifications() {
                 style={{ flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 66, backgroundColor: C.card, borderRadius: 20, paddingHorizontal: 12 }}>
                 <View style={{ width: 42, height: 42, borderRadius: 15, backgroundColor: color, alignItems: 'center', justifyContent: 'center' }}><Icon size={20} color={C.white} /></View>
                 <View style={{ flex: 1 }}>
-                  <T v="small">{item.title}{item.body ? ` · ${item.body}` : ''}</T>
+                  <T v="small">{localizeNote(item.title)}{item.body ? ` · ${localizeNote(item.body)}` : ''}</T>
                   <T v="tiny" color={C.muted}>{timeAgo(item.created_at)}</T>
                 </View>
                 {!item.read_at && <View style={{ width: 9, height: 9, borderRadius: 5, backgroundColor: C.primary }} />}

@@ -777,4 +777,9 @@ export const EN: Record<string, string> = {
   "نزّل يونيميت وخلينا نتابع بعض 🎓 جدولنا، ملخصات المواد، وكل طلاب {0} بمكان واحد.": "Get UniMate and let's follow each other 🎓 Our schedule, course summaries, and everyone at {0} in one place.",
   "جامعتنا": "our university",
   "ادعي زملاءك": "Invite classmates",
+  "عم يكتب…": "typing…",
+  "{0} عم يكتب…": "{0} is typing…",
+  "احفظ بالمحادثة": "Save in chat",
+  "إلغاء الإرسال": "Unsend",
+  "يونيميت · الإصدار {0}": "UniMate · Version {0}",
 };

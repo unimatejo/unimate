@@ -3,8 +3,8 @@ import * as ScreenCapture from 'expo-screen-capture';
 import { Image } from 'expo-image';
 import { Bookmark, Camera, ChevronRight, EyeOff, Flame, Image as ImageIcon, MoreHorizontal, Phone, Send, ShieldCheck, Timer, Users, Video } from 'lucide-react-native';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Alert, FlatList, KeyboardAvoidingView, Modal, Platform, Pressable, TextInput, View } from 'react-native';
-import Animated, { FadeIn, FadeInUp, SlideInDown } from 'react-native-reanimated';
+import { ActionSheetIOS, Alert, FlatList, KeyboardAvoidingView, Modal, Platform, Pressable, TextInput, View } from 'react-native';
+import Animated, { FadeIn, FadeInUp, SlideInDown, useAnimatedStyle, useSharedValue, withDelay, withRepeat, withSequence, withTiming } from 'react-native-reanimated';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Avatar, Row, T, Tap, Toggle } from '@/components/ui';
@@ -31,6 +31,14 @@ function ChatImage({ path, mine }: { path: string; mine: boolean }) {
   </View>;
 }
 
+function Dot({ d }: { d: number }) {
+  const v = useSharedValue(0);
+  useEffect(() => { v.value = withDelay(d, withRepeat(withSequence(withTiming(1, { duration: 300 }), withTiming(0, { duration: 300 })), -1)); }, [v, d]);
+  const a = useAnimatedStyle(() => ({ opacity: 0.35 + v.value * 0.65, transform: [{ translateY: -v.value * 3 }] }));
+  return <Animated.View style={[{ width: 6, height: 6, borderRadius: 3, backgroundColor: C.muted }, a]} />;
+}
+function TypingDots() { return <Row gap={3}><Dot d={0} /><Dot d={150} /><Dot d={300} /></Row>; }
+
 export default function Chat() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { profile } = useAuth();
@@ -45,6 +53,9 @@ export default function Chat() {
   const [people, setPeople] = useState<Record<string, { full_name: string; avatar_url: string | null }>>({});
   const [otherRead, setOtherRead] = useState<string | null>(null);
   const list = useRef<FlatList<Message>>(null);
+  const [typing, setTyping] = useState<string | null>(null);
+  const typingCh = useRef<ReturnType<typeof supabase.channel> | null>(null);
+  const lastTyped = useRef(0);
 
   const shield = !!conv?.block_screenshots;
   // Android: the screen shows black in screenshots and recordings. iOS: we hide while recording and tell the other side.
@@ -72,6 +83,45 @@ export default function Chat() {
   }, [id, profile]);
 
   useEffect(() => { load(); }, [load]);
+
+  // "typing…" like Instagram, over a realtime broadcast channel (nothing is stored)
+  useEffect(() => {
+    if (!profile) return;
+    let clear: ReturnType<typeof setTimeout> | null = null;
+    const ch = supabase.channel(`typing-${id}`, { config: { broadcast: { self: false } } })
+      .on('broadcast', { event: 'typing' }, ({ payload }) => {
+        if (payload?.user === profile.id) return;
+        setTyping(payload?.name ?? '');
+        if (clear) clearTimeout(clear);
+        clear = setTimeout(() => setTyping(null), 3500);
+      })
+      .subscribe();
+    typingCh.current = ch;
+    return () => { if (clear) clearTimeout(clear); supabase.removeChannel(ch); typingCh.current = null; };
+  }, [id, profile]);
+
+  function onDraft(v: string) {
+    setDraft(v);
+    const now = Date.now();
+    if (v && now - lastTyped.current > 2000 && typingCh.current) {
+      lastTyped.current = now;
+      typingCh.current.send({ type: 'broadcast', event: 'typing', payload: { user: profile?.id, name: profile?.full_name?.split(' ')[0] } });
+    }
+  }
+
+  /** Long-press a message: save it, unsend it (yours), or report it. */
+  function messageMenu(m: Message) {
+    const mineMsg = m.sender_id === profile?.id;
+    const opts: [string, () => void][] = [
+      [m.is_saved ? t('إلغاء الحفظ') : t('احفظ بالمحادثة'), () => toggleSave(m)],
+      ...(mineMsg ? [[t('إلغاء الإرسال'), async () => {
+        setMsgs((cur) => cur.filter((x) => x.id !== m.id));
+        await supabase.from('messages').update({ deleted_at: new Date().toISOString() }).eq('id', m.id);
+      }] as [string, () => void]] : [[t('إبلاغ'), () => router.push({ pathname: '/report', params: { type: 'conversation', id, user: m.sender_id ?? '' } })] as [string, () => void]]),
+    ];
+    if (Platform.OS === 'ios') ActionSheetIOS.showActionSheetWithOptions({ options: [...opts.map((o) => o[0]), t('إلغاء')], cancelButtonIndex: opts.length, destructiveButtonIndex: opts.length - 1 }, (i) => opts[i]?.[1]());
+    else Alert.alert('', undefined, [...opts.map(([text, onPress]) => ({ text, onPress })), { text: t('إلغاء'), style: 'cancel' as const }]);
+  }
 
   // "Seen": refresh when the other side reads
   useEffect(() => {
@@ -176,6 +226,12 @@ export default function Chat() {
         <FlatList
           ref={list}
           inverted
+          ListHeaderComponent={typing !== null ? (
+            <Animated.View entering={FadeIn} style={{ alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: C.card, borderRadius: 18, paddingHorizontal: 14, paddingVertical: 9, marginTop: 6 }}>
+              <TypingDots />
+              <T v="tiny" color={C.muted}>{conv?.kind === 'direct' ? t('عم يكتب…') : t('{0} عم يكتب…', [typing])}</T>
+            </Animated.View>
+          ) : undefined}
           data={visible}
           keyExtractor={(m) => m.id}
           contentContainerStyle={{ padding: 14, gap: 8 }}
@@ -201,7 +257,7 @@ export default function Chat() {
                     <T v="tiny" color={C.muted}>{people[m.sender_id!].full_name}</T>
                   </Row>
                 )}
-                <Pressable onPress={async () => { if (m.kind === 'image' && m.media_url) setViewer(await mediaUrl('chat', m.media_url)); }} onLongPress={() => toggleSave(m)} delayLongPress={350}>
+                <Pressable onPress={async () => { if (m.kind === 'image' && m.media_url) setViewer(await mediaUrl('chat', m.media_url)); }} onLongPress={() => messageMenu(m)} delayLongPress={350}>
                   {m.kind === 'image' && m.media_url ? <ChatImage path={m.media_url} mine={mine} /> :
                    m.kind === 'view_once' ? (
                     <Tap onPress={() => !mine && !m.viewed_once_at && openOnce(m)} style={{ flexDirection: 'row', alignItems: 'center', gap: 10, minHeight: 48, paddingHorizontal: 16, borderRadius: 22, borderWidth: 1.5, borderColor: m.viewed_once_at ? C.line : C.pink, backgroundColor: C.card }}>
@@ -237,7 +293,7 @@ export default function Chat() {
           <Row gap={6} style={{ backgroundColor: C.glass, paddingHorizontal: 10, paddingTop: 10, paddingBottom: insets.bottom + 10, borderTopWidth: 1, borderTopColor: C.line }}>
             <Tap onPress={() => sendPhoto(true, true)} accessibilityLabel={t('صورة بتنشاف مرة')} style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: C.primary, alignItems: 'center', justifyContent: 'center' }}><Camera size={21} color={C.white} /></Tap>
             <Row gap={0} style={{ flex: 1, minHeight: 44, borderRadius: 22, backgroundColor: C.field, paddingHorizontal: 6 }}>
-              <TextInput keyboardAppearance={isDark ? 'dark' : 'light'} value={draft} onChangeText={setDraft} placeholder={t('رسالة...')} placeholderTextColor={C.faint} multiline
+              <TextInput keyboardAppearance={isDark ? 'dark' : 'light'} value={draft} onChangeText={onDraft} placeholder={t('رسالة...')} placeholderTextColor={C.faint} multiline
                 style={{ flex: 1, fontFamily: F.body, fontSize: 15, color: C.ink, textAlign: ta, paddingHorizontal: 10, maxHeight: 110, paddingVertical: 10 }} accessibilityLabel={t('اكتب رسالة')} />
               <Tap onPress={() => sendPhoto(false)} accessibilityLabel={t('صورة من الاستوديو')} style={{ width: 36, height: 36, alignItems: 'center', justifyContent: 'center' }}><ImageIcon size={21} color={C.ink2} /></Tap>
             </Row>

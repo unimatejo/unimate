@@ -9,6 +9,7 @@ import { useAuth } from '@/lib/auth';
 import { supabase } from '@/lib/supabase';
 import { C, F, isDark, shadow } from '@/lib/theme';
 import { nm, t, ta } from '@/lib/i18n';
+import { SuggestedPeople } from '@/components/SuggestedPeople';
 
 type R = { kind: string; id: string; title: string; subtitle: string; avatar?: string | null; lat?: number | null };
 
@@ -86,6 +87,7 @@ export default function Search() {
         )}
         ListEmptyComponent={q.trim().length >= 2 ? <Empty title={t('ما لقينا إشي')} body={t('جرّب اسم المادة أو المبنى أو لقب المكان.')} /> : (
           <View style={{ gap: 10 }}>
+            <View style={{ marginHorizontal: -18, marginBottom: 8 }}><SuggestedPeople /></View>
             <T v="h3">{t('روابط جامعتك')}</T>
             {links.length === 0 ? <T v="small" color={C.muted}>{t('بتنضاف قريباً.')}</T> : links.map((l) => (
               <Tap key={l.id} onPress={() => Linking.openURL(l.url)} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 56, backgroundColor: C.card, borderRadius: 18, paddingHorizontal: 14 }}>

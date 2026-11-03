@@ -1,3 +1,4 @@
+import Constants from 'expo-constants';
 import { router } from 'expo-router';
 import {
   Ban, Bell, Palette, Bookmark, ChevronLeft, CircleHelp, EyeOff, FileText, Lock, LogOut, MessageCircle, Shield, Star, Trash2, UserPen, UserPlus, Users,
@@ -104,7 +105,7 @@ export default function Settings() {
           <Item icon={<Trash2 {...ic} />} color={C.red} label={t('حذف الحساب')} danger onPress={deleteAccount} />
         </Group>
 
-        <T v="tiny" color={C.faint} style={{ textAlign: 'center' }}>{t('يونيميت · الإصدار 1.0.0')}</T>
+        <T v="tiny" color={C.faint} style={{ textAlign: 'center' }}>{t('يونيميت · الإصدار {0}', [Constants.expoConfig?.version ?? ''])}</T>
       </ScrollView>
     </Screen>
   );
