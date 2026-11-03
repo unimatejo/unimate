@@ -1,25 +1,33 @@
+import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
-import { GraduationCap, Lock, Mail } from 'lucide-react-native';
-import { useEffect, useState } from 'react';
-import { KeyboardAvoidingView, Platform, View } from 'react-native';
-import Animated, { Easing, FadeInDown, useAnimatedStyle, useSharedValue, withRepeat, withTiming } from 'react-native-reanimated';
+import { StatusBar } from 'expo-status-bar';
+import { BookOpen, CalendarDays, GraduationCap, Lock, Mail, MessageCircle, Users } from 'lucide-react-native';
+import { useEffect, useState, type ReactNode } from 'react';
+import { KeyboardAvoidingView, Platform, ScrollView, View } from 'react-native';
+import Animated, { Easing, FadeInDown, useAnimatedStyle, useSharedValue, withDelay, withRepeat, withTiming } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Button, Field, Row, T } from '@/components/ui';
 import { sendEmailCode, signInWithMicrosoft, universityForEmail } from '@/lib/auth';
 import { C, F } from '@/lib/theme';
 
-function Float({ size, color, top, right, left, radius, delay = 0, rotate = 0 }: { size: number; color: string; top: number; right?: number; left?: number; radius: number; delay?: number; rotate?: number }) {
+// Microsoft sign-in shows only once the Azure app is set up (EXPO_PUBLIC_MS_LOGIN=1).
+const MS_READY = process.env.EXPO_PUBLIC_MS_LOGIN === '1';
+
+function Bubble({ children, label, color, style, delay }: { children: ReactNode; label: string; color: string; style: object; delay: number }) {
   const y = useSharedValue(0);
-  useEffect(() => {
-    y.value = withRepeat(withTiming(-14, { duration: 3200 + delay, easing: Easing.inOut(Easing.sin) }), -1, true);
-  }, [y, delay]);
-  const s = useAnimatedStyle(() => ({ transform: [{ translateY: y.value }, { rotate: `${rotate}deg` }] }));
-  return <Animated.View style={[{ position: 'absolute', top, right, left, width: size, height: size, borderRadius: radius, backgroundColor: color }, s]} />;
+  useEffect(() => { y.value = withDelay(delay, withRepeat(withTiming(-8, { duration: 2600, easing: Easing.inOut(Easing.sin) }), -1, true)); }, [y, delay]);
+  const s = useAnimatedStyle(() => ({ transform: [{ translateY: y.value }] }));
+  return (
+    <Animated.View style={[{ position: 'absolute', flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: C.white, borderRadius: 18, paddingVertical: 9, paddingHorizontal: 12,
+      shadowColor: '#0E1430', shadowOpacity: 0.16, shadowRadius: 14, shadowOffset: { width: 0, height: 8 }, elevation: 6 }, style, s]}>
+      <View style={{ width: 30, height: 30, borderRadius: 10, backgroundColor: color, alignItems: 'center', justifyContent: 'center' }}>{children}</View>
+      <T v="bold" style={{ fontSize: 13 }}>{label}</T>
+    </Animated.View>
+  );
 }
 
 export default function Login() {
-  const [mode, setMode] = useState<'choose' | 'email'>('choose');
   const [email, setEmail] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -28,9 +36,7 @@ export default function Login() {
     setError(null); setBusy(true);
     const res = await signInWithMicrosoft();
     setBusy(false);
-    if ('error' in res && res.error && res.error.message !== 'cancelled') {
-      setError('الدخول بمايكروسوفت مش متاح هلأ. جرّب الدخول برمز على الإيميل.');
-    }
+    if ('error' in res && res.error && res.error.message !== 'cancelled') setError('الدخول بمايكروسوفت مش متاح هلأ. ادخل بإيميل الجامعة.');
   }
 
   async function sendCode() {
@@ -40,57 +46,60 @@ export default function Login() {
     setBusy(true);
     const { error: e } = await sendEmailCode(email);
     setBusy(false);
-    if (e) { setError(e.message.includes('rate') ? 'طلبت رموز كثير. استنى دقيقة وجرّب مرة ثانية.' : 'ما قدرنا نبعث الرمز. جرّب مرة ثانية.'); return; }
+    if (e) {
+      setError(/rate|limit/i.test(e.message) ? 'وصلنا الحد المسموح من الإيميلات هلأ. جرّب بعد شوي.' : 'ما قدرنا نبعث الرسالة. تأكد من الإنترنت وجرّب مرة ثانية.');
+      return;
+    }
     router.push({ pathname: '/(auth)/verify', params: { email, uni: uni.name_ar } });
   }
 
   return (
-    <View style={{ flex: 1, backgroundColor: C.ink }}>
-      <View style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 460 }} pointerEvents="none">
-        <Float size={150} color={C.primary} top={80} right={28} radius={48} rotate={-12} />
-        <Float size={120} color={C.pink} top={200} left={30} radius={60} delay={600} />
-        <Float size={96} color="#FFB020" top={320} right={120} radius={30} delay={300} rotate={18} />
-        <Float size={56} color={C.green} top={70} left={110} radius={20} delay={900} />
-        <View style={{ position: 'absolute', top: 128, right: 72 }}><GraduationCap size={60} color={C.white} strokeWidth={2.2} /></View>
-      </View>
+    <View style={{ flex: 1, backgroundColor: C.bg }}>
+      <StatusBar style="light" />
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
+        <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ flexGrow: 1 }} bounces={false}>
+          <LinearGradient colors={[C.primary, '#5B3FFF']} start={{ x: 1, y: 0 }} end={{ x: 0, y: 1 }}
+            style={{ height: 330, borderBottomLeftRadius: 40, borderBottomRightRadius: 40, overflow: 'hidden' }}>
+            <SafeAreaView edges={['top']} style={{ flex: 1 }}>
+              <Row gap={10} style={{ paddingHorizontal: 24, paddingTop: 12 }}>
+                <View style={{ width: 40, height: 40, borderRadius: 14, backgroundColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center' }}>
+                  <GraduationCap size={22} color={C.white} />
+                </View>
+                <T v="h2" color={C.white}>يونيميت</T>
+              </Row>
+              <View style={{ flex: 1 }}>
+                <Bubble label="جدولي" color={C.primary} style={{ top: 34, right: 26 }} delay={0}><CalendarDays size={16} color={C.white} /></Bubble>
+                <Bubble label="ملخصات" color={C.green} style={{ top: 96, left: 24 }} delay={500}><BookOpen size={16} color={C.white} /></Bubble>
+                <Bubble label="مجتمع جامعتي" color={C.orange} style={{ top: 160, right: 54 }} delay={900}><Users size={16} color={C.white} /></Bubble>
+                <Bubble label="رسائل" color={C.pink} style={{ top: 214, left: 60 }} delay={300}><MessageCircle size={16} color={C.white} /></Bubble>
+              </View>
+            </SafeAreaView>
+          </LinearGradient>
 
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1, justifyContent: 'flex-end' }}>
-        <SafeAreaView edges={['bottom']} style={{ paddingHorizontal: 24, paddingBottom: 20, gap: 22 }}>
-          <Animated.View entering={FadeInDown.delay(100).duration(600)} style={{ gap: 10 }}>
-            <T v="h3" color="#9FB2FF">يونيميت</T>
-            <T v="display" color={C.white}>جامعتك كلها،{'\n'}بجيبتك.</T>
-            <T v="body" color="#C9D1F0">جدولك بيطلع لحاله، ومجتمع جامعتك كله بمكان واحد، ورسائل بدون رقم جوال.</T>
-          </Animated.View>
+          <SafeAreaView edges={['bottom']} style={{ flex: 1, paddingHorizontal: 24, paddingTop: 26, paddingBottom: 16, gap: 18 }}>
+            <Animated.View entering={FadeInDown.delay(100).duration(500)} style={{ gap: 8 }}>
+              <T v="h1">جامعتك كلها بجيبتك</T>
+              <T v="body" color={C.muted}>جدولك بيطلع لحاله، ومجتمع جامعتك كله بمكان واحد، ورسائل بدون رقم جوال.</T>
+            </Animated.View>
 
-          <Animated.View entering={FadeInDown.delay(250).duration(600)} style={{ gap: 10 }}>
-            {mode === 'choose' ? (
-              <>
-                <Button kind="white" title="ادخل بحساب الجامعة" loading={busy} onPress={microsoft}
-                  icon={<GraduationCap size={22} color={C.ink} />} />
-                <Button kind="ghost" title="ادخل برمز على إيميل الجامعة" onPress={() => setMode('email')}
-                  style={{ borderWidth: 1, borderColor: 'rgba(255,255,255,0.25)', minHeight: 50 }}
-                  icon={<Mail size={19} color={C.white} />} />
-              </>
-            ) : (
-              <>
-                <Field
-                  value={email} onChangeText={setEmail} placeholder="إيميلك الجامعي"
-                  keyboardType="email-address" autoCapitalize="none" autoComplete="email" textContentType="emailAddress"
-                  style={{ backgroundColor: 'rgba(255,255,255,0.1)', color: C.white, textAlign: 'left', writingDirection: 'ltr' }}
-                  placeholderTextColor="#AEB8D8" onSubmitEditing={sendCode} returnKeyType="send"
-                />
-                <Button title="ابعتلي الرمز" loading={busy} onPress={sendCode} disabled={!email.includes('@')} />
-                <Button kind="ghost" title="رجوع" onPress={() => { setMode('choose'); setError(null); }} style={{ minHeight: 44 }} />
-              </>
-            )}
-            {error && <T v="small" color="#FFB4C0" style={{ textAlign: 'center' }}>{error}</T>}
-          </Animated.View>
+            <Animated.View entering={FadeInDown.delay(200).duration(500)} style={{ gap: 10 }}>
+              <Field
+                value={email} onChangeText={setEmail} placeholder="إيميلك الجامعي"
+                keyboardType="email-address" autoCapitalize="none" autoComplete="email" textContentType="emailAddress"
+                style={{ textAlign: 'left', writingDirection: 'ltr' }} onSubmitEditing={sendCode} returnKeyType="send"
+              />
+              <Button title="ادخل بإيميل الجامعة" loading={busy} onPress={sendCode} disabled={!email.includes('@')} icon={<Mail size={19} color={C.white} />} />
+              {MS_READY && <Button kind="soft" title="ادخل بحساب مايكروسوفت الجامعي" onPress={microsoft} icon={<GraduationCap size={20} color={C.ink} />} />}
+              {error && <T v="small" color={C.danger} style={{ textAlign: 'center' }}>{error}</T>}
+            </Animated.View>
 
-          <Row gap={6} style={{ justifyContent: 'center' }}>
-            <Lock size={13} color="#AEB8D8" />
-            <T v="tiny" color="#AEB8D8" style={{ fontFamily: F.body }}>ما بنشوف كلمة سرك. الدخول عن طريق جامعتك مباشرة.</T>
-          </Row>
-        </SafeAreaView>
+            <View style={{ flex: 1 }} />
+            <Row gap={6} style={{ justifyContent: 'center' }}>
+              <Lock size={13} color={C.faint} />
+              <T v="tiny" color={C.faint} style={{ fontFamily: F.body }}>بنبعتلك رابط دخول على إيميل جامعتك. ما في كلمة سر.</T>
+            </Row>
+          </SafeAreaView>
+        </ScrollView>
       </KeyboardAvoidingView>
     </View>
   );

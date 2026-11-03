@@ -15,8 +15,8 @@ import { C, F, R, avatarColors, shadow } from '@/lib/theme';
 // ---------- text ----------
 type Variant = 'display' | 'h1' | 'h2' | 'h3' | 'body' | 'bodyMd' | 'bold' | 'small' | 'tiny';
 const V: Record<Variant, TextStyle> = {
-  display: { fontFamily: F.display, fontSize: 40, lineHeight: 52, letterSpacing: -0.5 },
-  h1: { fontFamily: F.display, fontSize: 26, lineHeight: 36, letterSpacing: -0.3 },
+  display: { fontFamily: F.display, fontSize: 36, lineHeight: 54 },
+  h1: { fontFamily: F.display, fontSize: 26, lineHeight: 40 },
   h2: { fontFamily: F.title, fontSize: 19, lineHeight: 28 },
   h3: { fontFamily: F.title, fontSize: 16, lineHeight: 24 },
   body: { fontFamily: F.body, fontSize: 15, lineHeight: 24 },

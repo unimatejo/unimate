@@ -81,7 +81,7 @@ export default function Home() {
               <>
                 <Row gap={8}><Pulse /><T v="small" color="#C9D1F0">محاضرتك الجاية بعد</T></Row>
                 <Row gap={8} style={{ alignItems: 'baseline' }}>
-                  <T style={{ fontFamily: F.display, fontSize: 64, lineHeight: 70, letterSpacing: -2 }} color={C.white}>{countdown}</T>
+                  <T style={{ fontFamily: F.display, fontSize: 60, lineHeight: 72 }} color={C.white}>{countdown}</T>
                   <T v="h3" color={C.white}>{unit}</T>
                 </Row>
                 <View style={{ gap: 2 }}>

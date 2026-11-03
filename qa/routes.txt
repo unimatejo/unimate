@@ -1,0 +1,16 @@
+schedule
+community
+map
+profile
+messages
+notifications
+search
+sections
+section/summaries
+settings
+settings/privacy
+settings/reminders
+settings/edit-profile
+swap
+study
+post/new

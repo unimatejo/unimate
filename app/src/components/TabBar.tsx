@@ -1,7 +1,6 @@
 import * as Haptics from 'expo-haptics';
 import { CalendarDays, House, Map, User, Users } from 'lucide-react-native';
 import { Pressable, Text, View } from 'react-native';
-import Animated, { LinearTransition } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { C, F } from '@/lib/theme';
@@ -18,7 +17,7 @@ export function TabBar({ state, navigation }: any) {
         const on = state.index === i;
         const Icon = ICONS[route.name] ?? House;
         return (
-          <Animated.View key={route.key} layout={LinearTransition.springify().damping(16)}>
+          <View key={route.key}>
             <Pressable
               accessibilityRole="tab" accessibilityState={{ selected: on }} accessibilityLabel={LABELS[route.name]}
               onPress={() => {
@@ -32,7 +31,7 @@ export function TabBar({ state, navigation }: any) {
               <Icon size={23} color={on ? C.white : C.muted} strokeWidth={on ? 2.2 : 1.9} />
               {on && <Text style={{ fontFamily: F.bodyBold, fontSize: 13, color: C.white }}>{LABELS[route.name]}</Text>}
             </Pressable>
-          </Animated.View>
+          </View>
         );
       })}
     </View>
