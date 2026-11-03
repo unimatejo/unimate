@@ -39,8 +39,8 @@ export default function Verify() {
           <View style={{ width: 64, height: 64, borderRadius: 22, backgroundColor: C.primarySoft, alignItems: 'center', justifyContent: 'center' }}>
             <MailCheck size={30} color={C.primary} />
           </View>
-          <T v="h1">اكتب الرمز</T>
-          <T v="body" color={C.muted}>بعتنا رمز من 6 أرقام على {email}{uni ? ` (${uni})` : ''}.</T>
+          <T v="h1">افتح إيميلك</T>
+          <T v="body" color={C.muted}>بعتنا رسالة على {email}{uni ? ` (${uni})` : ''}. اضغط الرابط اللي فيها من هالتلفون وبتدخل علطول، أو اكتب الرمز هون إذا وصلك رمز.</T>
         </Animated.View>
 
         <Pressable onPress={() => input.current?.focus()}>

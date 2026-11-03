@@ -69,7 +69,11 @@ export async function universityForEmail(email: string): Promise<University | nu
 }
 
 export async function sendEmailCode(email: string) {
-  return supabase.auth.signInWithOtp({ email: email.trim().toLowerCase(), options: { shouldCreateUser: true } });
+  // The email carries both a sign-in link (opens the app at /callback) and, once our SMTP template is live, a 6-digit code.
+  return supabase.auth.signInWithOtp({
+    email: email.trim().toLowerCase(),
+    options: { shouldCreateUser: true, emailRedirectTo: Linking.createURL('callback') },
+  });
 }
 
 export async function verifyEmailCode(email: string, token: string) {
@@ -78,7 +82,7 @@ export async function verifyEmailCode(email: string, token: string) {
 
 /** Sign in with the university's Microsoft 365 account (Azure / Entra ID through Supabase). */
 export async function signInWithMicrosoft() {
-  const redirectTo = Linking.createURL('auth/callback');
+  const redirectTo = Linking.createURL('callback');
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: 'azure',
     options: { redirectTo, scopes: 'openid email profile offline_access', skipBrowserRedirect: true },
