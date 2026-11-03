@@ -13,7 +13,7 @@ concurrency:
   cancel-in-progress: true
 jobs:
   build:
-    runs-on: macos-15
+    runs-on: xcode-27
     timeout-minutes: 75
     defaults:
       run:
@@ -25,21 +25,17 @@ jobs:
       EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY: sb_publishable_1otcwSg3NdpjsEmXJWJO7g_yxdXR2xP
     steps:
       - uses: actions/checkout@v4
-      - name: Use the newest Xcode (the app needs Swift 6.2+)
+      - name: Show the Xcode in use (Expo SDK 58 needs Xcode 27)
         working-directory: .
         run: |
           mkdir -p out && ls -d /Applications/Xcode*.app > out/xcodes.txt; cat out/xcodes.txt
-          X=$(ls -d /Applications/Xcode_*.app | grep -v -i beta | sort -V | tail -1)
-          echo "Using $X" | tee -a out/xcodes.txt; sudo xcode-select -s "$X/Contents/Developer"; xcodebuild -version; swift --version
+          xcodebuild -version | tee -a out/xcodes.txt; swift --version
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
           cache-dependency-path: app/package-lock.json
       - run: npm ci 2>&1 | tee ../out/npm.log | tail -20
-      - name: Let expo-modules-jsi build with the Xcode on the runner (its sources target a newer Swift)
-        run: |
-          sed -i '' 's/swiftLanguageModes: \[\.v6\]/swiftLanguageModes: [.v5]/' node_modules/expo-modules-jsi/apple/Package.swift && grep -n swiftLanguageModes node_modules/expo-modules-jsi/apple/Package.swift
       - run: npx expo prebuild --platform ios --clean 2>&1 | tee ../out/prebuild.log
       - name: Pods
         run: cd ios && pod install 2>&1 | tee ../../out/pods.log | tail -30
