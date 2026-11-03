@@ -1,0 +1,96 @@
+{
+  "slug": "ahu",
+  "name_ar": "جامعة الحسين بن طلال",
+  "name_en": "Al-Hussein Bin Talal University",
+  "city": "Ma'an",
+  "type": "public",
+  "email_domains": ["ahu.edu.jo"],
+  "center": {"lat": 30.2598, "lng": 35.6753},
+  "brand_color": null,
+  "links": [
+    {"kind": "website", "title": "الموقع الرسمي", "url": "https://www.ahu.edu.jo/"},
+    {"kind": "elearning", "title": "منصة التعلم الإلكتروني", "url": "https://elearning.ahu.edu.jo/"},
+    {"kind": "registration", "title": "وحدة القبول والتسجيل", "url": "https://www.ahu.edu.jo/AR-category-2903"}
+  ],
+  "colleges": [
+    {"name_ar": "كلية الآداب", "name_en": "College of Arts", "majors": [
+      {"name_ar": "اللغة العربية وآدابها", "name_en": "Arabic Language and Literature", "degree": "bachelor"},
+      {"name_ar": "اللغة الإنجليزية وآدابها", "name_en": "English Language and Literature", "degree": "bachelor"},
+      {"name_ar": "التاريخ", "name_en": "History", "degree": "bachelor"},
+      {"name_ar": "الجغرافيا", "name_en": "Geography", "degree": "bachelor"},
+      {"name_ar": "الدراسات الإسلامية", "name_en": "Islamic Studies", "degree": "bachelor"},
+      {"name_ar": "العلاقات الدولية والدراسات الإستراتيجية", "name_en": "International Relations and Strategic Studies", "degree": "bachelor"}
+    ]},
+    {"name_ar": "كلية العلوم", "name_en": "College of Science", "majors": [
+      {"name_ar": "الرياضيات", "name_en": "Mathematics", "degree": "bachelor"},
+      {"name_ar": "الفيزياء", "name_en": "Physics", "degree": "bachelor"},
+      {"name_ar": "الكيمياء", "name_en": "Chemistry", "degree": "bachelor"},
+      {"name_ar": "العلوم الحياتية", "name_en": "Biological Sciences", "degree": "bachelor"}
+    ]},
+    {"name_ar": "كلية تكنولوجيا المعلومات", "name_en": "College of Information Technology", "majors": [
+      {"name_ar": "علم الحاسوب", "name_en": "Computer Science", "degree": "bachelor"},
+      {"name_ar": "هندسة البرمجيات", "name_en": "Software Engineering", "degree": "bachelor"},
+      {"name_ar": "نظم المعلومات الحاسوبية", "name_en": "Computer Information Systems", "degree": "bachelor"},
+      {"name_ar": "علم البيانات والذكاء الاصطناعي", "name_en": "Data Science and Artificial Intelligence", "degree": "bachelor"},
+      {"name_ar": "الأمن السيبراني", "name_en": "Cybersecurity", "degree": "bachelor"}
+    ]},
+    {"name_ar": "كلية الهندسة", "name_en": "College of Engineering", "majors": [
+      {"name_ar": "الهندسة المدنية", "name_en": "Civil Engineering", "degree": "bachelor"},
+      {"name_ar": "الهندسة الكهربائية", "name_en": "Electrical Engineering", "degree": "bachelor"},
+      {"name_ar": "الهندسة الميكانيكية", "name_en": "Mechanical Engineering", "degree": "bachelor"},
+      {"name_ar": "الهندسة الكيميائية", "name_en": "Chemical Engineering", "degree": "bachelor"},
+      {"name_ar": "هندسة التعدين", "name_en": "Mining Engineering", "degree": "bachelor"},
+      {"name_ar": "هندسة الحاسوب", "name_en": "Computer Engineering", "degree": "bachelor"},
+      {"name_ar": "تكنولوجيا العمليات المستدامة", "name_en": "Sustainable Process Technology", "degree": "bachelor"},
+      {"name_ar": "تكنولوجيا المركبات الكهربائية والهجينة", "name_en": "Electric and Hybrid Vehicle Technology", "degree": "bachelor"},
+      {"name_ar": "تكنولوجيا إنشاء المباني والطرق", "name_en": "Building and Road Construction Technology", "degree": "bachelor"}
+    ]},
+    {"name_ar": "كلية ادارة الاعمال و الاقتصاد", "name_en": "College of Business Administration and Economics", "majors": [
+      {"name_ar": "إدارة الأعمال", "name_en": "Business Administration", "degree": "bachelor"},
+      {"name_ar": "المحاسبة", "name_en": "Accounting", "degree": "bachelor"},
+      {"name_ar": "العلوم المالية والمصرفية", "name_en": "Financial and Banking Sciences", "degree": "bachelor"},
+      {"name_ar": "الاقتصاد", "name_en": "Economics", "degree": "bachelor"},
+      {"name_ar": "نظم المعلومات الإدارية", "name_en": "Management Information Systems", "degree": "bachelor"},
+      {"name_ar": "الإدارة اللوجستية", "name_en": "Logistics Management", "degree": "bachelor"}
+    ]},
+    {"name_ar": "كلية العلوم التربوية", "name_en": "College of Educational Sciences", "majors": [
+      {"name_ar": "الإرشاد والصحة النفسية", "name_en": "Counseling and Mental Health", "degree": "bachelor"}
+    ]},
+    {"name_ar": "كلية البترا للسياحة و الآثار", "name_en": "Petra College for Tourism and Archaeology", "majors": [
+      {"name_ar": "الآثار", "name_en": "Archaeology", "degree": "bachelor"},
+      {"name_ar": "إدارة الفنادق", "name_en": "Hotel Management", "degree": "bachelor"}
+    ]},
+    {"name_ar": "كلية الأميرة عائشة بنت الحسين للتمريض", "name_en": "Princess Aisha Bint Al-Hussein College of Nursing", "majors": [
+      {"name_ar": "التمريض", "name_en": "Nursing", "degree": "bachelor"}
+    ]},
+    {"name_ar": "كلية العلوم الطبية المساندة", "name_en": "College of Allied Medical Sciences", "majors": [
+      {"name_ar": "التحاليل الطبية", "name_en": "Medical Laboratory Analysis", "degree": "bachelor"},
+      {"name_ar": "التصوير الإشعاعي", "name_en": "Radiography", "degree": "bachelor"},
+      {"name_ar": "العلاج الطبيعي", "name_en": "Physical Therapy", "degree": "bachelor"}
+    ]},
+    {"name_ar": "كلية القانون", "name_en": "College of Law", "majors": [
+      {"name_ar": "القانون", "name_en": "Law", "degree": "bachelor"}
+    ]}
+  ],
+  "sources": [
+    "https://www.ahu.edu.jo/ar-college-300",
+    "https://www.ahu.edu.jo/ar-college-301",
+    "https://www.ahu.edu.jo/ar-college-302",
+    "https://www.ahu.edu.jo/ar-college-303",
+    "https://www.ahu.edu.jo/ar-college-304",
+    "https://www.ahu.edu.jo/ar-college-305",
+    "https://www.ahu.edu.jo/ar-college-306",
+    "https://www.ahu.edu.jo/ar-college-307",
+    "https://www.ahu.edu.jo/ar-college-308",
+    "https://www.ahu.edu.jo/ar-college-7062",
+    "https://www.ahu.edu.jo/AR-article-47278",
+    "https://www.ahu.edu.jo/Ar-Article-47333",
+    "https://www.assawsana.com/article/679318",
+    "https://nesan.net/?id=327142",
+    "https://www.hala.jo/2026/01/01/%D8%AC%D8%A7%D9%85%D8%B9%D8%A9-%D8%A7%D9%84%D8%AD%D8%B3%D9%8A%D9%86-%D8%A8%D9%86-%D8%B7%D9%84%D8%A7%D9%84-%D8%AA%D8%B9%D8%B2%D8%B2-%D9%85%D9%83%D8%A7%D9%86%D8%AA%D9%87%D8%A7-%D8%A7%D9%84%D8%A3%D9%83/",
+    "https://www.dirasaabroad.com/al-hussein-bin-talal-university/",
+    "https://latitude.to/articles-by-country/jo/jordan/160049/al-hussein-bin-talal-university",
+    "https://en.wikipedia.org/wiki/Al-Hussein_Bin_Talal_University"
+  ],
+  "notes": "LOW CONFIDENCE. ahu.edu.jo (and admhec.gov.jo) block automated fetching (robots), so no page content could be read. College names are verbatim from official page titles ('أهلاً بكم في كلية ...'); majors are derived from official department page titles ('أهلاً بكم في قسم ...', CollDeptAr.aspx) plus the 2025/26 new-programmes announcement (AHU article 47278/47333, read via Assawsana and Nesan mirrors). Department-to-college mapping and department-vs-major equivalence were cross-checked against a third-party list (dirasaabroad.com) and are not verified on the official site. Specific doubts: business dept page is 'المحاسبة والعلوم المالية والمصرفية' (one dept, two majors assumed: المحاسبة / العلوم المالية والمصرفية); 'إدارة الأعمال' is supported only by an official study-plan file title; Islamic Studies and International Relations are placed in Arts per the third-party list; Medical Analysis and Radiography had department pages (historically under the Nursing college per third party) and were placed under the new 'كلية العلوم الطبية المساندة' (established 2025, which hosts the new Physical Therapy programme) — placement unverified. The three engineering-technology programmes are 'برنامج تقني' bachelor's listed under Engineering by the announcement, although a new 'الكلية التقنية' (ar-college-7062) was also created in 2025 and may host them. Law has public/private law departments; single major 'القانون' per third party. Not included because unverified on the official site: معلم الصف، رياض الأطفال/تربية الطفل، التربية الخاصة، علم المكتبات، هندسة الاتصالات، الهندسة البيئية، التسويق، إدارة المكاتب، التأمين وإدارة المخاطر، الإدارة السياحية، الإرشاد السياحي. Educational Sciences has a 'المناهج و التدريس' department but its bachelor majors could not be confirmed. Cybersecurity may be named 'الأمن السيبراني والحوسبة السحابية' (hala.jo wording). Email: only the domain ahu.edu.jo is evident; no student subdomain verified, no webmail/portal URL verified (psa.ahu.edu.jo is the graduate-studies admissions portal, not included). Coordinates from latitude.to (consistent with Wikipedia's '9 km NW of Ma'an'), not OSM. Wikipedia lists colours goldenrod and white; no hex verified."
+}

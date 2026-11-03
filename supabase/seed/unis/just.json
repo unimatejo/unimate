@@ -1,0 +1,28 @@
+{
+  "slug": "just",
+  "name_ar": "جامعة العلوم والتكنولوجيا الأردنية",
+  "name_en": "Jordan University of Science and Technology",
+  "city": "إربد",
+  "type": "public",
+  "email_domains": [
+    "just.edu.jo"
+  ],
+  "center": {
+    "lat": 32.47889,
+    "lng": 35.985
+  },
+  "brand_color": null,
+  "links": [
+    {
+      "kind": "website",
+      "title": "الموقع الرسمي لجامعة العلوم والتكنولوجيا الأردنية",
+      "url": "https://www.just.edu.jo"
+    }
+  ],
+  "colleges": [],
+  "sources": [
+    "https://www.just.edu.jo",
+    "https://en.wikipedia.org/wiki/Jordan_University_of_Science_and_Technology"
+  ],
+  "notes": "NOT POPULATED: every just.edu.jo and services.just.edu.jo URL (pages and PDFs, Arabic and English) returned the site's WAF page 'Request Rejected – The requested URL was rejected' to the fetcher, and admhec.gov.jo is robots-disallowed, so no college or major could be verified from an official source. colleges is intentionally empty. Leads for a re-run from a normal browser: faculty programme pages follow https://www.just.edu.jo/ar/FacultiesandDepartments/<faculty>/Pages/Programs.aspx?degree=1 (e.g. /it/ for Computer & IT, /FacultyofMedicine/); current study plans exist e.g. .../it/Departments/cs/SiteAssets/Pages/Programs/CS-Arabic-Study Plan 2025-UPDATED-OCT_2025.pdf and AI-Arabic-StudyPlan-UPDATED-OCT 2025 (3).pdf; fee/program tables under https://services.just.edu.jo/applic/Documents/ (e.g. Fees_Regular_2024_En.pdf). Non-official (Wikipedia) lists 12 faculties: Medicine, Dentistry, Pharmacy, Nursing, Applied Medical Sciences, Science and Arts, Engineering, Computer and Information Technology, Architecture and Design, Agriculture, Veterinary Medicine, Graduate Studies – not used as data. email_domains: just.edu.jo is the university's official domain; whether students use the same domain or a subdomain for Microsoft 365 is NOT verified. Centre coordinates are the Wikipedia infobox point (32°28′44″N 35°59′6″E, Ar Ramtha), not verified on OSM. Portal/e-learning/library/calendar links not verified, so omitted. Brand colour not found."
+}

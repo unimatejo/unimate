@@ -1,0 +1,127 @@
+{
+  "slug": "hu",
+  "name_ar": "الجامعة الهاشمية",
+  "name_en": "The Hashemite University",
+  "city": "Zarqa",
+  "type": "public",
+  "email_domains": ["hu.edu.jo"],
+  "center": null,
+  "brand_color": null,
+  "links": [
+    {"kind": "website", "title": "الموقع الرسمي للجامعة الهاشمية", "url": "https://hu.edu.jo/"},
+    {"kind": "portal", "title": "بوابة الطالب", "url": "https://sis.hu.edu.jo/"},
+    {"kind": "elearning", "title": "التعليم الالكتروني (New Moodle)", "url": "https://lms.hu.edu.jo"},
+    {"kind": "elearning", "title": "منصة التعليم الالكتروني", "url": "https://hu.edu.jo/estudy.aspx"},
+    {"kind": "email", "title": "البريد الالكتروني للطلبة", "url": "https://mail.office365.com"},
+    {"kind": "library", "title": "مكتبة الجامعة الهاشمية", "url": "https://hu.edu.jo/unitCenter/?unitid=41000000"},
+    {"kind": "library", "title": "المكتبة الالكترونية", "url": "https://hu-coe.app.deepknowledge.io"},
+    {"kind": "calendar", "title": "التقويم الجامعي", "url": "https://hu.edu.jo/unitCenter/index.aspx?typ=49&unitid=40000000"},
+    {"kind": "registration", "title": "وحدة القبول والتسجيل", "url": "https://hu.edu.jo/unitCenter/?unitid=40000000"},
+    {"kind": "registration", "title": "طلب التحاق الكتروني", "url": "https://apl.hu.edu.jo/"}
+  ],
+  "colleges": [
+    {"name_ar": "كلية العلوم", "name_en": "Faculty of Science", "majors": [
+      {"name_ar": "الرياضيات", "name_en": "Mathematics", "degree": "bachelor"},
+      {"name_ar": "الفيزياء", "name_en": "Physics", "degree": "bachelor"},
+      {"name_ar": "الكيمياء", "name_en": "Chemistry", "degree": "bachelor"},
+      {"name_ar": "العلوم الحياتية", "name_en": "Biology", "degree": "bachelor"},
+      {"name_ar": "التكنولوجيا الحيوية", "name_en": "Biotechnology", "degree": "bachelor"}
+    ]},
+    {"name_ar": "كلية الاداب", "name_en": "Faculty of Arts", "majors": [
+      {"name_ar": "اللغة العربية وادابها", "name_en": "Arabic Language and Literature", "degree": "bachelor"},
+      {"name_ar": "اللغة الانجليزية وادابها", "name_en": "English Language and Literature", "degree": "bachelor"},
+      {"name_ar": "الادب والدراسات الثقافية باللغة الانجليزية", "name_en": "Literature and Cultural Studies in English", "degree": "bachelor"},
+      {"name_ar": "العلاقات الدولية والدراسات الاستراتيجية", "name_en": "International Relations and Strategic Studies", "degree": "bachelor"}
+    ]},
+    {"name_ar": "كلية الأعمال", "name_en": "Faculty of Business", "majors": [
+      {"name_ar": "الاقتصاد", "name_en": "Economics", "degree": "bachelor"},
+      {"name_ar": "المحاسبة", "name_en": "Accounting", "degree": "bachelor"},
+      {"name_ar": "ادارة اعمال", "name_en": "Business Management", "degree": "bachelor"},
+      {"name_ar": "العلوم المالية والمصرفية", "name_en": "Banking and Financial Sciences", "degree": "bachelor"},
+      {"name_ar": "الاقتصاد المالي", "name_en": "Financial Economics", "degree": "bachelor"},
+      {"name_ar": "إدارة المخاطر والتأمين", "name_en": "Risk Management and Insurance", "degree": "bachelor"},
+      {"name_ar": "نظم معلومات ادارية", "name_en": "Management Information Systems", "degree": "bachelor"},
+      {"name_ar": "ادارة فنادق", "name_en": "Hotels Management", "degree": "bachelor"},
+      {"name_ar": "المحاسبة والقانون التجاري", "name_en": "Accounting and Commercial Law", "degree": "bachelor"},
+      {"name_ar": "التسويق الرقمي", "name_en": "Digital Marketing", "degree": "bachelor"},
+      {"name_ar": "التكنولوجيا المالية", "name_en": "Financial Technology", "degree": "bachelor"}
+    ]},
+    {"name_ar": "كلية العلوم التربوية والتنمية البشرية", "name_en": "Faculty of Educational Sciences and Human Development", "majors": [
+      {"name_ar": "معلم صف", "name_en": "Classroom Teacher", "degree": "bachelor"},
+      {"name_ar": "الإرشاد النفسي", "name_en": "Psychological Counseling", "degree": "bachelor"},
+      {"name_ar": "معلم التربية الفنية", "name_en": "Art Education Teacher", "degree": "bachelor"}
+    ]},
+    {"name_ar": "كلية الهندسة", "name_en": "Faculty of Engineering", "majors": [
+      {"name_ar": "الهندسة المدنية", "name_en": "Civil Engineering", "degree": "bachelor"},
+      {"name_ar": "الهندسة الميكانيكية", "name_en": "Mechanical Engineering", "degree": "bachelor"},
+      {"name_ar": "الهندسة الصناعية", "name_en": "Industrial Engineering", "degree": "bachelor"},
+      {"name_ar": "الهندسة الكهربائية", "name_en": "Electrical Engineering", "degree": "bachelor"},
+      {"name_ar": "هندسة الميكاترونكس", "name_en": "Mechatronics Engineering", "degree": "bachelor"},
+      {"name_ar": "الهندسة الطبية", "name_en": "Biomedical Engineering", "degree": "bachelor"},
+      {"name_ar": "هندسة الحاسوب", "name_en": "Computer Engineering", "degree": "bachelor"},
+      {"name_ar": "هندسة العمارة", "name_en": "Architecture", "degree": "bachelor"}
+    ]},
+    {"name_ar": "كلية العلوم الطبية التطبيقية", "name_en": "Faculty of Applied Medical Sciences", "majors": [
+      {"name_ar": "العلوم الطبية المخبرية", "name_en": "Medical Laboratory Sciences", "degree": "bachelor"},
+      {"name_ar": "التغذية السريرية والحميات", "name_en": "Clinical Nutrition and Dietetics", "degree": "bachelor"},
+      {"name_ar": "العلاج الوظيفي", "name_en": "Occupational Therapy", "degree": "bachelor"},
+      {"name_ar": "العلاج الطبيعي", "name_en": "Physiotherapy", "degree": "bachelor"},
+      {"name_ar": "التصوير الطبي والاشعاعي", "name_en": "Medical and Radiological Imaging", "degree": "bachelor"}
+    ]},
+    {"name_ar": "كلية التربية البدنية وعلوم الرياضة", "name_en": "Faculty of Physical Education and Sport Sciences", "majors": [
+      {"name_ar": "التأهيل الرياضي", "name_en": "Sports Rehabilitation", "degree": "bachelor"},
+      {"name_ar": "التربية البدنية وعلوم الرياضة", "name_en": "Physical Education and Sports Sciences", "degree": "bachelor"},
+      {"name_ar": "الادارة والتدريب الرياضي", "name_en": "Sports Management and Training", "degree": "bachelor"}
+    ]},
+    {"name_ar": "كلية الملكة رانيا للسياحة والتراث", "name_en": "Queen Rania Faculty of Tourism and Heritage", "majors": [
+      {"name_ar": "الادارة السياحية", "name_en": "Tourism Management", "degree": "bachelor"},
+      {"name_ar": "علم المحافظة على الاثار", "name_en": "Conservation Science of Antiquities", "degree": "bachelor"},
+      {"name_ar": "ادارة الموارد التراثية والمتاحف", "name_en": "Heritage Resources Management and Museums", "degree": "bachelor"}
+    ]},
+    {"name_ar": "كلية الامير الحسين بن عبدالله الثاني لتكنولوجيا المعلومات", "name_en": "Prince Al-Hussein Bin Abdallah II Faculty for Information Technology", "majors": [
+      {"name_ar": "علم الحاسوب وتطبيقاته", "name_en": "Computer Science and its Applications", "degree": "bachelor"},
+      {"name_ar": "أنظمة المعلومات الحاسوبية", "name_en": "Computer Information Systems", "degree": "bachelor"},
+      {"name_ar": "هندسة البرمجيات", "name_en": "Software Engineering", "degree": "bachelor"},
+      {"name_ar": "تكنولوجيا معلومات الأعمال", "name_en": "Business Information Technology", "degree": "bachelor"},
+      {"name_ar": "الأمن السيبراني", "name_en": "Cyber Security", "degree": "bachelor"},
+      {"name_ar": "علم البيانات والذكاء الاصطناعي", "name_en": "Data Science and Artificial Intelligence", "degree": "bachelor"}
+    ]},
+    {"name_ar": "كلية الملكة رانيا للطفولة", "name_en": "Queen Rania Faculty for Childhood", "majors": [
+      {"name_ar": "تربية الطفولة المبكرة", "name_en": "Early Childhood Education", "degree": "bachelor"},
+      {"name_ar": "التربية الخاصة", "name_en": "Special Education", "degree": "bachelor"}
+    ]},
+    {"name_ar": "كلية الامير الحسن بن طلال للموارد الطبيعية والبيئة", "name_en": "Prince El-Hassan bin Talal Faculty for Natural Resources and Environment", "majors": [
+      {"name_ar": "الجيولوجيا والبيئة", "name_en": "Geology and Environment", "degree": "bachelor"},
+      {"name_ar": "ادارة الاراضي والمياه", "name_en": "Land and Water Management", "degree": "bachelor"},
+      {"name_ar": "إدارة المياه والبيئة", "name_en": "Water and Environmental Management", "degree": "bachelor"},
+      {"name_ar": "الموارد الطبيعية في الأراضي الجافة", "name_en": "Dry Lands Natural Resources", "degree": "bachelor"}
+    ]},
+    {"name_ar": "كلية التمريض", "name_en": "Faculty of Nursing", "majors": [
+      {"name_ar": "علم التمريض", "name_en": "Nursing Science", "degree": "bachelor"}
+    ]},
+    {"name_ar": "كلية الطب البشري", "name_en": "Faculty of Medicine", "majors": [
+      {"name_ar": "الطب", "name_en": "Doctor of Medicine", "degree": "bachelor"}
+    ]},
+    {"name_ar": "كلية العلوم الصيدلانية", "name_en": "Faculty of Pharmaceutical Sciences", "majors": [
+      {"name_ar": "صيدلة", "name_en": "Pharmacy", "degree": "bachelor"}
+    ]},
+    {"name_ar": "كلية طب الأسنان", "name_en": "Faculty of Dentistry", "majors": [
+      {"name_ar": "طب الأسنان", "name_en": "Doctor of Oral and Dental Surgery", "degree": "bachelor"}
+    ]}
+  ],
+  "sources": [
+    "https://hu.edu.jo/",
+    "https://hu.edu.jo/en/",
+    "https://hu.edu.jo/en/unitCenter/?unitid=40000000",
+    "https://newstudents.hu.edu.jo/",
+    "https://hu.edu.jo/en/unitCenter/index.aspx?typ=56&unitid=42000000",
+    "https://pic.hu.edu.jo/Upload/42000000/The%20programs%20and%20the%20fees%20in%20JD%20_2027.pdf",
+    "https://hu.edu.jo/en/unitCenter/f_news.aspx?t=0&newsid=37977&unitid=40000000",
+    "https://hu.edu.jo/en/UnitCenter/f_news.aspx?t=0&newsid=37597&unitid=40000000",
+    "https://hu.edu.jo/NewsCenter/f_news_0_0.aspx?newsid=33663",
+    "https://hu.edu.jo/%D8%B9%D9%84%D9%85%D9%8A%D8%A9.pdf",
+    "https://pic.hu.edu.jo/Upload/40000000/%D8%A7%D9%84%D8%AF%D9%81%D8%B9%D8%A9%20%D8%A7%D9%84%D8%AB%D8%A7%D9%84%D8%AB%D8%A9.pdf",
+    "https://hu.edu.jo/en/summon.aspx"
+  ],
+  "notes": "Programme list = the 58 bachelor programmes in HU's official English fee schedule 'The programs and the fees in JD _2027' (Finance unit page, unitid=42000000); English names come from it. The Arabic version of that PDF could not be fetched (URL too long for the tool), so Arabic names were taken from other official HU pages: parallel-programme announcements (newsid 37977, 37597), new-majors news (33663), the 2021-2024 strategic plan PDF, and the major column of an official HU admitted-students list. Arabic spellings are kept as HU writes them, including missing hamzas (e.g. 'ادارة اعمال', 'اللغة العربية وادابها'). PDF-extraction artefacts were fixed in 'التصوير الطبي والاشعاعي', 'التغذية السريرية والحميات' and 'هندسة البرمجيات', and a typo in 'ادراة الموارد التراثية والمتاحف' was corrected to 'ادارة'. NOT VERIFIED in Arabic on an official page: 'التكنولوجيا المالية' (Financial Technology), 'الموارد الطبيعية في الأراضي الجافة' (Dry Lands Natural Resources; a HU news item only calls it 'الموارد الطبيعية'), and the programme 'التربية البدنية وعلوم الرياضة' (copied from the faculty name). Nursing is offered as 'علم التمريض' with separate male and female sections. HU also lists Psychological Counseling under the Faculty of Educational Sciences. Left out: the Technical College (الكلية التقنية), because no bachelor or diploma programmes were found listed for it, and the Faculty of Graduate Studies. Email: the staff webmail link is Google Workspace for hu.edu.jo, and the site links students to Office 365 (mail.office365.com). No official page confirming the student address domain was found, so a student subdomain such as std.hu.edu.jo is unverified and not included. Center: no coordinates were found on the university site, Wikipedia or Wikidata, so center is null. It needs to be filled from OpenStreetMap (the campus is roughly 25 km northeast of Amman, near Zarqa). brand_color is null: Wikipedia lists the colours as orange and red, but no official hex value was found. The academic calendar link points to the page HU labels as the calendar. HU also has a calendar archive at hu.edu.jo/unitcenter/CalArchive.aspx?unitid=40000000."
+}

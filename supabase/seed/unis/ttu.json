@@ -1,0 +1,96 @@
+{
+  "slug": "ttu",
+  "name_ar": "جامعة الطفيلة التقنية",
+  "name_en": "Tafila Technical University",
+  "city": "Tafila",
+  "type": "public",
+  "email_domains": ["ttu.edu.jo", "stu.ttu.edu.jo"],
+  "center": {"lat": null, "lng": null},
+  "brand_color": null,
+  "links": [
+    {"kind": "website", "title": "الموقع الرسمي", "url": "https://www.ttu.edu.jo/"},
+    {"kind": "portal", "title": "البوابة الإلكترونية", "url": "https://eportal.ttu.edu.jo/information/"},
+    {"kind": "portal", "title": "البوابة الأكاديمية (العلامات)", "url": "https://academic.ttu.edu.jo/login.aspx?lang=En"},
+    {"kind": "portal", "title": "بوابة الطالب", "url": "http://sis.ttu.edu.jo/"},
+    {"kind": "elearning", "title": "منصة التعلم الإلكتروني (Moodle)", "url": "https://lms.ttu.edu.jo"},
+    {"kind": "email", "title": "البريد الجامعي", "url": "https://login.microsoftonline.com/"},
+    {"kind": "teams", "title": "منصة Microsoft Teams", "url": "https://teams.microsoft.com/v2"},
+    {"kind": "library", "title": "المكتبة", "url": "https://www.ttu.edu.jo/en/departments/library/"},
+    {"kind": "calendar", "title": "التقويم الجامعي", "url": "https://www.ttu.edu.jo/en/e-calendar/"},
+    {"kind": "registration", "title": "الجدول الدراسي", "url": "https://eportal.ttu.edu.jo:3021/"},
+    {"kind": "registration", "title": "الخطط الدراسية", "url": "https://www.ttu.edu.jo/en/st-services/ttu-study-plan/"}
+  ],
+  "colleges": [
+    {"name_ar": "كلية الهندسة", "name_en": "College of Engineering", "majors": [
+      {"name_ar": "الهندسة الجيولوجية", "name_en": "Geological Engineering", "degree": "bachelor"},
+      {"name_ar": "الهندسة الميكانيكية/الإنتاج والآلات", "name_en": "Mechanical Engineering/Production and Machines", "degree": "bachelor"},
+      {"name_ar": "الهندسة الميكانيكية/المركبات", "name_en": "Mechanical Engineering/Automobile", "degree": "bachelor"},
+      {"name_ar": "هندسة التعدين", "name_en": "Mining Engineering", "degree": "bachelor"},
+      {"name_ar": "هندسة القوى الكهربائية", "name_en": "Electrical Power Engineering", "degree": "bachelor"},
+      {"name_ar": "الهندسة المدنية", "name_en": "Civil Engineering", "degree": "bachelor"},
+      {"name_ar": "الهندسة الميكانيكية/التكييف والتبريد والتدفئة", "name_en": "Mechanical Engineering/Air Conditioning, Refrigeration and Heating", "degree": "bachelor"},
+      {"name_ar": "الهندسة الميكانيكية/تكنولوجيا المركبات الهجينة", "name_en": "Mechanical Engineering/Hybrid Vehicles Technology", "degree": "bachelor"},
+      {"name_ar": "هندسة الأنظمة الذكية", "name_en": "Intelligent Systems Engineering", "degree": "bachelor"},
+      {"name_ar": "هندسة الاتصالات والإلكترونيات", "name_en": "Communications and Electronics Engineering", "degree": "bachelor"},
+      {"name_ar": "هندسة الحاسوب", "name_en": "Computer Engineering", "degree": "bachelor"},
+      {"name_ar": "هندسة الصناعات الكيميائية", "name_en": "Chemical Industries Engineering", "degree": "bachelor"},
+      {"name_ar": "هندسة الطاقة المتجددة المتكاملة", "name_en": "Integrated Renewable Energy Engineering", "degree": "bachelor"},
+      {"name_ar": "هندسة الميكاترونيكس", "name_en": "Mechatronics Engineering", "degree": "bachelor"},
+      {"name_ar": "هندسة الميكاترونيكس والروبوتات", "name_en": "Mechatronics and Robotics Engineering", "degree": "bachelor"}
+    ]},
+    {"name_ar": "كلية العلوم", "name_en": "College of Science", "majors": [
+      {"name_ar": "الإحصاء التطبيقي", "name_en": "Applied Statistics", "degree": "bachelor"},
+      {"name_ar": "الرياضيات", "name_en": "Mathematics", "degree": "bachelor"},
+      {"name_ar": "العلوم الاساسية", "name_en": "Basic Sciences", "degree": "bachelor"},
+      {"name_ar": "العلوم الحياتية التطبيقية", "name_en": "Applied Biological Sciences", "degree": "bachelor"},
+      {"name_ar": "الفيزياء التطبيقية", "name_en": "Applied Physics", "degree": "bachelor"},
+      {"name_ar": "الفيزياء الطبية الحيوية", "name_en": "Biomedical Physics", "degree": "bachelor"},
+      {"name_ar": "الكيمياء", "name_en": "Chemistry", "degree": "bachelor"},
+      {"name_ar": "الكيمياء التطبيقية", "name_en": "Applied Chemistry", "degree": "bachelor"},
+      {"name_ar": "تكنولوجيا الكيمياء", "name_en": "Chemistry Technology", "degree": "bachelor"}
+    ]},
+    {"name_ar": "كلية العلوم التربوية", "name_en": "College of Educational Sciences", "majors": [
+      {"name_ar": "التربية", "name_en": "Education", "degree": "bachelor"},
+      {"name_ar": "التربية الخاصة", "name_en": "Special Education", "degree": "bachelor"},
+      {"name_ar": "تربية الطفل", "name_en": "Child Education", "degree": "bachelor"},
+      {"name_ar": "صعوبات التعلم", "name_en": "Learning Disabilities", "degree": "bachelor"},
+      {"name_ar": "معلم الصف", "name_en": "Class Teacher", "degree": "bachelor"},
+      {"name_ar": "معلم صف / اللغة الانجليزية", "name_en": "Class Teacher / English Language", "degree": "bachelor"}
+    ]},
+    {"name_ar": "كلية الأعمال", "name_en": "College of Business", "majors": [
+      {"name_ar": "إدارة الأعمال", "name_en": "Business Administration", "degree": "bachelor"},
+      {"name_ar": "إدارة سلاسل التزويد واللوجيستيات الرقمية", "name_en": "Supply Chain Management and Digital Logistics", "degree": "bachelor"},
+      {"name_ar": "اقتصاد الأعمال", "name_en": "Business Economics", "degree": "bachelor"},
+      {"name_ar": "الاقتصاد", "name_en": "Economics", "degree": "bachelor"},
+      {"name_ar": "العلوم المالية والمصرفية", "name_en": "Financial and Banking Sciences", "degree": "bachelor"},
+      {"name_ar": "المحاسبة", "name_en": "Accounting", "degree": "bachelor"},
+      {"name_ar": "تكنولوجيا المالية", "name_en": "Financial Technology", "degree": "bachelor"}
+    ]},
+    {"name_ar": "كلية الآداب", "name_en": "College of Arts", "majors": [
+      {"name_ar": "اللغة الانجليزية وآدابها", "name_en": "English Language and Literature", "degree": "bachelor"},
+      {"name_ar": "اللغة العربية وآدابها", "name_en": "Arabic Language and Literature", "degree": "bachelor"}
+    ]},
+    {"name_ar": "كلية تكنولوجيا المعلومات والإتصالات", "name_en": "College of Information Technology and Communication", "majors": [
+      {"name_ar": "الأمن السيبراني", "name_en": "Cybersecurity", "degree": "bachelor"},
+      {"name_ar": "حوسبة الاجهزة الذكية", "name_en": "Smart Devices Computing", "degree": "bachelor"},
+      {"name_ar": "علم الحاسوب /الذكاء الاصطناعي وعلم البيانات", "name_en": "Computer Science / Artificial Intelligence and Data Science", "degree": "bachelor"},
+      {"name_ar": "نظم المعلومات الحاسوبية", "name_en": "Computer Information Systems", "degree": "bachelor"}
+    ]},
+    {"name_ar": "الكلية التقنية المتوسطة", "name_en": "Intermediate Technical College", "majors": [
+      {"name_ar": "تكنولوجيا التصنيع المحوسب", "name_en": "Computerized Manufacturing Technology", "degree": "diploma"},
+      {"name_ar": "صيانة المركبات الكهربائية والهجينة", "name_en": "Electric and Hybrid Vehicle Maintenance", "degree": "diploma"},
+      {"name_ar": "التكييف والتبريد", "name_en": "Air Conditioning and Refrigeration", "degree": "diploma"},
+      {"name_ar": "الصيانة الكهروميكانيكية", "name_en": "Electromechanical Maintenance", "degree": "diploma"},
+      {"name_ar": "المعدات والتركيبات الكهربائية", "name_en": "Electrical Equipment and Installations", "degree": "diploma"},
+      {"name_ar": "مساحة طرق وحساب كميات", "name_en": "Road Surveying and Quantity Surveying", "degree": "diploma"}
+    ]}
+  ],
+  "sources": [
+    "https://www.ttu.edu.jo/academics/",
+    "https://www.ttu.edu.jo/ttu_overview/departments/aard/tuition-fees/",
+    "https://www.ttu.edu.jo/en/academics/college-of-engineering/",
+    "https://www.ttu.edu.jo/en/st-services/",
+    "https://www.ttu.edu.jo/en/?p=1612"
+  ],
+  "notes": "Bachelor majors are verbatim from the official tuition-fees page (Admission & Registration dept), which may still list programmes that are closed to new admission (e.g. 'العلوم الاساسية', 'التربية', and both 'هندسة الميكاترونيكس' and 'هندسة الميكاترونيكس والروبوتات'). The academics page states counts of 16 engineering / 9 science / 6 education / 7 business / 2 arts / 4 IT bachelor programmes (44 total, though the same page also says 33 bachelor programmes overall). The English engineering page also lists 'Electrical Power & Control Engineering' and 'Air Conditioning and Refrigeration Technology', whose Arabic names were not found, so they are omitted. Diplomas: only the 6 intermediate-diploma specialisations shown on the academics page under 'الكلية التقنية المتوسطة' are included; the fee page lists ~40 diploma names (many likely historical) and the site says 13 intermediate-diploma specialisations exist. Email: students use [StudentID]@stu.ttu.edu.jo (stated on the student-services page); staff domain ttu.edu.jo. The Teams link on the site is a long login.microsoftonline.com OAuth URL redirecting to teams.microsoft.com/v2, simplified here. Campus centre coordinates could not be verified (campus is in Al-Eis district on the hills overlooking Tafila, ~1251 m altitude), so lat/lng are null. Brand colour not verified. English names for engineering majors are from the official English page; others are translations."
+}

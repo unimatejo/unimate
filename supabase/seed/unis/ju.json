@@ -1,0 +1,561 @@
+{
+  "slug": "ju",
+  "name_ar": "الجامعة الأردنية",
+  "name_en": "The University of Jordan",
+  "city": "Amman",
+  "type": "public",
+  "email_domains": [
+    "ju.edu.jo"
+  ],
+  "center": {
+    "lat": 32.01389,
+    "lng": 35.87278
+  },
+  "brand_color": null,
+  "links": [
+    {
+      "kind": "website",
+      "title": "الموقع الرسمي للجامعة الأردنية",
+      "url": "https://www.ju.edu.jo/home.aspx"
+    },
+    {
+      "kind": "registration",
+      "title": "وحدة القبول والتسجيل",
+      "url": "https://registration.ju.edu.jo"
+    },
+    {
+      "kind": "library",
+      "title": "مكتبة الجامعة الأردنية",
+      "url": "https://library.ju.edu.jo"
+    }
+  ],
+  "colleges": [
+    {
+      "name_ar": "كلية الطب",
+      "name_en": "School of Medicine",
+      "majors": [
+        {
+          "name_ar": "دكتور في الطب",
+          "name_en": "Doctor of Medicine (MD)",
+          "degree": "bachelor"
+        }
+      ]
+    },
+    {
+      "name_ar": "كلية طب الأسنان",
+      "name_en": "School of Dentistry",
+      "majors": [
+        {
+          "name_ar": "دكتور في طب الاسنان",
+          "name_en": "Doctor of Dental Surgery (DDS)",
+          "degree": "bachelor"
+        }
+      ]
+    },
+    {
+      "name_ar": "كلية الصيدلة",
+      "name_en": "School of Pharmacy",
+      "majors": [
+        {
+          "name_ar": "الصيدلة",
+          "name_en": "Pharmacy",
+          "degree": "bachelor"
+        },
+        {
+          "name_ar": "دكتور في الصيدلة",
+          "name_en": "Doctor of Pharmacy (PharmD)",
+          "degree": "bachelor"
+        }
+      ]
+    },
+    {
+      "name_ar": "كلية التمريض",
+      "name_en": "School of Nursing",
+      "majors": [
+        {
+          "name_ar": "التمريض",
+          "name_en": "Nursing",
+          "degree": "bachelor"
+        }
+      ]
+    },
+    {
+      "name_ar": "كلية علوم التأهيل",
+      "name_en": "School of Rehabilitation Sciences",
+      "majors": [
+        {
+          "name_ar": "العلاج الطبيعي",
+          "name_en": "Physiotherapy",
+          "degree": "bachelor"
+        },
+        {
+          "name_ar": "العلاج الوظيفي",
+          "name_en": "Occupational Therapy",
+          "degree": "bachelor"
+        },
+        {
+          "name_ar": "الأطراف الاصطناعية",
+          "name_en": "Prosthetics and Orthotics",
+          "degree": "bachelor"
+        },
+        {
+          "name_ar": "علوم السمع والنطق",
+          "name_en": "Hearing and Speech Sciences",
+          "degree": "bachelor"
+        }
+      ]
+    },
+    {
+      "name_ar": "كلية الهندسة",
+      "name_en": "School of Engineering",
+      "majors": [
+        {
+          "name_ar": "هندسة العمارة",
+          "name_en": "Architecture Engineering",
+          "degree": "bachelor"
+        },
+        {
+          "name_ar": "الهندسة المدنية",
+          "name_en": "Civil Engineering",
+          "degree": "bachelor"
+        },
+        {
+          "name_ar": "الهندسة الكهربائية",
+          "name_en": "Electrical Engineering",
+          "degree": "bachelor"
+        },
+        {
+          "name_ar": "الهندسة الميكانيكية",
+          "name_en": "Mechanical Engineering",
+          "degree": "bachelor"
+        },
+        {
+          "name_ar": "الهندسة الكيميائية",
+          "name_en": "Chemical Engineering",
+          "degree": "bachelor"
+        },
+        {
+          "name_ar": "الهندسة الصناعية",
+          "name_en": "Industrial Engineering",
+          "degree": "bachelor"
+        },
+        {
+          "name_ar": "هندسة الحاسوب",
+          "name_en": "Computer Engineering",
+          "degree": "bachelor"
+        },
+        {
+          "name_ar": "هندسة الميكاترونكس",
+          "name_en": "Mechatronics Engineering",
+          "degree": "bachelor"
+        }
+      ]
+    },
+    {
+      "name_ar": "كلية الملك عبدالله الثاني لتكنولوجيا المعلومات",
+      "name_en": "King Abdullah II School of Information Technology",
+      "majors": [
+        {
+          "name_ar": "علم الحاسوب",
+          "name_en": "Computer Science",
+          "degree": "bachelor"
+        },
+        {
+          "name_ar": "انظمة المعلومات الحاسوبية",
+          "name_en": "Computer Information Systems",
+          "degree": "bachelor"
+        },
+        {
+          "name_ar": "تكنولوجيا معلومات الأعمال",
+          "name_en": "Business Information Technology",
+          "degree": "bachelor"
+        },
+        {
+          "name_ar": "علم البيانات",
+          "name_en": "Data Science",
+          "degree": "bachelor"
+        },
+        {
+          "name_ar": "الأمن السيبراني",
+          "name_en": "Cybersecurity",
+          "degree": "bachelor"
+        },
+        {
+          "name_ar": "الذكاء الاصطناعي",
+          "name_en": "Artificial Intelligence",
+          "degree": "bachelor"
+        }
+      ]
+    },
+    {
+      "name_ar": "كلية العلوم",
+      "name_en": "School of Science",
+      "majors": [
+        {
+          "name_ar": "الرياضيات",
+          "name_en": "Mathematics",
+          "degree": "bachelor"
+        },
+        {
+          "name_ar": "الفيزياء",
+          "name_en": "Physics",
+          "degree": "bachelor"
+        },
+        {
+          "name_ar": "الكيمياء",
+          "name_en": "Chemistry",
+          "degree": "bachelor"
+        },
+        {
+          "name_ar": "الكيمياء الصناعية",
+          "name_en": "Industrial Chemistry",
+          "degree": "bachelor"
+        },
+        {
+          "name_ar": "العلوم الحياتية",
+          "name_en": "Biological Sciences",
+          "degree": "bachelor"
+        },
+        {
+          "name_ar": "الجيولوجيا البيئية والتطبيقية",
+          "name_en": "Environmental and Applied Geology",
+          "degree": "bachelor"
+        },
+        {
+          "name_ar": "العلوم الطبية المخبرية",
+          "name_en": "Medical Laboratory Sciences",
+          "degree": "bachelor"
+        },
+        {
+          "name_ar": "الإحصاء وعلم البيانات",
+          "name_en": "Statistics and Data Science",
+          "degree": "bachelor"
+        }
+      ]
+    },
+    {
+      "name_ar": "كلية الزراعة",
+      "name_en": "School of Agriculture",
+      "majors": [
+        {
+          "name_ar": "البستنة والمحاصيل",
+          "name_en": "Horticulture and Crop Science",
+          "degree": "bachelor"
+        },
+        {
+          "name_ar": "وقاية النبات",
+          "name_en": "Plant Protection",
+          "degree": "bachelor"
+        },
+        {
+          "name_ar": "تنسيق المواقع وإنتاج الأزهار",
+          "name_en": "Landscape Design and Floriculture",
+          "degree": "bachelor"
+        },
+        {
+          "name_ar": "الانتاج الحيواني",
+          "name_en": "Animal Production",
+          "degree": "bachelor"
+        },
+        {
+          "name_ar": "علم وتكنولوجيا الغذاء",
+          "name_en": "Food Science and Technology",
+          "degree": "bachelor"
+        },
+        {
+          "name_ar": "تغذية الانسان والحميات",
+          "name_en": "Human Nutrition and Dietetics",
+          "degree": "bachelor"
+        },
+        {
+          "name_ar": "الأراضي والمياه والبيئة",
+          "name_en": "Land, Water and Environment",
+          "degree": "bachelor"
+        },
+        {
+          "name_ar": "الاقتصاد الزراعي وإدارة الأعمال الزراعية",
+          "name_en": "Agricultural Economics and Agribusiness Management",
+          "degree": "bachelor"
+        }
+      ]
+    },
+    {
+      "name_ar": "كلية الأعمال",
+      "name_en": "School of Business",
+      "majors": [
+        {
+          "name_ar": "إدارة الأعمال",
+          "name_en": "Business Administration",
+          "degree": "bachelor"
+        },
+        {
+          "name_ar": "المحاسبة",
+          "name_en": "Accounting",
+          "degree": "bachelor"
+        },
+        {
+          "name_ar": "التمويل",
+          "name_en": "Finance",
+          "degree": "bachelor"
+        },
+        {
+          "name_ar": "التسويق",
+          "name_en": "Marketing",
+          "degree": "bachelor"
+        },
+        {
+          "name_ar": "نظم المعلومات الادارية",
+          "name_en": "Management Information Systems",
+          "degree": "bachelor"
+        },
+        {
+          "name_ar": "الإدارة العامة",
+          "name_en": "Public Administration",
+          "degree": "bachelor"
+        },
+        {
+          "name_ar": "إقتصاد الأعمال",
+          "name_en": "Business Economics",
+          "degree": "bachelor"
+        }
+      ]
+    },
+    {
+      "name_ar": "كلية اللغات الأجنبية",
+      "name_en": "School of Foreign Languages",
+      "majors": [
+        {
+          "name_ar": "اللغة الانجليزية وآدابها",
+          "name_en": "English Language and Literature",
+          "degree": "bachelor"
+        },
+        {
+          "name_ar": "اللغة الانجليزية التطبيقية",
+          "name_en": "Applied English",
+          "degree": "bachelor"
+        },
+        {
+          "name_ar": "اللغة الفرنسية وآدابها",
+          "name_en": "French Language and Literature",
+          "degree": "bachelor"
+        },
+        {
+          "name_ar": "اللغة الفرنسية والانجليزية",
+          "name_en": "French and English",
+          "degree": "bachelor"
+        },
+        {
+          "name_ar": "اللغتين الألمانية والإنجليزية",
+          "name_en": "German and English",
+          "degree": "bachelor"
+        },
+        {
+          "name_ar": "اللغتين الإيطالية والإنجليزية",
+          "name_en": "Italian and English",
+          "degree": "bachelor"
+        },
+        {
+          "name_ar": "اللغتين الإسبانية والإنجليزية",
+          "name_en": "Spanish and English",
+          "degree": "bachelor"
+        },
+        {
+          "name_ar": "اللغتين الكورية والانجليزية",
+          "name_en": "Korean and English",
+          "degree": "bachelor"
+        },
+        {
+          "name_ar": "اللغتين الصينية والانجليزية",
+          "name_en": "Chinese and English",
+          "degree": "bachelor"
+        },
+        {
+          "name_ar": "اللغتين الروسية والانجليزية",
+          "name_en": "Russian and English",
+          "degree": "bachelor"
+        },
+        {
+          "name_ar": "اللغتين التركية والانجليزية",
+          "name_en": "Turkish and English",
+          "degree": "bachelor"
+        }
+      ]
+    },
+    {
+      "name_ar": "كلية الآداب",
+      "name_en": "School of Arts",
+      "majors": [
+        {
+          "name_ar": "اللغة العربية وآدابها",
+          "name_en": "Arabic Language and Literature",
+          "degree": "bachelor"
+        },
+        {
+          "name_ar": "التاريخ",
+          "name_en": "History",
+          "degree": "bachelor"
+        },
+        {
+          "name_ar": "الجغرافيا",
+          "name_en": "Geography",
+          "degree": "bachelor"
+        },
+        {
+          "name_ar": "الفلسفة",
+          "name_en": "Philosophy",
+          "degree": "bachelor"
+        },
+        {
+          "name_ar": "علم النفس",
+          "name_en": "Psychology",
+          "degree": "bachelor"
+        },
+        {
+          "name_ar": "علم الاجتماع",
+          "name_en": "Sociology",
+          "degree": "bachelor"
+        },
+        {
+          "name_ar": "العمل الاجتماعي",
+          "name_en": "Social Work",
+          "degree": "bachelor"
+        }
+      ]
+    },
+    {
+      "name_ar": "كلية الحقوق",
+      "name_en": "School of Law",
+      "majors": [
+        {
+          "name_ar": "القانون",
+          "name_en": "Law",
+          "degree": "bachelor"
+        }
+      ]
+    },
+    {
+      "name_ar": "كلية الأمير الحسين بن عبدالله الثاني للدراسات الدولية",
+      "name_en": "Prince Al Hussein Bin Abdullah II School of International Studies",
+      "majors": [
+        {
+          "name_ar": "العلوم السياسية",
+          "name_en": "Political Science",
+          "degree": "bachelor"
+        }
+      ]
+    },
+    {
+      "name_ar": "كلية العلوم التربوية",
+      "name_en": "School of Educational Sciences",
+      "majors": [
+        {
+          "name_ar": "معلم الصف / إناث",
+          "name_en": "Class Teacher (female)",
+          "degree": "bachelor"
+        },
+        {
+          "name_ar": "التربية الخاصة",
+          "name_en": "Special Education",
+          "degree": "bachelor"
+        },
+        {
+          "name_ar": "الإرشاد والصحة النفسية",
+          "name_en": "Counseling and Mental Health",
+          "degree": "bachelor"
+        },
+        {
+          "name_ar": "تربية الطفل / إناث",
+          "name_en": "Child Education (female)",
+          "degree": "bachelor"
+        },
+        {
+          "name_ar": "علم المكتبات والمعلومات",
+          "name_en": "Library and Information Science",
+          "degree": "bachelor"
+        }
+      ]
+    },
+    {
+      "name_ar": "كلية الشريعة",
+      "name_en": "School of Sharia",
+      "majors": [
+        {
+          "name_ar": "أصول الدين",
+          "name_en": "Fundamentals of Religion (Usul al-Din)",
+          "degree": "bachelor"
+        },
+        {
+          "name_ar": "الفقه وأصوله",
+          "name_en": "Jurisprudence and its Foundations",
+          "degree": "bachelor"
+        },
+        {
+          "name_ar": "المصارف الإسلامية",
+          "name_en": "Islamic Banking",
+          "degree": "bachelor"
+        }
+      ]
+    },
+    {
+      "name_ar": "كلية الآثار والسياحة",
+      "name_en": "School of Archaeology and Tourism",
+      "majors": [
+        {
+          "name_ar": "الآثار",
+          "name_en": "Archaeology",
+          "degree": "bachelor"
+        },
+        {
+          "name_ar": "إدارة المصادر التراثية",
+          "name_en": "Heritage Resources Management",
+          "degree": "bachelor"
+        },
+        {
+          "name_ar": "الادارة السياحية",
+          "name_en": "Tourism Management",
+          "degree": "bachelor"
+        },
+        {
+          "name_ar": "إدارة الضيافة",
+          "name_en": "Hospitality Management",
+          "degree": "bachelor"
+        },
+        {
+          "name_ar": "إدارة الفعاليات",
+          "name_en": "Events Management",
+          "degree": "bachelor"
+        }
+      ]
+    },
+    {
+      "name_ar": "كلية علوم الرياضة",
+      "name_en": "School of Sport Sciences",
+      "majors": [
+        {
+          "name_ar": "التربية البدنية",
+          "name_en": "Physical Education",
+          "degree": "bachelor"
+        },
+        {
+          "name_ar": "علوم الحركة والتدريب الرياضي",
+          "name_en": "Movement Sciences and Sports Training",
+          "degree": "bachelor"
+        }
+      ]
+    },
+    {
+      "name_ar": "كلية الفنون والتصميم",
+      "name_en": "School of Arts and Design",
+      "majors": []
+    }
+  ],
+  "sources": [
+    "https://www.auranking.aaru.edu.jo/ar/rank results/الجامعة-الأردنية/",
+    "https://en.wikipedia.org/wiki/University_of_Jordan",
+    "https://ween.ps/jo/universities/ju/programs",
+    "https://jam3ah.ai/jordan-universities/uj",
+    "https://library.ju.edu.jo/NEWLIBRARY/AR_Library/LIB-FAQ.aspx",
+    "https://husna.fm/محلي/تخصصات-القبول-الموحد-2026"
+  ],
+  "notes": "UNVERIFIED AGAINST OFFICIAL SOURCES. All *.ju.edu.jo pages (registration, faculties, PDFs) returned a WAF 'Request Rejected' page to the fetcher, and admhec.gov.jo and the MoHE 2026-2027 academic-track majors PDF are blocked by robots.txt, so nothing here was read from an official page. Major names (Arabic) are copied verbatim from two third-party sites (ween.ps, jam3ah.ai) that reproduce Unified Admission (admhec) lists; they agree on almost all names. Assignment of majors to colleges, college Arabic names and ALL English names are from general knowledge of JU's structure, not verified. Conflicts/uncertain: ween.ps lists 'تنسيق المواقع وإنتاج الأزهار', jam3ah.ai lists 'تصميم وتنسيق المواقع' (same programme, name unclear). Nursing appears as gendered admission tracks ('التمريض / ذكور وإناث', 'التمريض / إناث', 'التمريض / ذكور') - merged into one major. 'الإحصاء وعلم البيانات', 'إدارة الضيافة', 'إدارة الفعاليات', 'الذكاء الاصطناعي' appear only in jam3ah.ai; their college placement is a guess. 'التسويق الرقمي' appears on jam3ah.ai with unclear campus - omitted. School of Arts and Design (كلية الفنون والتصميم) and Aviation Engineering admit via direct admission outside the unified list (per husna.fm); their majors could not be verified and are omitted. JU reportedly has 26 schools and 106 undergraduate programmes (AARU ranking page), so this list (19 colleges) is incomplete - e.g. Graduate School and Aqaba-branch schools are not listed. Email: ju.edu.jo is the university's domain; whether students use ju.edu.jo or a subdomain for Microsoft 365 could not be verified (a JU medicine-student guide says students get the address from the registration system but does not show the format). Center coordinates are from Wikipedia (32°0'50\"N 35°52'22\"E), not OpenStreetMap. Brand colour: Wikipedia says 'royal yellow and green' but no hex from the official visual identity, so null. e-learning/portal URLs not verified, so omitted. Aqaba branch (aqaba.ju.edu.jo, est. 2009) - not included as colleges. Third-party lists show Aqaba majors such as: أنظمة المعلومات الحاسوبية، تكنولوجيا معلومات الأعمال، التمريض، العلوم الحياتية، المحاسبة، التمويل، إدارة الأعمال، اللغة العربية وآدابها، اللغة الانجليزية وآدابها، اللغة الفرنسية / الانجليزية، اللغة الإنجليزية التطبيقية، الادارة السياحية، إدارة الفنادق، الحقوق، إدارة الجودة والعمليات، الامن السيبراني والشبكات الذكية (unverified)."
+}

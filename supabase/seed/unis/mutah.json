@@ -1,0 +1,468 @@
+{
+  "slug": "mutah",
+  "name_ar": "جامعة مؤتة",
+  "name_en": "Mutah University",
+  "city": "الكرك",
+  "type": "public",
+  "email_domains": [
+    "mutah.edu.jo"
+  ],
+  "center": {
+    "lat": 31.0936,
+    "lng": 35.7173
+  },
+  "brand_color": null,
+  "links": [
+    {
+      "kind": "website",
+      "title": "الموقع الرسمي لجامعة مؤتة",
+      "url": "https://www.mutah.edu.jo"
+    },
+    {
+      "kind": "portal",
+      "title": "بوابة الخدمات الإلكترونية للطلبة",
+      "url": "http://portal1.mutah.edu.jo/eservice/faces/loginView"
+    },
+    {
+      "kind": "registration",
+      "title": "التسجيل الإلكتروني",
+      "url": "http://app.mutah.edu.jo:7777/studreg/"
+    },
+    {
+      "kind": "elearning",
+      "title": "مركز التعلم الإلكتروني",
+      "url": "https://mutah.edu.jo/ar/ELCenter/Home.aspx"
+    },
+    {
+      "kind": "teams",
+      "title": "مايكروسوفت تيمز",
+      "url": "https://teams.microsoft.com"
+    },
+    {
+      "kind": "email",
+      "title": "البريد الجامعي (Outlook)",
+      "url": "https://outlook.office.com/"
+    },
+    {
+      "kind": "calendar",
+      "title": "التقويم الجامعي",
+      "url": "https://www.mutah.edu.jo/Lists/UniCalendar/Calendar.aspx"
+    }
+  ],
+  "colleges": [
+    {
+      "name_ar": "كلية الطب",
+      "name_en": "Faculty of Medicine",
+      "majors": [
+        {
+          "name_ar": "الطب",
+          "name_en": "Medicine",
+          "degree": "bachelor"
+        }
+      ]
+    },
+    {
+      "name_ar": "كلية طب الأسنان",
+      "name_en": "Faculty of Dentistry",
+      "majors": [
+        {
+          "name_ar": "طب الأسنان",
+          "name_en": "Dentistry",
+          "degree": "bachelor"
+        }
+      ]
+    },
+    {
+      "name_ar": "كلية الصيدلة",
+      "name_en": "Faculty of Pharmacy",
+      "majors": [
+        {
+          "name_ar": "الصيدلة",
+          "name_en": "Pharmacy",
+          "degree": "bachelor"
+        }
+      ]
+    },
+    {
+      "name_ar": "كلية التمريض",
+      "name_en": "Faculty of Nursing",
+      "majors": [
+        {
+          "name_ar": "التمريض",
+          "name_en": "Nursing",
+          "degree": "bachelor"
+        }
+      ]
+    },
+    {
+      "name_ar": "كلية العلوم الطبية المساندة",
+      "name_en": "Faculty of Allied Medical Sciences",
+      "majors": [
+        {
+          "name_ar": "العلوم الطبية المخبرية",
+          "name_en": "Medical Laboratory Sciences",
+          "degree": "bachelor"
+        }
+      ]
+    },
+    {
+      "name_ar": "كلية الهندسة",
+      "name_en": "Faculty of Engineering",
+      "majors": [
+        {
+          "name_ar": "الهندسة الكهربائية/الإلكترونيات",
+          "name_en": "Electrical Engineering / Electronics",
+          "degree": "bachelor"
+        },
+        {
+          "name_ar": "هندسة الحاسوب/أمن الحاسوب والشبكات",
+          "name_en": "Computer Engineering / Computer and Network Security",
+          "degree": "bachelor"
+        },
+        {
+          "name_ar": "هندسة مدنية/مياه وبيئة",
+          "name_en": "Civil Engineering / Water and Environment",
+          "degree": "bachelor"
+        },
+        {
+          "name_ar": "هندسة ميكانيكية/قوى حرارية وطاقة",
+          "name_en": "Mechanical Engineering / Thermal Power and Energy",
+          "degree": "bachelor"
+        },
+        {
+          "name_ar": "الهندسة الكهربائية/قوى وتحكم",
+          "name_en": "Electrical Engineering / Power and Control",
+          "degree": "bachelor"
+        },
+        {
+          "name_ar": "هندسة كهربائية/اتصالات",
+          "name_en": "Electrical Engineering / Communications",
+          "degree": "bachelor"
+        },
+        {
+          "name_ar": "هندسة كيميائية",
+          "name_en": "Chemical Engineering",
+          "degree": "bachelor"
+        },
+        {
+          "name_ar": "هندسة ميكانيكية",
+          "name_en": "Mechanical Engineering",
+          "degree": "bachelor"
+        },
+        {
+          "name_ar": "هندسة النظم الصناعية",
+          "name_en": "Industrial Systems Engineering",
+          "degree": "bachelor"
+        },
+        {
+          "name_ar": "هندسة الحاسوب",
+          "name_en": "Computer Engineering",
+          "degree": "bachelor"
+        },
+        {
+          "name_ar": "هندسة العمارة",
+          "name_en": "Architectural Engineering",
+          "degree": "bachelor"
+        },
+        {
+          "name_ar": "هندسة مدنية",
+          "name_en": "Civil Engineering",
+          "degree": "bachelor"
+        }
+      ]
+    },
+    {
+      "name_ar": "كلية الشريعة",
+      "name_en": "Faculty of Sharia",
+      "majors": [
+        {
+          "name_ar": "أصول الدين",
+          "name_en": "Fundamentals of Religion (Usul al-Din)",
+          "degree": "bachelor"
+        },
+        {
+          "name_ar": "الفقه وأصوله",
+          "name_en": "Jurisprudence and its Foundations",
+          "degree": "bachelor"
+        }
+      ]
+    },
+    {
+      "name_ar": "كلية العلوم",
+      "name_en": "Faculty of Science",
+      "majors": [
+        {
+          "name_ar": "الرياضيات",
+          "name_en": "Mathematics",
+          "degree": "bachelor"
+        },
+        {
+          "name_ar": "العلوم الحياتية",
+          "name_en": "Biological Sciences",
+          "degree": "bachelor"
+        },
+        {
+          "name_ar": "الكيمياء",
+          "name_en": "Chemistry",
+          "degree": "bachelor"
+        },
+        {
+          "name_ar": "الكيمياء الصناعية",
+          "name_en": "Industrial Chemistry",
+          "degree": "bachelor"
+        },
+        {
+          "name_ar": "الفيزياء",
+          "name_en": "Physics",
+          "degree": "bachelor"
+        }
+      ]
+    },
+    {
+      "name_ar": "كلية تكنولوجيا المعلومات",
+      "name_en": "Faculty of Information Technology",
+      "majors": [
+        {
+          "name_ar": "هندسة البرمجيات",
+          "name_en": "Software Engineering",
+          "degree": "bachelor"
+        },
+        {
+          "name_ar": "نظم المعلومات الحاسوبية",
+          "name_en": "Computer Information Systems",
+          "degree": "bachelor"
+        },
+        {
+          "name_ar": "علم الحاسوب",
+          "name_en": "Computer Science",
+          "degree": "bachelor"
+        },
+        {
+          "name_ar": "علم البيانات والذكاء الاصطناعي",
+          "name_en": "Data Science and Artificial Intelligence",
+          "degree": "bachelor"
+        },
+        {
+          "name_ar": "أمن المعلومات والأدلة الرقمية",
+          "name_en": "Information Security and Digital Forensics",
+          "degree": "bachelor"
+        }
+      ]
+    },
+    {
+      "name_ar": "كلية الأعمال",
+      "name_en": "Faculty of Business",
+      "majors": [
+        {
+          "name_ar": "العلوم المالية والمصرفية",
+          "name_en": "Financial and Banking Sciences",
+          "degree": "bachelor"
+        },
+        {
+          "name_ar": "اقتصاديات المال والأعمال",
+          "name_en": "Economics of Finance and Business",
+          "degree": "bachelor"
+        },
+        {
+          "name_ar": "ذكاء الأعمال وتحليل البيانات",
+          "name_en": "Business Intelligence and Data Analytics",
+          "degree": "bachelor"
+        },
+        {
+          "name_ar": "التسويق الرقمي",
+          "name_en": "Digital Marketing",
+          "degree": "bachelor"
+        },
+        {
+          "name_ar": "المحاسبة",
+          "name_en": "Accounting",
+          "degree": "bachelor"
+        },
+        {
+          "name_ar": "المحاسبة الجنائية",
+          "name_en": "Forensic Accounting",
+          "degree": "bachelor"
+        },
+        {
+          "name_ar": "الإدارة العامة",
+          "name_en": "Public Administration",
+          "degree": "bachelor"
+        },
+        {
+          "name_ar": "إدارة الأزمات",
+          "name_en": "Crisis Management",
+          "degree": "bachelor"
+        },
+        {
+          "name_ar": "التكنولوجيا المالية وإدارة المخاطر",
+          "name_en": "Financial Technology and Risk Management",
+          "degree": "bachelor"
+        },
+        {
+          "name_ar": "إدارة الأعمال",
+          "name_en": "Business Administration",
+          "degree": "bachelor"
+        }
+      ]
+    },
+    {
+      "name_ar": "كلية العلوم الاجتماعية",
+      "name_en": "Faculty of Social Sciences",
+      "majors": [
+        {
+          "name_ar": "العلوم السياسية",
+          "name_en": "Political Science",
+          "degree": "bachelor"
+        },
+        {
+          "name_ar": "التاريخ والحضارة",
+          "name_en": "History and Civilization",
+          "degree": "bachelor"
+        },
+        {
+          "name_ar": "الآثار والسياحة",
+          "name_en": "Archaeology and Tourism",
+          "degree": "bachelor"
+        },
+        {
+          "name_ar": "الجغرافيا ونظم المعلومات الجغرافية",
+          "name_en": "Geography and Geographic Information Systems",
+          "degree": "bachelor"
+        },
+        {
+          "name_ar": "علم الاجتماع",
+          "name_en": "Sociology",
+          "degree": "bachelor"
+        }
+      ]
+    },
+    {
+      "name_ar": "كلية علوم الرياضة",
+      "name_en": "Faculty of Sports Sciences",
+      "majors": [
+        {
+          "name_ar": "علم الحركة والتدريب الرياضي",
+          "name_en": "Kinesiology and Sports Training",
+          "degree": "bachelor"
+        },
+        {
+          "name_ar": "التأهيل الرياضي",
+          "name_en": "Sports Rehabilitation",
+          "degree": "bachelor"
+        },
+        {
+          "name_ar": "التربية الرياضية",
+          "name_en": "Physical Education",
+          "degree": "bachelor"
+        }
+      ]
+    },
+    {
+      "name_ar": "كلية الزراعة",
+      "name_en": "Faculty of Agriculture",
+      "majors": [
+        {
+          "name_ar": "تقنيات الوقاية والمكافحة المتكاملة",
+          "name_en": "Integrated Pest Management and Protection Technologies",
+          "degree": "bachelor"
+        },
+        {
+          "name_ar": "التغذية وتكنولوجيا الغذاء",
+          "name_en": "Nutrition and Food Technology",
+          "degree": "bachelor"
+        },
+        {
+          "name_ar": "إنتاج حيواني",
+          "name_en": "Animal Production",
+          "degree": "bachelor"
+        },
+        {
+          "name_ar": "إنتاج نباتي",
+          "name_en": "Plant Production",
+          "degree": "bachelor"
+        }
+      ]
+    },
+    {
+      "name_ar": "كلية العلوم التربوية",
+      "name_en": "Faculty of Educational Sciences",
+      "majors": [
+        {
+          "name_ar": "التربية الخاصة",
+          "name_en": "Special Education",
+          "degree": "bachelor"
+        },
+        {
+          "name_ar": "علم النفس",
+          "name_en": "Psychology",
+          "degree": "bachelor"
+        },
+        {
+          "name_ar": "الإرشاد والصحة النفسية",
+          "name_en": "Counselling and Mental Health",
+          "degree": "bachelor"
+        },
+        {
+          "name_ar": "معلم صف",
+          "name_en": "Class Teacher",
+          "degree": "bachelor"
+        }
+      ]
+    },
+    {
+      "name_ar": "كلية الحقوق",
+      "name_en": "Faculty of Law",
+      "majors": [
+        {
+          "name_ar": "الحقوق",
+          "name_en": "Law",
+          "degree": "bachelor"
+        }
+      ]
+    },
+    {
+      "name_ar": "كلية الآداب",
+      "name_en": "Faculty of Arts",
+      "majors": [
+        {
+          "name_ar": "الترجمة التحريرية والشفوية",
+          "name_en": "Written and Oral Translation (Translation and Interpreting)",
+          "degree": "bachelor"
+        },
+        {
+          "name_ar": "اللغات الأوروبية/الفرنسية والإنجليزية",
+          "name_en": "European Languages / French and English",
+          "degree": "bachelor"
+        },
+        {
+          "name_ar": "اللغة الإنجليزية وآدابها",
+          "name_en": "English Language and Literature",
+          "degree": "bachelor"
+        },
+        {
+          "name_ar": "اللغة العربية وآدابها",
+          "name_en": "Arabic Language and Literature",
+          "degree": "bachelor"
+        },
+        {
+          "name_ar": "اللغة الإنجليزية التطبيقية",
+          "name_en": "Applied English Language",
+          "degree": "bachelor"
+        }
+      ]
+    }
+  ],
+  "sources": [
+    "https://www.mutah.edu.jo/Documents/Majors2025.pdf",
+    "https://www.mutah.edu.jo/ar/research/SiteAssets/Lists/Announcements/EditForm/Mutah%20University%20-%20Arabic.pdf",
+    "https://www.mutah.edu.jo/ar/research/Forms/Academic Programs Handbook.pdf",
+    "https://www.mutah.edu.jo/ar/research/Forms/دليل التخصصات الجامعية.pdf",
+    "https://mutah.edu.jo/ar/admission/SiteAssets/Pages/Forms/EditForm/bachelor_majors.pdf",
+    "https://www.mutah.edu.jo/ar/it/StudyPlans/الخطة الدراسية لدرجة البكالوريوس في علم الحاسوب 2025.pdf",
+    "https://mutah.edu.jo/Documents/I-P/sp4.pdf",
+    "https://mutah.edu.jo/en/ELCenter/Pages/FAQs.aspx",
+    "https://mutah.edu.jo/en/ELCenter/Lists/Studentservices/Services.aspx",
+    "https://wikipedia.jakami.de/content/wikipedia_de_all_nopic_2025-09/Mutah_University"
+  ],
+  "notes": "Majors list = the 61 civilian-wing bachelor programmes in Mutah's official 2025/2026 bachelor list (Admission & Registration Unit, dated 24/08/2025, Majors2025.pdf). That PDF's Arabic text extracts with corrupted glyphs (font ligature issue); Arabic names were decoded character-by-character and cross-checked against the university's Arabic brochure, so treat spelling (hamzas, ال) as near-exact rather than byte-exact. The PDF writes 'الفقة وأصوله' (typo) – brochure spelling 'الفقه وأصوله' used. Code 2211 extracted as 'الحاسوب'; named 'علم الحاسوب' per the faculty's 2025 study-plan title. Faculty-to-major mapping is from the university brochure/Handbook (the 2025 list is grouped but its faculty headings did not extract); Dentistry faculty's exact Arabic name not verified ('كلية طب الأسنان' per an official announcement title; brochure text suggests 'كلية طب وجراحة الفم والأسنان'). English names are mostly translations; only some match the English Academic Programs Handbook (2024). Older programmes in the 2024 brochure but absent from the 2025 list (e.g. Cosmetics/Cosmetology at Pharmacy, Sports Training, Marketing, Public/Private Law tracks, Child Education & Kindergarten, Applied Psychology) were left out; current students in them may still exist. Military wing (Faculty of Military Sciences, Faculty of Police Sciences, etc.) programmes are not included – not part of civilian admission and their faculty/degree mapping was unclear. Email: student address format is <university number>@mutah.edu.jo per the E-Learning Center FAQ (Teams + Outlook used); no separate student subdomain found. Portal and registration links are plain http as published by the university. Library link not included (official page pointed 'Electronic Library' to regweb.mutah.edu.jo/menu, which looked mislabelled). Centre coordinates are from Wikipedia (German) 31°5′36.8″N 35°43′2.2″E, not verified on OSM. Brand colour not found. admhec.gov.jo could not be read (robots-disallowed)."
+}
