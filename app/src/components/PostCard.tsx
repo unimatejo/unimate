@@ -1,14 +1,15 @@
 import { router } from 'expo-router';
 import { Bookmark, FileText, Heart, MessageCircle, Send } from 'lucide-react-native';
 import { useEffect, useState } from 'react';
-import { View } from 'react-native';
+import * as WebBrowser from 'expo-web-browser';
+import { Alert, View } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withSequence, withSpring, withTiming } from 'react-native-reanimated';
 import { Image } from 'expo-image';
 
 import { Avatar, Row, T, Tag, Tap } from './ui';
 import { useAuth } from '@/lib/auth';
 import { toggleLike, toggleSave } from '@/lib/posts';
-import { mediaUrl } from '@/lib/supabase';
+import { mediaUrl, supabase } from '@/lib/supabase';
 import { CATEGORY, C, shadow } from '@/lib/theme';
 import type { Post } from '@/lib/types';
 import { timeAgo } from '@/lib/util';
@@ -19,6 +20,52 @@ function Photo({ path }: { path: string }) {
   return <View style={{ marginHorizontal: 10, height: 210, borderRadius: 20, backgroundColor: '#DDE4FF', overflow: 'hidden' }}>
     {uri && <Image source={{ uri }} style={{ flex: 1 }} contentFit="cover" transition={200} />}
   </View>;
+}
+
+async function openFile(path: string) {
+  const uri = await mediaUrl('posts', path);
+  if (!uri) { Alert.alert('ما قدرنا نفتح الملف'); return; }
+  WebBrowser.openBrowserAsync(uri).catch(() => Alert.alert('ما قدرنا نفتح الملف'));
+}
+
+/** Poll: tap an option to vote, then see the results. One vote per person (poll_votes primary key). */
+function Poll({ postId, options }: { postId: string; options: string[] }) {
+  const { profile } = useAuth();
+  const [counts, setCounts] = useState<number[]>(options.map(() => 0));
+  const [mine, setMine] = useState<number | null>(null);
+  const load = async () => {
+    const { data } = await supabase.from('poll_votes').select('user_id, option_idx').eq('post_id', postId);
+    const c = options.map(() => 0); let m: number | null = null;
+    (data ?? []).forEach((v) => { if (c[v.option_idx] != null) c[v.option_idx]++; if (v.user_id === profile?.id) m = v.option_idx; });
+    setCounts(c); setMine(m);
+  };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { load(); }, [postId]);
+  async function vote(i: number) {
+    if (!profile || mine != null) return;
+    setMine(i); setCounts((c) => c.map((n, j) => (j === i ? n + 1 : n)));
+    const { error } = await supabase.from('poll_votes').insert({ post_id: postId, user_id: profile.id, option_idx: i });
+    if (error) load();
+  }
+  const total = counts.reduce((a, b) => a + b, 0);
+  return (
+    <View style={{ marginHorizontal: 14, marginTop: 10, gap: 6 }}>
+      {options.map((o, i) => {
+        const pct = total ? Math.round((counts[i] / total) * 100) : 0;
+        return (
+          <Tap key={i} onPress={() => vote(i)} disabled={mine != null} haptic scale={0.98} accessibilityLabel={o}
+            style={{ minHeight: 44, borderRadius: 14, borderWidth: 1.5, borderColor: mine === i ? C.violet : C.line, overflow: 'hidden', justifyContent: 'center' }}>
+            {mine != null && <View style={{ position: 'absolute', top: 0, bottom: 0, right: 0, width: `${pct}%`, backgroundColor: C.violetSoft }} />}
+            <Row gap={8} style={{ paddingHorizontal: 12 }}>
+              <T v="bold" style={{ flex: 1, fontSize: 14 }} color={mine === i ? C.violet : C.ink}>{o}</T>
+              {mine != null && <T v="bold" style={{ fontSize: 13 }} color={C.ink2}>{pct}%</T>}
+            </Row>
+          </Tap>
+        );
+      })}
+      <T v="tiny" color={C.muted}>{total} صوت{mine == null ? ' · اكبس على خيار لتصوّت' : ''}</T>
+    </View>
+  );
 }
 
 export function PostCard({ post, onLikes, compact }: { post: Post; onLikes?: (p: Post) => void; compact?: boolean }) {
@@ -65,14 +112,16 @@ export function PostCard({ post, onLikes, compact }: { post: Post; onLikes?: (p:
           {p.body ? <T v="body" color={C.ink2} numberOfLines={compact ? 3 : 8}>{p.body}</T> : null}
           {p.price_jod != null && <T v="bold" color={C.greenInk}>{p.price_jod} دينار</T>}
         </View>
+        {p.poll?.options?.length ? <Poll postId={p.id} options={p.poll.options} /> : null}
         {files.map((f) => (
-          <Row key={f.id} gap={10} style={{ marginHorizontal: 14, marginTop: 10, backgroundColor: '#F6F8FC', borderRadius: 14, padding: 10 }}>
+          <Tap key={f.id} haptic={false} scale={0.98} onPress={() => openFile(f.url)} accessibilityLabel={`افتح ${f.file_name ?? 'الملف'}`}
+            style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginHorizontal: 14, marginTop: 10, backgroundColor: '#F6F8FC', borderRadius: 14, padding: 10 }}>
             <View style={{ width: 36, height: 40, borderRadius: 8, backgroundColor: '#FDE7EA', alignItems: 'center', justifyContent: 'center' }}><FileText size={18} color="#E11D48" /></View>
             <View style={{ flex: 1 }}>
               <T v="bold" style={{ fontSize: 13 }} numberOfLines={1}>{f.file_name ?? 'ملف'}</T>
-              {f.size_bytes ? <T v="tiny" color={C.muted}>{(f.size_bytes / 1048576).toFixed(1)} ميجا</T> : null}
+              {f.size_bytes ? <T v="tiny" color={C.muted}>{(f.size_bytes / 1048576).toFixed(1)} ميجا · اكبس لتفتحه</T> : null}
             </View>
-          </Row>
+          </Tap>
         ))}
       </Tap>
 

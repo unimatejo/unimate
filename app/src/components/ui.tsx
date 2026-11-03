@@ -142,7 +142,7 @@ export function Segmented({ items, value, onChange, dark }: { items: string[]; v
 // ---------- avatar ----------
 export function Avatar({ id, name, url, size = 44, ring, radius }: { id?: string | null; name?: string | null; url?: string | null; size?: number; ring?: boolean; radius?: number }) {
   const [bg, fg] = avatarColors(id);
-  const r = radius ?? Math.round(size * 0.36);
+  const r = radius ?? Math.round(size / 2);
   const inner = (
     <View style={{ width: size, height: size, borderRadius: r, backgroundColor: bg, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
       {url ? <Image source={{ uri: url }} style={{ width: size, height: size }} contentFit="cover" transition={150} /> : (

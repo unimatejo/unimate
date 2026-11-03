@@ -15,7 +15,13 @@
         "NSPhotoLibraryUsageDescription": "لاختيار صور للمنشورات والمحادثات وصورة البروفايل.",
         "NSLocationWhenInUseUsageDescription": "لعرض موقعك على خريطة الجامعة وحساب الطريق لقاعتك.",
         "NSMicrophoneUsageDescription": "للرسائل الصوتية والمكالمات.",
-        "CFBundleDisplayName": "UniMate"
+        "CFBundleDisplayName": "UniMate",
+        "LSApplicationQueriesSchemes": [
+          "instagram",
+          "snapchat",
+          "tel",
+          "maps"
+        ]
       }
     },
     "android": {

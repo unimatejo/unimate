@@ -28,6 +28,7 @@ export type Post = {
   like_count: number; comment_count: number; created_at: string;
   author?: Pick<Profile, 'id' | 'full_name' | 'avatar_url' | 'study_year'> & { major?: { name_ar: string } | null };
   media?: { id: string; kind: string; url: string; file_name: string | null; size_bytes: number | null; position: number }[];
+  poll?: { options: string[] } | null;
   liked?: boolean; saved?: boolean;
 };
 

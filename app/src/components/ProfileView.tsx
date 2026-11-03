@@ -1,4 +1,4 @@
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import { AtSign, BadgeCheck, BookOpen, Flag, Lock, MessageCircle, Settings, Star } from 'lucide-react-native';
 import { useCallback, useEffect, useState } from 'react';
 import { Alert, Linking, RefreshControl, ScrollView, View } from 'react-native';
@@ -14,6 +14,14 @@ import { C, F } from '@/lib/theme';
 import type { Post, Profile } from '@/lib/types';
 
 type Rel = 'none' | 'pending' | 'accepted';
+
+/** Open the Instagram / Snapchat app on that profile, or the website if the app isn't installed. */
+export function openSocial(site: 'instagram' | 'snapchat', handle: string) {
+  const h = encodeURIComponent(handle);
+  const app = site === 'instagram' ? `instagram://user?username=${h}` : `snapchat://add/${h}`;
+  const web = site === 'instagram' ? `https://www.instagram.com/${h}/` : `https://www.snapchat.com/add/${h}`;
+  Linking.openURL(app).catch(() => Linking.openURL(web).catch(() => Alert.alert('ما قدرنا نفتح الرابط')));
+}
 
 export function ProfileView({ userId }: { userId: string }) {
   const { profile: me } = useAuth();
@@ -46,6 +54,8 @@ export function ProfileView({ userId }: { userId: string }) {
   }, [me, userId, mine]);
 
   useEffect(() => { load(); }, [load]);
+  // refresh when coming back from edit profile / privacy
+  useFocusEffect(useCallback(() => { load(); }, [load]));
 
   async function follow() {
     if (!me) return;
@@ -90,10 +100,12 @@ export function ProfileView({ userId }: { userId: string }) {
             <Avatar id={p.id} name={p.full_name} url={p.avatar_url} size={86} ring />
             <View style={{ flex: 1, flexDirection: 'row' }}>
               {[[p.post_count, 'منشور', true], [p.follower_count, 'متابِع', mine || !p.hide_followers], [p.following_count, 'يتابع', mine || !p.hide_following]].map(([n, l, vis]) => (
-                <View key={l as string} style={{ flex: 1, alignItems: 'center' }}>
+                <Tap key={l as string} haptic={false} scale={0.95} disabled={!vis || l === 'منشور' || !canSee}
+                  onPress={() => router.push({ pathname: '/follows', params: { user: userId, type: l === 'متابِع' ? 'followers' : 'following', name: p.full_name } })}
+                  style={{ flex: 1, alignItems: 'center' }} accessibilityLabel={l as string}>
                   {vis ? <T style={{ fontFamily: F.display, fontSize: 20 }}>{String(n)}</T> : <Lock size={18} color={C.faint} style={{ height: 30 }} />}
                   <T v="tiny" color={C.muted}>{l as string}</T>
-                </View>
+                </Tap>
               ))}
             </View>
           </Row>
@@ -126,13 +138,13 @@ export function ProfileView({ userId }: { userId: string }) {
             <Animated.View entering={FadeInDown}>
               <Row gap={8}>
                 {p.instagram && (
-                  <Tap onPress={() => Linking.openURL(`https://instagram.com/${p.instagram}`)} style={{ flex: 1, minHeight: 46, borderRadius: 14, backgroundColor: C.white, flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 12 }}>
+                  <Tap onPress={() => openSocial('instagram', p.instagram!)} style={{ flex: 1, minHeight: 46, borderRadius: 14, backgroundColor: C.white, flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 12 }}>
                     <View style={{ width: 28, height: 28, borderRadius: 9, backgroundColor: '#E1306C', alignItems: 'center', justifyContent: 'center' }}><AtSign size={16} color={C.white} /></View>
                     <T v="small" numberOfLines={1}>{p.instagram}</T>
                   </Tap>
                 )}
                 {p.snapchat && (
-                  <Tap onPress={() => Linking.openURL(`https://snapchat.com/add/${p.snapchat}`)} style={{ flex: 1, minHeight: 46, borderRadius: 14, backgroundColor: C.white, flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 12 }}>
+                  <Tap onPress={() => openSocial('snapchat', p.snapchat!)} style={{ flex: 1, minHeight: 46, borderRadius: 14, backgroundColor: C.white, flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 12 }}>
                     <View style={{ width: 28, height: 28, borderRadius: 9, backgroundColor: '#FFFC00', alignItems: 'center', justifyContent: 'center' }}><AtSign size={16} color={C.ink} /></View>
                     <T v="small" numberOfLines={1}>{p.snapchat}</T>
                   </Tap>

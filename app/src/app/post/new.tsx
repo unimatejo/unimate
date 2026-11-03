@@ -1,6 +1,6 @@
 import { Image } from 'expo-image';
 import { router, useLocalSearchParams } from 'expo-router';
-import { BarChart3, Camera, FileText, Image as ImageIcon, MapPin, Video, X } from 'lucide-react-native';
+import { BarChart3, Camera, FileText, Image as ImageIcon, MapPin, Plus, Video, X } from 'lucide-react-native';
 import { useState } from 'react';
 import { Alert, KeyboardAvoidingView, Platform, ScrollView, TextInput, View } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
@@ -9,7 +9,7 @@ import { Avatar, Button, Chip, Row, Screen, Segmented, T, Tap } from '@/componen
 import { useAuth } from '@/lib/auth';
 import { supabase } from '@/lib/supabase';
 import { CATEGORY, C, F } from '@/lib/theme';
-import { pickMedia, uploadFile, type Picked } from '@/lib/upload';
+import { pickMedia, pickPdf, uploadFile, type Picked } from '@/lib/upload';
 
 const POST_AUD = [['university', 'الجامعة'], ['college', 'كليتي'], ['major', 'تخصصي'], ['friends', 'أصدقائي']] as const;
 const STORY_AUD = [['friends', 'أصدقائي'], ['close_friends', 'المقربين'], ['major', 'دفعتي'], ['university', 'الجامعة']] as const;
@@ -26,6 +26,8 @@ export default function NewPost() {
   const [aud, setAud] = useState(0);
   const [media, setMedia] = useState<Picked | null>(null);
   const [busy, setBusy] = useState(false);
+  const [pdf, setPdf] = useState<{ uri: string; mime: string; name: string; size: number | null } | null>(null);
+  const [poll, setPoll] = useState<string[] | null>(null);
   const isPost = mode === 0;
 
   async function pick(camera = false, video = false) {
@@ -38,18 +40,25 @@ export default function NewPost() {
     setBusy(true);
     try {
       if (isPost) {
-        if (!body.trim() && !media) { setBusy(false); return; }
+        const opts = poll?.map((o) => o.trim()).filter(Boolean) ?? null;
+        if (poll && (!body.trim() || (opts?.length ?? 0) < 2)) { Alert.alert('الاستطلاع', 'اكتب السؤال فوق وخيارين على الأقل.'); setBusy(false); return; }
+        if (!body.trim() && !media && !pdf) { Alert.alert('اكتب إشي أو ضيف صورة أو ملف'); setBusy(false); return; }
         const { data: post, error } = await supabase.from('posts').insert({
           author_id: (profile?.id ?? ''), university_id: profile.university_id, community_id: params.community ?? null,
           category: cat, audience: params.community ? 'community' : POST_AUD[aud][0],
           title: title.trim() || null, body: body.trim(),
           price_jod: cat === 'market' && price ? Number(price) : null,
           lost_found: cat === 'lost_found' ? lf : null,
+          poll: opts && opts.length >= 2 ? { options: opts.slice(0, 4) } : null,
         }).select('id').single();
         if (error) throw error;
         if (media) {
           const path = await uploadFile('posts', (profile?.id ?? ''), media);
           await supabase.from('post_media').insert({ post_id: post.id, kind: 'image', url: path, size_bytes: media.size ?? null });
+        }
+        if (pdf) {
+          const path = await uploadFile('posts', (profile?.id ?? ''), pdf);
+          await supabase.from('post_media').insert({ post_id: post.id, kind: 'file', url: path, file_name: pdf.name, size_bytes: pdf.size, position: 1 });
         }
       } else {
         if (!media) { Alert.alert('ضيف صورة أو فيديو للستوري'); setBusy(false); return; }
@@ -95,17 +104,38 @@ export default function NewPost() {
             </Animated.View>
           )}
 
+          {isPost && pdf && (
+            <Row gap={10} style={{ backgroundColor: '#F6F8FC', borderRadius: 16, padding: 12 }}>
+              <FileText size={22} color="#E11D48" />
+              <T v="bold" numberOfLines={1} style={{ flex: 1, fontSize: 14 }}>{pdf.name}</T>
+              <Tap onPress={() => setPdf(null)} accessibilityLabel="شيل الملف" style={{ width: 36, height: 36, alignItems: 'center', justifyContent: 'center' }}><X size={18} color={C.muted} /></Tap>
+            </Row>
+          )}
+          {isPost && poll && (
+            <View style={{ gap: 8, backgroundColor: C.violetSoft, borderRadius: 18, padding: 12 }}>
+              <T v="bold" color={C.violet}>خيارات الاستطلاع (السؤال هو النص فوق)</T>
+              {poll.map((o, i) => (
+                <Row key={i} gap={6}>
+                  <TextInput value={o} onChangeText={(t) => setPoll(poll.map((x, j) => (j === i ? t : x)))} maxLength={60} placeholder={`الخيار ${i + 1}`} placeholderTextColor={C.faint}
+                    style={{ flex: 1, minHeight: 44, borderRadius: 12, backgroundColor: C.white, paddingHorizontal: 12, fontFamily: F.body, fontSize: 15, color: C.ink, textAlign: 'right' }} />
+                  {poll.length > 2 && <Tap onPress={() => setPoll(poll.filter((_, j) => j !== i))} accessibilityLabel="شيل الخيار" style={{ width: 36, height: 44, alignItems: 'center', justifyContent: 'center' }}><X size={16} color={C.muted} /></Tap>}
+                </Row>
+              ))}
+              {poll.length < 4 && <Tap onPress={() => setPoll([...poll, ''])} style={{ flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 40 }}><Plus size={16} color={C.violet} /><T v="bold" color={C.violet}>ضيف خيار</T></Tap>}
+            </View>
+          )}
+
           <Row gap={8}>
             {((isPost ? [
               ['صورة', ImageIcon, C.green, C.greenSoft, () => pick()],
               ['كاميرا', Camera, C.pink, C.pinkSoft, () => pick(true)],
-              ['ملف', FileText, C.primary, C.primarySoft, () => Alert.alert('الملفات', 'رفع ملفات PDF بينضاف بالتحديث الجاي.')],
-              ['استطلاع', BarChart3, C.violet, C.violetSoft, () => Alert.alert('الاستطلاع', 'بينضاف بالتحديث الجاي.')],
+              ['ملف PDF', FileText, C.primary, C.primarySoft, async () => { const f = await pickPdf(); if (f) setPdf(f); }],
+              ['استطلاع', BarChart3, C.violet, C.violetSoft, () => setPoll(poll ? null : ['', ''])],
             ] : [
               ['كاميرا', Camera, C.pink, C.pinkSoft, () => pick(true, true)],
               ['فيديو 15ث', Video, C.ink, '#EEF0F6', () => pick(false, true)],
               ['صورة', ImageIcon, C.green, C.greenSoft, () => pick()],
-            ]) as [string, typeof Camera, string, string, () => void][]).map(([label, Icon, fg, bg, fn]) => (
+            ]) as [string, typeof Camera, string, string, () => void | Promise<void>][]).map(([label, Icon, fg, bg, fn]) => (
               <Tap key={label} onPress={fn} style={{ flex: 1, minHeight: 76, borderRadius: 20, backgroundColor: bg, alignItems: 'center', justifyContent: 'center', gap: 6 }}>
                 <Icon size={24} color={fg} /><T v="tiny" color={fg}>{label}</T>
               </Tap>

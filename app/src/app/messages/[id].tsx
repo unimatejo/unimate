@@ -147,8 +147,10 @@ export default function Chat() {
             </View>
           </Tap>
           {conv?.kind === 'direct' && <>
+            {process.env.EXPO_PUBLIC_CALLS === '1' && <>
             <Tap onPress={() => call('voice')} accessibilityLabel="مكالمة صوتية" style={{ width: 42, height: 42, alignItems: 'center', justifyContent: 'center' }}><Phone size={21} color={C.ink} /></Tap>
             <Tap onPress={() => call('video')} accessibilityLabel="مكالمة فيديو" style={{ width: 42, height: 42, alignItems: 'center', justifyContent: 'center' }}><Video size={23} color={C.ink} /></Tap>
+            </>}
           </>}
           <Tap onPress={() => setSheet(true)} accessibilityLabel="إعدادات المحادثة" style={{ width: 42, height: 42, alignItems: 'center', justifyContent: 'center' }}><MoreHorizontal size={22} color={C.ink} /></Tap>
         </Row>
@@ -174,7 +176,7 @@ export default function Chat() {
             if (m.kind === 'system') return <Animated.View entering={FadeIn} style={{ alignSelf: 'center', backgroundColor: '#E7EAF3', borderRadius: 999, paddingHorizontal: 12, paddingVertical: 5 }}><T v="tiny" color={C.ink2}>{m.body}</T></Animated.View>;
             return (
               <Animated.View entering={FadeInUp.springify().damping(16)} style={{ alignSelf: mine ? 'flex-end' : 'flex-start', maxWidth: '80%', gap: 3 }}>
-                <Pressable onLongPress={() => toggleSave(m)} delayLongPress={350}>
+                <Pressable onPress={async () => { if (m.kind === 'image' && m.media_url) setViewer(await mediaUrl('chat', m.media_url)); }} onLongPress={() => toggleSave(m)} delayLongPress={350}>
                   {m.kind === 'image' && m.media_url ? <ChatImage path={m.media_url} mine={mine} /> :
                    m.kind === 'view_once' ? (
                     <Tap onPress={() => !mine && !m.viewed_once_at && openOnce(m)} style={{ flexDirection: 'row', alignItems: 'center', gap: 10, minHeight: 48, paddingHorizontal: 16, borderRadius: 22, borderWidth: 1.5, borderColor: m.viewed_once_at ? C.line : C.pink, backgroundColor: C.white }}>

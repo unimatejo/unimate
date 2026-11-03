@@ -1,74 +1,133 @@
-import { Camera } from 'lucide-react-native';
-import { useState } from 'react';
-import { Alert, KeyboardAvoidingView, Platform, ScrollView, View } from 'react-native';
+import { Image } from 'expo-image';
+import { router } from 'expo-router';
+import { AtSign, Camera, Check, Trash2 } from 'lucide-react-native';
+import { useEffect, useState } from 'react';
+import { ActionSheetIOS, ActivityIndicator, Alert, KeyboardAvoidingView, Platform, ScrollView, View } from 'react-native';
 
 import { MajorPicker } from '@/components/MajorPicker';
 import { Avatar, Button, Chip, Field, Header, Row, Screen, T, Tap } from '@/components/ui';
 import { useAuth } from '@/lib/auth';
+import { reportError } from '@/lib/errors';
 import { supabase } from '@/lib/supabase';
 import { C } from '@/lib/theme';
-import { pickMedia, uploadFile } from '@/lib/upload';
+import { pickMedia, publicUrl, uploadFile } from '@/lib/upload';
 
-const clean = (s: string) => s.trim().replace(/^@/, '').replace(/^https?:\/\/(www\.)?(instagram\.com|snapchat\.com\/add)\//i, '').replace(/\/$/, '');
+/** Accepts "@name", "name", or any instagram.com / snapchat.com link and returns just the username. */
+export function handleFrom(input: string, site: 'instagram' | 'snapchat') {
+  let s = input.trim();
+  const re = site === 'instagram' ? /(?:https?:\/\/)?(?:www\.)?(?:instagram\.com|instagr\.am)\/([^/?#\s]+)/i : /(?:https?:\/\/)?(?:www\.)?snapchat\.com\/(?:add\/)?([^/?#\s]+)/i;
+  const m = s.match(re);
+  if (m) s = m[1];
+  return s.replace(/^@+/, '').trim();
+}
+const validHandle = (s: string) => /^[A-Za-z0-9._-]{1,30}$/.test(s);
 
 export default function EditProfile() {
   const { profile, university, refreshProfile } = useAuth();
-  const [name, setName] = useState(profile?.full_name ?? '');
-  const [username, setUsername] = useState(profile?.username ?? '');
-  const [bio, setBio] = useState(profile?.bio ?? '');
-  const [year, setYear] = useState<number | null>(profile?.study_year ?? null);
-  const [ig, setIg] = useState(profile?.instagram ?? '');
-  const [snap, setSnap] = useState(profile?.snapchat ?? '');
-  const [avatar, setAvatar] = useState(profile?.avatar_url ?? null);
-  const [busy, setBusy] = useState(false);
-  const [col, setCol] = useState<string | null>(profile?.college_id ?? null);
-  const [maj, setMaj] = useState<string | null>(profile?.major_id ?? null);
+  const [name, setName] = useState('');
+  const [username, setUsername] = useState('');
+  const [bio, setBio] = useState('');
+  const [year, setYear] = useState<number | null>(null);
+  const [ig, setIg] = useState('');
+  const [snap, setSnap] = useState('');
+  const [col, setCol] = useState<string | null>(null);
+  const [maj, setMaj] = useState<string | null>(null);
+  const [avatar, setAvatar] = useState<string | null>(null);   // saved URL
+  const [preview, setPreview] = useState<string | null>(null); // local file shown immediately
+  const [uploading, setUploading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [ready, setReady] = useState(false);
 
-  async function changePhoto() {
-    const f = await pickMedia();
-    if (!f || !profile) return;
-    setBusy(true);
+  // fill the form once the profile is loaded (the screen can open before it arrives)
+  useEffect(() => {
+    if (!profile || ready) return;
+    setName(/^\d+$/.test(profile.full_name) ? '' : profile.full_name);
+    setUsername(profile.username ?? ''); setBio(profile.bio ?? ''); setYear(profile.study_year ?? null);
+    setIg(profile.instagram ?? ''); setSnap(profile.snapchat ?? '');
+    setCol(profile.college_id); setMaj(profile.major_id); setAvatar(profile.avatar_url);
+    setReady(true);
+  }, [profile, ready]);
+
+  async function setPhoto(url: string | null) {
+    const { error } = await supabase.from('profiles').update({ avatar_url: url }).eq('id', profile?.id ?? '');
+    if (error) throw error;
+    setAvatar(url); await refreshProfile();
+  }
+
+  async function choose(camera: boolean) {
+    const f = await pickMedia({ square: true, camera });
+    if (!f) return;
+    setPreview(f.uri); setUploading(true);
     try {
-      const path = await uploadFile('avatars', (profile?.id ?? ''), f);
-      const { data } = supabase.storage.from('avatars').getPublicUrl(path);
-      setAvatar(data.publicUrl);
-    } catch { Alert.alert('ما زبط رفع الصورة'); }
-    setBusy(false);
+      const path = await uploadFile('avatars', profile?.id ?? '', f);
+      await setPhoto(publicUrl('avatars', path));
+    } catch (e) {
+      setPreview(null);
+      Alert.alert('ما زبط تغيير الصورة', e instanceof Error ? e.message : 'جرّب كمان مرة.');
+    }
+    setUploading(false);
+  }
+
+  function changePhoto() {
+    const opts = ['اختار من الصور', 'صوّر هلأ', ...(avatar ? ['شيل الصورة'] : []), 'إلغاء'];
+    const run = (i: number) => {
+      if (opts[i] === 'اختار من الصور') choose(false);
+      else if (opts[i] === 'صوّر هلأ') choose(true);
+      else if (opts[i] === 'شيل الصورة') setPhoto(null).then(() => setPreview(null)).catch(() => Alert.alert('ما زبط', 'جرّب كمان مرة.'));
+    };
+    if (Platform.OS === 'ios') ActionSheetIOS.showActionSheetWithOptions({ options: opts, cancelButtonIndex: opts.length - 1, destructiveButtonIndex: avatar ? 2 : undefined, title: 'صورة البروفايل' }, run);
+    else Alert.alert('صورة البروفايل', undefined, opts.map((o, i) => ({ text: o, style: o === 'إلغاء' ? 'cancel' : o === 'شيل الصورة' ? 'destructive' : 'default', onPress: () => run(i) })));
   }
 
   async function save() {
     if (!profile) return;
-    const u = username.trim().toLowerCase();
-    if (u && !/^[a-z0-9._]{3,24}$/.test(u)) { Alert.alert('اسم المستخدم', 'من 3 لـ 24 حرف إنجليزي صغير أو أرقام أو . و _'); return; }
-    if (name.trim().length < 2) { Alert.alert('الاسم قصير'); return; }
-    setBusy(true);
+    const u = username.trim().replace(/^@+/, '').toLowerCase();
+    const igH = handleFrom(ig, 'instagram'); const snH = handleFrom(snap, 'snapchat');
+    if (name.trim().length < 2) { Alert.alert('اكتب اسمك'); return; }
+    if (u && !/^[a-z0-9._]{3,24}$/.test(u)) { Alert.alert('اسم المستخدم', 'من 3 لـ 24 حرف إنجليزي أو أرقام أو . و _ (بدون مسافات).'); return; }
+    if (igH && !validHandle(igH)) { Alert.alert('إنستغرام', 'اكتب اسم المستخدم أو الصق رابط حسابك.'); return; }
+    if (snH && !validHandle(snH)) { Alert.alert('سناب شات', 'اكتب اسم المستخدم أو الصق رابط حسابك.'); return; }
+    setSaving(true);
     const { error } = await supabase.from('profiles').update({
       full_name: name.trim(), username: u || null, bio: bio.trim().slice(0, 150), study_year: year,
-      instagram: clean(ig) || null, snapchat: clean(snap) || null, avatar_url: avatar, college_id: col, major_id: maj,
-    }).eq('id', (profile?.id ?? ''));
-    setBusy(false);
-    if (error) { Alert.alert('ما زبط', error.code === '23505' ? 'اسم المستخدم مأخوذ، جرّب غيره.' : 'جرّب كمان مرة.'); return; }
+      instagram: igH || null, snapchat: snH || null, college_id: col, major_id: maj,
+    }).eq('id', profile.id);
+    setSaving(false);
+    if (error) {
+      reportError(new Error(`profile save: ${error.code} ${error.message}`));
+      Alert.alert('ما انحفظ', error.code === '23505' ? 'اسم المستخدم مأخوذ، جرّب غيره.' : 'تأكد من الإنترنت وجرّب كمان مرة.');
+      return;
+    }
     await refreshProfile();
-    Alert.alert('انحفظ ✓');
+    if (router.canGoBack()) router.back(); else router.replace('/profile');
   }
+
+  const shown = preview ?? avatar;
+  const igH = handleFrom(ig, 'instagram');
 
   return (
     <Screen>
-      <Header title="تعديل البروفايل" />
+      <Header title="تعديل البروفايل" right={
+        <Tap onPress={save} disabled={saving || uploading} accessibilityLabel="احفظ" style={{ minHeight: 40, paddingHorizontal: 14, borderRadius: 12, backgroundColor: C.primary, alignItems: 'center', justifyContent: 'center', opacity: saving || uploading ? 0.5 : 1 }}>
+          {saving ? <ActivityIndicator color={C.white} /> : <T v="bold" color={C.white}>احفظ</T>}
+        </Tap>
+      } />
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView contentContainerStyle={{ padding: 18, gap: 16, paddingBottom: 60 }} keyboardShouldPersistTaps="handled">
-          <Tap onPress={changePhoto} style={{ alignSelf: 'center', alignItems: 'center', gap: 8 }} accessibilityLabel="غيّر الصورة">
+          <Tap onPress={changePhoto} disabled={uploading} style={{ alignSelf: 'center', alignItems: 'center', gap: 8 }} accessibilityLabel="غيّر الصورة">
             <View>
-              <Avatar id={profile?.id} name={name} url={avatar} size={104} ring />
+              {shown ? <Image source={{ uri: shown }} style={{ width: 108, height: 108, borderRadius: 54, borderWidth: 3, borderColor: C.white }} contentFit="cover" transition={150} />
+                : <Avatar id={profile?.id} name={name || profile?.full_name} url={null} size={108} ring />}
+              {uploading && <View style={{ position: 'absolute', inset: 0, borderRadius: 54, backgroundColor: 'rgba(14,20,48,0.45)', alignItems: 'center', justifyContent: 'center' }}><ActivityIndicator color={C.white} /></View>}
               <View style={{ position: 'absolute', bottom: 2, left: 2, width: 34, height: 34, borderRadius: 17, backgroundColor: C.primary, alignItems: 'center', justifyContent: 'center', borderWidth: 3, borderColor: C.bg }}>
                 <Camera size={16} color={C.white} />
               </View>
             </View>
-            <T v="bold" color={C.primary}>غيّر الصورة</T>
+            <T v="bold" color={C.primary}>{uploading ? 'عم نرفع الصورة…' : shown ? 'غيّر الصورة' : 'حط صورة'}</T>
           </Tap>
 
-          <Field label="الاسم" value={name} onChangeText={setName} maxLength={60} />
-          <Field label="اسم المستخدم" value={username} onChangeText={setUsername} autoCapitalize="none" placeholder="مثلاً sara.cs" style={{ textAlign: 'left' }} />
+          <Field label="الاسم" value={name} onChangeText={setName} maxLength={60} placeholder="اسمك الكامل" />
+          <Field label="اسم المستخدم" value={username} onChangeText={(t) => setUsername(t.replace(/\s/g, ''))} autoCapitalize="none" autoCorrect={false} placeholder="مثلاً sara.cs" style={{ textAlign: 'left', writingDirection: 'ltr' }} />
           <Field label="نبذة" value={bio} onChangeText={setBio} multiline maxLength={150} placeholder="إشي عنك بسطر" style={{ minHeight: 84, textAlignVertical: 'top', paddingTop: 12 }} />
           <T v="tiny" color={C.muted} style={{ marginTop: -10 }}>{bio.length}/150</T>
 
@@ -81,9 +140,10 @@ export default function EditProfile() {
 
           <View style={{ gap: 10, backgroundColor: C.white, borderRadius: 22, padding: 14 }}>
             <T v="h3">حساباتك التانية</T>
-            <T v="tiny" color={C.muted}>بتبيّن على بروفايلك حسب إعداد «مين بيشوف حساباتي» بالخصوصية.</T>
-            <Field label="إنستغرام" value={ig} onChangeText={setIg} autoCapitalize="none" placeholder="username" style={{ textAlign: 'left' }} />
-            <Field label="سناب شات" value={snap} onChangeText={setSnap} autoCapitalize="none" placeholder="username" style={{ textAlign: 'left' }} />
+            <T v="tiny" color={C.muted}>اكتب اسم المستخدم أو الصق رابط حسابك. بيطلع زر على بروفايلك بيفتح حسابك بكبسة، حسب «مين بيشوف حساباتي» بالخصوصية.</T>
+            <Field label="إنستغرام" value={ig} onChangeText={setIg} autoCapitalize="none" autoCorrect={false} placeholder="username أو instagram.com/username" style={{ textAlign: 'left', writingDirection: 'ltr' }} />
+            {igH ? <Row gap={6}><AtSign size={13} color={C.muted} /><T v="tiny" color={C.muted} style={{ writingDirection: 'ltr' }}>instagram.com/{igH}</T></Row> : null}
+            <Field label="سناب شات" value={snap} onChangeText={setSnap} autoCapitalize="none" autoCorrect={false} placeholder="username" style={{ textAlign: 'left', writingDirection: 'ltr' }} />
           </View>
 
           <View style={{ gap: 10, backgroundColor: C.white, borderRadius: 22, padding: 14 }}>
@@ -91,7 +151,8 @@ export default function EditProfile() {
             <MajorPicker universityId={university?.id} collegeId={col} majorId={maj} onChange={(c, m) => { setCol(c); setMaj(m); }} />
           </View>
 
-          <Button title="احفظ" onPress={save} loading={busy} />
+          <Button title="احفظ التغييرات" icon={<Check size={18} color={C.white} />} onPress={save} loading={saving} disabled={uploading} />
+          {avatar && <Button kind="ghost" title="شيل صورة البروفايل" icon={<Trash2 size={16} color={C.danger} />} onPress={() => setPhoto(null).then(() => setPreview(null))} />}
         </ScrollView>
       </KeyboardAvoidingView>
     </Screen>
