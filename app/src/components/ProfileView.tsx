@@ -45,7 +45,7 @@ function HighlightBubble({ h, owner }: { h: { id: string; title: string; cover_u
   );
 }
 
-function GridTile({ post, i }: { post: Post; i: number }) {
+export function GridTile({ post, i }: { post: Post; i: number }) {
   const img = (post.media ?? []).find((m) => m.kind === 'image');
   const file = (post.media ?? []).some((m) => m.kind === 'file');
   const [uri, setUri] = useState<string | null>(null);

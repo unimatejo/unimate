@@ -793,4 +793,5 @@ export const EN: Record<string, string> = {
   "ثبّت بأبرز القصص": "Add to highlights",
   "اسم جديد، مثلاً «سنة أولى»": "New name, e.g. \"First year\"",
   "هايلايت جديد": "New highlight",
+  "استكشف": "Explore",
 };

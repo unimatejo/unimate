@@ -9,7 +9,10 @@ import { useAuth } from '@/lib/auth';
 import { supabase } from '@/lib/supabase';
 import { C, F, isDark, shadow } from '@/lib/theme';
 import { nm, t, ta } from '@/lib/i18n';
+import { GridTile } from '@/components/ProfileView';
 import { SuggestedPeople } from '@/components/SuggestedPeople';
+import { POST_SELECT } from '@/lib/posts';
+import type { Post } from '@/lib/types';
 
 type R = { kind: string; id: string; title: string; subtitle: string; avatar?: string | null; lat?: number | null };
 
@@ -19,6 +22,14 @@ export default function Search() {
   const [kind, setKind] = useState<'all' | 'people' | 'campus'>('all');
   const [rows, setRows] = useState<R[]>([]);
   const [links, setLinks] = useState<{ id: string; title: string; url: string }[]>([]);
+
+  const [explore, setExplore] = useState<Post[]>([]);
+  useEffect(() => {
+    // most liked recent posts at your university
+    supabase.from('posts').select(POST_SELECT).gte('created_at', new Date(Date.now() - 30 * 86400000).toISOString())
+      .order('like_count', { ascending: false }).order('created_at', { ascending: false }).limit(21)
+      .then(({ data }) => setExplore((data ?? []) as unknown as Post[]));
+  }, []);
 
   useEffect(() => {
     if (!university) return;
@@ -88,6 +99,14 @@ export default function Search() {
         ListEmptyComponent={q.trim().length >= 2 ? <Empty title={t('ما لقينا إشي')} body={t('جرّب اسم المادة أو المبنى أو لقب المكان.')} /> : (
           <View style={{ gap: 10 }}>
             <View style={{ marginHorizontal: -18, marginBottom: 8 }}><SuggestedPeople /></View>
+            {explore.length > 0 && (
+              <View style={{ gap: 8, marginBottom: 10 }}>
+                <T v="h3">{t('استكشف')}</T>
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginHorizontal: -1.5 }}>
+                  {explore.map((p, i) => <GridTile key={p.id} post={p} i={i} />)}
+                </View>
+              </View>
+            )}
             <T v="h3">{t('روابط جامعتك')}</T>
             {links.length === 0 ? <T v="small" color={C.muted}>{t('بتنضاف قريباً.')}</T> : links.map((l) => (
               <Tap key={l.id} onPress={() => Linking.openURL(l.url)} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 56, backgroundColor: C.card, borderRadius: 18, paddingHorizontal: 14 }}>
