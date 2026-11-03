@@ -8,9 +8,12 @@ on:
     paths: ['app/**', '.github/workflows/ios-ipa.yml']
 permissions:
   contents: write
+concurrency:
+  group: ios-ipa
+  cancel-in-progress: true
 jobs:
   build:
-    runs-on: macos-26
+    runs-on: macos-15
     timeout-minutes: 75
     defaults:
       run:
@@ -41,7 +44,7 @@ jobs:
         run: |
           ls ios
           xcodebuild -workspace ios/UniMate.xcworkspace -scheme UniMate -configuration Release -sdk iphoneos -destination 'generic/platform=iOS' \
-            -derivedDataPath build CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" > ../out/xcodebuild.log 2>&1 \
+            -derivedDataPath build CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" SWIFT_VERSION=5.0 SWIFT_STRICT_CONCURRENCY=minimal > ../out/xcodebuild.log 2>&1 \
             || { grep -E "error:|\*\* BUILD" ../out/xcodebuild.log | head -80; tail -60 ../out/xcodebuild.log; exit 1; }
           tail -5 ../out/xcodebuild.log
       - name: Package .ipa
