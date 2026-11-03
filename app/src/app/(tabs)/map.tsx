@@ -1,12 +1,13 @@
 import * as Location from 'expo-location';
 import { useLocalSearchParams } from 'expo-router';
-import { Building2, Coffee, Crosshair, MapPin, Navigation, Search, X } from 'lucide-react-native';
+import { Building2, Coffee, Crosshair, ExternalLink, Layers, MapPin, Maximize2, Navigation, Search, X } from 'lucide-react-native';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { FlatList, Keyboard, ScrollView, TextInput, View } from 'react-native';
+import { FlatList, Keyboard, Linking, Platform, ScrollView, TextInput, View } from 'react-native';
 import MapView, { Marker, Polyline, PROVIDER_DEFAULT } from 'react-native-maps';
 import Animated, { FadeIn, SlideInDown } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { GlyphTile, GRAD } from '@/components/Glyph';
 import { Button, Chip, Row, T, Tap } from '@/components/ui';
 import { useAuth } from '@/lib/auth';
 import { supabase } from '@/lib/supabase';
@@ -42,6 +43,8 @@ export default function CampusMap() {
   const [sel, setSel] = useState<Pin | null>(null);
   const [me, setMe] = useState<{ lat: number; lng: number } | null>(null);
   const [routing, setRouting] = useState(false);
+  const [sat, setSat] = useState(false);
+  const [zoom, setZoom] = useState(16);
 
   useEffect(() => {
     if (!university) return;
@@ -56,6 +59,12 @@ export default function CampusMap() {
       ]);
     })();
   }, [university]);
+
+  const fitAll = useCallback(() => {
+    if (pins.length < 2) return;
+    map.current?.fitToCoordinates(pins.map((p) => ({ latitude: p.lat, longitude: p.lng })), { edgePadding: { top: 170, bottom: 140, left: 40, right: 40 }, animated: true });
+  }, [pins]);
+  useEffect(() => { if (pins.length && !params.building && !params.advertiser) setTimeout(fitAll, 400); }, [pins, fitAll, params.building, params.advertiser]);
 
   useEffect(() => {
     if ((params.building || params.advertiser) && pins.length) {
@@ -85,7 +94,7 @@ export default function CampusMap() {
 
   const focus = useCallback((p: Pin) => {
     setSel(p); setRouting(false);
-    map.current?.animateCamera({ center: { latitude: p.lat, longitude: p.lng }, zoom: 18 }, { duration: 600 });
+    map.current?.animateCamera({ center: { latitude: p.lat - 0.0006, longitude: p.lng }, zoom: 18, pitch: 40 }, { duration: 700 });
   }, []);
 
   const shown = useMemo(() => pins.filter((p) =>
@@ -97,16 +106,27 @@ export default function CampusMap() {
 
   return (
     <View style={{ flex: 1, backgroundColor: '#ECEFE7' }}>
-      <MapView ref={map} provider={PROVIDER_DEFAULT} style={{ flex: 1 }} showsUserLocation showsCompass={false} showsPointsOfInterests={false}
-        initialCamera={{ center, zoom: 16, heading: 0, pitch: 0 }} onPress={() => { Keyboard.dismiss(); }}>
-        {shown.map((p) => (
-          <Marker key={p.id} coordinate={{ latitude: p.lat, longitude: p.lng }} onPress={() => focus(p)} tracksViewChanges={false}>
-            <View style={[{ paddingHorizontal: 10, paddingVertical: 6, borderRadius: 12, backgroundColor: sel?.id === p.id ? C.ink : C.white, flexDirection: 'row', alignItems: 'center', gap: 5 }, shadow]}>
-              {p.kind === 'building' ? <Building2 size={13} color={sel?.id === p.id ? C.white : C.primary} /> : FOOD.includes(p.kind) ? <Coffee size={13} color={sel?.id === p.id ? C.white : C.orange} /> : <MapPin size={13} color={sel?.id === p.id ? C.white : C.green} />}
-              <T v="tiny" color={sel?.id === p.id ? C.white : C.ink}>{p.name}</T>
-            </View>
-          </Marker>
-        ))}
+      <MapView ref={map} provider={PROVIDER_DEFAULT} style={{ flex: 1 }} showsUserLocation showsCompass={false} showsPointsOfInterests={false} showsBuildings pitchEnabled rotateEnabled
+        mapType={sat ? (Platform.OS === 'ios' ? 'hybridFlyover' : 'hybrid') : Platform.OS === 'ios' ? 'mutedStandard' : 'standard'}
+        initialCamera={{ center, zoom: 16, heading: 0, pitch: 0 }} onPress={() => { Keyboard.dismiss(); }}
+        onRegionChangeComplete={(r) => setZoom(Math.log2(360 / r.longitudeDelta))}>
+        {shown.map((p) => {
+          const on = sel?.id === p.id;
+          const g = p.kind === 'building' ? GRAD.blue : FOOD.includes(p.kind) ? GRAD.orange : GRAD.green;
+          const Icon = p.kind === 'building' ? Building2 : FOOD.includes(p.kind) ? Coffee : MapPin;
+          return (
+            <Marker key={p.id + (on ? '-on' : '') + (zoom > 16.6 ? '-l' : '')} coordinate={{ latitude: p.lat, longitude: p.lng }} onPress={() => focus(p)} tracksViewChanges={false} anchor={{ x: 0.5, y: 0.5 }}>
+              <View style={{ alignItems: 'center', gap: 3 }}>
+                <GlyphTile icon={Icon} colors={on ? ['#2A2F4F', '#0E1430'] : g} size={on ? 40 : 30} />
+                {(on || zoom > 16.6) && (
+                  <View style={[{ paddingHorizontal: 8, paddingVertical: 3, borderRadius: 9, backgroundColor: on ? C.ink : 'rgba(255,255,255,0.95)', maxWidth: 150 }, shadow]}>
+                    <T v="tiny" numberOfLines={1} color={on ? C.white : C.ink} style={{ fontSize: 11 }}>{p.name}</T>
+                  </View>
+                )}
+              </View>
+            </Marker>
+          );
+        })}
         {routing && sel && me && (
           <Polyline coordinates={[{ latitude: me.lat, longitude: me.lng }, { latitude: sel.lat, longitude: sel.lng }]} strokeColor={C.primary} strokeWidth={5} lineDashPattern={[12, 8]} />
         )}
@@ -137,20 +157,30 @@ export default function CampusMap() {
         )}
       </SafeAreaView>
 
-      {me && (
-        <Tap onPress={() => map.current?.animateCamera({ center: { latitude: me.lat, longitude: me.lng }, zoom: 17 }, { duration: 500 })} accessibilityLabel="موقعي"
-          style={[{ position: 'absolute', left: 16, bottom: sel ? 250 : 24, width: 48, height: 48, borderRadius: 16, backgroundColor: C.white, alignItems: 'center', justifyContent: 'center' }, shadow]}>
-          <Crosshair size={22} color={C.ink} />
-        </Tap>
+      {!sel && (
+        <View style={{ position: 'absolute', left: 16, bottom: 110, gap: 10 }}>
+          <Tap onPress={() => setSat((x) => !x)} accessibilityLabel="غيّر شكل الخريطة"
+            style={[{ width: 48, height: 48, borderRadius: 16, backgroundColor: sat ? C.ink : C.white, alignItems: 'center', justifyContent: 'center' }, shadow]}>
+            <Layers size={21} color={sat ? C.white : C.ink} />
+          </Tap>
+          <Tap onPress={fitAll} accessibilityLabel="شوف الجامعة كاملة"
+            style={[{ width: 48, height: 48, borderRadius: 16, backgroundColor: C.white, alignItems: 'center', justifyContent: 'center' }, shadow]}>
+            <Maximize2 size={20} color={C.ink} />
+          </Tap>
+          {me && (
+            <Tap onPress={() => map.current?.animateCamera({ center: { latitude: me.lat, longitude: me.lng }, zoom: 17.5 }, { duration: 600 })} accessibilityLabel="موقعي"
+              style={[{ width: 48, height: 48, borderRadius: 16, backgroundColor: C.white, alignItems: 'center', justifyContent: 'center' }, shadow]}>
+              <Crosshair size={22} color={C.primary} />
+            </Tap>
+          )}
+        </View>
       )}
 
       {sel && (
-        <Animated.View entering={SlideInDown.springify().damping(18)} style={[{ position: 'absolute', left: 0, right: 0, bottom: 0, backgroundColor: C.white, borderTopLeftRadius: 30, borderTopRightRadius: 30, padding: 18, paddingTop: 10, gap: 12 }, shadow]}>
+        <Animated.View entering={SlideInDown.springify().damping(18)} style={[{ position: 'absolute', left: 12, right: 12, bottom: 96, backgroundColor: C.white, borderRadius: 30, padding: 18, paddingTop: 10, gap: 12 }, shadow]}>
           <View style={{ alignSelf: 'center', width: 42, height: 5, borderRadius: 3, backgroundColor: '#DCE1EE' }} />
           <Row gap={12}>
-            <View style={{ width: 60, height: 60, borderRadius: 20, backgroundColor: sel.kind === 'building' ? C.primarySoft : C.orangeSoft, alignItems: 'center', justifyContent: 'center' }}>
-              {sel.kind === 'building' ? <Building2 size={28} color={C.primary} /> : <MapPin size={28} color={C.orange} />}
-            </View>
+            <GlyphTile icon={sel.kind === 'building' ? Building2 : FOOD.includes(sel.kind) ? Coffee : MapPin} colors={sel.kind === 'building' ? GRAD.blue : FOOD.includes(sel.kind) ? GRAD.orange : GRAD.green} size={56} pop />
             <View style={{ flex: 1 }}>
               <T v="h2">{sel.name}</T>
               {sel.sub ? <T v="small" color={C.muted}>{sel.sub}</T> : null}
@@ -167,13 +197,23 @@ export default function CampusMap() {
               </View>
             </Row>
           )}
-          <Button kind={routing ? 'dark' : 'primary'} title={routing ? 'إيقاف التوجيه' : me ? 'ابدأ التوجيه' : 'فعّل الموقع للتوجيه'}
+          <Row gap={8}>
+          <View style={{ flex: 1 }}>
+          <Button kind={routing ? 'dark' : 'primary'} title={routing ? 'إيقاف' : me ? 'وريني الطريق' : 'فعّل الموقع'}
             icon={<Navigation size={19} color={C.white} />}
             onPress={async () => {
               if (!me) { await Location.requestForegroundPermissionsAsync(); return; }
               setRouting((r) => !r);
-              if (!routing) map.current?.fitToCoordinates([{ latitude: me.lat, longitude: me.lng }, { latitude: sel.lat, longitude: sel.lng }], { edgePadding: { top: 160, bottom: 320, left: 60, right: 60 }, animated: true });
+              if (!routing) map.current?.fitToCoordinates([{ latitude: me.lat, longitude: me.lng }, { latitude: sel.lat, longitude: sel.lng }], { edgePadding: { top: 160, bottom: 380, left: 60, right: 60 }, animated: true });
             }} />
+          </View>
+          <Tap onPress={() => {
+            const url = Platform.OS === 'ios' ? `maps://?daddr=${sel.lat},${sel.lng}&dirflg=w` : `https://www.google.com/maps/dir/?api=1&destination=${sel.lat},${sel.lng}&travelmode=walking`;
+            Linking.openURL(url).catch(() => Linking.openURL(`https://www.google.com/maps/dir/?api=1&destination=${sel.lat},${sel.lng}&travelmode=walking`));
+          }} accessibilityLabel="افتح بالخرائط" style={{ width: 54, minHeight: 54, borderRadius: 18, backgroundColor: C.primarySoft, alignItems: 'center', justifyContent: 'center' }}>
+            <ExternalLink size={20} color={C.primary} />
+          </Tap>
+          </Row>
         </Animated.View>
       )}
     </View>

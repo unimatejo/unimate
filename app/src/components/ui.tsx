@@ -1,13 +1,14 @@
 import { Image } from 'expo-image';
+import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
 import { router } from 'expo-router';
 import { ChevronRight } from 'lucide-react-native';
-import { forwardRef, type ComponentRef, type ReactNode } from 'react';
+import { forwardRef, useEffect, useRef, type ComponentRef, type ReactNode } from 'react';
 import {
   ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View,
   type PressableProps, type StyleProp, type TextInputProps, type TextProps, type TextStyle, type ViewStyle,
 } from 'react-native';
-import Animated, { useAnimatedStyle, useSharedValue, withSpring, withTiming } from 'react-native-reanimated';
+import Animated, { useAnimatedStyle, useSharedValue, withRepeat, withSequence, withSpring, withTiming } from 'react-native-reanimated';
 import { SafeAreaView, type Edge } from 'react-native-safe-area-context';
 
 import { C, F, R, avatarColors, shadow } from '@/lib/theme';
@@ -44,15 +45,22 @@ export function Card({ children, style, pad = 16 }: { children: ReactNode; style
 
 // ---------- press with a soft spring ----------
 const AP = Animated.createAnimatedComponent(Pressable);
-export function Tap({ children, style, onPress, haptic = true, scale = 0.96, ...p }: PressableProps & { style?: StyleProp<ViewStyle>; haptic?: boolean; scale?: number; children: ReactNode }) {
+export function Tap({ children, style, onPress, haptic = true, scale = 0.96, throttle = 450, ...p }: PressableProps & { style?: StyleProp<ViewStyle>; haptic?: boolean; scale?: number; throttle?: number; children: ReactNode }) {
   const s = useSharedValue(1);
+  const last = useRef(0); // ignore double presses so a screen never opens twice
   const a = useAnimatedStyle(() => ({ transform: [{ scale: s.value }] }));
   return (
     <AP
       {...p}
       onPressIn={() => { s.value = withTiming(scale, { duration: 90 }); }}
       onPressOut={() => { s.value = withSpring(1, { damping: 14, stiffness: 260 }); }}
-      onPress={(e) => { if (haptic) Haptics.selectionAsync(); onPress?.(e); }}
+      onPress={(e) => {
+        const now = Date.now();
+        if (throttle && now - last.current < throttle) return;
+        last.current = now;
+        if (haptic) Haptics.selectionAsync().catch(() => {});
+        onPress?.(e);
+      }}
       style={[style, a]}
     >
       {children}
@@ -208,8 +216,24 @@ export function Toggle({ value, onChange, label, hint, icon }: { value: boolean;
   );
 }
 
+function lighten(hex: string, amt = 0.35) {
+  const m = hex.replace('#', '');
+  if (m.length !== 6) return hex;
+  const n = [0, 2, 4].map((i) => parseInt(m.slice(i, i + 2), 16)).map((c) => Math.round(c + (255 - c) * amt));
+  return '#' + n.map((c) => c.toString(16).padStart(2, '0')).join('');
+}
+
+/** Small app-icon style tile (gradient + gloss) used in lists and settings. */
 export function IconTile({ color, children, size = 36 }: { color: string; children: ReactNode; size?: number }) {
-  return <View style={{ width: size, height: size, borderRadius: size * 0.33, backgroundColor: color, alignItems: 'center', justifyContent: 'center' }}>{children}</View>;
+  const r = size * 0.3;
+  return (
+    <View style={{ width: size, height: size, borderRadius: r, shadowColor: color, shadowOpacity: 0.3, shadowRadius: 5, shadowOffset: { width: 0, height: 3 } }}>
+      <LinearGradient colors={[lighten(color), color]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={{ flex: 1, borderRadius: r, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+        <View style={{ position: 'absolute', top: -size * 0.4, left: -size * 0.1, width: size * 1.2, height: size * 0.8, borderRadius: size, backgroundColor: 'rgba(255,255,255,0.18)' }} />
+        {children}
+      </LinearGradient>
+    </View>
+  );
 }
 
 export function ListRow({ icon, label, value, onPress, danger }: { icon?: ReactNode; label: string; value?: string; onPress?: () => void; danger?: boolean }) {
@@ -223,10 +247,22 @@ export function ListRow({ icon, label, value, onPress, danger }: { icon?: ReactN
   );
 }
 
+/** Empty-state icon: soft gradient bubble that floats gently. */
+function FloatIcon({ children }: { children: ReactNode }) {
+  const t = useSharedValue(0);
+  useEffect(() => { t.value = withRepeat(withSequence(withTiming(1, { duration: 1700 }), withTiming(0, { duration: 1700 })), -1); }, [t]);
+  const a = useAnimatedStyle(() => ({ transform: [{ translateY: -6 * t.value }, { rotate: `${(t.value - 0.5) * 8}deg` }] }));
+  return (
+    <Animated.View style={[{ width: 76, height: 76, borderRadius: 26, backgroundColor: C.primarySoft, alignItems: 'center', justifyContent: 'center', borderWidth: 6, borderColor: '#F3F6FF', marginBottom: 6 }, a]}>
+      {children}
+    </Animated.View>
+  );
+}
+
 export function Empty({ icon, title, body, action }: { icon?: ReactNode; title: string; body?: string; action?: ReactNode }) {
   return (
     <View style={{ alignItems: 'center', gap: 8, paddingVertical: 40, paddingHorizontal: 24 }}>
-      {icon && <View style={{ width: 64, height: 64, borderRadius: 24, backgroundColor: C.primarySoft, alignItems: 'center', justifyContent: 'center' }}>{icon}</View>}
+      {icon && <FloatIcon>{icon}</FloatIcon>}
       <T v="h3" style={{ textAlign: 'center' }}>{title}</T>
       {body && <T v="small" color={C.muted} style={{ textAlign: 'center' }}>{body}</T>}
       {action}

@@ -25,13 +25,13 @@ export default function Search() {
 
   useEffect(() => {
     const t = setTimeout(async () => {
-      const s = q.trim();
+      const s = q.trim().replace(/^@/, '');
       if (s.length < 2) { setRows([]); return; }
       const out: R[] = [];
       if (kind !== 'campus') {
-        const { data } = await supabase.from('profiles').select('id, full_name, avatar_url, major:majors(name_ar)').ilike('full_name', `%${s}%`).neq('id', profile?.id ?? '').limit(15);
+        const { data } = await supabase.from('profiles').select('id, full_name, username, is_verified, avatar_url, major:majors(name_ar)').or(`full_name.ilike.%${s.replace(/[,()]/g, ' ')}%,username.ilike.%${s.replace(/^@/, '').replace(/[,()]/g, ' ').toLowerCase()}%`).neq('id', profile?.id ?? '').limit(15);
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        out.push(...((data ?? []) as any[]).map((p) => ({ kind: 'person', id: p.id, title: p.full_name, subtitle: p.major?.name_ar ?? '', avatar: p.avatar_url })));
+        out.push(...((data ?? []) as any[]).map((p) => ({ kind: 'person', id: p.id, title: p.full_name, subtitle: [p.username ? '@' + p.username : null, p.major?.name_ar].filter(Boolean).join(' · '), avatar: p.avatar_url })));
       }
       if (kind !== 'people') {
         const { data } = await supabase.rpc('campus_search', { q: s, lim: 20 });

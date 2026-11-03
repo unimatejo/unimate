@@ -1,11 +1,12 @@
 import { router } from 'expo-router';
-import { Bookmark, FileText, Heart, MessageCircle, Send } from 'lucide-react-native';
+import { BadgeCheck, Bookmark, FileText, Heart, MessageCircle, Send } from 'lucide-react-native';
 import { useEffect, useState } from 'react';
 import * as WebBrowser from 'expo-web-browser';
 import { Alert, View } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withSequence, withSpring, withTiming } from 'react-native-reanimated';
 import { Image } from 'expo-image';
 
+import { ImageViewer } from './ImageViewer';
 import { Avatar, Row, T, Tag, Tap } from './ui';
 import { useAuth } from '@/lib/auth';
 import { toggleLike, toggleSave } from '@/lib/posts';
@@ -14,12 +15,37 @@ import { CATEGORY, C, shadow } from '@/lib/theme';
 import type { Post } from '@/lib/types';
 import { timeAgo } from '@/lib/util';
 
-function Photo({ path }: { path: string }) {
+/** Post photo: one tap opens it full screen, double tap likes (like Instagram). */
+function Photo({ path, onDoubleTap }: { path: string; onDoubleTap: () => void }) {
   const [uri, setUri] = useState<string | null>(null);
+  const [open, setOpen] = useState(false);
+  const [lastTap, setLastTap] = useState(0);
+  const [tapTimer, setTapTimer] = useState<ReturnType<typeof setTimeout> | null>(null);
+  const burst = useSharedValue(0);
+  const burstStyle = useAnimatedStyle(() => ({ opacity: burst.value, transform: [{ scale: 0.6 + burst.value * 0.6 }] }));
   useEffect(() => { mediaUrl('posts', path).then(setUri); }, [path]);
-  return <View style={{ marginHorizontal: 10, height: 210, borderRadius: 20, backgroundColor: '#DDE4FF', overflow: 'hidden' }}>
-    {uri && <Image source={{ uri }} style={{ flex: 1 }} contentFit="cover" transition={200} />}
-  </View>;
+  function press() {
+    const now = Date.now();
+    if (now - lastTap < 280) {
+      if (tapTimer) clearTimeout(tapTimer);
+      setTapTimer(null); setLastTap(0);
+      burst.value = withSequence(withTiming(1, { duration: 140 }), withTiming(1, { duration: 350 }), withTiming(0, { duration: 220 }));
+      onDoubleTap();
+      return;
+    }
+    setLastTap(now);
+    setTapTimer(setTimeout(() => setOpen(true), 290));
+  }
+  return (
+    <>
+      <Tap haptic={false} scale={0.99} throttle={0} onPress={press} accessibilityLabel="افتح الصورة"
+        style={{ marginHorizontal: 10, height: 260, borderRadius: 20, backgroundColor: '#DDE4FF', overflow: 'hidden', alignItems: 'center', justifyContent: 'center' }}>
+        {uri && <Image source={{ uri }} style={{ position: 'absolute', top: 0, bottom: 0, left: 0, right: 0 }} contentFit="cover" transition={200} />}
+        <Animated.View style={burstStyle} pointerEvents="none"><Heart size={90} color="#fff" fill="#fff" /></Animated.View>
+      </Tap>
+      <ImageViewer uri={open ? uri : null} onClose={() => setOpen(false)} />
+    </>
+  );
 }
 
 async function openFile(path: string) {
@@ -68,7 +94,7 @@ function Poll({ postId, options }: { postId: string; options: string[] }) {
   );
 }
 
-export function PostCard({ post, onLikes, compact }: { post: Post; onLikes?: (p: Post) => void; compact?: boolean }) {
+export function PostCard({ post, onLikes, compact, detail }: { post: Post; onLikes?: (p: Post) => void; compact?: boolean; detail?: boolean }) {
   const { profile } = useAuth();
   const [p, setP] = useState(post);
   useEffect(() => setP(post), [post]);
@@ -98,15 +124,18 @@ export function PostCard({ post, onLikes, compact }: { post: Post; onLikes?: (p:
           <Avatar id={p.author_id} name={p.author?.full_name} url={p.author?.avatar_url} size={42} />
         </Tap>
         <View style={{ flex: 1 }}>
-          <T v="bold" numberOfLines={1} style={{ fontSize: 14 }}>{p.author?.full_name}</T>
+          <Row gap={4}>
+            <T v="bold" numberOfLines={1} style={{ fontSize: 14, flexShrink: 1 }}>{p.author?.full_name}</T>
+            {p.author?.is_verified && <BadgeCheck size={15} color={C.white} fill={C.primary} />}
+          </Row>
           <T v="tiny" color={C.muted} style={{ fontFamily: 'Rubik_400Regular' }}>{[p.author?.major?.name_ar, timeAgo(p.created_at)].filter(Boolean).join(' · ')}</T>
         </View>
         {p.lost_found ? <Tag label={p.lost_found === 'lost' ? 'ضاع مني' : 'لقيت'} bg={p.lost_found === 'lost' ? '#FFE6D5' : C.greenSoft} fg={p.lost_found === 'lost' ? '#C2410C' : C.greenInk} />
           : <Tag label={cat.label} bg={cat.soft} fg={cat.ink} />}
       </Row>
 
-      <Tap scale={0.99} haptic={false} onPress={() => router.push({ pathname: '/post/[id]', params: { id: p.id } })}>
-        {images[0] && <Photo path={images[0].url} />}
+      {images[0] && <Photo path={images[0].url} onDoubleTap={() => { if (!p.liked) like(); }} />}
+      <Tap scale={0.99} haptic={false} disabled={detail} onPress={() => router.push({ pathname: '/post/[id]', params: { id: p.id } })}>
         <View style={{ paddingHorizontal: 16, paddingTop: 10, gap: 4 }}>
           {p.title ? <T v="h3">{p.title}</T> : null}
           {p.body ? <T v="body" color={C.ink2} numberOfLines={compact ? 3 : 8}>{p.body}</T> : null}
@@ -135,7 +164,7 @@ export function PostCard({ post, onLikes, compact }: { post: Post; onLikes?: (p:
             <T v="bold" color={C.ink2} style={{ fontSize: 13 }}>{p.like_count}</T>
           </Tap>
         ) : null}
-        <Tap onPress={() => router.push({ pathname: '/post/[id]', params: { id: p.id } })} accessibilityLabel="التعليقات"
+        <Tap onPress={() => { if (!detail) router.push({ pathname: '/post/[id]', params: { id: p.id } }); }} accessibilityLabel="التعليقات"
           style={{ flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 44, paddingHorizontal: 10 }}>
           <MessageCircle size={22} color={C.ink2} /><T v="bold" color={C.ink2} style={{ fontSize: 13 }}>{p.comment_count}</T>
         </Tap>

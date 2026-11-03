@@ -26,6 +26,7 @@ export async function pickMedia(opts: { video?: boolean; camera?: boolean; squar
     mediaTypes: opts.video ? ['images', 'videos'] : ['images'],
     quality: 0.85,
     videoMaxDuration: 15,
+    videoQuality: ImagePicker.UIImagePickerControllerQualityType.IFrame960x540,
     allowsEditing: !!opts.square,
     aspect: opts.square ? [1, 1] : undefined,
   };
@@ -34,6 +35,7 @@ export async function pickMedia(opts: { video?: boolean; camera?: boolean; squar
   const a = res.assets[0];
   if (a.type === 'video') {
     if ((a.duration ?? 0) > 15500) { Alert.alert('الفيديو طويل', 'الفيديو لازم يكون 15 ثانية أو أقل.'); return null; }
+    if ((a.fileSize ?? 0) > 50 * 1048576) { Alert.alert('الفيديو كبير', 'جرّب فيديو أقصر.'); return null; }
     return { uri: a.uri, mime: a.mimeType ?? 'video/mp4', kind: 'video', duration: a.duration, size: a.fileSize };
   }
   // resize + JPEG: smaller uploads, no HEIC surprises

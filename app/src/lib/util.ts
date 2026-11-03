@@ -37,3 +37,12 @@ export function greeting(d = new Date()): string {
   if (h < 18) return 'مسا الخير';
   return 'مسا النور';
 }
+
+/** Accepts "@name", "name", or any instagram.com / snapchat.com link and returns just the username. */
+export function handleFrom(input: string, site: 'instagram' | 'snapchat') {
+  let s = input.trim();
+  const re = site === 'instagram' ? /(?:https?:\/\/)?(?:www\.)?(?:instagram\.com|instagr\.am)\/([^/?#\s]+)/i : /(?:https?:\/\/)?(?:www\.)?snapchat\.com\/(?:add\/)?([^/?#\s]+)/i;
+  const m = s.match(re);
+  if (m) s = m[1];
+  return s.replace(/^@+/, '').trim();
+}

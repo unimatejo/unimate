@@ -81,7 +81,8 @@
           "photosPermission": "لاختيار صور للمنشورات والمحادثات.",
           "cameraPermission": "لتصوير الستوري والصور."
         }
-      ]
+      ],
+      "expo-video"
     ],
     "experiments": {
       "typedRoutes": false,

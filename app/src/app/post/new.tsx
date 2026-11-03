@@ -2,7 +2,8 @@ import { Image } from 'expo-image';
 import { router, useLocalSearchParams } from 'expo-router';
 import { BarChart3, Camera, FileText, Image as ImageIcon, MapPin, Plus, Video, X } from 'lucide-react-native';
 import { useState } from 'react';
-import { Alert, KeyboardAvoidingView, Platform, ScrollView, TextInput, View } from 'react-native';
+import * as Haptics from 'expo-haptics';
+import { ActivityIndicator, Alert, KeyboardAvoidingView, Platform, ScrollView, TextInput, View } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
 
 import { Avatar, Button, Chip, Row, Screen, Segmented, T, Tap } from '@/components/ui';
@@ -69,7 +70,8 @@ export default function NewPost() {
         });
         if (error) throw error;
       }
-      router.back();
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+      if (router.canGoBack()) router.back(); else router.replace('/community');
     } catch (e) {
       Alert.alert('ما انتشر', (e as Error).message);
     } finally { setBusy(false); }
@@ -179,6 +181,15 @@ export default function NewPost() {
           )}
         </ScrollView>
       </KeyboardAvoidingView>
+      {busy && (
+        <Animated.View entering={FadeIn} style={{ position: 'absolute', top: 0, bottom: 0, left: 0, right: 0, backgroundColor: 'rgba(14,20,48,0.55)', alignItems: 'center', justifyContent: 'center' }}>
+          <View style={{ backgroundColor: C.white, borderRadius: 26, paddingVertical: 26, paddingHorizontal: 34, alignItems: 'center', gap: 12 }}>
+            <ActivityIndicator size="large" color={C.primary} />
+            <T v="bold">{isPost ? 'عم ننشر منشورك…' : 'عم نرفع قصتك…'}</T>
+            {media?.kind === 'video' && <T v="tiny" color={C.muted}>الفيديو بياخذ ثواني أكثر</T>}
+          </View>
+        </Animated.View>
+      )}
     </Screen>
   );
 }

@@ -1,5 +1,5 @@
-import { router } from 'expo-router';
-import { Camera } from 'lucide-react-native';
+import { router, useFocusEffect } from 'expo-router';
+import { Camera, Plus } from 'lucide-react-native';
 import { useCallback, useEffect, useState } from 'react';
 import { ScrollView, View } from 'react-native';
 import Animated, { Easing, useAnimatedStyle, useSharedValue, withRepeat, withTiming } from 'react-native-reanimated';
@@ -31,6 +31,7 @@ function Ring({ seen, children }: { seen: boolean; children: React.ReactNode }) 
 export function StoriesRow() {
   const { profile } = useAuth();
   const [groups, setGroups] = useState<Group[]>([]);
+  const [mineCount, setMineCount] = useState(0);
 
   const load = useCallback(async () => {
     if (!profile) return;
@@ -45,20 +46,35 @@ export function StoriesRow() {
       if (!g) map.set(s.author_id, { author_id: s.author_id, name: s.author?.full_name ?? '', avatar_url: s.author?.avatar_url ?? null, seen });
       else if (!seen) g.seen = false;
     }
+    setMineCount((data ?? []).filter((x) => x.author_id === profile?.id).length);
     const list = [...map.values()].filter((g) => g.author_id !== (profile?.id ?? '')).sort((a, b) => Number(a.seen) - Number(b.seen));
     setGroups(list);
   }, [profile]);
 
   useEffect(() => { load(); }, [load]);
+  useFocusEffect(useCallback(() => { load(); }, [load]));
 
   return (
     <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 12, paddingHorizontal: 18 }}>
-      <Tap onPress={() => router.push({ pathname: '/post/new', params: { mode: 'story' } })} style={{ alignItems: 'center', gap: 6, width: 68 }}>
-        <View style={{ width: 66, height: 66, borderRadius: 24, borderWidth: 1.5, borderStyle: 'dashed', borderColor: '#AAB4D4', backgroundColor: C.white, alignItems: 'center', justifyContent: 'center' }}>
-          <Camera size={26} color={C.primary} />
+      {mineCount > 0 ? (
+        <View style={{ alignItems: 'center', gap: 6, width: 68 }}>
+          <Tap onPress={() => router.push({ pathname: '/story/[id]', params: { id: profile?.id ?? '' } })} accessibilityLabel="شوف قصتك">
+            <Ring seen={false}><Avatar id={profile?.id} name={profile?.full_name} url={profile?.avatar_url} size={56} radius={19} /></Ring>
+          </Tap>
+          <Tap onPress={() => router.push({ pathname: '/post/new', params: { mode: 'story' } })} accessibilityLabel="ضيف قصة"
+            style={{ position: 'absolute', top: 44, left: 0, width: 24, height: 24, borderRadius: 12, backgroundColor: C.primary, borderWidth: 2, borderColor: C.bg, alignItems: 'center', justifyContent: 'center' }}>
+            <Plus size={14} color={C.white} strokeWidth={3} />
+          </Tap>
+          <T v="tiny">قصتك</T>
         </View>
-        <T v="tiny">قصتك</T>
-      </Tap>
+      ) : (
+        <Tap onPress={() => router.push({ pathname: '/post/new', params: { mode: 'story' } })} style={{ alignItems: 'center', gap: 6, width: 68 }}>
+          <View style={{ width: 66, height: 66, borderRadius: 24, borderWidth: 1.5, borderStyle: 'dashed', borderColor: '#AAB4D4', backgroundColor: C.white, alignItems: 'center', justifyContent: 'center' }}>
+            <Camera size={26} color={C.primary} />
+          </View>
+          <T v="tiny">قصتك</T>
+        </Tap>
+      )}
       {groups.map((g) => (
         <Tap key={g.author_id} onPress={() => router.push({ pathname: '/story/[id]', params: { id: g.author_id } })} style={{ alignItems: 'center', gap: 6, width: 68 }}>
           <Ring seen={g.seen}><Avatar id={g.author_id} name={g.name} url={g.avatar_url} size={56} radius={19} /></Ring>

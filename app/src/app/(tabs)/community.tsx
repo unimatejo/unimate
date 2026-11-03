@@ -54,7 +54,7 @@ export default function Community() {
         onEndReached={more}
         onEndReachedThreshold={0.4}
         refreshControl={<RefreshControl refreshing={loading} onRefresh={load} />}
-        contentContainerStyle={{ gap: 14, paddingBottom: 110 }}
+        contentContainerStyle={{ gap: 14, paddingBottom: 180 }}
         ListHeaderComponent={
           <View style={{ gap: 16, paddingTop: 6 }}>
             <Row gap={8} style={{ paddingHorizontal: 18 }}>
@@ -90,7 +90,7 @@ export default function Community() {
         )}
       />
       <Tap onPress={() => router.push('/post/new')} accessibilityLabel="منشور جديد"
-        style={{ position: 'absolute', left: 18, bottom: 20, width: 60, height: 60, borderRadius: 22, backgroundColor: C.primary, alignItems: 'center', justifyContent: 'center', shadowColor: C.primary, shadowOpacity: 0.45, shadowRadius: 16, shadowOffset: { width: 0, height: 10 }, elevation: 8 }}>
+        style={{ position: 'absolute', left: 18, bottom: 104, width: 60, height: 60, borderRadius: 22, backgroundColor: C.primary, alignItems: 'center', justifyContent: 'center', shadowColor: C.primary, shadowOpacity: 0.45, shadowRadius: 16, shadowOffset: { width: 0, height: 10 }, elevation: 8 }}>
         <Plus size={28} color={C.white} strokeWidth={2.4} />
       </Tap>
       <LikesSheet post={likesOf} onClose={() => setLikesOf(null)} />

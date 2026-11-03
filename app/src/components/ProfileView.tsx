@@ -1,10 +1,11 @@
 import { router, useFocusEffect } from 'expo-router';
-import { AtSign, BadgeCheck, BookOpen, Flag, Lock, MessageCircle, Settings, Star } from 'lucide-react-native';
+import { BadgeCheck, BookOpen, Flag, Lock, MessageCircle, Settings, Star } from 'lucide-react-native';
 import { useCallback, useEffect, useState } from 'react';
 import { Alert, Linking, RefreshControl, ScrollView, View } from 'react-native';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 
 import { LikesSheet } from './LikesSheet';
+import { InstagramGlyph, SnapGlyph } from './SocialGlyphs';
 import { PostCard } from './PostCard';
 import { Avatar, Button, Empty, IconButton, Row, Segmented, T, Tap } from './ui';
 import { useAuth } from '@/lib/auth';
@@ -82,7 +83,7 @@ export function ProfileView({ userId }: { userId: string }) {
 
   return (
     <>
-      <ScrollView contentContainerStyle={{ paddingBottom: 40 }} refreshControl={<RefreshControl refreshing={loading} onRefresh={load} />}>
+      <ScrollView contentContainerStyle={{ paddingBottom: 130 }} refreshControl={<RefreshControl refreshing={loading} onRefresh={load} />}>
         <View style={{ padding: 18, gap: 14 }}>
           <Row gap={8}>
             <Row gap={6} style={{ flex: 1 }}>
@@ -113,9 +114,10 @@ export function ProfileView({ userId }: { userId: string }) {
           <View style={{ gap: 3 }}>
             <Row gap={6}>
               <T v="h2" style={{ fontFamily: F.display }}>{p.full_name}</T>
-              <BadgeCheck size={18} color={C.white} fill={C.primary} accessibilityLabel="طالب موثّق" />
+              {p.is_verified && <BadgeCheck size={18} color={C.white} fill={C.primary} accessibilityLabel="طالب موثّق بحساب الجامعة" />}
               {friends && <Animated.View entering={FadeIn}><View style={{ backgroundColor: C.greenSoft, borderRadius: 999, paddingHorizontal: 8, paddingVertical: 2 }}><T v="tiny" color={C.greenInk}>أصدقاء</T></View></Animated.View>}
             </Row>
+            {p.username ? <T v="small" color={C.muted} style={{ writingDirection: 'ltr', textAlign: 'right' }}>@{p.username}</T> : null}
             <T v="small" color={C.ink2}>{[p.major?.name_ar, p.study_year ? `سنة ${p.study_year}` : null].filter(Boolean).join('، ')}</T>
             {p.bio ? <T v="body">{p.bio}</T> : null}
             {p.points > 0 && <Row gap={5}><Star size={14} color="#F59E0B" fill="#F59E0B" /><T v="tiny" color={C.muted}>{p.points} نقطة مساعدة</T></Row>}
@@ -135,21 +137,19 @@ export function ProfileView({ userId }: { userId: string }) {
           )}
 
           {socialsVisible && (p.instagram || p.snapchat) && (
-            <Animated.View entering={FadeInDown}>
-              <Row gap={8}>
-                {p.instagram && (
-                  <Tap onPress={() => openSocial('instagram', p.instagram!)} style={{ flex: 1, minHeight: 46, borderRadius: 14, backgroundColor: C.white, flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 12 }}>
-                    <View style={{ width: 28, height: 28, borderRadius: 9, backgroundColor: '#E1306C', alignItems: 'center', justifyContent: 'center' }}><AtSign size={16} color={C.white} /></View>
-                    <T v="small" numberOfLines={1}>{p.instagram}</T>
-                  </Tap>
-                )}
-                {p.snapchat && (
-                  <Tap onPress={() => openSocial('snapchat', p.snapchat!)} style={{ flex: 1, minHeight: 46, borderRadius: 14, backgroundColor: C.white, flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 12 }}>
-                    <View style={{ width: 28, height: 28, borderRadius: 9, backgroundColor: '#FFFC00', alignItems: 'center', justifyContent: 'center' }}><AtSign size={16} color={C.ink} /></View>
-                    <T v="small" numberOfLines={1}>{p.snapchat}</T>
-                  </Tap>
-                )}
-              </Row>
+            <Animated.View entering={FadeInDown} style={{ flexDirection: 'row', gap: 12 }}>
+              {p.instagram && (
+                <Tap onPress={() => openSocial('instagram', p.instagram!)} scale={0.9} accessibilityLabel={`افتح إنستغرام ${p.instagram}`} style={{ alignItems: 'center', gap: 4 }}>
+                  <View style={{ shadowColor: '#E1306C', shadowOpacity: 0.35, shadowRadius: 10, shadowOffset: { width: 0, height: 6 } }}><InstagramGlyph size={52} /></View>
+                  <T v="tiny" color={C.muted}>إنستغرام</T>
+                </Tap>
+              )}
+              {p.snapchat && (
+                <Tap onPress={() => openSocial('snapchat', p.snapchat!)} scale={0.9} accessibilityLabel={`افتح سناب ${p.snapchat}`} style={{ alignItems: 'center', gap: 4 }}>
+                  <View style={{ shadowColor: '#C9B800', shadowOpacity: 0.4, shadowRadius: 10, shadowOffset: { width: 0, height: 6 } }}><SnapGlyph size={52} /></View>
+                  <T v="tiny" color={C.muted}>سناب</T>
+                </Tap>
+              )}
             </Animated.View>
           )}
         </View>

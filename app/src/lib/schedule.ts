@@ -7,7 +7,7 @@ export type Meeting = {
   id: string; section_id: string; kind: 'lecture' | 'lab' | 'online' | 'tutorial';
   weekday: number; starts_at: string; ends_at: string; online_url: string | null;
   course_name: string; course_code: string; section_no: string; instructor: string | null;
-  room_code: string | null; room_floor: number | null; room_directions: string | null;
+  room_code: string | null; room_text?: string | null; source?: string; confirmations?: number; room_floor: number | null; room_directions: string | null;
   building_name: string | null; building_id: string | null; lat: number | null; lng: number | null;
 };
 
@@ -28,7 +28,7 @@ export function useSchedule(userId?: string) {
       .from('enrollments')
       .select(`section:sections(id, section_no, instructor,
         course:courses(name_ar, code),
-        meetings:section_meetings(id, kind, weekday, starts_at, ends_at, online_url,
+        meetings:section_meetings(id, kind, weekday, starts_at, ends_at, online_url, room_text, source, confirmations,
           room:rooms(code, floor, directions, building:buildings(id, name_ar, lat, lng))))`)
       .eq('user_id', userId);
 
@@ -41,7 +41,7 @@ export function useSchedule(userId?: string) {
           id: m.id, section_id: s.id, kind: m.kind, weekday: m.weekday, starts_at: m.starts_at, ends_at: m.ends_at,
           online_url: m.online_url, course_name: s.course?.name_ar ?? '', course_code: s.course?.code ?? '',
           section_no: s.section_no, instructor: s.instructor,
-          room_code: m.room?.code ?? null, room_floor: m.room?.floor ?? null, room_directions: m.room?.directions ?? null,
+          room_code: m.room?.code ?? null, room_text: m.room_text ?? null, source: m.source, confirmations: m.confirmations, room_floor: m.room?.floor ?? null, room_directions: m.room?.directions ?? null,
           building_name: m.room?.building?.name_ar ?? null, building_id: m.room?.building?.id ?? null,
           lat: m.room?.building?.lat ?? null, lng: m.room?.building?.lng ?? null,
         });
@@ -69,8 +69,9 @@ export function useSchedule(userId?: string) {
   return { meetings, events, loading, reload: load, next };
 }
 
-export function placeLine(m: Pick<Meeting, 'kind' | 'building_name' | 'room_floor' | 'room_code'>): string {
+export function placeLine(m: Pick<Meeting, 'kind' | 'building_name' | 'room_floor' | 'room_code'> & { room_text?: string | null }): string {
   if (m.kind === 'online') return 'أونلاين على التيمز';
+  if (!m.room_code && m.room_text) return m.room_text;
   const parts = [m.building_name, m.room_floor != null ? (m.room_floor === 0 ? 'الطابق الأرضي' : `الطابق ${m.room_floor}`) : null, m.room_code ? `قاعة ${m.room_code}` : null];
   return parts.filter(Boolean).join('، ') || 'القاعة بتنضاف لما يأكدها زملاءك';
 }

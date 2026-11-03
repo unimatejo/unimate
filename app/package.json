@@ -35,6 +35,7 @@
     "expo-symbols": "~58.0.4",
     "expo-system-ui": "~58.0.7",
     "expo-updates": "~58.0.20",
+    "expo-video": "~58.0.0",
     "expo-web-browser": "~58.0.7",
     "lucide-react-native": "^1.67.0",
     "react": "19.3.0",

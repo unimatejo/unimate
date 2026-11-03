@@ -81,11 +81,11 @@ export async function verifyEmailCode(email: string, token: string) {
 }
 
 /** Sign in with the university's Microsoft 365 account (Azure / Entra ID through Supabase). */
-export async function signInWithMicrosoft() {
+export async function signInWithMicrosoft(extraScopes = '') {
   const redirectTo = Linking.createURL('callback');
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: 'azure',
-    options: { redirectTo, scopes: 'openid email profile offline_access', skipBrowserRedirect: true, queryParams: { prompt: 'select_account' } },
+    options: { redirectTo, scopes: `openid email profile offline_access ${extraScopes}`.trim(), skipBrowserRedirect: true, queryParams: { prompt: extraScopes ? 'consent' : 'select_account' } },
   });
   if (error || !data?.url) return { error: error ?? new Error('no url') };
   const res = await WebBrowser.openAuthSessionAsync(data.url, redirectTo);
@@ -93,4 +93,25 @@ export async function signInWithMicrosoft() {
   const code = new URL(res.url).searchParams.get('code');
   if (!code) return { error: new Error('no code') };
   return supabase.auth.exchangeCodeForSession(code);
+}
+
+/**
+ * Bring the student's courses in from their Microsoft Teams classes (one team per course section).
+ * Runs as a separate consent so sign-in still works if a university blocks the Teams permission.
+ */
+export async function importTeamsCourses(): Promise<{ count: number } | { error: string }> {
+  const r = await signInWithMicrosoft('User.Read Team.ReadBasic.All');
+  if ('error' in r && r.error) return { error: r.error.message === 'cancelled' ? 'cancelled' : 'consent' };
+  const token = (r as { data?: { session?: { provider_token?: string | null } | null } }).data?.session?.provider_token;
+  if (!token) return { error: 'consent' };
+  try {
+    const res = await fetch('https://graph.microsoft.com/v1.0/me/joinedTeams?$select=id,displayName,description', { headers: { Authorization: `Bearer ${token}` } });
+    if (!res.ok) return { error: res.status === 403 ? 'consent' : 'network' };
+    const body = await res.json();
+    const { data, error } = await supabase.rpc('import_teams', { teams: body.value ?? [] });
+    if (error) return { error: 'network' };
+    return { count: (data as number) ?? 0 };
+  } catch {
+    return { error: 'network' };
+  }
 }

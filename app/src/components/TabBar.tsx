@@ -1,44 +1,68 @@
+import { BlurView } from 'expo-blur';
 import * as Haptics from 'expo-haptics';
-import { CalendarDays, House, Map, User, Users } from 'lucide-react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
-import { Pressable, Text, View } from 'react-native';
+import { CalendarDays, House, Map, User, Users } from 'lucide-react-native';
+import { useEffect } from 'react';
+import { Platform, Pressable, View } from 'react-native';
+import Animated, { interpolate, useAnimatedStyle, useSharedValue, withSequence, withSpring, withTiming } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { C, F } from '@/lib/theme';
 
 const ICONS: Record<string, typeof House> = { index: House, schedule: CalendarDays, community: Users, map: Map, profile: User };
 const LABELS: Record<string, string> = { index: 'الرئيسية', schedule: 'الجدول', community: 'المجتمع', map: 'الخريطة', profile: 'حسابي' };
+const COLORS: Record<string, [string, string]> = {
+  index: ['#6E95FF', '#2E5BFF'], schedule: ['#FFB86B', '#FF6B2C'], community: ['#FF8FB1', '#E0306B'], map: ['#5EE3A1', '#0E9F6E'], profile: ['#B794FF', '#7C3AED'],
+};
 
+function TabItem({ name, on, onPress }: { name: string; on: boolean; onPress: () => void }) {
+  const v = useSharedValue(on ? 1 : 0);
+  const jump = useSharedValue(0);
+  useEffect(() => {
+    v.value = withSpring(on ? 1 : 0, { damping: 15, stiffness: 190 });
+    if (on) jump.value = withSequence(withTiming(1, { duration: 140 }), withSpring(0, { damping: 6, stiffness: 220 }));
+  }, [on, v, jump]);
+  const pill = useAnimatedStyle(() => ({ opacity: v.value, transform: [{ scale: interpolate(v.value, [0, 1], [0.5, 1]) }] }));
+  const icon = useAnimatedStyle(() => ({ transform: [{ translateY: -jump.value * 7 }, { scale: 1 + jump.value * 0.2 }, { rotate: `${jump.value * -10}deg` }] }));
+  const label = useAnimatedStyle(() => ({ opacity: v.value, maxWidth: interpolate(v.value, [0, 1], [0, 90]), marginStart: interpolate(v.value, [0, 1], [0, 7]) }));
+  const Icon = ICONS[name] ?? House;
+  return (
+    <Pressable onPress={onPress} accessibilityRole="tab" accessibilityState={{ selected: on }} accessibilityLabel={LABELS[name]}
+      style={{ height: 50, minWidth: 50, borderRadius: 18, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingHorizontal: on ? 14 : 0 }}>
+      <Animated.View style={[{ position: 'absolute', top: 0, bottom: 0, left: 0, right: 0, borderRadius: 18, overflow: 'hidden', shadowColor: COLORS[name][1], shadowOpacity: 0.4, shadowRadius: 12, shadowOffset: { width: 0, height: 6 } }, pill]}>
+        <LinearGradient colors={COLORS[name]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={{ flex: 1, borderRadius: 18 }} />
+      </Animated.View>
+      <Animated.View style={icon}><Icon size={23} color={on ? C.white : '#8A93AE'} strokeWidth={on ? 2.4 : 2} fill={on ? 'rgba(255,255,255,0.22)' : 'none'} /></Animated.View>
+      <Animated.Text numberOfLines={1} style={[{ fontFamily: F.bodyBold, fontSize: 13, color: C.white, overflow: 'hidden' }, label]}>{LABELS[name]}</Animated.Text>
+    </Pressable>
+  );
+}
+
+/** Floating glass tab bar; the active tab gets its own gradient color and the icon jumps. */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function TabBar({ state, emitter, navigateToTab, navigation }: any) {
   const insets = useSafeAreaInsets();
   return (
-    <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 12, paddingTop: 8, paddingBottom: Math.max(insets.bottom, 12), backgroundColor: 'rgba(255,255,255,0.97)', borderTopWidth: 1, borderTopColor: C.line }}>
-      {state.routes.map((route: { key: string; name: string }, i: number) => {
-        const on = state.index === i;
-        const Icon = ICONS[route.name] ?? House;
-        return (
-          <View key={route.key}>
-            <Pressable
-              accessibilityRole="tab" accessibilityState={{ selected: on }} accessibilityLabel={LABELS[route.name]}
-              onPress={() => {
-                Haptics.selectionAsync();
-                // expo-router 58 hands the tab bar `emitter` + `navigateToTab`; older versions used `navigation`.
+    <View pointerEvents="box-none" style={{ position: 'absolute', left: 0, right: 0, bottom: 0, paddingHorizontal: 14, paddingBottom: Math.max(insets.bottom - 6, 10) }}>
+      <View style={{ borderRadius: 26, overflow: 'hidden', borderWidth: 1, borderColor: 'rgba(255,255,255,0.7)', shadowColor: '#1B2250', shadowOpacity: 0.16, shadowRadius: 22, shadowOffset: { width: 0, height: 10 }, elevation: 12, backgroundColor: Platform.OS === 'android' ? 'rgba(255,255,255,0.97)' : 'transparent' }}>
+        {Platform.OS === 'ios' && <BlurView intensity={60} tint="light" style={{ position: 'absolute', top: 0, bottom: 0, left: 0, right: 0 }} />}
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 8, paddingVertical: 7, backgroundColor: 'rgba(255,255,255,0.72)' }}>
+          {state.routes.map((route: { key: string; name: string }, i: number) => {
+            const on = state.index === i;
+            return (
+              <TabItem key={route.key} name={route.name} on={on} onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
                 const ev = (emitter ?? navigation)?.emit?.({ type: 'tabPress', target: route.key, canPreventDefault: true });
                 if (on || ev?.defaultPrevented) return;
                 if (navigateToTab) navigateToTab(route.key);
                 else if (navigation?.navigate) navigation.navigate(route.name);
                 else router.navigate(`/(tabs)${route.name === 'index' ? '' : '/' + route.name}` as never);
-              }}
-              style={{ height: 48, minWidth: 48, borderRadius: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, paddingHorizontal: on ? 16 : 0, backgroundColor: on ? C.primary : 'transparent',
-                ...(on ? { shadowColor: C.primary, shadowOpacity: 0.35, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 6 } : null) }}
-            >
-              <Icon size={23} color={on ? C.white : C.muted} strokeWidth={on ? 2.2 : 1.9} />
-              {on && <Text style={{ fontFamily: F.bodyBold, fontSize: 13, color: C.white }}>{LABELS[route.name]}</Text>}
-            </Pressable>
-          </View>
-        );
-      })}
+              }} />
+            );
+          })}
+        </View>
+      </View>
     </View>
   );
 }

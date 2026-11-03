@@ -61,7 +61,7 @@ export default function PostScreen() {
           data={ordered}
           keyExtractor={(c) => c.id}
           contentContainerStyle={{ padding: 18, paddingTop: 4, gap: 12 }}
-          ListHeaderComponent={post ? <View style={{ gap: 16 }}><PostCard post={post} onLikes={setLikesOf} /><T v="h3">التعليقات</T></View> : undefined}
+          ListHeaderComponent={post ? <View style={{ gap: 16 }}><PostCard detail post={post} onLikes={setLikesOf} /><T v="h3">التعليقات</T></View> : undefined}
           renderItem={({ item }) => {
             const own = item.author_id === post?.author_id;
             return (

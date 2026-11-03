@@ -1,25 +1,19 @@
 import { Image } from 'expo-image';
 import { router } from 'expo-router';
-import { AtSign, Camera, Check, Trash2 } from 'lucide-react-native';
+import { AtSign, Camera, Check, Lock, Trash2 } from 'lucide-react-native';
 import { useEffect, useState } from 'react';
 import { ActionSheetIOS, ActivityIndicator, Alert, KeyboardAvoidingView, Platform, ScrollView, View } from 'react-native';
 
 import { MajorPicker } from '@/components/MajorPicker';
+import { InstagramGlyph, SnapGlyph } from '@/components/SocialGlyphs';
 import { Avatar, Button, Chip, Field, Header, Row, Screen, T, Tap } from '@/components/ui';
 import { useAuth } from '@/lib/auth';
 import { reportError } from '@/lib/errors';
 import { supabase } from '@/lib/supabase';
 import { C } from '@/lib/theme';
 import { pickMedia, publicUrl, uploadFile } from '@/lib/upload';
+import { handleFrom } from '@/lib/util';
 
-/** Accepts "@name", "name", or any instagram.com / snapchat.com link and returns just the username. */
-export function handleFrom(input: string, site: 'instagram' | 'snapchat') {
-  let s = input.trim();
-  const re = site === 'instagram' ? /(?:https?:\/\/)?(?:www\.)?(?:instagram\.com|instagr\.am)\/([^/?#\s]+)/i : /(?:https?:\/\/)?(?:www\.)?snapchat\.com\/(?:add\/)?([^/?#\s]+)/i;
-  const m = s.match(re);
-  if (m) s = m[1];
-  return s.replace(/^@+/, '').trim();
-}
 const validHandle = (s: string) => /^[A-Za-z0-9._-]{1,30}$/.test(s);
 
 export default function EditProfile() {
@@ -85,17 +79,23 @@ export default function EditProfile() {
     const igH = handleFrom(ig, 'instagram'); const snH = handleFrom(snap, 'snapchat');
     if (name.trim().length < 2) { Alert.alert('اكتب اسمك'); return; }
     if (u && !/^[a-z0-9._]{3,24}$/.test(u)) { Alert.alert('اسم المستخدم', 'من 3 لـ 24 حرف إنجليزي أو أرقام أو . و _ (بدون مسافات).'); return; }
+    if (u && !profile.username) {
+      const { data: ok } = await supabase.rpc('username_available', { u });
+      if (!ok) { Alert.alert('اسم المستخدم', 'هاد اليوزر مأخوذ، جرّب غيره.'); return; }
+      const sure = await new Promise<boolean>((res) => Alert.alert('تثبيت اليوزر', `@${u}\nبعد الحفظ ما بتقدر تغيّره. متأكد؟`, [{ text: 'لا', style: 'cancel', onPress: () => res(false) }, { text: 'ثبّته', onPress: () => res(true) }]));
+      if (!sure) return;
+    }
     if (igH && !validHandle(igH)) { Alert.alert('إنستغرام', 'اكتب اسم المستخدم أو الصق رابط حسابك.'); return; }
     if (snH && !validHandle(snH)) { Alert.alert('سناب شات', 'اكتب اسم المستخدم أو الصق رابط حسابك.'); return; }
     setSaving(true);
     const { error } = await supabase.from('profiles').update({
-      full_name: name.trim(), username: u || null, bio: bio.trim().slice(0, 150), study_year: year,
+      full_name: name.trim(), ...(profile.username ? {} : { username: u || null }), bio: bio.trim().slice(0, 150), study_year: year,
       instagram: igH || null, snapchat: snH || null, college_id: col, major_id: maj,
     }).eq('id', profile.id);
     setSaving(false);
     if (error) {
       reportError(new Error(`profile save: ${error.code} ${error.message}`));
-      Alert.alert('ما انحفظ', error.code === '23505' ? 'اسم المستخدم مأخوذ، جرّب غيره.' : 'تأكد من الإنترنت وجرّب كمان مرة.');
+      Alert.alert('ما انحفظ', error.code === '23505' ? 'اسم المستخدم مأخوذ، جرّب غيره.' : error.message.includes('username_locked') ? 'اليوزر ثابت وما بيتغيّر.' : 'تأكد من الإنترنت وجرّب كمان مرة.');
       return;
     }
     await refreshProfile();
@@ -127,7 +127,10 @@ export default function EditProfile() {
           </Tap>
 
           <Field label="الاسم" value={name} onChangeText={setName} maxLength={60} placeholder="اسمك الكامل" />
-          <Field label="اسم المستخدم" value={username} onChangeText={(t) => setUsername(t.replace(/\s/g, ''))} autoCapitalize="none" autoCorrect={false} placeholder="مثلاً sara.cs" style={{ textAlign: 'left', writingDirection: 'ltr' }} />
+          <View style={{ gap: 4 }}>
+            <Field label="اسم المستخدم" value={username} editable={!profile?.username} onChangeText={(t) => setUsername(t.replace(/\s/g, '').toLowerCase())} autoCapitalize="none" autoCorrect={false} placeholder="مثلاً sara.cs" style={{ textAlign: 'left', writingDirection: 'ltr', opacity: profile?.username ? 0.6 : 1 }} />
+            <Row gap={6}><Lock size={12} color={C.muted} /><T v="tiny" color={C.muted}>{profile?.username ? 'اليوزر ثابت وما بيتغيّر.' : 'بعد ما تحفظ اليوزر ما بيتغيّر.'}</T></Row>
+          </View>
           <Field label="نبذة" value={bio} onChangeText={setBio} multiline maxLength={150} placeholder="إشي عنك بسطر" style={{ minHeight: 84, textAlignVertical: 'top', paddingTop: 12 }} />
           <T v="tiny" color={C.muted} style={{ marginTop: -10 }}>{bio.length}/150</T>
 
@@ -141,9 +144,9 @@ export default function EditProfile() {
           <View style={{ gap: 10, backgroundColor: C.white, borderRadius: 22, padding: 14 }}>
             <T v="h3">حساباتك التانية</T>
             <T v="tiny" color={C.muted}>اكتب اسم المستخدم أو الصق رابط حسابك. بيطلع زر على بروفايلك بيفتح حسابك بكبسة، حسب «مين بيشوف حساباتي» بالخصوصية.</T>
-            <Field label="إنستغرام" value={ig} onChangeText={setIg} autoCapitalize="none" autoCorrect={false} placeholder="username أو instagram.com/username" style={{ textAlign: 'left', writingDirection: 'ltr' }} />
+            <Row gap={10}><InstagramGlyph size={40} /><View style={{ flex: 1 }}><Field label="إنستغرام" value={ig} onChangeText={setIg} autoCapitalize="none" autoCorrect={false} placeholder="username أو instagram.com/username" style={{ textAlign: 'left', writingDirection: 'ltr' }} /></View></Row>
             {igH ? <Row gap={6}><AtSign size={13} color={C.muted} /><T v="tiny" color={C.muted} style={{ writingDirection: 'ltr' }}>instagram.com/{igH}</T></Row> : null}
-            <Field label="سناب شات" value={snap} onChangeText={setSnap} autoCapitalize="none" autoCorrect={false} placeholder="username" style={{ textAlign: 'left', writingDirection: 'ltr' }} />
+            <Row gap={10}><SnapGlyph size={40} /><View style={{ flex: 1 }}><Field label="سناب شات" value={snap} onChangeText={setSnap} autoCapitalize="none" autoCorrect={false} placeholder="username أو الرابط" style={{ textAlign: 'left', writingDirection: 'ltr' }} /></View></Row>
           </View>
 
           <View style={{ gap: 10, backgroundColor: C.white, borderRadius: 22, padding: 14 }}>
