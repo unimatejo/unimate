@@ -1,0 +1,55 @@
+import { EyeOff, Plus, X } from 'lucide-react-native';
+import { useEffect, useState } from 'react';
+import { ScrollView, TextInput, View } from 'react-native';
+
+import { Header, Row, Screen, T, Tap } from '@/components/ui';
+import { useAuth } from '@/lib/auth';
+import { supabase } from '@/lib/supabase';
+import { C, F } from '@/lib/theme';
+
+export default function HiddenWords() {
+  const { profile } = useAuth();
+  const [words, setWords] = useState<string[]>([]);
+  const [w, setW] = useState('');
+
+  useEffect(() => {
+    if (!profile) return;
+    supabase.from('hidden_words').select('word').eq('user_id', profile.id).then(({ data }) => setWords((data ?? []).map((x) => x.word)));
+  }, [profile]);
+
+  async function add() {
+    const v = w.trim();
+    if (!v || words.includes(v)) { setW(''); return; }
+    setWords((x) => [v, ...x]); setW('');
+    await supabase.from('hidden_words').insert({ user_id: profile!.id, word: v });
+  }
+  async function remove(v: string) {
+    setWords((x) => x.filter((y) => y !== v));
+    await supabase.from('hidden_words').delete().eq('user_id', profile!.id).eq('word', v);
+  }
+
+  return (
+    <Screen>
+      <Header title="الكلمات المخفية" />
+      <ScrollView contentContainerStyle={{ padding: 18, paddingTop: 4, gap: 14 }} keyboardShouldPersistTaps="handled">
+        <Row gap={10} style={{ backgroundColor: C.primarySoft, borderRadius: 18, padding: 12 }}>
+          <EyeOff size={18} color={C.primary} />
+          <T v="small" color={C.ink2} style={{ flex: 1 }}>أي تعليق أو طلب رسالة فيه هاي الكلمات بيتخبّى عنك تلقائياً.</T>
+        </Row>
+        <Row gap={8}>
+          <TextInput value={w} onChangeText={setW} onSubmitEditing={add} placeholder="أضف كلمة أو جملة" placeholderTextColor={C.faint} returnKeyType="done"
+            style={{ flex: 1, minHeight: 50, borderRadius: 16, backgroundColor: C.white, paddingHorizontal: 14, fontFamily: F.body, fontSize: 15, color: C.ink, textAlign: 'right' }} />
+          <Tap onPress={add} accessibilityLabel="أضف" style={{ width: 50, height: 50, borderRadius: 16, backgroundColor: C.ink, alignItems: 'center', justifyContent: 'center' }}><Plus size={22} color={C.white} /></Tap>
+        </Row>
+        <Row gap={8} style={{ flexWrap: 'wrap' }}>
+          {words.map((x) => (
+            <View key={x} style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: C.white, borderRadius: 999, paddingRight: 14, paddingLeft: 6, minHeight: 40 }}>
+              <T v="bodyMd">{x}</T>
+              <Tap onPress={() => remove(x)} accessibilityLabel={`احذف ${x}`} style={{ width: 30, height: 30, borderRadius: 15, alignItems: 'center', justifyContent: 'center', backgroundColor: C.bg }}><X size={14} color={C.ink2} /></Tap>
+            </View>
+          ))}
+        </Row>
+      </ScrollView>
+    </Screen>
+  );
+}

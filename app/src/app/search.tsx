@@ -1,0 +1,99 @@
+import { router } from 'expo-router';
+import { BookOpen, Building2, Link as LinkIcon, MapPin, Search as SearchIcon } from 'lucide-react-native';
+import { useEffect, useState } from 'react';
+import { FlatList, Linking, TextInput, View } from 'react-native';
+import Animated, { FadeIn } from 'react-native-reanimated';
+
+import { Avatar, Chip, Empty, Header, Row, Screen, T, Tap } from '@/components/ui';
+import { useAuth } from '@/lib/auth';
+import { supabase } from '@/lib/supabase';
+import { C, F, shadow } from '@/lib/theme';
+
+type R = { kind: string; id: string; title: string; subtitle: string; avatar?: string | null; lat?: number | null };
+
+export default function Search() {
+  const { profile, university } = useAuth();
+  const [q, setQ] = useState('');
+  const [kind, setKind] = useState<'all' | 'people' | 'campus'>('all');
+  const [rows, setRows] = useState<R[]>([]);
+  const [links, setLinks] = useState<{ id: string; title: string; url: string }[]>([]);
+
+  useEffect(() => {
+    if (!university) return;
+    supabase.from('university_links').select('id, title, url').eq('university_id', university.id).order('position').then(({ data }) => setLinks(data ?? []));
+  }, [university]);
+
+  useEffect(() => {
+    const t = setTimeout(async () => {
+      const s = q.trim();
+      if (s.length < 2) { setRows([]); return; }
+      const out: R[] = [];
+      if (kind !== 'campus') {
+        const { data } = await supabase.from('profiles').select('id, full_name, avatar_url, major:majors(name_ar)').ilike('full_name', `%${s}%`).neq('id', profile?.id ?? '').limit(15);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        out.push(...((data ?? []) as any[]).map((p) => ({ kind: 'person', id: p.id, title: p.full_name, subtitle: p.major?.name_ar ?? '', avatar: p.avatar_url })));
+      }
+      if (kind !== 'people') {
+        const { data } = await supabase.rpc('campus_search', { q: s, lim: 20 });
+        out.push(...((data ?? []) as R[]));
+      }
+      setRows(out);
+    }, 250);
+    return () => clearTimeout(t);
+  }, [q, kind, profile]);
+
+  function open(r: R) {
+    if (r.kind === 'person') router.push({ pathname: '/user/[id]', params: { id: r.id } });
+    else if (r.kind === 'link') Linking.openURL(r.subtitle);
+    else if (r.kind === 'course') router.push('/swap');
+    else router.push({ pathname: '/(tabs)/map', params: { building: r.id } });
+  }
+
+  const icon = (k: string) => k === 'course' ? <BookOpen size={20} color={C.green} /> : k === 'link' ? <LinkIcon size={20} color={C.violet} /> : k === 'building' ? <Building2 size={20} color={C.primary} /> : <MapPin size={20} color={C.orange} />;
+
+  return (
+    <Screen>
+      <Header title="بحث" />
+      <View style={{ paddingHorizontal: 18, gap: 12 }}>
+        <Row gap={8} style={[{ minHeight: 50, borderRadius: 16, backgroundColor: C.white, paddingHorizontal: 14 }, shadow]}>
+          <SearchIcon size={20} color={C.muted} />
+          <TextInput value={q} onChangeText={setQ} autoFocus placeholder="طلاب، مواد، مباني، ألقاب، روابط الجامعة" placeholderTextColor={C.faint}
+            style={{ flex: 1, fontFamily: F.body, fontSize: 15, color: C.ink, textAlign: 'right' }} accessibilityLabel="بحث" />
+        </Row>
+        <Row gap={8}>
+          <Chip label="الكل" active={kind === 'all'} onPress={() => setKind('all')} />
+          <Chip label="طلاب" active={kind === 'people'} onPress={() => setKind('people')} />
+          <Chip label="الحرم والمواد" active={kind === 'campus'} onPress={() => setKind('campus')} />
+        </Row>
+      </View>
+      <FlatList
+        data={rows}
+        keyExtractor={(r) => r.kind + r.id + r.title}
+        keyboardShouldPersistTaps="handled"
+        contentContainerStyle={{ padding: 18, gap: 6 }}
+        renderItem={({ item }) => (
+          <Animated.View entering={FadeIn}>
+            <Tap scale={0.98} onPress={() => open(item)} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 64, backgroundColor: C.white, borderRadius: 18, paddingHorizontal: 12 }}>
+              {item.kind === 'person' ? <Avatar id={item.id} name={item.title} url={item.avatar} size={44} /> :
+                <View style={{ width: 44, height: 44, borderRadius: 15, backgroundColor: C.bg, alignItems: 'center', justifyContent: 'center' }}>{icon(item.kind)}</View>}
+              <View style={{ flex: 1 }}>
+                <T v="bodyMd">{item.title}</T>
+                {item.subtitle ? <T v="tiny" color={C.muted} numberOfLines={1}>{item.kind === 'alias' ? `لقب لـ ${item.subtitle}` : item.subtitle}</T> : null}
+              </View>
+            </Tap>
+          </Animated.View>
+        )}
+        ListEmptyComponent={q.trim().length >= 2 ? <Empty title="ما لقينا إشي" body="جرّب اسم المادة أو المبنى أو لقب المكان." /> : (
+          <View style={{ gap: 10 }}>
+            <T v="h3">روابط جامعتك</T>
+            {links.length === 0 ? <T v="small" color={C.muted}>بتنضاف قريباً.</T> : links.map((l) => (
+              <Tap key={l.id} onPress={() => Linking.openURL(l.url)} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 56, backgroundColor: C.white, borderRadius: 18, paddingHorizontal: 14 }}>
+                <LinkIcon size={19} color={C.violet} /><T v="bodyMd">{l.title}</T>
+              </Tap>
+            ))}
+          </View>
+        )}
+      />
+    </Screen>
+  );
+}

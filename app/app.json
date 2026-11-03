@@ -1,0 +1,51 @@
+{
+  "expo": {
+    "name": "UniMate",
+    "slug": "unimate",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/images/icon.png",
+    "scheme": "unimate",
+    "userInterfaceStyle": "light",
+    "ios": {
+      "bundleIdentifier": "jo.unimate.app",
+      "supportsTablet": false,
+      "infoPlist": {
+        "NSCameraUsageDescription": "لتصوير الستوري والصور وإرسالها لزملائك.",
+        "NSPhotoLibraryUsageDescription": "لاختيار صور للمنشورات والمحادثات وصورة البروفايل.",
+        "NSLocationWhenInUseUsageDescription": "لعرض موقعك على خريطة الجامعة وحساب الطريق لقاعتك.",
+        "NSMicrophoneUsageDescription": "للرسائل الصوتية والمكالمات."
+      }
+    },
+    "android": {
+      "package": "jo.unimate.app",
+      "adaptiveIcon": {
+        "backgroundColor": "#2E5BFF",
+        "foregroundImage": "./assets/images/android-icon-foreground.png",
+        "backgroundImage": "./assets/images/android-icon-background.png",
+        "monochromeImage": "./assets/images/android-icon-monochrome.png"
+      },
+      "permissions": ["CAMERA", "ACCESS_FINE_LOCATION", "RECORD_AUDIO"],
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "output": "single",
+      "favicon": "./assets/images/favicon.png"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-sqlite",
+      "expo-secure-store",
+      "expo-web-browser",
+      ["expo-localization", { "supportsRTL": true, "forcesRTL": true }],
+      ["expo-splash-screen", { "backgroundColor": "#0E1430", "image": "./assets/images/splash-icon.png", "imageWidth": 76 }],
+      ["expo-notifications", { "color": "#2E5BFF" }],
+      ["expo-location", { "locationWhenInUsePermission": "لعرض موقعك على خريطة الجامعة وحساب الطريق لقاعتك." }],
+      ["expo-image-picker", { "photosPermission": "لاختيار صور للمنشورات والمحادثات.", "cameraPermission": "لتصوير الستوري والصور." }]
+    ],
+    "experiments": {
+      "typedRoutes": false,
+      "reactCompiler": true
+    }
+  }
+}
