@@ -29,20 +29,20 @@ export default function Community() {
   const load = useCallback(async () => {
     if (!profile) return;
     setLoading(true);
-    setPosts(await loadFeed(profile.id, { tab: TABS[tab], category: cat }));
+    setPosts(await loadFeed((profile?.id ?? ''), { tab: TABS[tab], category: cat }));
     setLoading(false);
   }, [profile, tab, cat]);
 
   useEffect(() => { load(); }, [load]);
   useEffect(() => {
     if (!profile) return;
-    supabase.from('conversation_members').select('conversation_id', { count: 'exact', head: true }).eq('user_id', profile.id).eq('state', 'request')
+    supabase.from('conversation_members').select('conversation_id', { count: 'exact', head: true }).eq('user_id', (profile?.id ?? '')).eq('state', 'request')
       .then(({ count }) => setRequests(count ?? 0));
   }, [profile]);
 
   async function more() {
     if (!profile || posts.length < 20) return;
-    const older = await loadFeed(profile.id, { tab: TABS[tab], category: cat }, posts[posts.length - 1].created_at);
+    const older = await loadFeed((profile?.id ?? ''), { tab: TABS[tab], category: cat }, posts[posts.length - 1].created_at);
     setPosts((p) => [...p, ...older.filter((o) => !p.some((x) => x.id === o.id))]);
   }
 

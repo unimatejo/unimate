@@ -24,9 +24,9 @@ export default function Welcome() {
   useEffect(() => { refreshProfile(); }, [refreshProfile]);
   useEffect(() => {
     if (!profile) return;
-    supabase.from('enrollments').select('section_id', { count: 'exact', head: true }).eq('user_id', profile.id)
+    supabase.from('enrollments').select('section_id', { count: 'exact', head: true }).eq('user_id', (profile?.id ?? ''))
       .then(({ count }) => setCourses(count ?? 0));
-    supabase.from('profile_private').select('student_number').eq('user_id', profile.id).single()
+    supabase.from('profile_private').select('student_number').eq('user_id', (profile?.id ?? '')).single()
       .then(({ data }) => setStudentNo(data?.student_number ?? null));
   }, [profile]);
   useEffect(() => {
@@ -57,7 +57,7 @@ export default function Welcome() {
       if (count) { Alert.alert('اختار كليتك وتخصصك'); return; }
     }
     setSaving(true);
-    const { error } = await supabase.from('profiles').update({ full_name: name.trim(), college_id: col, major_id: maj }).eq('id', profile!.id);
+    const { error } = await supabase.from('profiles').update({ full_name: name.trim(), college_id: col, major_id: maj }).eq('id', (profile?.id ?? ''));
     setSaving(false);
     if (error) { Alert.alert('ما زبط الحفظ', 'جرّب كمان مرة.'); return; }
     await refreshProfile(); setSaved(true);

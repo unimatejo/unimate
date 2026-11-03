@@ -18,18 +18,18 @@ export default function CloseFriends() {
   useEffect(() => {
     if (!profile) return;
     supabase.from('follows').select('p:profiles!follows_follower_id_fkey(id, full_name, avatar_url, major:majors(name_ar))')
-      .eq('followee_id', profile.id).eq('status', 'accepted')
+      .eq('followee_id', (profile?.id ?? '')).eq('status', 'accepted')
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       .then(({ data }) => setPeople(((data ?? []) as any[]).map((x) => x.p).filter(Boolean)));
-    supabase.from('close_friends').select('friend_id').eq('owner_id', profile.id)
+    supabase.from('close_friends').select('friend_id').eq('owner_id', (profile?.id ?? ''))
       .then(({ data }) => setPicked(new Set((data ?? []).map((x) => x.friend_id))));
   }, [profile]);
 
   async function toggle(id: string) {
     const on = picked.has(id);
     setPicked((s) => { const n = new Set(s); if (on) n.delete(id); else n.add(id); return n; });
-    if (on) await supabase.from('close_friends').delete().eq('owner_id', profile!.id).eq('friend_id', id);
-    else await supabase.from('close_friends').insert({ owner_id: profile!.id, friend_id: id });
+    if (on) await supabase.from('close_friends').delete().eq('owner_id', (profile?.id ?? '')).eq('friend_id', id);
+    else await supabase.from('close_friends').insert({ owner_id: (profile?.id ?? ''), friend_id: id });
   }
 
   const shown = useMemo(() => {

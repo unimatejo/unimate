@@ -1,71 +1,235 @@
 {
-  "slug": "gju",
-  "name_ar": "الجامعة الألمانية الأردنية",
-  "name_en": "German Jordanian University",
-  "city": "Madaba",
-  "type": "public",
-  "email_domains": ["gju.edu.jo"],
-  "center": {"lat": 31.776843, "lng": 35.802555},
-  "brand_color": null,
-  "links": [
-    {"kind": "website", "title": "الموقع الرسمي", "url": "https://www.gju.edu.jo/ar"},
-    {"kind": "portal", "title": "MyGJU بوابة الطالب", "url": "https://mygju.gju.edu.jo/faces/index.xhtml"},
-    {"kind": "elearning", "title": "التعليم الإلكتروني (Moodle)", "url": "https://e-learning.gju.edu.jo/login/index.php"},
-    {"kind": "email", "title": "البريد الجامعي", "url": "https://outlook.office.com/owa/gju.edu.jo"},
-    {"kind": "teams", "title": "Office 365", "url": "https://login.microsoftonline.com/?whr=gju.edu.jo"},
-    {"kind": "library", "title": "المكتبة", "url": "https://gju.edu.jo/content/library-439"},
-    {"kind": "calendar", "title": "التقويم الأكاديمي", "url": "https://gju.edu.jo/academic-event"},
-    {"kind": "registration", "title": "دائرة القبول والتسجيل", "url": "https://gju.edu.jo/content/admission-and-registration-department-425"}
-  ],
-  "colleges": [
-    {"name_ar": "كلّيّة هندسة الانظمة المستدامة", "name_en": "School of Sustainable Systems Engineering", "majors": [
-      {"name_ar": "هَنْدسة الطّاقة", "name_en": "Energy Engineering", "degree": "bachelor"},
-      {"name_ar": "هندسة أنظمة البنية التحتية المستدامة", "name_en": "Sustainable Infrastructure Systems Engineering", "degree": "bachelor"},
-      {"name_ar": "الهَنْدسة الكهربائيّة", "name_en": "Electrical Engineering", "degree": "bachelor"}
-    ]},
-    {"name_ar": "كلّيّة هندسة العمارة والبيئة المبنيّة", "name_en": "School of Architecture and Built Environment", "majors": [
-      {"name_ar": "هَنْدسة العمارة", "name_en": "Architecture", "degree": "bachelor"},
-      {"name_ar": "هَنْدسة العمارة والعمارة الدّاخليَّة", "name_en": "Interior Architecture", "degree": "bachelor"},
-      {"name_ar": "التَّصميم والتّواصُل البصريّ", "name_en": "Design and Visual Communication", "degree": "bachelor"}
-    ]},
-    {"name_ar": "كلّيّة الحوسبة", "name_en": "School of Computing", "majors": [
-      {"name_ar": "هَنْدسة الحاسوب", "name_en": "Computer Engineering", "degree": "bachelor"},
-      {"name_ar": "علم الحاسوب", "name_en": "Computer Science", "degree": "bachelor"},
-      {"name_ar": "التصميم والوسائط المعلوماتية", "name_en": "Game Design and Media Informatics", "degree": "bachelor"}
-    ]},
-    {"name_ar": "كلّيّة العلوم التّقْنيّة التّطبيقيّة", "name_en": "School of Applied Technical Sciences", "majors": [
-      {"name_ar": "الهَنْدسة الصِّناعيَّة", "name_en": "Industrial Engineering", "degree": "bachelor"},
-      {"name_ar": "علوم الهَنْدسة الميكانيكيَّة وهندسة الصّيانة", "name_en": "Mechanical and Maintenance Engineering", "degree": "bachelor"},
-      {"name_ar": "هَنْدسة الميكاترونكس", "name_en": "Mechatronics Engineering", "degree": "bachelor"}
-    ]},
-    {"name_ar": "كلّيّة العلوم الطّبّيّة التّطبيقيّة", "name_en": "School of Applied Medical Sciences", "majors": [
-      {"name_ar": "الهَنْدسة الصَّيْدلانيَّة والكيميائيَّة", "name_en": "Pharmaceutical and Chemical Engineering", "degree": "bachelor"},
-      {"name_ar": "الهَنْدسة الطّبّيّة الحيويّة", "name_en": "Biomedical Engineering", "degree": "bachelor"}
-    ]},
-    {"name_ar": "كلّيّة الأَعمَال", "name_en": "Business School", "majors": [
-      {"name_ar": "المُحاسبة الدّوليّة", "name_en": "International Accounting", "degree": "bachelor"},
-      {"name_ar": "العُلوم اللوجستيّة", "name_en": "Logistic Sciences", "degree": "bachelor"},
-      {"name_ar": "العُلوم الإداريّة", "name_en": "Management Science", "degree": "bachelor"},
-      {"name_ar": "ذكاء الأعمال وتحليلات البيانات", "name_en": "Business Intelligence and Data Analytics", "degree": "bachelor"},
-      {"name_ar": "التسويق الرقمي", "name_en": "Digital Marketing", "degree": "bachelor"}
-    ]},
-    {"name_ar": "كلّيّة الإنسانيّات التّطبيقيّة والعلوم الإجتماعية", "name_en": "School of Applied Humanities and Social Sciences", "majors": [
-      {"name_ar": "التّرجمة: الألمانيّة، والإنجليزيّة، والعربيّة", "name_en": "Translation: German, English, Arabic", "degree": "bachelor"},
-      {"name_ar": "اللغة الألمانية والإنجليزية للأعمال والتواصل", "name_en": "German and English for Business and Communication", "degree": "bachelor"}
-    ]},
-    {"name_ar": "كلية التمريض", "name_en": "School of Nursing", "majors": [
-      {"name_ar": "التمريض", "name_en": "Nursing Science", "degree": "bachelor"}
-    ]}
-  ],
-  "sources": [
-    "https://www.gju.edu.jo/ar/content/%D8%A8%D9%8E%D8%B1%D8%A7%D9%85%D9%90%D8%AC-%D8%A7%D9%84%D8%A8%D9%83%D8%A7%D9%84%D9%88%D8%B1%D9%8A%D9%88%D8%B3-3413",
-    "https://www.gju.edu.jo/content/undergraduate-programs-3413",
-    "https://www.gju.edu.jo/sites/default/files/announcement/en-_programs-ba.pdf",
-    "https://www.gju.edu.jo/news/german-jordanian-university-opens-applications-bachelors-degree-programs-20262027-academic-year",
-    "https://gju.edu.jo/content/useful-links-13100",
-    "https://www.gju.edu.jo/content/platforms-11676",
-    "https://www.gju.edu.jo/content/faq-365-8890",
-    "https://www.gju.edu.jo/content/contact-us-2117"
-  ],
-  "notes": "Colleges and majors are verbatim from the official Arabic 'بَرامِج البكالوريوس' page (English names from the matching English page). The Arabic page spells the design programme 'فِسْم التَّصميم والتّواصُل البصريّ' (a typo of 'قسم'); it is written here as 'التَّصميم والتّواصُل البصريّ'. The 2026/2027 'Available Bachelor's Programs' PDF (English only) differs: it no longer lists Sustainable Infrastructure Systems Engineering, folds Interior Architecture into Architecture as a track, lists Game Design and Media Informatics as a joint SC/SABE programme, and adds a new 'Cultural and Natural Heritage' bachelor (SAHSS) whose Arabic name was not found, so it is omitted. Tracks (e.g. CS: Cyber Security / Data Science) are not listed as separate majors. Email: Office 365 tenant and OWA URL use gju.edu.jo (info@gju.edu.jo); no separate student subdomain was found, but the student address format was not verified. The 'teams' link is the official Office 365 sign-in (no direct Teams link on the site). Main campus is on Amman–Madaba Street (P.O. Box Amman 11180, campus in Mushaqar/Madaba governorate); coordinates from the official contact page's Google Maps link. Brand colour not verified."
+ "slug": "gju",
+ "name_ar": "الجامعة الألمانية الأردنية",
+ "name_en": "German Jordanian University",
+ "city": "Madaba",
+ "type": "public",
+ "email_domains": [
+  "gju.edu.jo"
+ ],
+ "center": {
+  "lat": 31.776843,
+  "lng": 35.802555
+ },
+ "brand_color": null,
+ "links": [
+  {
+   "kind": "website",
+   "title": "الموقع الرسمي",
+   "url": "https://www.gju.edu.jo/ar"
+  },
+  {
+   "kind": "portal",
+   "title": "MyGJU بوابة الطالب",
+   "url": "https://mygju.gju.edu.jo/faces/index.xhtml"
+  },
+  {
+   "kind": "elearning",
+   "title": "التعليم الإلكتروني (Moodle)",
+   "url": "https://e-learning.gju.edu.jo/login/index.php"
+  },
+  {
+   "kind": "email",
+   "title": "البريد الجامعي",
+   "url": "https://outlook.office.com/owa/gju.edu.jo"
+  },
+  {
+   "kind": "teams",
+   "title": "Office 365",
+   "url": "https://login.microsoftonline.com/?whr=gju.edu.jo"
+  },
+  {
+   "kind": "library",
+   "title": "المكتبة",
+   "url": "https://gju.edu.jo/content/library-439"
+  },
+  {
+   "kind": "calendar",
+   "title": "التقويم الأكاديمي",
+   "url": "https://gju.edu.jo/academic-event"
+  },
+  {
+   "kind": "registration",
+   "title": "دائرة القبول والتسجيل",
+   "url": "https://gju.edu.jo/content/admission-and-registration-department-425"
+  }
+ ],
+ "colleges": [
+  {
+   "name_ar": "كلّيّة هندسة الانظمة المستدامة",
+   "name_en": "School of Sustainable Systems Engineering",
+   "majors": [
+    {
+     "name_ar": "هَنْدسة الطّاقة",
+     "name_en": "Energy Engineering",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "هندسة أنظمة البنية التحتية المستدامة",
+     "name_en": "Sustainable Infrastructure Systems Engineering",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "الهَنْدسة الكهربائيّة",
+     "name_en": "Electrical Engineering",
+     "degree": "bachelor"
+    }
+   ]
+  },
+  {
+   "name_ar": "كلّيّة هندسة العمارة والبيئة المبنيّة",
+   "name_en": "School of Architecture and Built Environment",
+   "majors": [
+    {
+     "name_ar": "هَنْدسة العمارة",
+     "name_en": "Architecture",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "هَنْدسة العمارة والعمارة الدّاخليَّة",
+     "name_en": "Interior Architecture",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "التَّصميم والتّواصُل البصريّ",
+     "name_en": "Design and Visual Communication",
+     "degree": "bachelor"
+    }
+   ]
+  },
+  {
+   "name_ar": "كلّيّة الحوسبة",
+   "name_en": "School of Computing",
+   "majors": [
+    {
+     "name_ar": "هَنْدسة الحاسوب",
+     "name_en": "Computer Engineering",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "علم الحاسوب",
+     "name_en": "Computer Science",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "التصميم والوسائط المعلوماتية",
+     "name_en": "Game Design and Media Informatics",
+     "degree": "bachelor"
+    }
+   ]
+  },
+  {
+   "name_ar": "كلّيّة العلوم التّقْنيّة التّطبيقيّة",
+   "name_en": "School of Applied Technical Sciences",
+   "majors": [
+    {
+     "name_ar": "الهَنْدسة الصِّناعيَّة",
+     "name_en": "Industrial Engineering",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "علوم الهَنْدسة الميكانيكيَّة وهندسة الصّيانة",
+     "name_en": "Mechanical and Maintenance Engineering",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "هَنْدسة الميكاترونكس",
+     "name_en": "Mechatronics Engineering",
+     "degree": "bachelor"
+    }
+   ]
+  },
+  {
+   "name_ar": "كلّيّة العلوم الطّبّيّة التّطبيقيّة",
+   "name_en": "School of Applied Medical Sciences",
+   "majors": [
+    {
+     "name_ar": "الهَنْدسة الصَّيْدلانيَّة والكيميائيَّة",
+     "name_en": "Pharmaceutical and Chemical Engineering",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "الهَنْدسة الطّبّيّة الحيويّة",
+     "name_en": "Biomedical Engineering",
+     "degree": "bachelor"
+    }
+   ]
+  },
+  {
+   "name_ar": "كلّيّة الأَعمَال",
+   "name_en": "Business School",
+   "majors": [
+    {
+     "name_ar": "المُحاسبة الدّوليّة",
+     "name_en": "International Accounting",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "العُلوم اللوجستيّة",
+     "name_en": "Logistic Sciences",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "العُلوم الإداريّة",
+     "name_en": "Management Science",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "ذكاء الأعمال وتحليلات البيانات",
+     "name_en": "Business Intelligence and Data Analytics",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "التسويق الرقمي",
+     "name_en": "Digital Marketing",
+     "degree": "bachelor"
+    }
+   ]
+  },
+  {
+   "name_ar": "كلّيّة الإنسانيّات التّطبيقيّة والعلوم الإجتماعية",
+   "name_en": "School of Applied Humanities and Social Sciences",
+   "majors": [
+    {
+     "name_ar": "التّرجمة: الألمانيّة، والإنجليزيّة، والعربيّة",
+     "name_en": "Translation: German, English, Arabic",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "اللغة الألمانية والإنجليزية للأعمال والتواصل",
+     "name_en": "German and English for Business and Communication",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "التراث الثقافي والطبيعي",
+     "name_en": "Cultural and Natural Heritage",
+     "degree": "bachelor",
+     "name_ar_translated": true
+    }
+   ]
+  },
+  {
+   "name_ar": "كلية التمريض",
+   "name_en": "School of Nursing",
+   "majors": [
+    {
+     "name_ar": "التمريض",
+     "name_en": "Nursing Science",
+     "degree": "bachelor"
+    }
+   ]
+  }
+ ],
+ "sources": [
+  "https://www.gju.edu.jo/ar/content/%D8%A8%D9%8E%D8%B1%D8%A7%D9%85%D9%90%D8%AC-%D8%A7%D9%84%D8%A8%D9%83%D8%A7%D9%84%D9%88%D8%B1%D9%8A%D9%88%D8%B3-3413",
+  "https://www.gju.edu.jo/content/undergraduate-programs-3413",
+  "https://www.gju.edu.jo/sites/default/files/announcement/en-_programs-ba.pdf",
+  "https://www.gju.edu.jo/news/german-jordanian-university-opens-applications-bachelors-degree-programs-20262027-academic-year",
+  "https://gju.edu.jo/content/useful-links-13100",
+  "https://www.gju.edu.jo/content/platforms-11676",
+  "https://www.gju.edu.jo/content/faq-365-8890",
+  "https://www.gju.edu.jo/content/contact-us-2117"
+ ],
+ "notes": "Colleges and majors are verbatim from the official Arabic 'بَرامِج البكالوريوس' page (English names from the matching English page). The Arabic page spells the design programme 'فِسْم التَّصميم والتّواصُل البصريّ' (a typo of 'قسم'); it is written here as 'التَّصميم والتّواصُل البصريّ'. The 2026/2027 'Available Bachelor's Programs' PDF (English only) differs: it no longer lists Sustainable Infrastructure Systems Engineering, folds Interior Architecture into Architecture as a track, lists Game Design and Media Informatics as a joint SC/SABE programme, and adds a new 'Cultural and Natural Heritage' bachelor (SAHSS) whose Arabic name was not found, so it is omitted. Tracks (e.g. CS: Cyber Security / Data Science) are not listed as separate majors. Email: Office 365 tenant and OWA URL use gju.edu.jo (info@gju.edu.jo); no separate student subdomain was found, but the student address format was not verified. The 'teams' link is the official Office 365 sign-in (no direct Teams link on the site). Main campus is on Amman–Madaba Street (P.O. Box Amman 11180, campus in Mushaqar/Madaba governorate); coordinates from the official contact page's Google Maps link. Brand colour not verified. UPDATE Nov 2026: the official 2026/2027 'Available Bachelor's Programs' PDF (re-read) lists 'Cultural and Natural Heritage' under SAHSS, so it has been added. Its Arabic name 'التراث الثقافي والطبيعي' is a translation and has not been verified (flag name_ar_translated). 'Sustainable Infrastructure Systems Engineering' and the separate 'Interior Architecture' major are kept, because there is no evidence they were closed and current students may be enrolled, but they are not offered for 2026/2027 new admission. Tracks on the 2026/2027 list: Mechatronics (Applied AI; Robotics & Autonomous Systems), Mechanical & Maintenance (Automotive & E-Mobility; Thermal Systems), Biomedical (Instrumentation; Bionic & Biomechanical), CS (Cyber Security; Data Science), CE (AI & ML; Computer Vision & Robotics), Energy (Renewable; Electrical Power), EE (5G & IoT), Intl Accounting (Forensic & Fraud Examination), Translation (Applied; AI in Translation). Hosted THWS programmes (Campus-Gate / Online-Gate) are not listed. 'Health Informatics' (SAMS, in a 2022/23 admission notice) is not on the current lists and is not included. BUILDINGS: empty list on purpose. OpenStreetMap could not be queried from this session (Nov 2026): overpass-api.de, overpass.kumi.systems, nominatim.openstreetmap.org and the OSM API were all refused by the fetch allowlist/egress proxy, and OSM element pages found via search show no coordinates for ways. No building coordinates were guessed. Campus center was NOT re-checked against OSM for the same reason (kept from the draft source named above).",
+ "buildings": []
 }

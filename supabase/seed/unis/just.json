@@ -1,28 +1,395 @@
 {
-  "slug": "just",
-  "name_ar": "جامعة العلوم والتكنولوجيا الأردنية",
-  "name_en": "Jordan University of Science and Technology",
-  "city": "إربد",
-  "type": "public",
-  "email_domains": [
-    "just.edu.jo"
-  ],
-  "center": {
-    "lat": 32.47889,
-    "lng": 35.985
-  },
-  "brand_color": null,
-  "links": [
+ "slug": "just",
+ "name_ar": "جامعة العلوم والتكنولوجيا الأردنية",
+ "name_en": "Jordan University of Science and Technology",
+ "city": "إربد",
+ "type": "public",
+ "email_domains": [
+  "just.edu.jo"
+ ],
+ "center": {
+  "lat": 32.4949956,
+  "lng": 35.9911707
+ },
+ "brand_color": null,
+ "links": [
+  {
+   "kind": "website",
+   "title": "الموقع الرسمي لجامعة العلوم والتكنولوجيا الأردنية",
+   "url": "https://www.just.edu.jo"
+  }
+ ],
+ "colleges": [
+  {
+   "name_ar": "كلية الطب",
+   "name_en": "Faculty of Medicine",
+   "majors": [
     {
-      "kind": "website",
-      "title": "الموقع الرسمي لجامعة العلوم والتكنولوجيا الأردنية",
-      "url": "https://www.just.edu.jo"
+     "name_ar": "دكتور في الطب",
+     "name_en": "Doctor of Medicine (MD)",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "الإدارة والسياسات الصحية",
+     "name_en": "Health Management and Policy",
+     "degree": "bachelor"
     }
-  ],
-  "colleges": [],
-  "sources": [
-    "https://www.just.edu.jo",
-    "https://en.wikipedia.org/wiki/Jordan_University_of_Science_and_Technology"
-  ],
-  "notes": "NOT POPULATED: every just.edu.jo and services.just.edu.jo URL (pages and PDFs, Arabic and English) returned the site's WAF page 'Request Rejected – The requested URL was rejected' to the fetcher, and admhec.gov.jo is robots-disallowed, so no college or major could be verified from an official source. colleges is intentionally empty. Leads for a re-run from a normal browser: faculty programme pages follow https://www.just.edu.jo/ar/FacultiesandDepartments/<faculty>/Pages/Programs.aspx?degree=1 (e.g. /it/ for Computer & IT, /FacultyofMedicine/); current study plans exist e.g. .../it/Departments/cs/SiteAssets/Pages/Programs/CS-Arabic-Study Plan 2025-UPDATED-OCT_2025.pdf and AI-Arabic-StudyPlan-UPDATED-OCT 2025 (3).pdf; fee/program tables under https://services.just.edu.jo/applic/Documents/ (e.g. Fees_Regular_2024_En.pdf). Non-official (Wikipedia) lists 12 faculties: Medicine, Dentistry, Pharmacy, Nursing, Applied Medical Sciences, Science and Arts, Engineering, Computer and Information Technology, Architecture and Design, Agriculture, Veterinary Medicine, Graduate Studies – not used as data. email_domains: just.edu.jo is the university's official domain; whether students use the same domain or a subdomain for Microsoft 365 is NOT verified. Centre coordinates are the Wikipedia infobox point (32°28′44″N 35°59′6″E, Ar Ramtha), not verified on OSM. Portal/e-learning/library/calendar links not verified, so omitted. Brand colour not found."
+   ]
+  },
+  {
+   "name_ar": "كلية طب الأسنان",
+   "name_en": "Faculty of Dentistry",
+   "majors": [
+    {
+     "name_ar": "طب وجراحة الأسنان",
+     "name_en": "Doctor of Dental Surgery (DDS)",
+     "degree": "bachelor"
+    }
+   ]
+  },
+  {
+   "name_ar": "كلية الصيدلة",
+   "name_en": "Faculty of Pharmacy",
+   "majors": [
+    {
+     "name_ar": "الصيدلة",
+     "name_en": "Pharmacy",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "دكتور صيدلة",
+     "name_en": "Doctor of Pharmacy (PharmD)",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "التصنيع الدوائي والبيولوجي",
+     "name_en": "Pharmaceutical and Biological Manufacturing",
+     "degree": "bachelor"
+    }
+   ]
+  },
+  {
+   "name_ar": "كلية التمريض",
+   "name_en": "Faculty of Nursing",
+   "majors": [
+    {
+     "name_ar": "التمريض",
+     "name_en": "Nursing",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "القبالة",
+     "name_en": "Midwifery",
+     "degree": "bachelor"
+    }
+   ]
+  },
+  {
+   "name_ar": "كلية العلوم الطبية التطبيقية",
+   "name_en": "Faculty of Applied Medical Sciences",
+   "majors": [
+    {
+     "name_ar": "العلوم الطبية المخبرية",
+     "name_en": "Medical Laboratory Sciences",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "العلاج الطبيعي",
+     "name_en": "Physical Therapy",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "العلاج الوظيفي",
+     "name_en": "Occupational Therapy",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "البصريات",
+     "name_en": "Optometry",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "تكنولوجيا الأشعة",
+     "name_en": "Radiologic Technology",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "الإسعاف والطوارئ",
+     "name_en": "Paramedics and Emergency Medical Services",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "السمع والنطق",
+     "name_en": "Audiology and Speech Pathology",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "العلاج التنفسي",
+     "name_en": "Respiratory Therapy",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "تكنولوجيا التخدير",
+     "name_en": "Anesthesia Technology",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "تكنولوجيا صناعة الأسنان",
+     "name_en": "Dental Technology",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "علوم طب الأسنان المساندة",
+     "name_en": "Allied Dental Sciences",
+     "degree": "bachelor"
+    }
+   ]
+  },
+  {
+   "name_ar": "كلية الهندسة",
+   "name_en": "Faculty of Engineering",
+   "majors": [
+    {
+     "name_ar": "الهندسة المدنية",
+     "name_en": "Civil Engineering",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "الهندسة الكهربائية",
+     "name_en": "Electrical Engineering",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "الهندسة الميكانيكية",
+     "name_en": "Mechanical Engineering",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "الهندسة الكيميائية",
+     "name_en": "Chemical Engineering",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "الهندسة الطبية الحيوية",
+     "name_en": "Biomedical Engineering",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "الهندسة النووية",
+     "name_en": "Nuclear Engineering",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "الهندسة الصناعية",
+     "name_en": "Industrial Engineering",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "هندسة الطيران",
+     "name_en": "Aeronautical Engineering",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "تكنولوجيا صيانة الطائرات",
+     "name_en": "Aircraft Maintenance Technology",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "هندسة تصميم وتطوير المنتج",
+     "name_en": "Product Design and Development Engineering",
+     "degree": "bachelor"
+    }
+   ]
+  },
+  {
+   "name_ar": "كلية تكنولوجيا الحاسوب والمعلومات",
+   "name_en": "Faculty of Computer and Information Technology",
+   "majors": [
+    {
+     "name_ar": "علوم الحاسوب",
+     "name_en": "Computer Science",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "هندسة الحاسوب",
+     "name_en": "Computer Engineering",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "نظم المعلومات الحاسوبية",
+     "name_en": "Computer Information Systems",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "هندسة البرمجيات",
+     "name_en": "Software Engineering",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "هندسة وأمن شبكات الحاسوب",
+     "name_en": "Network Engineering and Security",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "الأمن السيبراني",
+     "name_en": "Cyber Security",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "علم البيانات",
+     "name_en": "Data Science",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "الذكاء الاصطناعي",
+     "name_en": "Artificial Intelligence",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "إنترنت الأشياء",
+     "name_en": "Internet of Things",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "علم الروبوتات",
+     "name_en": "Robotics Science",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "تصميم وتطوير ألعاب الحاسوب",
+     "name_en": "Computer Game Design and Development",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "نظم المعلومات الصحية",
+     "name_en": "Health Information Systems",
+     "degree": "bachelor"
+    }
+   ]
+  },
+  {
+   "name_ar": "كلية العلوم والآداب",
+   "name_en": "Faculty of Science and Arts",
+   "majors": [
+    {
+     "name_ar": "الرياضيات",
+     "name_en": "Mathematics",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "الفيزياء",
+     "name_en": "Physics",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "الكيمياء",
+     "name_en": "Chemistry",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "الكيمياء التطبيقية",
+     "name_en": "Applied Chemistry",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "التقانات الحيوية والهندسة الوراثية",
+     "name_en": "Biotechnology and Genetic Engineering",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "اللغة الإنجليزية واللغويات",
+     "name_en": "English Language and Linguistics",
+     "degree": "bachelor"
+    }
+   ]
+  },
+  {
+   "name_ar": "كلية العمارة والتصميم",
+   "name_en": "Faculty of Architecture and Design",
+   "majors": [
+    {
+     "name_ar": "العمارة",
+     "name_en": "Architecture",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "التصميم والتواصل البصري",
+     "name_en": "Design and Visual Communication",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "تخطيط وتصميم المدن",
+     "name_en": "City Planning and Design",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "هندسة التخطيط الحضري والبيئي",
+     "name_en": "Urban and Environmental Planning Engineering",
+     "degree": "bachelor"
+    }
+   ]
+  },
+  {
+   "name_ar": "كلية الزراعة",
+   "name_en": "Faculty of Agriculture",
+   "majors": [
+    {
+     "name_ar": "الإنتاج النباتي",
+     "name_en": "Plant Production",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "الإنتاج الحيواني",
+     "name_en": "Animal Production",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "التربة والري",
+     "name_en": "Soil and Irrigation",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "التغذية وتكنولوجيا الغذاء",
+     "name_en": "Nutrition and Food Technology",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "التغذية السريرية",
+     "name_en": "Clinical Nutrition",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "الزراعة الرقمية",
+     "name_en": "Digital Agriculture",
+     "degree": "bachelor"
+    }
+   ]
+  },
+  {
+   "name_ar": "كلية الطب البيطري",
+   "name_en": "Faculty of Veterinary Medicine",
+   "majors": [
+    {
+     "name_ar": "دكتور في الطب البيطري",
+     "name_en": "Doctor of Veterinary Medicine (DVM)",
+     "degree": "bachelor"
+    }
+   ]
+  }
+ ],
+ "sources": [
+  "https://www.just.edu.jo",
+  "https://en.wikipedia.org/wiki/Jordan_University_of_Science_and_Technology",
+  "https://dirasaabroad.com/jordan-university-of-science-technology",
+  "https://mawdoo3.com/تخصصات_جامعة_العلوم_والتكنولوجيا_الأردنية",
+  "https://www.just.edu.jo/ar/FacultiesandDepartments/it/Departments/SE/SiteAssets/Pages/Programs/Robo_Study%20Plan_In_Arabic_OCT2025.pdf",
+  "https://www.just.edu.jo/FacultiesandDepartments/it/Departments/CyberSec/PublishingImages/Pages/Programs/IoT_Study%20Plan_In_English_FINAL_OCT2025.pdf",
+  "https://www.just.edu.jo/FacultiesandDepartments/it/Departments/CyberSec/PublishingImages/Pages/Programs/CG_Study%20Plan_In_English_Final_OCT2025.pdf",
+  "https://www.just.edu.jo/FacultiesandDepartments/FacultyofAgriculture/Departments/NaturalResourcesandEnvironment/Pages/DigialAgriculture.aspx",
+  "https://www.just.edu.jo/ar/FacultiesandDepartments/FacultyofEngineering/Departments/IndustrialEngineering/SiteAssets/Pages/Downloads/PDDE-Arabic_Study_Plan.pdf",
+  "https://www.just.edu.jo/FacultiesandDepartments/FacultyofNursing/Departments/Midwifery/Pages/Midwifery-Study-Plans.aspx",
+  "https://www.just.edu.jo/FacultiesandDepartments/FacultyofArchitectureandDesign/Departments/UrbanPlanning/Pages/Programs.aspx"
+ ],
+ "notes": "POPULATED FROM SECONDARY SOURCES (2026-11-03) - every just.edu.jo / services.just.edu.jo URL still returns the WAF page 'Request Rejected' to the fetcher, and mohe.gov.jo / admhec.gov.jo lists are robots-disallowed. Colleges and Arabic programme names come from dirasaabroad.com's JUST page (11 undergraduate faculties, programme names in Arabic), cross-checked against Wikipedia's faculty list and mawdoo3's 2021/22 admission table (45 programmes, all of which are included here). Programmes newer than mawdoo3's list are corroborated by the TITLES/URLs of official just.edu.jo documents seen in search results (content not readable): Robotics study plan Oct-2025, IoT study plan Oct-2025, Computer Games ('CG') study plan Oct-2025, Digital Agriculture department page, Product Design & Development Engineering study plan, Midwifery study plans, Urban Planning programmes page. NOT independently corroborated on an official URL: 'نظم المعلومات الصحية', 'التصنيع الدوائي والبيولوجي', 'الكيمياء التطبيقية', 'التغذية السريرية' (Agriculture), 'تكنولوجيا صيانة الطائرات', 'تخطيط وتصميم المدن' vs 'هندسة التخطيط الحضري والبيئي' (may be old/new names of the same programme), 'الإدارة والسياسات الصحية' (dirasaabroad puts it in Medicine, mawdoo3 lists it among AMS programmes). Arabic names drop the source's 'البكالوريوس في' prefix. English names are translations, not official. Choices: Electrical Engineering kept as one programme (dirasaabroad also lists 'communications' and 'power' tracks); Veterinary kept as 'دكتور في الطب البيطري' (dirasaabroad also lists the older name 'الطب والجراحة البيطرية'); Pharmacy (B.Sc.) and PharmD kept as separate programmes; nursing is admitted as male/female sections and midwifery is female-only (mawdoo3). Omitted: 'البكالوريوس المتداخل في العلوم الطبية الأساسية' and its 7 tracks (embedded degree inside MD, not an admission programme), the Nanotechnology Institute and Faculty of Graduate Studies (graduate only), and Wikipedia's 'forensic science' mention (no Arabic programme found). No JUST diploma programmes found. Center 32.47889, 35.985 = Wikipedia infobox (32°28′44″N 35°59′6″E), not OSM-verified. email_domains: just.edu.jo; student subdomain not verified. BUILDINGS: empty. OpenStreetMap could not be reached from this session: overpass-api.de, overpass.kumi.systems, nominatim.openstreetmap.org and openstreetmap.org were all refused by the fetch allowlist/egress proxy (also from the device shell), the Chrome extension was not connected, and OSM mirrors (mapcarta) returned errors. No coordinates were guessed. Re-run the Overpass query from an unrestricted machine to fill buildings. ",
+ "buildings": []
 }

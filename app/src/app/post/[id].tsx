@@ -39,7 +39,7 @@ export default function PostScreen() {
   async function send() {
     if (!profile || !draft.trim()) return;
     const body = draft.trim(); setDraft('');
-    const { data, error } = await supabase.from('comments').insert({ post_id: id, author_id: profile.id, body, parent_id: replyTo?.id ?? null })
+    const { data, error } = await supabase.from('comments').insert({ post_id: id, author_id: (profile?.id ?? ''), body, parent_id: replyTo?.id ?? null })
       .select('id, author_id, parent_id, body, created_at, author:profiles(full_name, avatar_url)').single();
     setReplyTo(null);
     if (!error && data) setComments((c) => [...c, data as unknown as Comment]);

@@ -40,7 +40,7 @@ export default function NewPost() {
       if (isPost) {
         if (!body.trim() && !media) { setBusy(false); return; }
         const { data: post, error } = await supabase.from('posts').insert({
-          author_id: profile.id, university_id: profile.university_id, community_id: params.community ?? null,
+          author_id: (profile?.id ?? ''), university_id: profile.university_id, community_id: params.community ?? null,
           category: cat, audience: params.community ? 'community' : POST_AUD[aud][0],
           title: title.trim() || null, body: body.trim(),
           price_jod: cat === 'market' && price ? Number(price) : null,
@@ -48,14 +48,14 @@ export default function NewPost() {
         }).select('id').single();
         if (error) throw error;
         if (media) {
-          const path = await uploadFile('posts', profile.id, media);
+          const path = await uploadFile('posts', (profile?.id ?? ''), media);
           await supabase.from('post_media').insert({ post_id: post.id, kind: 'image', url: path, size_bytes: media.size ?? null });
         }
       } else {
         if (!media) { Alert.alert('ضيف صورة أو فيديو للستوري'); setBusy(false); return; }
-        const path = await uploadFile('stories', profile.id, media);
+        const path = await uploadFile('stories', (profile?.id ?? ''), media);
         const { error } = await supabase.from('stories').insert({
-          author_id: profile.id, university_id: profile.university_id, kind: media.kind, media_url: path,
+          author_id: (profile?.id ?? ''), university_id: profile.university_id, kind: media.kind, media_url: path,
           duration_sec: media.duration ? Math.ceil(media.duration / 1000) : null, caption: body.trim() || null, audience: STORY_AUD[aud][0],
         });
         if (error) throw error;

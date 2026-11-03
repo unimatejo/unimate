@@ -14,7 +14,7 @@ export function useProfilePatch() {
   const patch = useCallback(async (p: Partial<Profile>) => {
     if (!profile) return;
     setDraft((d) => ({ ...d, ...p }));
-    const { error } = await supabase.from('profiles').update(p).eq('id', profile.id);
+    const { error } = await supabase.from('profiles').update(p).eq('id', (profile?.id ?? ''));
     if (error) { setDraft({}); Alert.alert('ما زبط الحفظ', 'تأكد من الإنترنت وجرب كمان مرة.'); return; }
     await refreshProfile();
     setDraft({});
@@ -37,13 +37,13 @@ export function usePrefs() {
   const [prefs, setPrefs] = useState<Prefs>(DEFAULT_PREFS);
   useEffect(() => {
     if (!profile) return;
-    supabase.from('notification_prefs').select('*').eq('user_id', profile.id).maybeSingle()
+    supabase.from('notification_prefs').select('*').eq('user_id', (profile?.id ?? '')).maybeSingle()
       .then(({ data }) => data && setPrefs({ ...DEFAULT_PREFS, ...data }));
   }, [profile]);
   const set = useCallback(async (p: Partial<Prefs>) => {
     if (!profile) return;
     setPrefs((x) => ({ ...x, ...p }));
-    await supabase.from('notification_prefs').upsert({ user_id: profile.id, ...p }, { onConflict: 'user_id' });
+    await supabase.from('notification_prefs').upsert({ user_id: (profile?.id ?? ''), ...p }, { onConflict: 'user_id' });
   }, [profile]);
   return { prefs, set };
 }

@@ -59,8 +59,8 @@ export default function Chat() {
     const { data: mem } = await supabase.from('conversation_members').select('user_id, state, profile:profiles(id, full_name, avatar_url)').eq('conversation_id', id);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const rows = (mem ?? []) as any[];
-    setOther(rows.find((m) => m.user_id !== profile.id)?.profile ?? null);
-    setMyState(rows.find((m) => m.user_id === profile.id)?.state ?? 'active');
+    setOther(rows.find((m) => m.user_id !== (profile?.id ?? ''))?.profile ?? null);
+    setMyState(rows.find((m) => m.user_id === (profile?.id ?? ''))?.state ?? 'active');
     const { data: m } = await supabase.from('messages').select('*').eq('conversation_id', id).order('created_at', { ascending: false }).limit(60);
     setMsgs((m ?? []) as Message[]);
     supabase.rpc('mark_read', { conv: id });
@@ -85,7 +85,7 @@ export default function Chat() {
     const body = kind === 'text' ? draft.trim() : null;
     if (kind === 'text' && !body) return;
     setDraft('');
-    const { data, error } = await supabase.from('messages').insert({ conversation_id: id, sender_id: profile.id, kind, body, media_url: media ?? null }).select().single();
+    const { data, error } = await supabase.from('messages').insert({ conversation_id: id, sender_id: (profile?.id ?? ''), kind, body, media_url: media ?? null }).select().single();
     if (error) { Alert.alert('ما انبعتت', myState === 'request' ? 'لازم تقبل الطلب أول.' : 'جرّب مرة ثانية.'); return; }
     setMsgs((cur) => [data as Message, ...cur.filter((x) => x.id !== data.id)]);
   }
@@ -112,7 +112,7 @@ export default function Chat() {
   async function setVanish(v: VanishMode) {
     setConv((c) => c ? { ...c, vanish: v } : c);
     await supabase.from('conversations').update({ vanish: v }).eq('id', id);
-    await supabase.from('messages').insert({ conversation_id: id, sender_id: profile!.id, kind: 'text', body: `غيّرت مدة اختفاء الرسائل: ${VANISH.find((x) => x.key === v)?.label}` });
+    await supabase.from('messages').insert({ conversation_id: id, sender_id: (profile?.id ?? ''), kind: 'text', body: `غيّرت مدة اختفاء الرسائل: ${VANISH.find((x) => x.key === v)?.label}` });
   }
 
   async function setShield(v: boolean) {
@@ -121,7 +121,7 @@ export default function Chat() {
   }
 
   async function call(kind: 'voice' | 'video') {
-    const { data, error } = await supabase.from('calls').insert({ conversation_id: id, caller_id: profile!.id, kind }).select().single();
+    const { data, error } = await supabase.from('calls').insert({ conversation_id: id, caller_id: (profile?.id ?? ''), kind }).select().single();
     if (error) return;
     router.push({ pathname: '/call/[id]', params: { id: data.id, name: other?.full_name ?? conv?.title ?? '', kind } });
   }

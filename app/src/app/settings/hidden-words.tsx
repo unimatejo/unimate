@@ -14,18 +14,18 @@ export default function HiddenWords() {
 
   useEffect(() => {
     if (!profile) return;
-    supabase.from('hidden_words').select('word').eq('user_id', profile.id).then(({ data }) => setWords((data ?? []).map((x) => x.word)));
+    supabase.from('hidden_words').select('word').eq('user_id', (profile?.id ?? '')).then(({ data }) => setWords((data ?? []).map((x) => x.word)));
   }, [profile]);
 
   async function add() {
     const v = w.trim();
     if (!v || words.includes(v)) { setW(''); return; }
     setWords((x) => [v, ...x]); setW('');
-    await supabase.from('hidden_words').insert({ user_id: profile!.id, word: v });
+    await supabase.from('hidden_words').insert({ user_id: (profile?.id ?? ''), word: v });
   }
   async function remove(v: string) {
     setWords((x) => x.filter((y) => y !== v));
-    await supabase.from('hidden_words').delete().eq('user_id', profile!.id).eq('word', v);
+    await supabase.from('hidden_words').delete().eq('user_id', (profile?.id ?? '')).eq('word', v);
   }
 
   return (

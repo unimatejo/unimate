@@ -28,13 +28,13 @@ export default function Messages() {
     setLoading(true);
     const { data: mine } = await supabase.from('conversation_members')
       .select('state, last_read_at, conversation:conversations(id, kind, title, context_label, streak_days, last_message_at)')
-      .eq('user_id', profile.id).neq('state', 'left');
+      .eq('user_id', (profile?.id ?? '')).neq('state', 'left');
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const rows = (mine ?? []) as any[];
     setRequests(rows.filter((r) => r.state === 'request').length);
     const convIds = rows.map((r) => r.conversation.id);
     const { data: members } = convIds.length ? await supabase.from('conversation_members')
-      .select('conversation_id, user_id, profile:profiles(id, full_name, avatar_url)').in('conversation_id', convIds).neq('user_id', profile.id) : { data: [] };
+      .select('conversation_id, user_id, profile:profiles(id, full_name, avatar_url)').in('conversation_id', convIds).neq('user_id', (profile?.id ?? '')) : { data: [] };
     const out: Item[] = [];
     for (const r of rows.filter((x) => x.state === 'active')) {
       const c = r.conversation;

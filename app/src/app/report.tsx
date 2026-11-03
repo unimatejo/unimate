@@ -23,9 +23,9 @@ export default function Report() {
     if (!reason || !profile) return;
     setBusy(true);
     const { error } = await supabase.from('reports').insert({
-      reporter_id: profile.id, target_type: type, target_id: id, target_user: user ?? null, reason, details: details.trim() || null, also_blocked: block,
+      reporter_id: (profile?.id ?? ''), target_type: type, target_id: id, target_user: user ?? null, reason, details: details.trim() || null, also_blocked: block,
     });
-    if (!error && block && user && user !== profile.id) await supabase.from('blocks').insert({ blocker_id: profile.id, blocked_id: user });
+    if (!error && block && user && user !== (profile?.id ?? '')) await supabase.from('blocks').insert({ blocker_id: (profile?.id ?? ''), blocked_id: user });
     setBusy(false);
     if (error) { Alert.alert('ما زبط', 'جرّب كمان مرة.'); return; }
     Alert.alert('وصل بلاغك', 'فريق يونيميت رح يراجعه، وما حدا بيعرف إنك بلّغت.', [{ text: 'تمام', onPress: () => router.back() }]);

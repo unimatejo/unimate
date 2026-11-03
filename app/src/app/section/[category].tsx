@@ -24,7 +24,7 @@ export default function SectionScreen() {
   const load = useCallback(async () => {
     if (!profile) return;
     setLoading(true);
-    setPosts(await loadFeed(profile.id, { tab: 'university', category }));
+    setPosts(await loadFeed((profile?.id ?? ''), { tab: 'university', category }));
     setLoading(false);
   }, [profile, category]);
   useEffect(() => { load(); }, [load]);

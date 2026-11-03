@@ -20,12 +20,12 @@ export default function Saved() {
   const load = useCallback(async () => {
     if (!profile) return;
     setLoading(true);
-    const { data: s } = await supabase.from('post_saves').select('post_id, created_at').eq('user_id', profile.id).order('created_at', { ascending: false }).limit(100);
+    const { data: s } = await supabase.from('post_saves').select('post_id, created_at').eq('user_id', (profile?.id ?? '')).order('created_at', { ascending: false }).limit(100);
     const ids = (s ?? []).map((x) => x.post_id);
     if (ids.length) {
       const { data } = await supabase.from('posts').select(POST_SELECT).in('id', ids);
       const byId = new Map(((data ?? []) as unknown as Post[]).map((p) => [p.id, p]));
-      setPosts(await withMine(ids.map((i) => byId.get(i)).filter(Boolean) as Post[], profile.id));
+      setPosts(await withMine(ids.map((i) => byId.get(i)).filter(Boolean) as Post[], (profile?.id ?? '')));
     } else setPosts([]);
     setLoading(false);
   }, [profile]);

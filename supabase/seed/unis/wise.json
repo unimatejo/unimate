@@ -1,92 +1,314 @@
 {
-  "slug": "wise",
-  "name_ar": "جامعة العلوم الإسلامية العالمية",
-  "name_en": "The World Islamic Sciences and Education University",
-  "city": "Amman",
-  "type": "public",
-  "email_domains": ["wise.edu.jo"],
-  "center": {"lat": null, "lng": null},
-  "brand_color": null,
-  "links": [
-    {"kind": "website", "title": "الموقع الرسمي", "url": "https://www.wise.edu.jo/"},
-    {"kind": "portal", "title": "بوابة الخدمات", "url": "https://portal.wise.edu.jo/"},
-    {"kind": "registration", "title": "التسجيل الذاتي والدفع الإلكتروني", "url": "http://grades.wise.edu.jo:8889/"},
-    {"kind": "elearning", "title": "بوابة التعليم الإلكتروني", "url": "https://lms.wise.edu.jo/mlms/"},
-    {"kind": "library", "title": "المكتبة", "url": "https://www.wise.edu.jo/%d8%a7%d9%84%d9%85%d9%83%d8%aa%d8%a8%d8%a9/"},
-    {"kind": "calendar", "title": "التقويم الجامعي", "url": "https://www.wise.edu.jo/en/%D8%A7%D9%84%D9%82%D8%A8%D9%88%D9%84-%D9%88-%D8%A7%D9%84%D8%AA%D8%B3%D8%AC%D9%8A%D9%84/%D8%A7%D9%84%D8%AA%D9%82%D9%88%D9%8A%D9%85-%D8%A7%D9%84%D8%AC%D8%A7%D9%85%D8%B9%D9%8A/"},
-    {"kind": "registration", "title": "دائرة القبول والتسجيل", "url": "https://www.wise.edu.jo/%d8%a7%d9%84%d9%82%d8%a8%d9%88%d9%84-%d9%88-%d8%a7%d9%84%d8%aa%d8%b3%d8%ac%d9%8a%d9%84/"}
-  ],
-  "colleges": [
-    {"name_ar": "كلية الدعوة وأصول الدين", "name_en": "Faculty of Da'wah and Fundamentals of Religion", "majors": [
-      {"name_ar": "أصول الدين", "name_en": "Fundamentals of Religion", "degree": "bachelor"},
-      {"name_ar": "القراءات القرآنية", "name_en": "Quranic Readings", "degree": "bachelor"}
-    ]},
-    {"name_ar": "كلية الشيخ نوح القضاة للشريعة والقانون", "name_en": "Sheikh Noah Al-Qudah Faculty of Sharia and Law", "majors": [
-      {"name_ar": "الفقه وأصوله", "name_en": "Jurisprudence and its Foundations", "degree": "bachelor"},
-      {"name_ar": "القانون", "name_en": "Law", "degree": "bachelor"}
-    ]},
-    {"name_ar": "كلية العلوم التربوية", "name_en": "Faculty of Educational Sciences", "majors": [
-      {"name_ar": "الإرشاد والصحة النفسية", "name_en": "Counseling and Mental Health", "degree": "bachelor"},
-      {"name_ar": "التربية الخاصة", "name_en": "Special Education", "degree": "bachelor"},
-      {"name_ar": "معلم صف", "name_en": "Class Teacher", "degree": "bachelor"},
-      {"name_ar": "تربية الطفولة المبكرة", "name_en": "Early Childhood Education", "degree": "bachelor"}
-    ]},
-    {"name_ar": "كلية الآداب والعلوم", "name_en": "Faculty of Arts and Sciences", "majors": [
-      {"name_ar": "التاريخ والحضارة الإسلامية", "name_en": "History and Islamic Civilization", "degree": "bachelor"},
-      {"name_ar": "اللغة الإنجليزية", "name_en": "English Language", "degree": "bachelor"},
-      {"name_ar": "اللغة العربية", "name_en": "Arabic Language", "degree": "bachelor"}
-    ]},
-    {"name_ar": "كلية الفنون والعمارة الإسلامية", "name_en": "Faculty of Islamic Arts and Architecture", "majors": [
-      {"name_ar": "الفنون الإسلامية", "name_en": "Islamic Arts", "degree": "bachelor"}
-    ]},
-    {"name_ar": "كلية تكنولوجيا المعلومات", "name_en": "Faculty of Information Technology", "majors": [
-      {"name_ar": "علم الحاسوب", "name_en": "Computer Science", "degree": "bachelor"},
-      {"name_ar": "هندسة البرمجيات", "name_en": "Software Engineering", "degree": "bachelor"},
-      {"name_ar": "نظم شبكات الحاسوب", "name_en": "Computer Network Systems", "degree": "bachelor"},
-      {"name_ar": "نظم المعلومات والشبكات", "name_en": "Information Systems and Networks", "degree": "bachelor"}
-    ]},
-    {"name_ar": "كلية المال والأعمال", "name_en": "Faculty of Finance and Business", "majors": [
-      {"name_ar": "إدارة الأعمال", "name_en": "Business Administration", "degree": "bachelor"},
-      {"name_ar": "العلوم المالية والمصرفية", "name_en": "Financial and Banking Sciences", "degree": "bachelor"},
-      {"name_ar": "المحاسبة", "name_en": "Accounting", "degree": "bachelor"},
-      {"name_ar": "نظم المعلومات الإدارية", "name_en": "Management Information Systems", "degree": "bachelor"},
-      {"name_ar": "المصارف الإسلامية", "name_en": "Islamic Banking", "degree": "bachelor"}
-    ]},
-    {"name_ar": "كلية الفقه المالكي", "name_en": "Faculty of Al-Maliki Jurisprudence", "majors": [
-      {"name_ar": "الفقه المالكي وأصوله", "name_en": "Maliki Jurisprudence and its Foundations", "degree": "bachelor"}
-    ]},
-    {"name_ar": "كلية الفقه الحنفي", "name_en": "Faculty of Al-Hanafi Jurisprudence", "majors": [
-      {"name_ar": "الفقه الحنفي", "name_en": "Hanafi Jurisprudence", "degree": "bachelor"}
-    ]},
-    {"name_ar": "كلية الفقه الشافعي", "name_en": "Faculty of Al-Shafi'i Jurisprudence", "majors": [
-      {"name_ar": "الفقه الشافعيّ وأصوله", "name_en": "Shafi'i Jurisprudence and its Foundations", "degree": "bachelor"},
-      {"name_ar": "الفقه الشافعيّ وأصوله", "name_en": "Shafi'i Jurisprudence and its Foundations (Intermediate Diploma)", "degree": "diploma"}
-    ]},
-    {"name_ar": "الكلية التقنية", "name_en": "Technical College", "majors": [
-      {"name_ar": "الأمن السيبراني", "name_en": "Cybersecurity", "degree": "diploma"},
-      {"name_ar": "علم الحاسوب", "name_en": "Computer Science", "degree": "diploma"},
-      {"name_ar": "هندسة البرمجيات", "name_en": "Software Engineering", "degree": "diploma"}
-    ]}
-  ],
-  "sources": [
-    "https://www.wise.edu.jo/",
-    "https://www.wise.edu.jo/en/talabah/",
-    "https://www.wise.edu.jo/%D9%83%D9%84%D9%8A%D8%A9-%D8%A7%D9%84%D8%AF%D8%B9%D9%88%D8%A9-%D9%88%D8%A3%D8%B5%D9%88%D9%84-%D8%A7%D9%84%D8%AF%D9%8A%D9%86/%D8%A7%D9%84%D8%A8%D8%B1%D8%A7%D9%85%D8%AC%20%D8%A7%D9%84%D9%85%D8%B7%D8%B1%D9%88%D8%AD%D8%A9/",
-    "https://www.wise.edu.jo/%D9%83%D9%84%D9%8A%D8%A9-%D8%A7%D9%84%D8%A2%D8%AF%D8%A7%D8%A8-%D9%88%D8%A7%D9%84%D8%B9%D9%84%D9%88%D9%85/%D8%A7%D9%84%D8%A8%D8%B1%D8%A7%D9%85%D8%AC-%D8%A7%D9%84%D9%85%D8%B7%D8%B1%D9%88%D8%AD%D8%A9/",
-    "https://www.wise.edu.jo/en/%D9%83%D9%84%D9%8A%D8%A9-%D8%A7%D9%84%D8%B9%D9%84%D9%88%D9%85-%D8%A7%D9%84%D8%AA%D8%B1%D8%A8%D9%88%D9%8A%D8%A9/%D8%A7%D9%84%D8%A8%D8%B1%D8%A7%D9%85%D8%AC-%D8%A7%D9%84%D9%85%D8%B7%D8%B1%D9%88%D8%AD%D8%A9/",
-    "https://www.wise.edu.jo/en/%D9%83%D9%84%D9%8A%D8%A9-%D8%A7%D9%84%D9%85%D8%A7%D9%84-%D9%88%D8%A7%D9%84%D8%A3%D8%B9%D9%85%D8%A7%D9%84/%D8%A7%D9%84%D8%A8%D8%B1%D8%A7%D9%85%D8%AC-%D8%A7%D9%84%D9%85%D8%B7%D8%B1%D9%88%D8%AD%D8%A9/",
-    "https://www.wise.edu.jo/en/%D9%83%D9%84%D9%8A%D8%A9-%D8%A7%D9%84%D9%81%D9%82%D9%87-%D8%A7%D9%84%D8%B4%D8%A7%D9%81%D8%B9%D9%8A/%D8%A7%D9%84%D8%A8%D8%B1%D8%A7%D9%85%D8%AC-%D8%A7%D9%84%D9%85%D8%B7%D8%B1%D9%88%D8%AD%D8%A9/",
-    "https://www.wise.edu.jo/en/%d8%a7%d9%84%d9%83%d9%84%d9%8a%d8%a9-%d8%a7%d9%84%d8%aa%d9%82%d9%86%d9%8a%d8%a9/%d8%aa%d9%83%d9%86%d9%88%d9%84%d9%88%d8%ac%d9%8a%d8%a7-%d8%a7%d9%84%d9%85%d8%b9%d9%84%d9%88%d9%85%d8%a7%d8%aa/",
-    "https://www.wise.edu.jo/en/%D9%83%D9%84%D9%8A%D8%A9-%D8%AA%D9%83%D9%86%D9%88%D9%84%D9%88%D8%AC%D9%8A%D8%A7-%D8%A7%D9%84%D9%85%D8%B9%D9%84%D9%88%D9%85%D8%A7%D8%AA/%D8%B9%D9%84%D9%85-%D8%A7%D9%84%D8%AD%D8%A7%D8%B3%D9%88%D8%A8/",
-    "https://lms.wise.edu.jo/mlms/",
-    "https://www.wise.edu.jo/wp-content/uploads/2024/03/%D8%AE%D8%B7%D8%A9-%D8%A8%D8%B1%D9%86%D8%A7%D9%85%D8%AC-%D8%A8%D9%83%D8%A7%D9%84%D9%88%D8%B1%D9%8A%D9%88%D8%B3-%D8%A7%D9%84%D9%81%D9%82%D9%87-%D9%88%D8%A3%D8%B5%D9%88%D9%84%D9%87.pdf",
-    "https://www.wise.edu.jo/wp-content/uploads/2025/10/%D8%AE%D8%B7%D8%A9-%D8%A8%D8%B1%D9%86%D8%A7%D9%85%D8%AC-%D8%A8%D9%83%D8%A7%D9%84%D9%88%D8%B1%D9%8A%D9%88%D8%B3-%D8%A7%D9%84%D9%82%D8%A7%D9%86%D9%88%D9%86-%D9%85%D8%B9-%D9%88%D8%B5%D9%81-%D8%A7%D9%84%D9%85%D9%88%D8%A7%D8%AF.pdf",
-    "https://www.wise.edu.jo/wp-content/uploads/2024/03/%D8%AE%D8%B7%D8%A9-%D8%A8%D9%83%D8%A7%D9%84%D9%88%D8%B1%D9%8A%D9%88%D8%B3-%D9%87%D9%86%D8%AF%D8%B3%D8%A9-%D8%A7%D9%84%D8%A8%D8%B1%D9%85%D8%AC%D9%8A%D8%A7%D8%AA.pdf",
-    "https://www.wise.edu.jo/wp-content/uploads/2024/03/%D8%AE%D8%B7%D8%A9-%D8%A8%D9%83%D8%A7%D9%84%D9%88%D8%B1%D9%8A%D9%88%D8%B3-%D9%86%D8%B8%D9%85-%D8%B4%D8%A8%D9%83%D8%A7%D8%AA-%D8%A7%D9%84%D8%AD%D8%A7%D8%B3%D9%88%D8%A8.pdf",
-    "https://www.wise.edu.jo/wp-content/uploads/2024/03/%D8%AE%D8%B7%D8%A9-%D8%A7%D9%84%D8%A8%D9%83%D8%A7%D9%84%D9%88%D8%B1%D9%8A%D9%88%D8%B3-%D9%81%D9%86%D9%88%D9%86-%D8%A7%D8%B3%D9%84%D8%A7%D9%85%D9%8A%D8%A9.pdf",
-    "https://www.wise.edu.jo/wp-content/uploads/2021/09/%D8%AE%D8%B7%D8%A9-%D8%A8%D9%83%D8%A7%D9%84%D9%88%D8%B1%D9%8A%D9%88%D8%B3-%D8%A7%D9%84%D9%85%D8%A7%D9%84%D9%83%D9%8A-.pdf",
-    "https://www.wise.edu.jo/wp-content/uploads/2021/09/%D8%A7%D9%84%D9%81%D9%82%D9%87-%D8%A7%D9%84%D8%AD%D9%86%D9%81%D9%8A-1.pdf",
-    "https://www.wise.edu.jo/read/27654/"
-  ],
-  "notes": "College list is verbatim from the official homepage/menu (12 colleges incl. graduate college, which is omitted here). Programmes for Da'wah, Arts & Sciences, Educational Sciences, Finance & Business, Shafi'i and the Technical College (IT dept) come from the colleges' 'البرامج المطروحة' pages (degree level inferred from tab order; Business Arabic names came from page metadata). Pages for Sharia & Law, IT, Islamic Arts & Architecture, Hanafi and Maliki programmes could not be fetched (URL too long / empty), so those majors are taken from official study-plan file titles and department URLs: 'الفقه وأصوله' (2024 plan), 'القانون' (2025 plan; department is 'قسم القانون المقارن'), 'الفنون الإسلامية' (2024 plan 'البكالوريوس فنون اسلامية'), IT: 'علم الحاسوب' (department page), 'هندسة البرمجيات' and 'نظم شبكات الحاسوب' (2024 plans), 'نظم المعلومات والشبكات' (department URL, 2020 plan). Maliki bachelor name 'الفقه المالكي وأصوله' is inferred from the doctoral programme name and a 2020 bachelor plan titled 'خطة بكالوريوس المالكي'; Hanafi 'الفقه الحنفي' from a 2021 plan title — exact official bachelor names unverified. Not included (unverified/possibly closed): 'أمن وسرية المعلومات والشبكات' (2020 plan only), a bachelor in Islamic architecture / interior design (department 'قسم العمارة الإسلامية والتصميم الداخلي' exists; bachelor name unknown), English-taught Hanafi & Shafi'i BA (online programmes page). The Technical College may offer more diplomas than the 3 IT ones; Maliki college also lists an intermediate-diploma level with no named programme. Email: domain wise.edu.jo assumed for staff/students; a Teams login guide exists but the student address format could not be read. Campus is at Tabarbour, Amman; coordinates not verified so lat/lng are null. Wikipedia gives colours green and maroon; no hex verified. Additional e-learning subdomains seen: learn.wise.edu.jo, elearning.wise.edu.jo (older semesters)."
+ "slug": "wise",
+ "name_ar": "جامعة العلوم الإسلامية العالمية",
+ "name_en": "The World Islamic Sciences and Education University",
+ "city": "Amman",
+ "type": "public",
+ "email_domains": [
+  "wise.edu.jo"
+ ],
+ "center": {
+  "lat": 32.0121972,
+  "lng": 35.9340682
+ },
+ "brand_color": null,
+ "links": [
+  {
+   "kind": "website",
+   "title": "الموقع الرسمي",
+   "url": "https://www.wise.edu.jo/"
+  },
+  {
+   "kind": "portal",
+   "title": "بوابة الخدمات",
+   "url": "https://portal.wise.edu.jo/"
+  },
+  {
+   "kind": "registration",
+   "title": "التسجيل الذاتي والدفع الإلكتروني",
+   "url": "http://grades.wise.edu.jo:8889/"
+  },
+  {
+   "kind": "elearning",
+   "title": "بوابة التعليم الإلكتروني",
+   "url": "https://lms.wise.edu.jo/mlms/"
+  },
+  {
+   "kind": "library",
+   "title": "المكتبة",
+   "url": "https://www.wise.edu.jo/%d8%a7%d9%84%d9%85%d9%83%d8%aa%d8%a8%d8%a9/"
+  },
+  {
+   "kind": "calendar",
+   "title": "التقويم الجامعي",
+   "url": "https://www.wise.edu.jo/en/%D8%A7%D9%84%D9%82%D8%A8%D9%88%D9%84-%D9%88-%D8%A7%D9%84%D8%AA%D8%B3%D8%AC%D9%8A%D9%84/%D8%A7%D9%84%D8%AA%D9%82%D9%88%D9%8A%D9%85-%D8%A7%D9%84%D8%AC%D8%A7%D9%85%D8%B9%D9%8A/"
+  },
+  {
+   "kind": "registration",
+   "title": "دائرة القبول والتسجيل",
+   "url": "https://www.wise.edu.jo/%d8%a7%d9%84%d9%82%d8%a8%d9%88%d9%84-%d9%88-%d8%a7%d9%84%d8%aa%d8%b3%d8%ac%d9%8a%d9%84/"
+  }
+ ],
+ "colleges": [
+  {
+   "name_ar": "كلية الدعوة وأصول الدين",
+   "name_en": "Faculty of Da'wah and Fundamentals of Religion",
+   "majors": [
+    {
+     "name_ar": "أصول الدين",
+     "name_en": "Fundamentals of Religion",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "القراءات القرآنية",
+     "name_en": "Quranic Readings",
+     "degree": "bachelor"
+    }
+   ]
+  },
+  {
+   "name_ar": "كلية الشيخ نوح القضاة للشريعة والقانون",
+   "name_en": "Sheikh Noah Al-Qudah Faculty of Sharia and Law",
+   "majors": [
+    {
+     "name_ar": "الفقه وأصوله",
+     "name_en": "Jurisprudence and its Foundations",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "القانون",
+     "name_en": "Law",
+     "degree": "bachelor"
+    }
+   ]
+  },
+  {
+   "name_ar": "كلية العلوم التربوية",
+   "name_en": "Faculty of Educational Sciences",
+   "majors": [
+    {
+     "name_ar": "الإرشاد والصحة النفسية",
+     "name_en": "Counseling and Mental Health",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "التربية الخاصة",
+     "name_en": "Special Education",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "معلم صف",
+     "name_en": "Class Teacher",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "تربية الطفولة المبكرة",
+     "name_en": "Early Childhood Education",
+     "degree": "bachelor"
+    }
+   ]
+  },
+  {
+   "name_ar": "كلية الآداب والعلوم",
+   "name_en": "Faculty of Arts and Sciences",
+   "majors": [
+    {
+     "name_ar": "التاريخ والحضارة الإسلامية",
+     "name_en": "History and Islamic Civilization",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "اللغة الإنجليزية",
+     "name_en": "English Language",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "اللغة العربية",
+     "name_en": "Arabic Language",
+     "degree": "bachelor"
+    }
+   ]
+  },
+  {
+   "name_ar": "كلية الفنون والعمارة الإسلامية",
+   "name_en": "Faculty of Islamic Arts and Architecture",
+   "majors": [
+    {
+     "name_ar": "الفنون الإسلامية",
+     "name_en": "Islamic Arts",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "التصميم الداخلي",
+     "name_en": "Interior Design",
+     "degree": "bachelor"
+    }
+   ]
+  },
+  {
+   "name_ar": "كلية تكنولوجيا المعلومات",
+   "name_en": "Faculty of Information Technology",
+   "majors": [
+    {
+     "name_ar": "علم الحاسوب",
+     "name_en": "Computer Science",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "هندسة البرمجيات",
+     "name_en": "Software Engineering",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "نظم شبكات الحاسوب",
+     "name_en": "Computer Network Systems",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "نظم المعلومات والشبكات",
+     "name_en": "Information Systems and Networks",
+     "degree": "bachelor"
+    }
+   ]
+  },
+  {
+   "name_ar": "كلية المال والأعمال",
+   "name_en": "Faculty of Finance and Business",
+   "majors": [
+    {
+     "name_ar": "إدارة الأعمال",
+     "name_en": "Business Administration",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "العلوم المالية والمصرفية",
+     "name_en": "Financial and Banking Sciences",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "المحاسبة",
+     "name_en": "Accounting",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "نظم المعلومات الإدارية",
+     "name_en": "Management Information Systems",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "المصارف الإسلامية",
+     "name_en": "Islamic Banking",
+     "degree": "bachelor"
+    }
+   ]
+  },
+  {
+   "name_ar": "كلية الفقه المالكي",
+   "name_en": "Faculty of Al-Maliki Jurisprudence",
+   "majors": [
+    {
+     "name_ar": "الفقه المالكي وأصوله",
+     "name_en": "Maliki Jurisprudence and its Foundations",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "الفقه المالكي",
+     "name_en": "Maliki Jurisprudence (Intermediate Diploma)",
+     "degree": "diploma"
+    }
+   ]
+  },
+  {
+   "name_ar": "كلية الفقه الحنفي",
+   "name_en": "Faculty of Al-Hanafi Jurisprudence",
+   "majors": [
+    {
+     "name_ar": "الفقه الحنفي",
+     "name_en": "Hanafi Jurisprudence",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "القضاء والإفتاء الشرعي",
+     "name_en": "Sharia Judiciary and Fatwa",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "الإصلاح والوفاق الأسري الشرعي",
+     "name_en": "Sharia Family Reconciliation and Mediation",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "الفقه الحنفي",
+     "name_en": "Hanafi Jurisprudence (Intermediate Diploma)",
+     "degree": "diploma"
+    }
+   ]
+  },
+  {
+   "name_ar": "كلية الفقه الشافعي",
+   "name_en": "Faculty of Al-Shafi'i Jurisprudence",
+   "majors": [
+    {
+     "name_ar": "الفقه الشافعيّ وأصوله",
+     "name_en": "Shafi'i Jurisprudence and its Foundations",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "الفقه الشافعيّ وأصوله",
+     "name_en": "Shafi'i Jurisprudence and its Foundations (Intermediate Diploma)",
+     "degree": "diploma"
+    }
+   ]
+  },
+  {
+   "name_ar": "الكلية التقنية",
+   "name_en": "Technical College",
+   "majors": [
+    {
+     "name_ar": "الأمن السيبراني",
+     "name_en": "Cybersecurity",
+     "degree": "diploma"
+    },
+    {
+     "name_ar": "علم الحاسوب",
+     "name_en": "Computer Science",
+     "degree": "diploma"
+    },
+    {
+     "name_ar": "هندسة البرمجيات",
+     "name_en": "Software Engineering",
+     "degree": "diploma"
+    }
+   ]
+  }
+ ],
+ "sources": [
+  "https://www.wise.edu.jo/",
+  "https://www.wise.edu.jo/en/talabah/",
+  "https://www.wise.edu.jo/%D9%83%D9%84%D9%8A%D8%A9-%D8%A7%D9%84%D8%AF%D8%B9%D9%88%D8%A9-%D9%88%D8%A3%D8%B5%D9%88%D9%84-%D8%A7%D9%84%D8%AF%D9%8A%D9%86/%D8%A7%D9%84%D8%A8%D8%B1%D8%A7%D9%85%D8%AC%20%D8%A7%D9%84%D9%85%D8%B7%D8%B1%D9%88%D8%AD%D8%A9/",
+  "https://www.wise.edu.jo/%D9%83%D9%84%D9%8A%D8%A9-%D8%A7%D9%84%D8%A2%D8%AF%D8%A7%D8%A8-%D9%88%D8%A7%D9%84%D8%B9%D9%84%D9%88%D9%85/%D8%A7%D9%84%D8%A8%D8%B1%D8%A7%D9%85%D8%AC-%D8%A7%D9%84%D9%85%D8%B7%D8%B1%D9%88%D8%AD%D8%A9/",
+  "https://www.wise.edu.jo/en/%D9%83%D9%84%D9%8A%D8%A9-%D8%A7%D9%84%D8%B9%D9%84%D9%88%D9%85-%D8%A7%D9%84%D8%AA%D8%B1%D8%A8%D9%88%D9%8A%D8%A9/%D8%A7%D9%84%D8%A8%D8%B1%D8%A7%D9%85%D8%AC-%D8%A7%D9%84%D9%85%D8%B7%D8%B1%D9%88%D8%AD%D8%A9/",
+  "https://www.wise.edu.jo/en/%D9%83%D9%84%D9%8A%D8%A9-%D8%A7%D9%84%D9%85%D8%A7%D9%84-%D9%88%D8%A7%D9%84%D8%A3%D8%B9%D9%85%D8%A7%D9%84/%D8%A7%D9%84%D8%A8%D8%B1%D8%A7%D9%85%D8%AC-%D8%A7%D9%84%D9%85%D8%B7%D8%B1%D9%88%D8%AD%D8%A9/",
+  "https://www.wise.edu.jo/en/%D9%83%D9%84%D9%8A%D8%A9-%D8%A7%D9%84%D9%81%D9%82%D9%87-%D8%A7%D9%84%D8%B4%D8%A7%D9%81%D8%B9%D9%8A/%D8%A7%D9%84%D8%A8%D8%B1%D8%A7%D9%85%D8%AC-%D8%A7%D9%84%D9%85%D8%B7%D8%B1%D9%88%D8%AD%D8%A9/",
+  "https://www.wise.edu.jo/en/%d8%a7%d9%84%d9%83%d9%84%d9%8a%d8%a9-%d8%a7%d9%84%d8%aa%d9%82%d9%86%d9%8a%d8%a9/%d8%aa%d9%83%d9%86%d9%88%d9%84%d9%88%d8%ac%d9%8a%d8%a7-%d8%a7%d9%84%d9%85%d8%b9%d9%84%d9%88%d9%85%d8%a7%d8%aa/",
+  "https://www.wise.edu.jo/en/%D9%83%D9%84%D9%8A%D8%A9-%D8%AA%D9%83%D9%86%D9%88%D9%84%D9%88%D8%AC%D9%8A%D8%A7-%D8%A7%D9%84%D9%85%D8%B9%D9%84%D9%88%D9%85%D8%A7%D8%AA/%D8%B9%D9%84%D9%85-%D8%A7%D9%84%D8%AD%D8%A7%D8%B3%D9%88%D8%A8/",
+  "https://lms.wise.edu.jo/mlms/",
+  "https://www.wise.edu.jo/wp-content/uploads/2024/03/%D8%AE%D8%B7%D8%A9-%D8%A8%D8%B1%D9%86%D8%A7%D9%85%D8%AC-%D8%A8%D9%83%D8%A7%D9%84%D9%88%D8%B1%D9%8A%D9%88%D8%B3-%D8%A7%D9%84%D9%81%D9%82%D9%87-%D9%88%D8%A3%D8%B5%D9%88%D9%84%D9%87.pdf",
+  "https://www.wise.edu.jo/wp-content/uploads/2025/10/%D8%AE%D8%B7%D8%A9-%D8%A8%D8%B1%D9%86%D8%A7%D9%85%D8%AC-%D8%A8%D9%83%D8%A7%D9%84%D9%88%D8%B1%D9%8A%D9%88%D8%B3-%D8%A7%D9%84%D9%82%D8%A7%D9%86%D9%88%D9%86-%D9%85%D8%B9-%D9%88%D8%B5%D9%81-%D8%A7%D9%84%D9%85%D9%88%D8%A7%D8%AF.pdf",
+  "https://www.wise.edu.jo/wp-content/uploads/2024/03/%D8%AE%D8%B7%D8%A9-%D8%A8%D9%83%D8%A7%D9%84%D9%88%D8%B1%D9%8A%D9%88%D8%B3-%D9%87%D9%86%D8%AF%D8%B3%D8%A9-%D8%A7%D9%84%D8%A8%D8%B1%D9%85%D8%AC%D9%8A%D8%A7%D8%AA.pdf",
+  "https://www.wise.edu.jo/wp-content/uploads/2024/03/%D8%AE%D8%B7%D8%A9-%D8%A8%D9%83%D8%A7%D9%84%D9%88%D8%B1%D9%8A%D9%88%D8%B3-%D9%86%D8%B8%D9%85-%D8%B4%D8%A8%D9%83%D8%A7%D8%AA-%D8%A7%D9%84%D8%AD%D8%A7%D8%B3%D9%88%D8%A8.pdf",
+  "https://www.wise.edu.jo/wp-content/uploads/2024/03/%D8%AE%D8%B7%D8%A9-%D8%A7%D9%84%D8%A8%D9%83%D8%A7%D9%84%D9%88%D8%B1%D9%8A%D9%88%D8%B3-%D9%81%D9%86%D9%88%D9%86-%D8%A7%D8%B3%D9%84%D8%A7%D9%85%D9%8A%D8%A9.pdf",
+  "https://www.wise.edu.jo/wp-content/uploads/2021/09/%D8%AE%D8%B7%D8%A9-%D8%A8%D9%83%D8%A7%D9%84%D9%88%D8%B1%D9%8A%D9%88%D8%B3-%D8%A7%D9%84%D9%85%D8%A7%D9%84%D9%83%D9%8A-.pdf",
+  "https://www.wise.edu.jo/wp-content/uploads/2021/09/%D8%A7%D9%84%D9%81%D9%82%D9%87-%D8%A7%D9%84%D8%AD%D9%86%D9%81%D9%8A-1.pdf",
+  "https://www.wise.edu.jo/read/27654/",
+  "https://www.wise.edu.jo/%d9%83%d9%84%d9%8a%d8%a9-%d8%a7%d9%84%d9%81%d9%82%d9%87-%d8%a7%d9%84%d8%ad%d9%86%d9%81%d9%8a/%d8%a7%d9%84%d8%a8%d8%b1%d8%a7%d9%85%d8%ac-%d8%a7%d9%84%d9%85%d8%b7%d8%b1%d9%88%d8%ad%d8%a9/",
+  "https://www.wise.edu.jo/%d9%83%d9%84%d9%8a%d8%a9-%d8%a7%d9%84%d9%81%d9%82%d9%87-%d8%a7%d9%84%d8%b4%d8%a7%d9%81%d8%b9%d9%8a/%d8%a7%d9%84%d8%a8%d8%b1%d8%a7%d9%85%d8%ac-%d8%a7%d9%84%d9%85%d8%b7%d8%b1%d9%88%d8%ad%d8%a9/",
+  "https://www.wise.edu.jo/%D8%A7%D9%84%D9%83%D9%84%D9%8A%D8%A9-%D8%A7%D9%84%D8%AA%D9%82%D9%86%D9%8A%D8%A9/%d8%a7%d9%84%d8%a8%d8%b1%d8%a7%d9%85%d8%ac-%d8%a7%d9%84%d9%85%d8%b7%d8%b1%d9%88%d8%ad%d8%a9/",
+  "https://www.wise.edu.jo/wp-content/uploads/2026/09/%D9%85%D8%A8%D8%A7%D8%B4%D8%B1-%D8%A7%D9%84%D8%A7%D9%88%D9%84-2027-2026.pdf",
+  "https://dirasaabroad.com/international-islamic-science-university",
+  "https://en.wikipedia.org/wiki/World_Islamic_Sciences_and_Education_University",
+  "https://www.edarabia.com/world-islamic-sciences-education-university-amman-jordan/"
+ ],
+ "notes": "College list is verbatim from the official homepage/menu (12 colleges incl. graduate college, which is omitted here). Programmes for Da'wah, Arts & Sciences, Educational Sciences, Finance & Business, Shafi'i and the Technical College (IT dept) come from the colleges' 'البرامج المطروحة' pages (degree level inferred from tab order; Business Arabic names came from page metadata). Pages for Sharia & Law, IT, Islamic Arts & Architecture, Hanafi and Maliki programmes could not be fetched (URL too long / empty), so those majors are taken from official study-plan file titles and department URLs: 'الفقه وأصوله' (2024 plan), 'القانون' (2025 plan; department is 'قسم القانون المقارن'), 'الفنون الإسلامية' (2024 plan 'البكالوريوس فنون اسلامية'), IT: 'علم الحاسوب' (department page), 'هندسة البرمجيات' and 'نظم شبكات الحاسوب' (2024 plans), 'نظم المعلومات والشبكات' (department URL, 2020 plan). Maliki bachelor name 'الفقه المالكي وأصوله' is inferred from the doctoral programme name and a 2020 bachelor plan titled 'خطة بكالوريوس المالكي'; Hanafi 'الفقه الحنفي' from a 2021 plan title — exact official bachelor names unverified. Not included (unverified/possibly closed): 'أمن وسرية المعلومات والشبكات' (2020 plan only), a bachelor in Islamic architecture / interior design (department 'قسم العمارة الإسلامية والتصميم الداخلي' exists; bachelor name unknown), English-taught Hanafi & Shafi'i BA (online programmes page). The Technical College may offer more diplomas than the 3 IT ones; Maliki college also lists an intermediate-diploma level with no named programme. Email: domain wise.edu.jo assumed for staff/students; a Teams login guide exists but the student address format could not be read. Campus is at Tabarbour, Amman; coordinates not verified so lat/lng are null. Wikipedia gives colours green and maroon; no hex verified. Additional e-learning subdomains seen: learn.wise.edu.jo, elearning.wise.edu.jo (older semesters). 2026-11-03 re-check: the official Hanafi 'البرامج المطروحة' page lists 'الدبلوم المتوسط في الفقه الحنفي', 'بكالوريوس في الفقه الحنفي', 'بكالوريوس في القضاء والإفتاء الشرعي' and 'بكالوريوس الاصلاح والوفاق الأسري الشرعي' - the two new bachelors and the diploma were added (official page spells 'الاصلاح'; normalised to 'الإصلاح'). Shafi'i page re-confirmed (diploma + bachelor 'الفقه الشافعيّ وأصوله'). Technical College page re-confirmed (3 IT intermediate diplomas). Da'wah page also shows 'التفسير وعلوم القرآن' and 'العقيدة والفلسفة الإسلامية' without a degree level; both appear on the 2026/27 graduate admission list, so they are treated as graduate and not added (dirasaabroad.com claims bachelors in them, plus 'الحديث الشريف وعلومه' and 'الأداء الصوتي والتجويد' - unverified). Maliki and Islamic Arts programme pages render tabs without names; 'الفقه المالكي' intermediate diploma and 'التصميم الداخلي' bachelor come from dirasaabroad.com (secondary) - the latter consistent with the official department name 'قسم العمارة الإسلامية والتصميم الداخلي'; dirasaabroad also lists 'إدارة المشاريع' under Islamic Arts (not added, unverified). Sharia & Law and IT programme pages could not be fetched (URL length limit). The 2026/27 'مباشر الأول' PDF linked from the homepage is graduate-only. Campus: Wikipedia describes the main campus in Al-Madina Al-Riyadiya area with other sites in Tareq and Umm Uthaina; infobox says Tabarbour; edarabia gives 'Asem St 9, Amman 11947'. Centre coordinates still null (no verifiable source reachable). BUILDINGS/COORDINATES (2026-11-03 pass): OpenStreetMap data could not be queried from this environment - nominatim.openstreetmap.org, overpass-api.de, overpass.kumi.systems and api/www.openstreetmap.org were all refused by the session's egress allowlist (WebFetch and shell), and OSM way pages reachable via search results do not expose coordinates. No building coordinates were guessed, so 'buildings' is an empty list; re-run the Overpass query from an environment with OSM access.",
+ "buildings": []
 }

@@ -1,0 +1,773 @@
+{
+ "ttu": {
+  "center": [
+   30.8410004,
+   35.6429256
+  ],
+  "buildings": [
+   {
+    "name_ar": "كلية الهندسة",
+    "lat": 30.838965,
+    "lng": 35.642949,
+    "kind": "building",
+    "source": "google-maps"
+   },
+   {
+    "name_ar": "بوابة رقم 1 (بوابة الهندسة)",
+    "lat": 30.838243,
+    "lng": 35.6432238,
+    "kind": "gate",
+    "source": "google-maps"
+   },
+   {
+    "name_ar": "مختبرات حاسوب كلية الهندسة",
+    "lat": 30.8417346,
+    "lng": 35.6416249,
+    "kind": "building",
+    "source": "google-maps"
+   },
+   {
+    "name_ar": "بوابة رقم 3",
+    "lat": 30.8423961,
+    "lng": 35.6428963,
+    "kind": "gate",
+    "source": "google-maps"
+   },
+   {
+    "name_ar": "سكن نسيبة المازنية للطالبات",
+    "lat": 30.8429966,
+    "lng": 35.6370326,
+    "kind": "service",
+    "source": "google-maps"
+   }
+  ]
+ },
+ "yu": {
+  "center": [
+   32.5351791,
+   35.8566931
+  ],
+  "buildings": [
+   {
+    "name_ar": "مبنى الأميرة إيمان بنت عبدالله الثاني، كلية الطب وكلية الصيدلة،",
+    "lat": 32.5316295,
+    "lng": 35.8603969,
+    "kind": "building",
+    "source": "google-maps"
+   },
+   {
+    "name_ar": "كلية العلوم",
+    "lat": 32.5406863,
+    "lng": 35.8530524,
+    "kind": "building",
+    "source": "google-maps"
+   },
+   {
+    "name_ar": "جامعة اليرموك بوابة الاقتصاد الجديدة",
+    "lat": 32.532517,
+    "lng": 35.861007,
+    "kind": "gate",
+    "source": "google-maps"
+   },
+   {
+    "name_ar": "كلية التربية",
+    "lat": 32.538696,
+    "lng": 35.854969,
+    "kind": "building",
+    "source": "google-maps"
+   },
+   {
+    "name_ar": "كلية الأعمال وكلية الإعلام",
+    "lat": 32.5326776,
+    "lng": 35.8595906,
+    "kind": "building",
+    "source": "google-maps"
+   },
+   {
+    "name_ar": "مبنى الأمير الحسين بن عبدالله الثاني",
+    "lat": 32.5373892,
+    "lng": 35.8539248,
+    "kind": "building",
+    "source": "google-maps"
+   }
+  ]
+ },
+ "ahu": {
+  "center": [
+   30.2671052,
+   35.6784958
+  ],
+  "buildings": [
+   {
+    "name_ar": "كلية الاميرة عائشة بنت الحسين للتمريض والعلوم الصحية",
+    "lat": 30.2679852,
+    "lng": 35.6813665,
+    "kind": "building",
+    "source": "google-maps"
+   },
+   {
+    "name_ar": "كلية الهندسة",
+    "lat": 30.2649299,
+    "lng": 35.6814494,
+    "kind": "building",
+    "source": "google-maps"
+   },
+   {
+    "name_ar": "كلية تكنلوجيا المعلومات و هندسة الحاسوب",
+    "lat": 30.2659304,
+    "lng": 35.6812532,
+    "kind": "building",
+    "source": "google-maps"
+   },
+   {
+    "name_ar": "كلية إدارة الأعمال والاقتصاد",
+    "lat": 30.2669203,
+    "lng": 35.6819348,
+    "kind": "building",
+    "source": "google-maps"
+   },
+   {
+    "name_ar": "كلية العلوم",
+    "lat": 30.2659432,
+    "lng": 35.681943,
+    "kind": "building",
+    "source": "google-maps"
+   },
+   {
+    "name_ar": "كلية القانون",
+    "lat": 30.2659555,
+    "lng": 35.6811861,
+    "kind": "building",
+    "source": "google-maps"
+   }
+  ]
+ },
+ "mutah": {
+  "center": [
+   31.0936562,
+   35.7173742
+  ],
+  "buildings": [
+   {
+    "name_ar": "كلية العلوم مبنى 2",
+    "lat": 31.0949691,
+    "lng": 35.7177393,
+    "kind": "building",
+    "source": "google-maps"
+   },
+   {
+    "name_ar": "كلية تكنولوجيا المعلومات",
+    "lat": 31.0945431,
+    "lng": 35.7219862,
+    "kind": "building",
+    "source": "google-maps"
+   },
+   {
+    "name_ar": "كلية العلوم التربوية",
+    "lat": 31.0940614,
+    "lng": 35.7181154,
+    "kind": "building",
+    "source": "google-maps"
+   },
+   {
+    "name_ar": "كلية الهندسة",
+    "lat": 31.0942652,
+    "lng": 35.7212952,
+    "kind": "building",
+    "source": "google-maps"
+   },
+   {
+    "name_ar": "كلية الآداب",
+    "lat": 31.0948404,
+    "lng": 35.7184464,
+    "kind": "building",
+    "source": "google-maps"
+   },
+   {
+    "name_ar": "كلية العلوم الإجتماعية",
+    "lat": 31.0952433,
+    "lng": 35.7181483,
+    "kind": "building",
+    "source": "google-maps"
+   },
+   {
+    "name_ar": "كلية الطب",
+    "lat": 31.0916375,
+    "lng": 35.7150156,
+    "kind": "building",
+    "source": "google-maps"
+   },
+   {
+    "name_ar": "كلية الحقوق",
+    "lat": 31.0954983,
+    "lng": 35.7192111,
+    "kind": "building",
+    "source": "google-maps"
+   },
+   {
+    "name_ar": "كلية طب الأسنان",
+    "lat": 31.0932709,
+    "lng": 35.7189513,
+    "kind": "building",
+    "source": "google-maps"
+   }
+  ]
+ },
+ "just": {
+  "center": [
+   32.4949956,
+   35.9911707
+  ],
+  "buildings": [
+   {
+    "name_ar": "كلية العمارة والتصميم",
+    "lat": 32.493881,
+    "lng": 35.9883102,
+    "kind": "building",
+    "source": "google-maps"
+   },
+   {
+    "name_ar": "عمادة كلية الحاسبات ونظم المعلومات",
+    "lat": 32.4910049,
+    "lng": 35.9865779,
+    "kind": "building",
+    "source": "google-maps"
+   },
+   {
+    "name_ar": "كلية الهندسة",
+    "lat": 32.4906324,
+    "lng": 35.9870427,
+    "kind": "building",
+    "source": "google-maps"
+   },
+   {
+    "name_ar": "كلية الطب",
+    "lat": 32.5005752,
+    "lng": 35.9947408,
+    "kind": "building",
+    "source": "google-maps"
+   },
+   {
+    "name_ar": "كلية التمريض",
+    "lat": 32.4997525,
+    "lng": 35.9940165,
+    "kind": "building",
+    "source": "google-maps"
+   },
+   {
+    "name_ar": "كلية العلوم الطبية التطبيقية",
+    "lat": 32.4999101,
+    "lng": 35.99464,
+    "kind": "building",
+    "source": "google-maps"
+   },
+   {
+    "name_ar": "معهد تكنولوجيا النانو",
+    "lat": 32.4908873,
+    "lng": 35.9853656,
+    "kind": "building",
+    "source": "google-maps"
+   },
+   {
+    "name_ar": "مكتبة جامعة العلوم والتكنولوجيا الاردنية",
+    "lat": 32.4946458,
+    "lng": 35.9912686,
+    "kind": "library",
+    "source": "google-maps"
+   },
+   {
+    "name_ar": "مسجد جامعة العلوم والتكنولوجيا الأردنية - مسجد الشيخ محمد بن بطي آل حامد",
+    "lat": 32.4985137,
+    "lng": 35.9889545,
+    "kind": "mosque",
+    "source": "google-maps"
+   }
+  ]
+ },
+ "ju": {
+  "center": null,
+  "buildings": [
+   {
+    "name_ar": "مبنى الدراسات العليا للجامعه الأردنية",
+    "lat": 32.0112026,
+    "lng": 35.8717504,
+    "kind": "building",
+    "source": "google-maps"
+   },
+   {
+    "name_ar": "كلية العلوم التربوية",
+    "lat": 32.0201393,
+    "lng": 35.8712867,
+    "kind": "building",
+    "source": "google-maps"
+   },
+   {
+    "name_ar": "كلية الشريعة مبنى ب",
+    "lat": 32.0166909,
+    "lng": 35.8719879,
+    "kind": "building",
+    "source": "google-maps"
+   },
+   {
+    "name_ar": "مدخل كلية الهندسة",
+    "lat": 32.0124572,
+    "lng": 35.877182,
+    "kind": "building",
+    "source": "google-maps"
+   },
+   {
+    "name_ar": "كلية الزراعة",
+    "lat": 32.011472,
+    "lng": 35.8734873,
+    "kind": "building",
+    "source": "google-maps"
+   },
+   {
+    "name_ar": "كلية الحقوق",
+    "lat": 32.018679,
+    "lng": 35.8724251,
+    "kind": "building",
+    "source": "google-maps"
+   },
+   {
+    "name_ar": "كلية الطب",
+    "lat": 32.0089983,
+    "lng": 35.8745806,
+    "kind": "building",
+    "source": "google-maps"
+   },
+   {
+    "name_ar": "كلية العلوم",
+    "lat": 32.013355,
+    "lng": 35.8734147,
+    "kind": "building",
+    "source": "google-maps"
+   },
+   {
+    "name_ar": "كلية الآداب",
+    "lat": 32.0175186,
+    "lng": 35.8702818,
+    "kind": "building",
+    "source": "google-maps"
+   },
+   {
+    "name_ar": "الهندسة المدنية",
+    "lat": 32.0110705,
+    "lng": 35.875604,
+    "kind": "building",
+    "source": "google-maps"
+   },
+   {
+    "name_ar": "كلية اللغات الأجنبية",
+    "lat": 32.0171045,
+    "lng": 35.8700214,
+    "kind": "building",
+    "source": "google-maps"
+   },
+   {
+    "name_ar": "كلية الهندسة",
+    "lat": 32.0105678,
+    "lng": 35.8759313,
+    "kind": "building",
+    "source": "google-maps"
+   },
+   {
+    "name_ar": "مكتبة الجامعة الأردنية",
+    "lat": 32.0154656,
+    "lng": 35.8699516,
+    "kind": "library",
+    "source": "google-maps"
+   },
+   {
+    "name_ar": "مسجد الجامعة الأردنية",
+    "lat": 32.0177612,
+    "lng": 35.8667229,
+    "kind": "mosque",
+    "source": "google-maps"
+   }
+  ]
+ },
+ "gju": {
+  "center": [
+   31.776843,
+   35.802555
+  ],
+  "buildings": [
+   {
+    "name_ar": "كلية العلوم الإنسانية التطبيقية واللغات",
+    "lat": 31.7767874,
+    "lng": 35.8021848,
+    "kind": "building",
+    "source": "google-maps"
+   },
+   {
+    "name_ar": "المبنى H (كلية العلوم الأساسية والإنسانية)",
+    "lat": 31.7753986,
+    "lng": 35.8037369,
+    "kind": "building",
+    "source": "google-maps"
+   }
+  ]
+ },
+ "hu": {
+  "center": [
+   32.1035,
+   36.1865
+  ],
+  "buildings": [
+   {
+    "name_ar": "كلية الهندسة",
+    "lat": 32.1011184,
+    "lng": 36.1868653,
+    "kind": "building",
+    "source": "google-maps"
+   },
+   {
+    "name_ar": "كلية التمريض",
+    "lat": 32.1056313,
+    "lng": 36.1851414,
+    "kind": "building",
+    "source": "google-maps"
+   },
+   {
+    "name_ar": "كلية العلوم الطبية التطبيقية",
+    "lat": 32.1058764,
+    "lng": 36.184911,
+    "kind": "building",
+    "source": "google-maps"
+   },
+   {
+    "name_ar": "كلية تكنولوجيا المعلومات",
+    "lat": 32.1010142,
+    "lng": 36.1859212,
+    "kind": "building",
+    "source": "google-maps"
+   },
+   {
+    "name_ar": "كلية الأمير الحسين بن عبدالله الثاني لتكتولوجيا المعلومات",
+    "lat": 32.1001315,
+    "lng": 36.1860473,
+    "kind": "building",
+    "source": "google-maps"
+   },
+   {
+    "name_ar": "كلية الطب البشري",
+    "lat": 32.1053243,
+    "lng": 36.185651,
+    "kind": "building",
+    "source": "google-maps"
+   },
+   {
+    "name_ar": "كلية الموارد الطبيعية والبيئة",
+    "lat": 32.1015547,
+    "lng": 36.1888462,
+    "kind": "building",
+    "source": "google-maps"
+   },
+   {
+    "name_ar": "كلية الاقتصاد",
+    "lat": 32.1045903,
+    "lng": 36.1856777,
+    "kind": "building",
+    "source": "google-maps"
+   },
+   {
+    "name_ar": "كلية طب الأسنان",
+    "lat": 32.1070684,
+    "lng": 36.1871265,
+    "kind": "building",
+    "source": "google-maps"
+   },
+   {
+    "name_ar": "مكتبة الجامعة الهاشمية",
+    "lat": 32.1041369,
+    "lng": 36.1866756,
+    "kind": "library",
+    "source": "google-maps"
+   },
+   {
+    "name_ar": "دار الكتب الجامعية",
+    "lat": 32.102639,
+    "lng": 36.1862994,
+    "kind": "building",
+    "source": "google-maps"
+   },
+   {
+    "name_ar": "الفيلج",
+    "lat": 32.1023017,
+    "lng": 36.1865563,
+    "kind": "cafeteria",
+    "source": "google-maps"
+   },
+   {
+    "name_ar": "مبنى مطاعم الجامعة",
+    "lat": 32.1034468,
+    "lng": 36.1871647,
+    "kind": "building",
+    "source": "google-maps"
+   },
+   {
+    "name_ar": "كفتيريا الطب",
+    "lat": 32.1057594,
+    "lng": 36.1857341,
+    "kind": "cafeteria",
+    "source": "google-maps"
+   },
+   {
+    "name_ar": "وحدة القبول والتسجيل",
+    "lat": 32.1034105,
+    "lng": 36.1856353,
+    "kind": "service",
+    "source": "google-maps"
+   },
+   {
+    "name_ar": "بوابة الجامعة الهاشمية الرئيسية",
+    "lat": 32.1030387,
+    "lng": 36.1813725,
+    "kind": "gate",
+    "source": "google-maps"
+   },
+   {
+    "name_ar": "بوابة الجامعة الهاشمية الشمالية",
+    "lat": 32.1057768,
+    "lng": 36.1832058,
+    "kind": "gate",
+    "source": "google-maps"
+   },
+   {
+    "name_ar": "بوابة الجامعة الهاشمية الجنوبية",
+    "lat": 32.1001559,
+    "lng": 36.1898102,
+    "kind": "gate",
+    "source": "google-maps"
+   },
+   {
+    "name_ar": "مبنى الحارث الرابع",
+    "lat": 32.1048873,
+    "lng": 36.1838599,
+    "kind": "building",
+    "source": "google-maps"
+   },
+   {
+    "name_ar": "مبنى الملك الحسين الباني",
+    "lat": 32.1002942,
+    "lng": 36.1890622,
+    "kind": "building",
+    "source": "google-maps"
+   },
+   {
+    "name_ar": "مبنى الرياضيات",
+    "lat": 32.1027703,
+    "lng": 36.1876418,
+    "kind": "building",
+    "source": "google-maps"
+   },
+   {
+    "name_ar": "مبنى الكيمياء",
+    "lat": 32.1024757,
+    "lng": 36.1902174,
+    "kind": "building",
+    "source": "google-maps"
+   },
+   {
+    "name_ar": "مبنى الفيزياء",
+    "lat": 32.1018894,
+    "lng": 36.1892216,
+    "kind": "building",
+    "source": "google-maps"
+   },
+   {
+    "name_ar": "كلية الاقتصاد والعلوم الإدارية",
+    "lat": 32.105906,
+    "lng": 36.18481,
+    "kind": "building",
+    "source": "google-maps"
+   },
+   {
+    "name_ar": "كلية التربية البدنية وعلوم الرياضة",
+    "lat": 32.0991558,
+    "lng": 36.1847149,
+    "kind": "building",
+    "source": "google-maps"
+   },
+   {
+    "name_ar": "كلية العلوم التربوية",
+    "lat": 32.1056879,
+    "lng": 36.1852499,
+    "kind": "building",
+    "source": "google-maps"
+   }
+  ]
+ },
+ "aabu": {
+  "center": [
+   32.333062,
+   36.2410645
+  ],
+  "buildings": [
+   {
+    "name_ar": "كلية الأعمال",
+    "lat": 32.3396076,
+    "lng": 36.236739,
+    "kind": "building",
+    "source": "google-maps"
+   },
+   {
+    "name_ar": "كلية العلوم(البيروني)",
+    "lat": 32.3351897,
+    "lng": 36.2387582,
+    "kind": "building",
+    "source": "google-maps"
+   },
+   {
+    "name_ar": "مبنى الغزالي (كلية الشريعة )",
+    "lat": 32.3304299,
+    "lng": 36.2453663,
+    "kind": "building",
+    "source": "google-maps"
+   },
+   {
+    "name_ar": "كلية العلوم التربوية",
+    "lat": 32.3284258,
+    "lng": 36.2436064,
+    "kind": "building",
+    "source": "google-maps"
+   },
+   {
+    "name_ar": "كلية الهندسة",
+    "lat": 32.3386609,
+    "lng": 36.2356249,
+    "kind": "building",
+    "source": "google-maps"
+   },
+   {
+    "name_ar": "كلية تكنولوجيا المعلومات",
+    "lat": 32.3366874,
+    "lng": 36.2420892,
+    "kind": "building",
+    "source": "google-maps"
+   },
+   {
+    "name_ar": "كلية الحقوق",
+    "lat": 32.3316197,
+    "lng": 36.2442474,
+    "kind": "building",
+    "source": "google-maps"
+   },
+   {
+    "name_ar": "كلية التمريض",
+    "lat": 32.3350819,
+    "lng": 36.2376338,
+    "kind": "building",
+    "source": "google-maps"
+   },
+   {
+    "name_ar": "مختبرات كلية الهندسة",
+    "lat": 32.3367711,
+    "lng": 36.2363066,
+    "kind": "building",
+    "source": "google-maps"
+   }
+  ]
+ },
+ "bau": {
+  "center": [
+   32.0249589,
+   35.7167936
+  ],
+  "buildings": [
+   {
+    "name_ar": "كلية التمريض",
+    "lat": 32.0243979,
+    "lng": 35.7184822,
+    "kind": "building",
+    "source": "google-maps"
+   },
+   {
+    "name_ar": "كلية الأعمال",
+    "lat": 32.0260306,
+    "lng": 35.7165152,
+    "kind": "building",
+    "source": "google-maps"
+   },
+   {
+    "name_ar": "بوابة العلوم",
+    "lat": 32.0235736,
+    "lng": 35.7201492,
+    "kind": "gate",
+    "source": "google-maps"
+   },
+   {
+    "name_ar": "كلية العمارة",
+    "lat": 32.0229404,
+    "lng": 35.7186313,
+    "kind": "building",
+    "source": "google-maps"
+   },
+   {
+    "name_ar": "كلية الحقوق",
+    "lat": 32.0243359,
+    "lng": 35.7156478,
+    "kind": "building",
+    "source": "google-maps"
+   },
+   {
+    "name_ar": "كلية تكنولوجيا المعلومات",
+    "lat": 32.0237264,
+    "lng": 35.718959,
+    "kind": "building",
+    "source": "google-maps"
+   },
+   {
+    "name_ar": "كلية الذكاء الاصطناعي",
+    "lat": 32.0225133,
+    "lng": 35.7168029,
+    "kind": "building",
+    "source": "google-maps"
+   }
+  ]
+ },
+ "wise": {
+  "center": [
+   32.0121972,
+   35.9340682
+  ],
+  "buildings": [
+   {
+    "name_ar": "كلية الفقه الشافعي",
+    "lat": 32.0119646,
+    "lng": 35.9366293,
+    "kind": "building",
+    "source": "google-maps"
+   },
+   {
+    "name_ar": "كلية الفقه المالكي",
+    "lat": 32.0119433,
+    "lng": 35.936519,
+    "kind": "building",
+    "source": "google-maps"
+   },
+   {
+    "name_ar": "كلية الفقه الحنفي",
+    "lat": 32.0117379,
+    "lng": 35.936635,
+    "kind": "building",
+    "source": "google-maps"
+   },
+   {
+    "name_ar": "كلية الفنون والعمارة الإسلامية",
+    "lat": 32.0123663,
+    "lng": 35.936349,
+    "kind": "building",
+    "source": "google-maps"
+   },
+   {
+    "name_ar": "كلية الآداب",
+    "lat": 32.0130173,
+    "lng": 35.9349338,
+    "kind": "building",
+    "source": "google-maps"
+   }
+  ]
+ }
+}

@@ -47,7 +47,7 @@ export default function Home() {
 
   useEffect(() => {
     if (!profile) return;
-    supabase.from('notifications').select('id', { count: 'exact', head: true }).eq('user_id', profile.id).is('read_at', null)
+    supabase.from('notifications').select('id', { count: 'exact', head: true }).eq('user_id', (profile?.id ?? '')).is('read_at', null)
       .then(({ count }) => setUnread(count ?? 0));
   }, [profile]);
 

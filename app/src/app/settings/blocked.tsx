@@ -16,13 +16,13 @@ export default function Blocked() {
 
   useEffect(() => {
     if (!profile) return;
-    supabase.from('blocks').select('blocked_id, created_at, p:profiles!blocks_blocked_id_fkey(full_name, avatar_url)').eq('blocker_id', profile.id).order('created_at', { ascending: false })
+    supabase.from('blocks').select('blocked_id, created_at, p:profiles!blocks_blocked_id_fkey(full_name, avatar_url)').eq('blocker_id', (profile?.id ?? '')).order('created_at', { ascending: false })
       .then(({ data }) => setRows((data ?? []) as unknown as B[]));
   }, [profile]);
 
   async function unblock(id: string) {
     setRows((r) => r.filter((x) => x.blocked_id !== id));
-    await supabase.from('blocks').delete().eq('blocker_id', profile!.id).eq('blocked_id', id);
+    await supabase.from('blocks').delete().eq('blocker_id', (profile?.id ?? '')).eq('blocked_id', id);
   }
 
   return (

@@ -4,5 +4,5 @@ import { useAuth } from '@/lib/auth';
 
 export default function MyProfile() {
   const { profile } = useAuth();
-  return <Screen>{profile && <ProfileView userId={profile.id} />}</Screen>;
+  return <Screen>{profile && <ProfileView userId={(profile?.id ?? '')} />}</Screen>;
 }

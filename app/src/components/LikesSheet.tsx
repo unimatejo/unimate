@@ -22,17 +22,17 @@ export function LikesSheet({ post, onClose }: { post: Post | null; onClose: () =
     if (!post || !profile) return;
     supabase.from('post_likes').select('user_id, profile:profiles(id, full_name, avatar_url, major:majors(name_ar))').eq('post_id', post.id).order('created_at', { ascending: false }).limit(200)
       .then(({ data }) => setRows((data ?? []) as unknown as Liker[]));
-    supabase.from('follows').select('followee_id').eq('follower_id', profile.id)
+    supabase.from('follows').select('followee_id').eq('follower_id', (profile?.id ?? ''))
       .then(({ data }) => setFollowing(new Set((data ?? []).map((x) => x.followee_id))));
   }, [post, profile]);
 
   async function follow(uid: string) {
     if (!profile) return;
     if (following.has(uid)) {
-      await supabase.from('follows').delete().eq('follower_id', profile.id).eq('followee_id', uid);
+      await supabase.from('follows').delete().eq('follower_id', (profile?.id ?? '')).eq('followee_id', uid);
       setFollowing((s) => { const n = new Set(s); n.delete(uid); return n; });
     } else {
-      await supabase.from('follows').insert({ follower_id: profile.id, followee_id: uid });
+      await supabase.from('follows').insert({ follower_id: (profile?.id ?? ''), followee_id: uid });
       setFollowing((s) => new Set(s).add(uid));
     }
   }

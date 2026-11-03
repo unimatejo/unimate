@@ -40,12 +40,12 @@ export function StoriesRow() {
     const map = new Map<string, Group>();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     for (const s of (data ?? []) as any[]) {
-      const seen = (s.views ?? []).some((v: { viewer_id: string }) => v.viewer_id === profile.id);
+      const seen = (s.views ?? []).some((v: { viewer_id: string }) => v.viewer_id === (profile?.id ?? ''));
       const g = map.get(s.author_id);
       if (!g) map.set(s.author_id, { author_id: s.author_id, name: s.author?.full_name ?? '', avatar_url: s.author?.avatar_url ?? null, seen });
       else if (!seen) g.seen = false;
     }
-    const list = [...map.values()].filter((g) => g.author_id !== profile.id).sort((a, b) => Number(a.seen) - Number(b.seen));
+    const list = [...map.values()].filter((g) => g.author_id !== (profile?.id ?? '')).sort((a, b) => Number(a.seen) - Number(b.seen));
     setGroups(list);
   }, [profile]);
 

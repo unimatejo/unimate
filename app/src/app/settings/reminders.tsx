@@ -25,7 +25,7 @@ export default function Reminders() {
 
   useEffect(() => {
     if (!profile) return;
-    supabase.from('reminders').select('meeting_id, minutes, enabled').eq('user_id', profile.id).not('meeting_id', 'is', null)
+    supabase.from('reminders').select('meeting_id, minutes, enabled').eq('user_id', (profile?.id ?? '')).not('meeting_id', 'is', null)
       .then(({ data }) => setRems(Object.fromEntries(((data ?? []) as Rem[]).map((r) => [r.meeting_id, r]))));
   }, [profile]);
 
@@ -39,7 +39,7 @@ export default function Reminders() {
     const cur = rems[meeting_id] ?? { meeting_id, minutes: null, enabled: true };
     const next = { ...cur, ...p };
     setRems((x) => ({ ...x, [meeting_id]: next }));
-    await supabase.from('reminders').upsert({ user_id: profile!.id, ...next }, { onConflict: 'user_id,meeting_id' });
+    await supabase.from('reminders').upsert({ user_id: (profile?.id ?? ''), ...next }, { onConflict: 'user_id,meeting_id' });
   }
 
   return (

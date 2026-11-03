@@ -1,145 +1,569 @@
 {
-  "slug": "yu",
-  "name_ar": "جامعة اليرموك",
-  "name_en": "Yarmouk University",
-  "city": "Irbid",
-  "type": "public",
-  "email_domains": ["yu.edu.jo", "ses.yu.edu.jo"],
-  "center": {"lat": 32.53593, "lng": 35.85944},
-  "brand_color": null,
-  "links": [
-    {"kind": "website", "title": "الموقع الرسمي لجامعة اليرموك", "url": "https://www.yu.edu.jo/"},
-    {"kind": "portal", "title": "نظام معلومات الطلبة", "url": "https://sis.yu.edu.jo/ords/r/sis/sis/login"},
-    {"kind": "elearning", "title": "نظام التعلم الإلكتروني", "url": "https://elearning.yu.edu.jo"},
-    {"kind": "elearning", "title": "منصة اّبسول", "url": "https://apsol.yu.edu.jo/login/index.php"},
-    {"kind": "email", "title": "البريد الإلكتروني", "url": "https://outlook.com/yu.edu.jo"},
-    {"kind": "library", "title": "الموقع الالكتروني للمكتبة", "url": "https://library.yu.edu.jo"},
-    {"kind": "calendar", "title": "التقويم الجامعي", "url": "https://admreg.yu.edu.jo/index.php/unical"},
-    {"kind": "registration", "title": "دائرة القبول والتسجيل", "url": "https://admreg.yu.edu.jo/"},
-    {"kind": "registration", "title": "التسجيل", "url": "https://sis.yu.edu.jo"}
-  ],
-  "colleges": [
-    {"name_ar": "كلية الطب", "name_en": "Faculty of Medicine", "majors": [
-      {"name_ar": "دكتور في الطب", "name_en": "Doctor of Medicine", "degree": "bachelor"},
-      {"name_ar": "علم النفس الاكلينيكي", "name_en": "Clinical Psychology", "degree": "bachelor"}
-    ]},
-    {"name_ar": "كلية الصيدلة", "name_en": "Faculty of Pharmacy", "majors": [
-      {"name_ar": "الصيدلة", "name_en": "Pharmacy", "degree": "bachelor"}
-    ]},
-    {"name_ar": "كلية التمريض", "name_en": "Faculty of Nursing", "majors": [
-      {"name_ar": "التمريض", "name_en": "Nursing", "degree": "bachelor"}
-    ]},
-    {"name_ar": "كلية الحجاوي للهندسة التكنولوجية", "name_en": "Hijjawi Faculty for Engineering Technology", "majors": [
-      {"name_ar": "الهندسة المدنية", "name_en": "Civil Engineering", "degree": "bachelor"},
-      {"name_ar": "هندسة العمارة", "name_en": "Architectural Engineering", "degree": "bachelor"},
-      {"name_ar": "الهندسة الصناعية", "name_en": "Industrial Engineering", "degree": "bachelor"},
-      {"name_ar": "هندسة الإلكترونيات والروبوتات", "name_en": "Electronics and Robotics Engineering", "degree": "bachelor"},
-      {"name_ar": "هندسة الاتصالات", "name_en": "Telecommunications Engineering", "degree": "bachelor"},
-      {"name_ar": "هندسة الحاسوب", "name_en": "Computer Engineering", "degree": "bachelor"},
-      {"name_ar": "هندسة الحاسوب – إنترنت الأشياء", "name_en": "Computer Engineering – Internet of Things", "degree": "bachelor"},
-      {"name_ar": "هندسة القوى الكهربائية", "name_en": "Electrical Power Engineering", "degree": "bachelor"},
-      {"name_ar": "هندسة النظم الطبية الحيوية", "name_en": "Biomedical Systems Engineering", "degree": "bachelor"},
-      {"name_ar": "هندسة المعلوماتية الطبية الحيوية", "name_en": "Biomedical Informatics Engineering", "degree": "bachelor"},
-      {"name_ar": "هندسة المدن الذكية والمستدامة", "name_en": "Smart and Sustainable Cities Engineering", "degree": "bachelor"},
-      {"name_ar": "الهندسة الميكانيكية", "name_en": "Mechanical Engineering", "degree": "bachelor"}
-    ]},
-    {"name_ar": "كلية العلوم", "name_en": "Faculty of Science", "majors": [
-      {"name_ar": "العلوم الحياتية", "name_en": "Biological Sciences", "degree": "bachelor"},
-      {"name_ar": "الكيمياء", "name_en": "Chemistry", "degree": "bachelor"},
-      {"name_ar": "الجيولوجيا التطبيقية", "name_en": "Applied Geology", "degree": "bachelor"},
-      {"name_ar": "الرياضيات", "name_en": "Mathematics", "degree": "bachelor"},
-      {"name_ar": "الفيزياء", "name_en": "Physics", "degree": "bachelor"},
-      {"name_ar": "الإحصاء", "name_en": "Statistics", "degree": "bachelor"},
-      {"name_ar": "الفيزياء الطبية الحيوية", "name_en": "Biomedical Physics", "degree": "bachelor"}
-    ]},
-    {"name_ar": "كلية تكنولوجيا المعلومات وعلوم الحاسوب", "name_en": "Faculty of Information Technology and Computer Science", "majors": [
-      {"name_ar": "علوم الحاسوب", "name_en": "Computer Science", "degree": "bachelor"},
-      {"name_ar": "نظم معلومات حاسوبية", "name_en": "Computer Information Systems", "degree": "bachelor"},
-      {"name_ar": "تكنولوجيا معلومات الاعمال", "name_en": "Business Information Technology", "degree": "bachelor"},
-      {"name_ar": "الامن السيبراني", "name_en": "Cyber Security", "degree": "bachelor"},
-      {"name_ar": "علم البيانات والذكاء الاصطناعي", "name_en": "Data Science and Artificial Intelligence", "degree": "bachelor"},
-      {"name_ar": "الواقع الرقمي وتطوير الألعاب", "name_en": "Digital Reality and Game Development", "degree": "bachelor"}
-    ]},
-    {"name_ar": "كلية الاعلام", "name_en": "Faculty of Mass Communication", "majors": [
-      {"name_ar": "علاقات عامة وإعلان", "name_en": "Public Relations and Advertising", "degree": "bachelor"},
-      {"name_ar": "إذاعة وتلفزيون", "name_en": "Radio and Television", "degree": "bachelor"},
-      {"name_ar": "الصحافة والإعلام الرقمي", "name_en": "Journalism and Digital Media", "degree": "bachelor"}
-    ]},
-    {"name_ar": "كلية الاعمال", "name_en": "Faculty of Business", "majors": [
-      {"name_ar": "المحاسبة", "name_en": "Accounting", "degree": "bachelor"},
-      {"name_ar": "التسويق", "name_en": "Marketing", "degree": "bachelor"},
-      {"name_ar": "إدارة الاعمال", "name_en": "Business Administration", "degree": "bachelor"},
-      {"name_ar": "الاقتصاد", "name_en": "Economics", "degree": "bachelor"},
-      {"name_ar": "العلوم المالية والمصرفية", "name_en": "Finance and Banking Sciences", "degree": "bachelor"},
-      {"name_ar": "الإدارة العامة", "name_en": "Public Administration", "degree": "bachelor"},
-      {"name_ar": "اقتصاد المال والأعمال", "name_en": "Financial and Business Economics", "degree": "bachelor"},
-      {"name_ar": "إدارة سلاسل التوريد والعلوم اللوجستية", "name_en": "Supply Chain Management and Logistics Sciences", "degree": "bachelor"},
-      {"name_ar": "التكنولوجيا المالية", "name_en": "Financial Technology", "degree": "bachelor"}
-    ]},
-    {"name_ar": "كلية الآداب", "name_en": "Faculty of Arts", "majors": [
-      {"name_ar": "اللغة العربية وآدابها", "name_en": "Arabic Language and Literature", "degree": "bachelor"},
-      {"name_ar": "اللغة العربية التطبيقية", "name_en": "Applied Arabic Language", "degree": "bachelor"},
-      {"name_ar": "العلوم السياسية", "name_en": "Political Science", "degree": "bachelor"},
-      {"name_ar": "اللغة الإنجليزية وآدابها", "name_en": "English Language and Literature", "degree": "bachelor"},
-      {"name_ar": "اللغة الإنجليزية التطبيقية", "name_en": "Applied English Language", "degree": "bachelor"},
-      {"name_ar": "الجغرافيا", "name_en": "Geography", "degree": "bachelor"},
-      {"name_ar": "التاريخ والحضارة", "name_en": "History and Civilization", "degree": "bachelor"},
-      {"name_ar": "الترجمة التحريرية والشفوية", "name_en": "Written and Oral Translation", "degree": "bachelor"},
-      {"name_ar": "علم الاجتماع والعمل الاجتماعي", "name_en": "Sociology and Social Work", "degree": "bachelor"},
-      {"name_ar": "اللغة الفرنسية التطبيقية", "name_en": "Applied French Language", "degree": "bachelor"},
-      {"name_ar": "اللغات الحديثة ألماني / انجليزي", "name_en": "Modern Languages: German / English", "degree": "bachelor"},
-      {"name_ar": "اللغات الحديثة فرنسي / انجليزي", "name_en": "Modern Languages: French / English", "degree": "bachelor"},
-      {"name_ar": "اللغات السامية / عبري", "name_en": "Semitic Languages: Hebrew", "degree": "bachelor"},
-      {"name_ar": "اللغات السامية تركي / انجليزي", "name_en": "Semitic Languages: Turkish / English", "degree": "bachelor"}
-    ]},
-    {"name_ar": "كلية القانون", "name_en": "Faculty of Law", "majors": [
-      {"name_ar": "القانون", "name_en": "Law", "degree": "bachelor"}
-    ]},
-    {"name_ar": "كلية التربية البدنية وعلوم الرياضة", "name_en": "Faculty of Physical Education and Sport Sciences", "majors": [
-      {"name_ar": "التربية البدنية - التطبيقي", "name_en": "Physical Education (Applied)", "degree": "bachelor"},
-      {"name_ar": "علوم الرياضة", "name_en": "Sport Sciences", "degree": "bachelor"}
-    ]},
-    {"name_ar": "كلية العلوم التربوية", "name_en": "Faculty of Educational Sciences", "majors": [
-      {"name_ar": "معلم الصف (لإناث فقط)", "name_en": "Classroom Teacher (female students only)", "degree": "bachelor"},
-      {"name_ar": "علم النفس الإرشادي", "name_en": "Counseling Psychology", "degree": "bachelor"},
-      {"name_ar": "الطفولة المبكرة (لإناث فقط)", "name_en": "Early Childhood (female students only)", "degree": "bachelor"}
-    ]},
-    {"name_ar": "كلية الشريعة والدراسات الاسلامية", "name_en": "Faculty of Shari'a and Islamic Studies", "majors": [
-      {"name_ar": "الفقه وأصوله", "name_en": "Jurisprudence and its Foundations", "degree": "bachelor"},
-      {"name_ar": "أصول الدين", "name_en": "Fundamentals of Religion (Usul al-Din)", "degree": "bachelor"},
-      {"name_ar": "الدراسات الإسلامية / دراسات اسرية", "name_en": "Islamic Studies / Family Studies", "degree": "bachelor"},
-      {"name_ar": "الدراسات الإسلامية / تربية اسلامية", "name_en": "Islamic Studies / Islamic Education", "degree": "bachelor"},
-      {"name_ar": "الدراسات الإسلامية / دعوة وإعلام إسلامي", "name_en": "Islamic Studies / Da'wa and Islamic Media", "degree": "bachelor"},
-      {"name_ar": "الاقتصاد والمصارف الإسلامية", "name_en": "Islamic Economics and Banking", "degree": "bachelor"}
-    ]},
-    {"name_ar": "كلية الآثار والأنثروبولوجيا", "name_en": "Faculty of Archaeology and Anthropology", "majors": [
-      {"name_ar": "الآثار", "name_en": "Archaeology", "degree": "bachelor"},
-      {"name_ar": "الأنثروبولوجيا", "name_en": "Anthropology", "degree": "bachelor"},
-      {"name_ar": "صيانة المصادر التراثية وإدارتها", "name_en": "Conservation and Management of Cultural Resources", "degree": "bachelor"}
-    ]},
-    {"name_ar": "كلية السياحة والفنادق", "name_en": "Faculty of Tourism and Hotels", "majors": [
-      {"name_ar": "الادارة السياحية", "name_en": "Tourism Management", "degree": "bachelor"},
-      {"name_ar": "الادارة الفندقية", "name_en": "Hotel Management", "degree": "bachelor"},
-      {"name_ar": "الإرشاد السياحي", "name_en": "Tour Guiding", "degree": "bachelor"}
-    ]},
-    {"name_ar": "كلية الفنون الجميلة", "name_en": "Faculty of Fine Arts", "majors": [
-      {"name_ar": "التصميم والفنون التطبيقية", "name_en": "Design and Applied Arts", "degree": "bachelor"},
-      {"name_ar": "الفنون التشكيلية", "name_en": "Visual Arts", "degree": "bachelor"},
-      {"name_ar": "الموسيقا", "name_en": "Music", "degree": "bachelor"},
-      {"name_ar": "الدراما", "name_en": "Drama", "degree": "bachelor"},
-      {"name_ar": "الفنون الرقمية", "name_en": "Digital Arts", "degree": "bachelor"},
-      {"name_ar": "التربية الفنية", "name_en": "Art Education", "degree": "bachelor"}
-    ]}
-  ],
-  "sources": [
-    "https://www.yu.edu.jo/",
-    "https://www.yu.edu.jo/index.php/en/faculties",
-    "https://admreg.yu.edu.jo/images/docs/majors.pdf",
-    "https://admreg.yu.edu.jo/images/docs/majorsEn.pdf",
-    "https://education.yu.edu.jo/index.php/newsar/697-2025-05-22-21-05-06",
-    "https://www.yu.edu.jo/index.php/en/ann-en/4019-important-announcement-stop-receiving-emails-through-gmail",
-    "https://mschool.yu.edu.jo/index.php/en/languages-2/adv-m/2427-obtaining-a-new-password-for-the-official-email-account-ses-yu-edu-jo",
-    "https://www.yu.edu.jo/index.php/en/yu-maps"
-  ],
-  "notes": "The programme list (79 bachelor programmes) and the Arabic names come from YU Admission & Registration's official 'التخصصات المتاحة لدرجة البكالوريوس 2026/2027' (admreg.yu.edu.jo/images/docs/majors.pdf). In the extracted PDF text, programmes are not explicitly tied to faculty cells. The faculty grouping was inferred from list order and subject, and most programmes are unambiguous. UNCERTAIN: 'علم النفس الاكلينيكي' (Clinical Psychology) appears between Pharmacy and Nursing. It is placed under the Faculty of Medicine here, but its faculty was not confirmed. The placements of 'التربية الفنية' and 'الفنون الرقمية' (Fine Arts), 'الواقع الرقمي وتطوير الألعاب' (IT) and 'اللغة الفرنسية التطبيقية' (Arts) are also inferred from position. The names 'دكتور في الطب' and 'هندسة العمارة' are marked '(قبول سنوي)' (annual intake) in the source. Fine Arts admission requires an aptitude exam, and Physical Education requires a medical exam. English programme names are translations: no current official English programme list was found, since majorsEn.pdf is an older 2021/2022 Arabic list. English faculty names come from yu.edu.jo/index.php/en/faculties. Faculty Arabic names follow the YU homepage, which writes 'كلية الاعمال', 'كلية الاعلام' and 'كلية الشريعة والدراسات الاسلامية' without hamza. The homepage writes the IT faculty without 'كلية' and with 'علوم الحاسوب'; the 2026/27 list writes 'علم الحاسوب'. Left out: the Technical College (الكلية التقنية), which appears on the homepage but has no programmes in the bachelor list, and no diploma programmes were found listed; also graduate studies. Email: students use @ses.yu.edu.jo (official YU page on the student email account) and staff use @yu.edu.jo. YU moved student and staff email from Gmail to Microsoft 365 on 29-12-2022 (official announcement), and the homepage email link is outlook.com/yu.edu.jo. The older ses.yu.edu.jo help page still mentions Gmail login, which is outdated. Microsoft Teams: no official link was found, so none is included. Center: map-centre coordinates from the 'University Map' link on yu.edu.jo/index.php/en/yu-maps (32.535930, 35.859444). Wikipedia gives 32.5375, 35.85556. brand_color is null: Wikipedia lists the colours as green and white, but no official hex value was found. 'منصة اّبسول' is linked on the homepage, but its purpose was not confirmed; it uses a Moodle-style /login/index.php path."
+ "slug": "yu",
+ "name_ar": "جامعة اليرموك",
+ "name_en": "Yarmouk University",
+ "city": "Irbid",
+ "type": "public",
+ "email_domains": [
+  "yu.edu.jo",
+  "ses.yu.edu.jo"
+ ],
+ "center": {
+  "lat": 32.5351791,
+  "lng": 35.8566931
+ },
+ "brand_color": null,
+ "links": [
+  {
+   "kind": "website",
+   "title": "الموقع الرسمي لجامعة اليرموك",
+   "url": "https://www.yu.edu.jo/"
+  },
+  {
+   "kind": "portal",
+   "title": "نظام معلومات الطلبة",
+   "url": "https://sis.yu.edu.jo/ords/r/sis/sis/login"
+  },
+  {
+   "kind": "elearning",
+   "title": "نظام التعلم الإلكتروني",
+   "url": "https://elearning.yu.edu.jo"
+  },
+  {
+   "kind": "elearning",
+   "title": "منصة اّبسول",
+   "url": "https://apsol.yu.edu.jo/login/index.php"
+  },
+  {
+   "kind": "email",
+   "title": "البريد الإلكتروني",
+   "url": "https://outlook.com/yu.edu.jo"
+  },
+  {
+   "kind": "library",
+   "title": "الموقع الالكتروني للمكتبة",
+   "url": "https://library.yu.edu.jo"
+  },
+  {
+   "kind": "calendar",
+   "title": "التقويم الجامعي",
+   "url": "https://admreg.yu.edu.jo/index.php/unical"
+  },
+  {
+   "kind": "registration",
+   "title": "دائرة القبول والتسجيل",
+   "url": "https://admreg.yu.edu.jo/"
+  },
+  {
+   "kind": "registration",
+   "title": "التسجيل",
+   "url": "https://sis.yu.edu.jo"
+  }
+ ],
+ "colleges": [
+  {
+   "name_ar": "كلية الطب",
+   "name_en": "Faculty of Medicine",
+   "majors": [
+    {
+     "name_ar": "دكتور في الطب",
+     "name_en": "Doctor of Medicine",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "علم النفس الاكلينيكي",
+     "name_en": "Clinical Psychology",
+     "degree": "bachelor"
+    }
+   ]
+  },
+  {
+   "name_ar": "كلية الصيدلة",
+   "name_en": "Faculty of Pharmacy",
+   "majors": [
+    {
+     "name_ar": "الصيدلة",
+     "name_en": "Pharmacy",
+     "degree": "bachelor"
+    }
+   ]
+  },
+  {
+   "name_ar": "كلية التمريض",
+   "name_en": "Faculty of Nursing",
+   "majors": [
+    {
+     "name_ar": "التمريض",
+     "name_en": "Nursing",
+     "degree": "bachelor"
+    }
+   ]
+  },
+  {
+   "name_ar": "كلية الحجاوي للهندسة التكنولوجية",
+   "name_en": "Hijjawi Faculty for Engineering Technology",
+   "majors": [
+    {
+     "name_ar": "الهندسة المدنية",
+     "name_en": "Civil Engineering",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "هندسة العمارة",
+     "name_en": "Architectural Engineering",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "الهندسة الصناعية",
+     "name_en": "Industrial Engineering",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "هندسة الإلكترونيات والروبوتات",
+     "name_en": "Electronics and Robotics Engineering",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "هندسة الاتصالات",
+     "name_en": "Telecommunications Engineering",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "هندسة الحاسوب",
+     "name_en": "Computer Engineering",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "هندسة الحاسوب – إنترنت الأشياء",
+     "name_en": "Computer Engineering – Internet of Things",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "هندسة القوى الكهربائية",
+     "name_en": "Electrical Power Engineering",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "هندسة النظم الطبية الحيوية",
+     "name_en": "Biomedical Systems Engineering",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "هندسة المعلوماتية الطبية الحيوية",
+     "name_en": "Biomedical Informatics Engineering",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "هندسة المدن الذكية والمستدامة",
+     "name_en": "Smart and Sustainable Cities Engineering",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "الهندسة الميكانيكية",
+     "name_en": "Mechanical Engineering",
+     "degree": "bachelor"
+    }
+   ]
+  },
+  {
+   "name_ar": "كلية العلوم",
+   "name_en": "Faculty of Science",
+   "majors": [
+    {
+     "name_ar": "العلوم الحياتية",
+     "name_en": "Biological Sciences",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "الكيمياء",
+     "name_en": "Chemistry",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "الجيولوجيا التطبيقية",
+     "name_en": "Applied Geology",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "الرياضيات",
+     "name_en": "Mathematics",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "الفيزياء",
+     "name_en": "Physics",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "الإحصاء",
+     "name_en": "Statistics",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "الفيزياء الطبية الحيوية",
+     "name_en": "Biomedical Physics",
+     "degree": "bachelor"
+    }
+   ]
+  },
+  {
+   "name_ar": "كلية تكنولوجيا المعلومات وعلوم الحاسوب",
+   "name_en": "Faculty of Information Technology and Computer Science",
+   "majors": [
+    {
+     "name_ar": "علوم الحاسوب",
+     "name_en": "Computer Science",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "نظم معلومات حاسوبية",
+     "name_en": "Computer Information Systems",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "تكنولوجيا معلومات الاعمال",
+     "name_en": "Business Information Technology",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "الامن السيبراني",
+     "name_en": "Cyber Security",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "علم البيانات والذكاء الاصطناعي",
+     "name_en": "Data Science and Artificial Intelligence",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "الواقع الرقمي وتطوير الألعاب",
+     "name_en": "Digital Reality and Game Development",
+     "degree": "bachelor"
+    }
+   ]
+  },
+  {
+   "name_ar": "كلية الاعلام",
+   "name_en": "Faculty of Mass Communication",
+   "majors": [
+    {
+     "name_ar": "علاقات عامة وإعلان",
+     "name_en": "Public Relations and Advertising",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "إذاعة وتلفزيون",
+     "name_en": "Radio and Television",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "الصحافة والإعلام الرقمي",
+     "name_en": "Journalism and Digital Media",
+     "degree": "bachelor"
+    }
+   ]
+  },
+  {
+   "name_ar": "كلية الاعمال",
+   "name_en": "Faculty of Business",
+   "majors": [
+    {
+     "name_ar": "المحاسبة",
+     "name_en": "Accounting",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "التسويق",
+     "name_en": "Marketing",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "إدارة الاعمال",
+     "name_en": "Business Administration",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "الاقتصاد",
+     "name_en": "Economics",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "العلوم المالية والمصرفية",
+     "name_en": "Finance and Banking Sciences",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "الإدارة العامة",
+     "name_en": "Public Administration",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "اقتصاد المال والأعمال",
+     "name_en": "Financial and Business Economics",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "إدارة سلاسل التوريد والعلوم اللوجستية",
+     "name_en": "Supply Chain Management and Logistics Sciences",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "التكنولوجيا المالية",
+     "name_en": "Financial Technology",
+     "degree": "bachelor"
+    }
+   ]
+  },
+  {
+   "name_ar": "كلية الآداب",
+   "name_en": "Faculty of Arts",
+   "majors": [
+    {
+     "name_ar": "اللغة العربية وآدابها",
+     "name_en": "Arabic Language and Literature",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "اللغة العربية التطبيقية",
+     "name_en": "Applied Arabic Language",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "العلوم السياسية",
+     "name_en": "Political Science",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "اللغة الإنجليزية وآدابها",
+     "name_en": "English Language and Literature",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "اللغة الإنجليزية التطبيقية",
+     "name_en": "Applied English Language",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "الجغرافيا",
+     "name_en": "Geography",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "التاريخ والحضارة",
+     "name_en": "History and Civilization",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "الترجمة التحريرية والشفوية",
+     "name_en": "Written and Oral Translation",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "علم الاجتماع والعمل الاجتماعي",
+     "name_en": "Sociology and Social Work",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "اللغة الفرنسية التطبيقية",
+     "name_en": "Applied French Language",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "اللغات الحديثة ألماني / انجليزي",
+     "name_en": "Modern Languages: German / English",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "اللغات الحديثة فرنسي / انجليزي",
+     "name_en": "Modern Languages: French / English",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "اللغات السامية / عبري",
+     "name_en": "Semitic Languages: Hebrew",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "اللغات السامية تركي / انجليزي",
+     "name_en": "Semitic Languages: Turkish / English",
+     "degree": "bachelor"
+    }
+   ]
+  },
+  {
+   "name_ar": "كلية القانون",
+   "name_en": "Faculty of Law",
+   "majors": [
+    {
+     "name_ar": "القانون",
+     "name_en": "Law",
+     "degree": "bachelor"
+    }
+   ]
+  },
+  {
+   "name_ar": "كلية التربية البدنية وعلوم الرياضة",
+   "name_en": "Faculty of Physical Education and Sport Sciences",
+   "majors": [
+    {
+     "name_ar": "التربية البدنية - التطبيقي",
+     "name_en": "Physical Education (Applied)",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "علوم الرياضة",
+     "name_en": "Sport Sciences",
+     "degree": "bachelor"
+    }
+   ]
+  },
+  {
+   "name_ar": "كلية العلوم التربوية",
+   "name_en": "Faculty of Educational Sciences",
+   "majors": [
+    {
+     "name_ar": "معلم الصف (لإناث فقط)",
+     "name_en": "Classroom Teacher (female students only)",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "علم النفس الإرشادي",
+     "name_en": "Counseling Psychology",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "الطفولة المبكرة (لإناث فقط)",
+     "name_en": "Early Childhood (female students only)",
+     "degree": "bachelor"
+    }
+   ]
+  },
+  {
+   "name_ar": "كلية الشريعة والدراسات الاسلامية",
+   "name_en": "Faculty of Shari'a and Islamic Studies",
+   "majors": [
+    {
+     "name_ar": "الفقه وأصوله",
+     "name_en": "Jurisprudence and its Foundations",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "أصول الدين",
+     "name_en": "Fundamentals of Religion (Usul al-Din)",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "الدراسات الإسلامية / دراسات اسرية",
+     "name_en": "Islamic Studies / Family Studies",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "الدراسات الإسلامية / تربية اسلامية",
+     "name_en": "Islamic Studies / Islamic Education",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "الدراسات الإسلامية / دعوة وإعلام إسلامي",
+     "name_en": "Islamic Studies / Da'wa and Islamic Media",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "الاقتصاد والمصارف الإسلامية",
+     "name_en": "Islamic Economics and Banking",
+     "degree": "bachelor"
+    }
+   ]
+  },
+  {
+   "name_ar": "كلية الآثار والأنثروبولوجيا",
+   "name_en": "Faculty of Archaeology and Anthropology",
+   "majors": [
+    {
+     "name_ar": "الآثار",
+     "name_en": "Archaeology",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "الأنثروبولوجيا",
+     "name_en": "Anthropology",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "صيانة المصادر التراثية وإدارتها",
+     "name_en": "Conservation and Management of Cultural Resources",
+     "degree": "bachelor"
+    }
+   ]
+  },
+  {
+   "name_ar": "كلية السياحة والفنادق",
+   "name_en": "Faculty of Tourism and Hotels",
+   "majors": [
+    {
+     "name_ar": "الادارة السياحية",
+     "name_en": "Tourism Management",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "الادارة الفندقية",
+     "name_en": "Hotel Management",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "الإرشاد السياحي",
+     "name_en": "Tour Guiding",
+     "degree": "bachelor"
+    }
+   ]
+  },
+  {
+   "name_ar": "كلية الفنون الجميلة",
+   "name_en": "Faculty of Fine Arts",
+   "majors": [
+    {
+     "name_ar": "التصميم والفنون التطبيقية",
+     "name_en": "Design and Applied Arts",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "الفنون التشكيلية",
+     "name_en": "Visual Arts",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "الموسيقا",
+     "name_en": "Music",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "الدراما",
+     "name_en": "Drama",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "الفنون الرقمية",
+     "name_en": "Digital Arts",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "التربية الفنية",
+     "name_en": "Art Education",
+     "degree": "bachelor"
+    }
+   ]
+  }
+ ],
+ "sources": [
+  "https://www.yu.edu.jo/",
+  "https://www.yu.edu.jo/index.php/en/faculties",
+  "https://admreg.yu.edu.jo/images/docs/majors.pdf",
+  "https://admreg.yu.edu.jo/images/docs/majorsEn.pdf",
+  "https://education.yu.edu.jo/index.php/newsar/697-2025-05-22-21-05-06",
+  "https://www.yu.edu.jo/index.php/en/ann-en/4019-important-announcement-stop-receiving-emails-through-gmail",
+  "https://mschool.yu.edu.jo/index.php/en/languages-2/adv-m/2427-obtaining-a-new-password-for-the-official-email-account-ses-yu-edu-jo",
+  "https://www.yu.edu.jo/index.php/en/yu-maps",
+  "https://www.yu.edu.jo/index.php/en/yu-maps"
+ ],
+ "notes": "RE-CHECK (2026-11-03): colleges/majors unchanged from the draft (official 2026/27 admission list, 16 faculties / 79 bachelor programmes). Center 32.535930, 35.859444 is the centre of YU's own official Google My Map (linked from yu.edu.jo/index.php/en/yu-maps; the same map is also opened at 32.536364, 35.858315) - kept. That official My Map (mid=1TnQLkOhx-5xz5qOKmdtij8qOm0eCGPGy) very likely holds building placemarks, but its KML/viewer could not be fetched here (allowlist). BUILDINGS: empty. OpenStreetMap could not be reached from this session: overpass-api.de, overpass.kumi.systems, nominatim.openstreetmap.org and openstreetmap.org were all refused by the fetch allowlist/egress proxy (also from the device shell), the Chrome extension was not connected, and OSM mirrors (mapcarta) returned errors. No coordinates were guessed. Re-run the Overpass query from an unrestricted machine to fill buildings. PREVIOUS NOTES: The programme list (79 bachelor programmes) and the Arabic names come from YU Admission & Registration's official 'التخصصات المتاحة لدرجة البكالوريوس 2026/2027' (admreg.yu.edu.jo/images/docs/majors.pdf). In the extracted PDF text, programmes are not explicitly tied to faculty cells. The faculty grouping was inferred from list order and subject, and most programmes are unambiguous. UNCERTAIN: 'علم النفس الاكلينيكي' (Clinical Psychology) appears between Pharmacy and Nursing. It is placed under the Faculty of Medicine here, but its faculty was not confirmed. The placements of 'التربية الفنية' and 'الفنون الرقمية' (Fine Arts), 'الواقع الرقمي وتطوير الألعاب' (IT) and 'اللغة الفرنسية التطبيقية' (Arts) are also inferred from position. The names 'دكتور في الطب' and 'هندسة العمارة' are marked '(قبول سنوي)' (annual intake) in the source. Fine Arts admission requires an aptitude exam, and Physical Education requires a medical exam. English programme names are translations: no current official English programme list was found, since majorsEn.pdf is an older 2021/2022 Arabic list. English faculty names come from yu.edu.jo/index.php/en/faculties. Faculty Arabic names follow the YU homepage, which writes 'كلية الاعمال', 'كلية الاعلام' and 'كلية الشريعة والدراسات الاسلامية' without hamza. The homepage writes the IT faculty without 'كلية' and with 'علوم الحاسوب'; the 2026/27 list writes 'علم الحاسوب'. Left out: the Technical College (الكلية التقنية), which appears on the homepage but has no programmes in the bachelor list, and no diploma programmes were found listed; also graduate studies. Email: students use @ses.yu.edu.jo (official YU page on the student email account) and staff use @yu.edu.jo. YU moved student and staff email from Gmail to Microsoft 365 on 29-12-2022 (official announcement), and the homepage email link is outlook.com/yu.edu.jo. The older ses.yu.edu.jo help page still mentions Gmail login, which is outdated. Microsoft Teams: no official link was found, so none is included. Center: map-centre coordinates from the 'University Map' link on yu.edu.jo/index.php/en/yu-maps (32.535930, 35.859444). Wikipedia gives 32.5375, 35.85556. brand_color is null: Wikipedia lists the colours as green and white, but no official hex value was found. 'منصة اّبسول' is linked on the homepage, but its purpose was not confirmed; it uses a Moodle-style /login/index.php path.",
+ "buildings": []
 }

@@ -29,7 +29,7 @@ export default function Swap() {
     if (!profile) return;
     setLoading(true);
     const { data: enr } = await supabase.from('enrollments')
-      .select('section:sections(id, section_no, instructor, meetings:section_meetings(weekday, starts_at), course:courses(id, name_ar, code))').eq('user_id', profile.id);
+      .select('section:sections(id, section_no, instructor, meetings:section_meetings(weekday, starts_at), course:courses(id, name_ar, code))').eq('user_id', (profile?.id ?? ''));
     const m = ((enr ?? []) as unknown as Mine[]).filter((x) => x.section);
     setMine(m);
     const courseIds = m.map((x) => x.section.course.id);
@@ -40,7 +40,7 @@ export default function Swap() {
       for (const s of (secs ?? []) as any[]) (by[s.course_id] ??= []).push(s);
       setOthers(by);
     }
-    const { data: r } = await supabase.from('swap_requests').select('*').eq('user_id', profile.id).neq('status', 'closed').order('created_at', { ascending: false });
+    const { data: r } = await supabase.from('swap_requests').select('*').eq('user_id', (profile?.id ?? '')).neq('status', 'closed').order('created_at', { ascending: false });
     const rs = (r ?? []) as Req[];
     setReqs(rs);
     const matchedIds = rs.filter((x) => x.matched_with).map((x) => x.matched_with!) ;
@@ -55,7 +55,7 @@ export default function Swap() {
   async function request(mm: Mine) {
     const to = pick[mm.section.id];
     if (!to) return;
-    const { error } = await supabase.from('swap_requests').insert({ user_id: profile!.id, course_id: mm.section.course.id, from_section_id: mm.section.id, to_section_id: to });
+    const { error } = await supabase.from('swap_requests').insert({ user_id: (profile?.id ?? ''), course_id: mm.section.course.id, from_section_id: mm.section.id, to_section_id: to });
     if (error) { Alert.alert('ما زبط', 'يمكن عندك طلب لنفس الشعبة.'); return; }
     setPick((p) => ({ ...p, [mm.section.id]: '' }));
     load();

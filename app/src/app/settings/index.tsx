@@ -47,7 +47,7 @@ export default function Settings() {
     Alert.alert('حذف الحساب', 'رح نبعت طلب حذف لفريق يونيميت، وبنحذف حسابك ومنشوراتك خلال 30 يوم. بتقدر تلغي الطلب لو رجعت فتحت التطبيق قبلها.', [
       { text: 'تراجع', style: 'cancel' },
       { text: 'اطلب الحذف', style: 'destructive', onPress: async () => {
-        await supabase.from('support_tickets').insert({ user_id: profile!.id, subject: 'طلب حذف الحساب', body: 'المستخدم طلب حذف حسابه من الإعدادات.' });
+        await supabase.from('support_tickets').insert({ user_id: (profile?.id ?? ''), subject: 'طلب حذف الحساب', body: 'المستخدم طلب حذف حسابه من الإعدادات.' });
         Alert.alert('وصل طلبك', 'بنحذف الحساب خلال 30 يوم.');
       } },
     ]);

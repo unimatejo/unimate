@@ -28,14 +28,14 @@ export default function Study() {
   const load = useCallback(async () => {
     if (!profile) return;
     setLoading(true);
-    const { data: enr } = await supabase.from('enrollments').select('section:sections(course:courses(id, name_ar, code))').eq('user_id', profile.id);
+    const { data: enr } = await supabase.from('enrollments').select('section:sections(course:courses(id, name_ar, code))').eq('user_id', (profile?.id ?? ''));
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const cs = ((enr ?? []) as any[]).map((e) => e.section?.course).filter(Boolean) as Course[];
     setCourses(cs);
     setCourse((c) => c ?? cs[0]?.id ?? null);
-    const { data: my } = await supabase.from('study_intents').select('*').eq('user_id', profile.id);
+    const { data: my } = await supabase.from('study_intents').select('*').eq('user_id', (profile?.id ?? ''));
     setMine(Object.fromEntries(((my ?? []) as Intent[]).map((i) => [i.course_id, i])));
-    const { data: r } = await supabase.from('study_requests').select('*').or(`from_id.eq.${profile.id},to_id.eq.${profile.id}`);
+    const { data: r } = await supabase.from('study_requests').select('*').or(`from_id.eq.${(profile?.id ?? '')},to_id.eq.${(profile?.id ?? '')}`);
     setReqs((r ?? []) as SR[]);
     setLoading(false);
   }, [profile]);
@@ -44,7 +44,7 @@ export default function Study() {
   useEffect(() => {
     if (!course || !profile) return;
     supabase.from('study_intents').select('*, p:profiles!study_intents_user_id_fkey(full_name, avatar_url, major:majors(name_ar))')
-      .eq('course_id', course).eq('active', true).neq('user_id', profile.id).limit(50)
+      .eq('course_id', course).eq('active', true).neq('user_id', (profile?.id ?? '')).limit(50)
       .then(({ data }) => setPeople((data ?? []) as unknown as Person[]));
   }, [course, profile]);
 
@@ -52,13 +52,13 @@ export default function Study() {
 
   async function saveIntent(p: Partial<Intent>) {
     if (!course) return;
-    const next = { user_id: profile!.id, course_id: course, place_pref: null, time_pref: null, note: null, active: true, ...my, ...p };
+    const next = { user_id: (profile?.id ?? ''), course_id: course, place_pref: null, time_pref: null, note: null, active: true, ...my, ...p };
     setMine((m) => ({ ...m, [course]: next }));
     await supabase.from('study_intents').upsert({ ...next, updated_at: new Date().toISOString() }, { onConflict: 'user_id,course_id' });
   }
 
   async function ask(to: string) {
-    const { error } = await supabase.from('study_requests').insert({ from_id: profile!.id, to_id: to, course_id: course });
+    const { error } = await supabase.from('study_requests').insert({ from_id: (profile?.id ?? ''), to_id: to, course_id: course });
     if (error) { Alert.alert('بعتله قبل'); return; }
     load();
   }

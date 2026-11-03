@@ -21,7 +21,7 @@ export default function Share() {
 
   useEffect(() => {
     if (!profile) return;
-    supabase.from('follows').select('p:profiles!follows_followee_id_fkey(id, full_name, avatar_url)').eq('follower_id', profile.id).eq('status', 'accepted').limit(300)
+    supabase.from('follows').select('p:profiles!follows_followee_id_fkey(id, full_name, avatar_url)').eq('follower_id', (profile?.id ?? '')).eq('status', 'accepted').limit(300)
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       .then(({ data }) => setPeople(((data ?? []) as any[]).map((x) => x.p).filter(Boolean)));
   }, [profile]);
@@ -38,7 +38,7 @@ export default function Share() {
     for (const id of picked) {
       const { data: conv } = await supabase.rpc('start_direct', { target: id, context: 'مشاركة منشور' });
       if (!conv) continue;
-      const { error } = await supabase.from('messages').insert({ conversation_id: conv, sender_id: profile!.id, kind: 'post_share', ref_id: post, body: note.trim() || null });
+      const { error } = await supabase.from('messages').insert({ conversation_id: conv, sender_id: (profile?.id ?? ''), kind: 'post_share', ref_id: post, body: note.trim() || null });
       if (!error) ok++;
     }
     setBusy(false);

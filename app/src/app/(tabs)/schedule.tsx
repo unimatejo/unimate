@@ -28,7 +28,7 @@ export default function Schedule() {
 
   useEffect(() => {
     if (!profile) return;
-    supabase.from('reminders').select('meeting_id, enabled').eq('user_id', profile.id).not('meeting_id', 'is', null)
+    supabase.from('reminders').select('meeting_id, enabled').eq('user_id', (profile?.id ?? '')).not('meeting_id', 'is', null)
       .then(({ data }) => setOff(Object.fromEntries((data ?? []).map((r) => [r.meeting_id, !r.enabled]))));
   }, [profile]);
 
@@ -40,7 +40,7 @@ export default function Schedule() {
 
   async function flip(id: string, enabled: boolean) {
     setOff((o) => ({ ...o, [id]: !enabled }));
-    await supabase.from('reminders').upsert({ user_id: profile!.id, meeting_id: id, enabled }, { onConflict: 'user_id,meeting_id' });
+    await supabase.from('reminders').upsert({ user_id: (profile?.id ?? ''), meeting_id: id, enabled }, { onConflict: 'user_id,meeting_id' });
   }
 
   return (

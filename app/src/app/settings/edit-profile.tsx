@@ -29,7 +29,7 @@ export default function EditProfile() {
     if (!f || !profile) return;
     setBusy(true);
     try {
-      const path = await uploadFile('avatars', profile.id, f);
+      const path = await uploadFile('avatars', (profile?.id ?? ''), f);
       const { data } = supabase.storage.from('avatars').getPublicUrl(path);
       setAvatar(data.publicUrl);
     } catch { Alert.alert('ما زبط رفع الصورة'); }
@@ -45,7 +45,7 @@ export default function EditProfile() {
     const { error } = await supabase.from('profiles').update({
       full_name: name.trim(), username: u || null, bio: bio.trim().slice(0, 150), study_year: year,
       instagram: clean(ig) || null, snapchat: clean(snap) || null, avatar_url: avatar, college_id: col, major_id: maj,
-    }).eq('id', profile.id);
+    }).eq('id', (profile?.id ?? ''));
     setBusy(false);
     if (error) { Alert.alert('ما زبط', error.code === '23505' ? 'اسم المستخدم مأخوذ، جرّب غيره.' : 'جرّب كمان مرة.'); return; }
     await refreshProfile();

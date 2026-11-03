@@ -29,7 +29,7 @@ export default function NewEvent() {
 
   useEffect(() => {
     if (!profile) return;
-    supabase.from('enrollments').select('section:sections(id, course:courses(name_ar))').eq('user_id', profile.id)
+    supabase.from('enrollments').select('section:sections(id, course:courses(name_ar))').eq('user_id', (profile?.id ?? ''))
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       .then(({ data }) => { const s = ((data ?? []) as any[]).map((e) => e.section).filter(Boolean) as Sec[]; setSecs(s); setSection(s[0]?.id ?? null); });
   }, [profile]);
@@ -44,10 +44,10 @@ export default function NewEvent() {
     const shared = share && !!section && kind !== 'custom';
     setBusy(true);
     const { data, error } = await supabase.from('academic_events').insert({
-      kind, title: t, starts_at: date.toISOString(), location: location.trim() || null, created_by: profile.id,
-      section_id: section, owner_id: shared ? null : profile.id,
+      kind, title: t, starts_at: date.toISOString(), location: location.trim() || null, created_by: (profile?.id ?? ''),
+      section_id: section, owner_id: shared ? null : (profile?.id ?? ''),
     }).select('id').single();
-    if (!error && data) await supabase.from('reminders').upsert({ user_id: profile.id, event_id: data.id, minutes: kind.startsWith('exam') ? 1440 : 120, enabled: true }, { onConflict: 'user_id,event_id' });
+    if (!error && data) await supabase.from('reminders').upsert({ user_id: (profile?.id ?? ''), event_id: data.id, minutes: kind.startsWith('exam') ? 1440 : 120, enabled: true }, { onConflict: 'user_id,event_id' });
     setBusy(false);
     if (error) { Alert.alert('ما زبط', 'جرّب كمان مرة.'); return; }
     router.back();

@@ -40,7 +40,7 @@ export default function StoryViewer() {
     const s = items[i]; if (!s || !profile) return;
     setLiked(false);
     mediaUrl('stories', s.media_url).then(setUri);
-    supabase.from('story_views').upsert({ story_id: s.id, viewer_id: profile.id }, { onConflict: 'story_id,viewer_id' });
+    supabase.from('story_views').upsert({ story_id: s.id, viewer_id: (profile?.id ?? '') }, { onConflict: 'story_id,viewer_id' });
     progress.value = 0;
     progress.value = withTiming(1, { duration: 5000, easing: Easing.linear }, (done) => { if (done) runOnJS(next)(); });
     return () => cancelAnimation(progress);
@@ -49,13 +49,13 @@ export default function StoryViewer() {
   async function like() {
     const s = items[i]; if (!s || !profile) return;
     setLiked(!liked);
-    await supabase.from('story_views').update({ liked: !liked }).eq('story_id', s.id).eq('viewer_id', profile.id);
+    await supabase.from('story_views').update({ liked: !liked }).eq('story_id', s.id).eq('viewer_id', (profile?.id ?? ''));
   }
 
   async function sendReply() {
     const s = items[i]; if (!reply.trim() || !s) return;
     const { data: conv } = await supabase.rpc('start_direct', { target: id, context: 'رد على ستوري' });
-    if (conv) await supabase.from('messages').insert({ conversation_id: conv, sender_id: profile!.id, kind: 'story_reply', body: reply.trim(), ref_id: s.id });
+    if (conv) await supabase.from('messages').insert({ conversation_id: conv, sender_id: (profile?.id ?? ''), kind: 'story_reply', body: reply.trim(), ref_id: s.id });
     setReply('');
   }
 

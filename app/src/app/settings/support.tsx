@@ -20,7 +20,7 @@ export default function Support() {
 
   const load = useCallback(async () => {
     if (!profile) return;
-    const { data } = await supabase.from('support_tickets').select('*').eq('user_id', profile.id).order('created_at', { ascending: false });
+    const { data } = await supabase.from('support_tickets').select('*').eq('user_id', (profile?.id ?? '')).order('created_at', { ascending: false });
     setTickets((data ?? []) as Ticket[]);
   }, [profile]);
   useEffect(() => { load(); }, [load]);
@@ -28,7 +28,7 @@ export default function Support() {
   async function send() {
     if (body.trim().length < 5) { Alert.alert('اكتب تفاصيل أكتر شوي'); return; }
     setBusy(true);
-    const { error } = await supabase.from('support_tickets').insert({ user_id: profile!.id, subject: topic, body: body.trim() });
+    const { error } = await supabase.from('support_tickets').insert({ user_id: (profile?.id ?? ''), subject: topic, body: body.trim() });
     setBusy(false);
     if (error) { Alert.alert('ما زبط', 'جرّب كمان مرة.'); return; }
     setBody(''); load();

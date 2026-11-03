@@ -36,12 +36,12 @@ export function PostCard({ post, onLikes, compact }: { post: Post; onLikes?: (p:
     heart.value = withSequence(withTiming(1.45, { duration: 120 }), withSpring(1, { damping: 6, stiffness: 300 }));
     const next = { ...p, liked: !p.liked, like_count: p.like_count + (p.liked ? -1 : 1) };
     setP(next);
-    await toggleLike(p, profile.id);
+    await toggleLike(p, (profile?.id ?? ''));
   }
   async function save() {
     if (!profile) return;
     setP({ ...p, saved: !p.saved });
-    await toggleSave(p, profile.id);
+    await toggleSave(p, (profile?.id ?? ''));
   }
 
   return (

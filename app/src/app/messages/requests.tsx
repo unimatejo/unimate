@@ -17,7 +17,7 @@ export default function Requests() {
 
   const load = useCallback(async () => {
     if (!profile) return;
-    const { data } = await supabase.from('conversation_members').select('conversation:conversations(id, context_label, created_by)').eq('user_id', profile.id).eq('state', 'request');
+    const { data } = await supabase.from('conversation_members').select('conversation:conversations(id, context_label, created_by)').eq('user_id', (profile?.id ?? '')).eq('state', 'request');
     const out: Req[] = [];
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     for (const r of (data ?? []) as any[]) {

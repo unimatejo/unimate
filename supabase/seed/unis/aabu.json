@@ -1,120 +1,475 @@
 {
-  "slug": "aabu",
-  "name_ar": "جامعة آل البيت",
-  "name_en": "Al al-Bayt University",
-  "city": "Mafraq",
-  "type": "public",
-  "email_domains": ["aabu.edu.jo"],
-  "center": {"lat": 32.361, "lng": 36.219},
-  "brand_color": null,
-  "links": [
-    {"kind": "website", "title": "الموقع الرسمي", "url": "https://www.aabu.edu.jo/"},
-    {"kind": "portal", "title": "بوابة الطالب", "url": "https://student.aabu.edu.jo/nreg/"},
-    {"kind": "elearning", "title": "منصة التعلم الإلكتروني", "url": "https://aabu.site/"},
-    {"kind": "email", "title": "البريد الالكتروني", "url": "https://pod51046.outlook.com/owa/"},
-    {"kind": "library", "title": "المكتبة", "url": "https://www.aabu.edu.jo/AR/CampusLife/library/Pages/default.aspx"},
-    {"kind": "calendar", "title": "التقويم الجامعي", "url": "https://www.aabu.edu.jo/ar/pages/academiccalendar.aspx"},
-    {"kind": "registration", "title": "دائرة القبول و التسجيل", "url": "https://www.aabu.edu.jo/ar/departments/registrationunit/pages/default.aspx"}
-  ],
-  "colleges": [
-    {"name_ar": "كلية الامير الحسين بن عبدالله الثاني لتكنولوجيا المعلومات", "name_en": "Prince Hussein bin Abdullah II College of Information Technology", "majors": [
-      {"name_ar": "علم الحاسوب", "name_en": "Computer Science", "degree": "bachelor"},
-      {"name_ar": "الأمن السيبراني", "name_en": "Cybersecurity", "degree": "bachelor"},
-      {"name_ar": "الذكاء الاصطناعي وعلم البيانات", "name_en": "Artificial Intelligence and Data Science", "degree": "bachelor"},
-      {"name_ar": "نظم المعلومات الحاسوبية", "name_en": "Computer Information Systems", "degree": "bachelor"},
-      {"name_ar": "نظم المعلومات الإدارية", "name_en": "Management Information Systems", "degree": "bachelor"},
-      {"name_ar": "نظم المعلومات الصحية", "name_en": "Health Information Systems", "degree": "bachelor"},
-      {"name_ar": "تطوير تطبيقات الأجهزة الذكية", "name_en": "Smart Device Application Development", "degree": "bachelor"}
-    ]},
-    {"name_ar": "كلية الاقتصاد والعلوم الادارية", "name_en": "College of Economics and Administrative Sciences", "majors": [
-      {"name_ar": "إدارة الأعمال", "name_en": "Business Administration", "degree": "bachelor"},
-      {"name_ar": "التمويل والمصارف", "name_en": "Finance and Banking", "degree": "bachelor"},
-      {"name_ar": "المحاسبة", "name_en": "Accounting", "degree": "bachelor"},
-      {"name_ar": "اقتصاد المال والأعمال", "name_en": "Business and Financial Economics", "degree": "bachelor"},
-      {"name_ar": "محاسبة وقانون الأعمال", "name_en": "Accounting and Business Law", "degree": "bachelor"},
-      {"name_ar": "التدقيق والمحاسبة الدولية", "name_en": "Auditing and International Accounting", "degree": "bachelor"},
-      {"name_ar": "تكنولوجيا مالية", "name_en": "Financial Technology", "degree": "bachelor"},
-      {"name_ar": "الإدارة اللوجستية", "name_en": "Logistics Management", "degree": "bachelor"}
-    ]},
-    {"name_ar": "كليه الاميره سلمى للتمريض", "name_en": "Princess Salma College of Nursing", "majors": [
-      {"name_ar": "التمريض", "name_en": "Nursing", "degree": "bachelor"}
-    ]},
-    {"name_ar": "كلية الشريعة", "name_en": "College of Sharia", "majors": [
-      {"name_ar": "الفقه وأصوله", "name_en": "Jurisprudence and its Foundations", "degree": "bachelor"},
-      {"name_ar": "أصول الدين", "name_en": "Fundamentals of Religion", "degree": "bachelor"},
-      {"name_ar": "دراسات في الأديان", "name_en": "Religious Studies", "degree": "bachelor"}
-    ]},
-    {"name_ar": "كلية القانون", "name_en": "College of Law", "majors": [
-      {"name_ar": "الحقوق", "name_en": "Law", "degree": "bachelor"}
-    ]},
-    {"name_ar": "كلية الآداب والعلوم الإنسانية", "name_en": "College of Arts and Humanities", "majors": [
-      {"name_ar": "اللغة العربية وآدابها", "name_en": "Arabic Language and Literature", "degree": "bachelor"},
-      {"name_ar": "التاريخ", "name_en": "History", "degree": "bachelor"},
-      {"name_ar": "الجغرافيا التطبيقية", "name_en": "Applied Geography", "degree": "bachelor"}
-    ]},
-    {"name_ar": "كلية اللغات الأجنبية", "name_en": "College of Foreign Languages", "majors": [
-      {"name_ar": "اللغة الإنجليزية وآدابها", "name_en": "English Language and Literature", "degree": "bachelor"},
-      {"name_ar": "اللغة والأدب / فرنسي – إنجليزي", "name_en": "Language and Literature / French-English", "degree": "bachelor"},
-      {"name_ar": "اللغة والأدب / إسباني – إنجليزي", "name_en": "Language and Literature / Spanish-English", "degree": "bachelor"},
-      {"name_ar": "اللغة والأدب / إيطالي – إنجليزي", "name_en": "Language and Literature / Italian-English", "degree": "bachelor"}
-    ]},
-    {"name_ar": "كلية الهندسة", "name_en": "College of Engineering", "majors": [
-      {"name_ar": "هندسة العمارة والفنون الإسلامية", "name_en": "Architecture and Islamic Arts Engineering", "degree": "bachelor"},
-      {"name_ar": "الهندسة المدنية", "name_en": "Civil Engineering", "degree": "bachelor"},
-      {"name_ar": "هندسة المساحة", "name_en": "Surveying Engineering", "degree": "bachelor"},
-      {"name_ar": "هندسة الطاقة المتجددة", "name_en": "Renewable Energy Engineering", "degree": "bachelor"},
-      {"name_ar": "الهندسة الصناعية", "name_en": "Industrial Engineering", "degree": "bachelor"}
-    ]},
-    {"name_ar": "كلية العلوم", "name_en": "College of Science", "majors": [
-      {"name_ar": "الرياضيات", "name_en": "Mathematics", "degree": "bachelor"},
-      {"name_ar": "الفيزياء", "name_en": "Physics", "degree": "bachelor"},
-      {"name_ar": "الكيمياء", "name_en": "Chemistry", "degree": "bachelor"},
-      {"name_ar": "العلوم الحياتية", "name_en": "Biological Sciences", "degree": "bachelor"}
-    ]},
-    {"name_ar": "كلية العلوم الطبية التطبيقية", "name_en": "College of Applied Medical Sciences", "majors": [
-      {"name_ar": "التحاليل الطبية", "name_en": "Medical Laboratory Analysis", "degree": "bachelor"},
-      {"name_ar": "التغذية السريرية والحميات", "name_en": "Clinical Nutrition and Dietetics", "degree": "bachelor"},
-      {"name_ar": "العلاج الطبيعي", "name_en": "Physiotherapy", "degree": "bachelor"},
-      {"name_ar": "العلاج الوظيفي", "name_en": "Occupational Therapy", "degree": "bachelor"},
-      {"name_ar": "علوم السمع والنطق", "name_en": "Hearing and Speech Sciences", "degree": "bachelor"},
-      {"name_ar": "تقنيات الاشعة الطبية", "name_en": "Medical Imaging Technology", "degree": "bachelor"},
-      {"name_ar": "العلاج التنفسي", "name_en": "Respiratory Therapy", "degree": "bachelor"}
-    ]},
-    {"name_ar": "كلية العلوم التربوية", "name_en": "College of Educational Sciences", "majors": [
-      {"name_ar": "تربية الطفل", "name_en": "Child Education", "degree": "bachelor"},
-      {"name_ar": "التربية الخاصة", "name_en": "Special Education", "degree": "bachelor"},
-      {"name_ar": "التربية البدنية", "name_en": "Physical Education", "degree": "bachelor"},
-      {"name_ar": "معلم الصف", "name_en": "Class Teacher", "degree": "bachelor"}
-    ]},
-    {"name_ar": "كلية علوم الطيران", "name_en": "College of Aviation Sciences", "majors": [
-      {"name_ar": "علوم الطيران", "name_en": "Aviation Sciences (Pilots)", "degree": "bachelor"},
-      {"name_ar": "المراقبة والملاحة الجوية", "name_en": "Air Traffic Control and Navigation", "degree": "bachelor"}
-    ]},
-    {"name_ar": "كلية بيت الحكمة للعلوم السياسية والدراسات الدولية", "name_en": "Bayt Al-Hikmah College of Political Science and International Studies", "majors": [
-      {"name_ar": "العلوم السياسية", "name_en": "Political Science", "degree": "bachelor"}
-    ]},
-    {"name_ar": "معهد علوم الارض و البيئة", "name_en": "Institute of Earth and Environmental Sciences", "majors": [
-      {"name_ar": "علوم الأرض والبيئة التطبيقية", "name_en": "Applied Earth and Environmental Sciences", "degree": "bachelor"},
-      {"name_ar": "نظم المعلومات الجغرافية والاستشعار عن بعد", "name_en": "Geographic Information Systems and Remote Sensing", "degree": "bachelor"}
-    ]}
-  ],
-  "sources": [
-    "https://www.aabu.edu.jo/",
-    "https://www.aabu.edu.jo/AR/collegesandinstitutes/Pages/default.aspx",
-    "https://www.aabu.edu.jo/AR/collegesandinstitutes/IT/Pages/undergraduateprogs.aspx",
-    "https://www.aabu.edu.jo/ar/collegesandinstitutes/engineering/pages/AcademicPrograms.aspx",
-    "https://www.aabu.edu.jo/AR/collegesandinstitutes/educationalsciences/Pages/AcademicPrograms.aspx",
-    "https://www.aabu.edu.jo/AR/collegesandinstitutes/arts/Pages/undergraduate.aspx",
-    "https://www.aabu.edu.jo/ar/collegesandinstitutes/nursing/pages/academicprograms.aspx",
-    "https://www.aabu.edu.jo/ar/collegesandinstitutes/aviation/pages/facultybrief.aspx",
-    "https://www.aabu.edu.jo/AR/collegesandinstitutes/Bayt_Al-Hekmah/Pages/academicprogs.aspx",
-    "https://www.aabu.edu.jo/AR/collegesandinstitutes/InstituteofEarth/Pages/Academic-Programmes.aspx",
-    "https://aabu.edu.jo/AR/collegesandinstitutes/FL/Pages/About.aspx",
-    "https://aabu.edu.jo/ar/collegesandinstitutes/AMS/Departments/DOSMS/Pages/About.aspx",
-    "https://aabu.edu.jo/AR/Departments/finance/Pages/undergraduate.aspx",
-    "https://aabu.edu.jo/AR/Departments/registrationunit/Pages/AnnouncementsDetails.aspx?ItemId=161",
-    "https://www.aabu.edu.jo/AR/Departments/registrationunit/Pages/AnnouncementsDetails.aspx?ItemId=154",
-    "https://aabu.edu.jo/AR/pages/sharia.aspx"
-  ],
-  "notes": "Majors assembled from individual college pages plus the 2025/2026 direct-admission and parallel-program announcements and the finance-department fee table (the consolidated list web2.aabu.edu.jo/regDepartment/bs.jsp could not be fetched). Name variants on the site: the business college is called 'كلية الاقتصاد والعلوم الادارية' on the colleges index but 'كلية إدارة المال والأعمال' in the fee table; law degree appears as 'القانون' (fee table) and 'الحقوق' (2025/26 announcement); architecture appears as 'هندسة العمارة' in admission tables and 'هندسة العمارة والفنون الإسلامية' on the engineering page. Arts college is 'كلية الاداب' on the index, 'كلية الآداب والعلوم الإنسانية' in the fee table. Not included: 'الإمامة والوعظ والإرشاد' (Sharia; only seen in older 2017/18 pages and fee table, current status unverified), 'نظم المعلومات المحاسبية' and 'نظم المعلومات المالية والمصرفية' (only in fee table, current status unverified). IT college has a 'تكنولوجيا المعلومات' department but no matching bachelor programme was listed. Medical analysis (التحاليل الطبية) is listed under the Science college in the fee table but now has a department page under Applied Medical Sciences. Institute of Astronomy and Higher Institute of Islamic Studies appear to be graduate-only and are omitted. A 'كلية التعليم التقني' offering diplomas exists (2025 announcement) but its diploma list is only in a PDF brochure that was not readable, so no diplomas are included. Email: staff domain aabu.edu.jo confirmed (info@aabu.edu.jo, Outlook OWA link); student email domain/subdomain not verified. Coordinates from Wikipedia (32°21′40″N 36°13′08″E), not OSM. Colours per Wikipedia are green and white; no hex verified. English names are translations, not official."
+ "slug": "aabu",
+ "name_ar": "جامعة آل البيت",
+ "name_en": "Al al-Bayt University",
+ "city": "Mafraq",
+ "type": "public",
+ "email_domains": [
+  "aabu.edu.jo"
+ ],
+ "center": {
+  "lat": 32.333062,
+  "lng": 36.2410645
+ },
+ "brand_color": null,
+ "links": [
+  {
+   "kind": "website",
+   "title": "الموقع الرسمي",
+   "url": "https://www.aabu.edu.jo/"
+  },
+  {
+   "kind": "portal",
+   "title": "بوابة الطالب",
+   "url": "https://student.aabu.edu.jo/nreg/"
+  },
+  {
+   "kind": "elearning",
+   "title": "منصة التعلم الإلكتروني",
+   "url": "https://aabu.site/"
+  },
+  {
+   "kind": "email",
+   "title": "البريد الالكتروني",
+   "url": "https://pod51046.outlook.com/owa/"
+  },
+  {
+   "kind": "library",
+   "title": "المكتبة",
+   "url": "https://www.aabu.edu.jo/AR/CampusLife/library/Pages/default.aspx"
+  },
+  {
+   "kind": "calendar",
+   "title": "التقويم الجامعي",
+   "url": "https://www.aabu.edu.jo/ar/pages/academiccalendar.aspx"
+  },
+  {
+   "kind": "registration",
+   "title": "دائرة القبول و التسجيل",
+   "url": "https://www.aabu.edu.jo/ar/departments/registrationunit/pages/default.aspx"
+  }
+ ],
+ "colleges": [
+  {
+   "name_ar": "كلية الامير الحسين بن عبدالله الثاني لتكنولوجيا المعلومات",
+   "name_en": "Prince Hussein bin Abdullah II College of Information Technology",
+   "majors": [
+    {
+     "name_ar": "علم الحاسوب",
+     "name_en": "Computer Science",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "الأمن السيبراني",
+     "name_en": "Cybersecurity",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "الذكاء الاصطناعي وعلم البيانات",
+     "name_en": "Artificial Intelligence and Data Science",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "نظم المعلومات الحاسوبية",
+     "name_en": "Computer Information Systems",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "نظم المعلومات الإدارية",
+     "name_en": "Management Information Systems",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "نظم المعلومات الصحية",
+     "name_en": "Health Information Systems",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "تطوير تطبيقات الأجهزة الذكية",
+     "name_en": "Smart Device Application Development",
+     "degree": "bachelor"
+    }
+   ]
+  },
+  {
+   "name_ar": "كلية الاقتصاد والعلوم الادارية",
+   "name_en": "College of Economics and Administrative Sciences",
+   "majors": [
+    {
+     "name_ar": "إدارة الأعمال",
+     "name_en": "Business Administration",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "التمويل والمصارف",
+     "name_en": "Finance and Banking",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "المحاسبة",
+     "name_en": "Accounting",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "اقتصاد المال والأعمال",
+     "name_en": "Business and Financial Economics",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "محاسبة وقانون الأعمال",
+     "name_en": "Accounting and Business Law",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "التدقيق والمحاسبة الدولية",
+     "name_en": "Auditing and International Accounting",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "تكنولوجيا مالية",
+     "name_en": "Financial Technology",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "الإدارة اللوجستية",
+     "name_en": "Logistics Management",
+     "degree": "bachelor"
+    }
+   ]
+  },
+  {
+   "name_ar": "كليه الاميره سلمى للتمريض",
+   "name_en": "Princess Salma College of Nursing",
+   "majors": [
+    {
+     "name_ar": "التمريض",
+     "name_en": "Nursing",
+     "degree": "bachelor"
+    }
+   ]
+  },
+  {
+   "name_ar": "كلية الشريعة",
+   "name_en": "College of Sharia",
+   "majors": [
+    {
+     "name_ar": "الفقه وأصوله",
+     "name_en": "Jurisprudence and its Foundations",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "أصول الدين",
+     "name_en": "Fundamentals of Religion",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "دراسات في الأديان",
+     "name_en": "Religious Studies",
+     "degree": "bachelor"
+    }
+   ]
+  },
+  {
+   "name_ar": "كلية القانون",
+   "name_en": "College of Law",
+   "majors": [
+    {
+     "name_ar": "الحقوق",
+     "name_en": "Law",
+     "degree": "bachelor"
+    }
+   ]
+  },
+  {
+   "name_ar": "كلية الآداب والعلوم الإنسانية",
+   "name_en": "College of Arts and Humanities",
+   "majors": [
+    {
+     "name_ar": "اللغة العربية وآدابها",
+     "name_en": "Arabic Language and Literature",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "التاريخ",
+     "name_en": "History",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "الجغرافيا التطبيقية",
+     "name_en": "Applied Geography",
+     "degree": "bachelor"
+    }
+   ]
+  },
+  {
+   "name_ar": "كلية اللغات الأجنبية",
+   "name_en": "College of Foreign Languages",
+   "majors": [
+    {
+     "name_ar": "اللغة الإنجليزية وآدابها",
+     "name_en": "English Language and Literature",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "اللغة والأدب / فرنسي – إنجليزي",
+     "name_en": "Language and Literature / French-English",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "اللغة والأدب / إسباني – إنجليزي",
+     "name_en": "Language and Literature / Spanish-English",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "اللغة والأدب / إيطالي – إنجليزي",
+     "name_en": "Language and Literature / Italian-English",
+     "degree": "bachelor"
+    }
+   ]
+  },
+  {
+   "name_ar": "كلية الهندسة",
+   "name_en": "College of Engineering",
+   "majors": [
+    {
+     "name_ar": "هندسة العمارة والفنون الإسلامية",
+     "name_en": "Architecture and Islamic Arts Engineering",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "الهندسة المدنية",
+     "name_en": "Civil Engineering",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "هندسة المساحة",
+     "name_en": "Surveying Engineering",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "هندسة الطاقة المتجددة",
+     "name_en": "Renewable Energy Engineering",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "الهندسة الصناعية",
+     "name_en": "Industrial Engineering",
+     "degree": "bachelor"
+    }
+   ]
+  },
+  {
+   "name_ar": "كلية العلوم",
+   "name_en": "College of Science",
+   "majors": [
+    {
+     "name_ar": "الرياضيات",
+     "name_en": "Mathematics",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "الفيزياء",
+     "name_en": "Physics",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "الكيمياء",
+     "name_en": "Chemistry",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "العلوم الحياتية",
+     "name_en": "Biological Sciences",
+     "degree": "bachelor"
+    }
+   ]
+  },
+  {
+   "name_ar": "كلية العلوم الطبية التطبيقية",
+   "name_en": "College of Applied Medical Sciences",
+   "majors": [
+    {
+     "name_ar": "التحاليل الطبية",
+     "name_en": "Medical Laboratory Analysis",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "التغذية السريرية والحميات",
+     "name_en": "Clinical Nutrition and Dietetics",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "العلاج الطبيعي",
+     "name_en": "Physiotherapy",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "العلاج الوظيفي",
+     "name_en": "Occupational Therapy",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "علوم السمع والنطق",
+     "name_en": "Hearing and Speech Sciences",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "تقنيات الاشعة الطبية",
+     "name_en": "Medical Imaging Technology",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "العلاج التنفسي",
+     "name_en": "Respiratory Therapy",
+     "degree": "bachelor"
+    }
+   ]
+  },
+  {
+   "name_ar": "كلية العلوم التربوية",
+   "name_en": "College of Educational Sciences",
+   "majors": [
+    {
+     "name_ar": "تربية الطفل",
+     "name_en": "Child Education",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "التربية الخاصة",
+     "name_en": "Special Education",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "التربية البدنية",
+     "name_en": "Physical Education",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "معلم الصف",
+     "name_en": "Class Teacher",
+     "degree": "bachelor"
+    }
+   ]
+  },
+  {
+   "name_ar": "كلية علوم الطيران",
+   "name_en": "College of Aviation Sciences",
+   "majors": [
+    {
+     "name_ar": "علوم الطيران",
+     "name_en": "Aviation Sciences (Pilots)",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "المراقبة والملاحة الجوية",
+     "name_en": "Air Traffic Control and Navigation",
+     "degree": "bachelor"
+    }
+   ]
+  },
+  {
+   "name_ar": "كلية بيت الحكمة للعلوم السياسية والدراسات الدولية",
+   "name_en": "Bayt Al-Hikmah College of Political Science and International Studies",
+   "majors": [
+    {
+     "name_ar": "العلوم السياسية",
+     "name_en": "Political Science",
+     "degree": "bachelor"
+    }
+   ]
+  },
+  {
+   "name_ar": "معهد علوم الارض و البيئة",
+   "name_en": "Institute of Earth and Environmental Sciences",
+   "majors": [
+    {
+     "name_ar": "علوم الأرض والبيئة التطبيقية",
+     "name_en": "Applied Earth and Environmental Sciences",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "نظم المعلومات الجغرافية والاستشعار عن بعد",
+     "name_en": "Geographic Information Systems and Remote Sensing",
+     "degree": "bachelor"
+    }
+   ]
+  },
+  {
+   "name_ar": "كلية التعليم التقني",
+   "name_en": "College of Technical Education",
+   "majors": [
+    {
+     "name_ar": "إدارة التزويد",
+     "name_en": "Supply Management",
+     "degree": "diploma"
+    },
+    {
+     "name_ar": "التربية البدنية والصحية",
+     "name_en": "Physical and Health Education",
+     "degree": "diploma"
+    },
+    {
+     "name_ar": "إنترنت الأشياء",
+     "name_en": "Internet of Things",
+     "degree": "diploma"
+    },
+    {
+     "name_ar": "مساحة الطرق وحساب الكميات",
+     "name_en": "Road Surveying and Quantity Surveying",
+     "degree": "diploma"
+    },
+    {
+     "name_ar": "هندسة الأبنية الذكية",
+     "name_en": "Smart Buildings Engineering",
+     "degree": "diploma"
+    },
+    {
+     "name_ar": "تكنولوجيا الطاقة",
+     "name_en": "Energy Technology",
+     "degree": "diploma"
+    },
+    {
+     "name_ar": "نظم المعلومات الجغرافية",
+     "name_en": "Geographic Information Systems",
+     "degree": "diploma"
+    },
+    {
+     "name_ar": "تكنولوجيا معالجة المياه العادمة",
+     "name_en": "Wastewater Treatment Technology",
+     "degree": "diploma"
+    },
+    {
+     "name_ar": "التمريض المشارك",
+     "name_en": "Associate Nursing",
+     "degree": "diploma"
+    },
+    {
+     "name_ar": "تكنولوجيا الأشعة",
+     "name_en": "Radiology Technology",
+     "degree": "diploma"
+    }
+   ]
+  }
+ ],
+ "sources": [
+  "https://www.aabu.edu.jo/",
+  "https://www.aabu.edu.jo/AR/collegesandinstitutes/Pages/default.aspx",
+  "https://www.aabu.edu.jo/AR/collegesandinstitutes/IT/Pages/undergraduateprogs.aspx",
+  "https://www.aabu.edu.jo/ar/collegesandinstitutes/engineering/pages/AcademicPrograms.aspx",
+  "https://www.aabu.edu.jo/AR/collegesandinstitutes/educationalsciences/Pages/AcademicPrograms.aspx",
+  "https://www.aabu.edu.jo/AR/collegesandinstitutes/arts/Pages/undergraduate.aspx",
+  "https://www.aabu.edu.jo/ar/collegesandinstitutes/nursing/pages/academicprograms.aspx",
+  "https://www.aabu.edu.jo/ar/collegesandinstitutes/aviation/pages/facultybrief.aspx",
+  "https://www.aabu.edu.jo/AR/collegesandinstitutes/Bayt_Al-Hekmah/Pages/academicprogs.aspx",
+  "https://www.aabu.edu.jo/AR/collegesandinstitutes/InstituteofEarth/Pages/Academic-Programmes.aspx",
+  "https://aabu.edu.jo/AR/collegesandinstitutes/FL/Pages/About.aspx",
+  "https://aabu.edu.jo/ar/collegesandinstitutes/AMS/Departments/DOSMS/Pages/About.aspx",
+  "https://aabu.edu.jo/AR/Departments/finance/Pages/undergraduate.aspx",
+  "https://aabu.edu.jo/AR/Departments/registrationunit/Pages/AnnouncementsDetails.aspx?ItemId=161",
+  "https://www.aabu.edu.jo/AR/Departments/registrationunit/Pages/AnnouncementsDetails.aspx?ItemId=154",
+  "https://aabu.edu.jo/AR/pages/sharia.aspx",
+  "https://www.tumoohi.org/ar/universities/jordan/%D8%AC%D8%A7%D9%85%D8%B9%D8%A9-%D8%A2%D9%84-%D8%A7%D9%84%D8%A8%D9%8A%D8%AA"
+ ],
+ "notes": "RE-CHECK (2026-11-03): ADDED 'كلية التعليم التقني' with 10 intermediate diploma (دبلوم) programmes. The college's existence is confirmed by an official 2025 AABU announcement (see previous notes), but the diploma list comes from a SECONDARY source (tumoohi.org university page) because AABU's brochure PDF and web2.aabu.edu.jo/regDepartment/bs.jsp could not be read; English names are translations. Treat the diploma names as unverified until checked against AABU. The official colleges index (aabu.edu.jo/AR/collegesandinstitutes) lists 10 colleges + 4 institutes; Foreign Languages and Applied Medical Sciences are not on that index but have their own official pages (kept). Leads NOT added (secondary only, unverified): IT 'جرافيك الحاسوب والرسوم المتحركة وتصميم وتطوير ألعاب الحاسوب', Engineering 'المعلوماتية الطبية', Business 'التسويق الالكتروني والتواصل الاجتماعي', 'الرقابة والتدقيق المالي' (tumoohi); 'الإمامة والوعظ والإرشاد', 'التسويق الرقمي', 'نظم المعلومات المحاسبية', 'نظم المعلومات المالية والمصرفية' (mawdoo3, last updated 2022). Center unchanged (Wikipedia point), not OSM-verified. BUILDINGS: empty. OpenStreetMap could not be reached from this session: overpass-api.de, overpass.kumi.systems, nominatim.openstreetmap.org and openstreetmap.org were all refused by the fetch allowlist/egress proxy (also from the device shell), the Chrome extension was not connected, and OSM mirrors (mapcarta) returned errors. No coordinates were guessed. Re-run the Overpass query from an unrestricted machine to fill buildings. PREVIOUS NOTES: Majors assembled from individual college pages plus the 2025/2026 direct-admission and parallel-program announcements and the finance-department fee table (the consolidated list web2.aabu.edu.jo/regDepartment/bs.jsp could not be fetched). Name variants on the site: the business college is called 'كلية الاقتصاد والعلوم الادارية' on the colleges index but 'كلية إدارة المال والأعمال' in the fee table; law degree appears as 'القانون' (fee table) and 'الحقوق' (2025/26 announcement); architecture appears as 'هندسة العمارة' in admission tables and 'هندسة العمارة والفنون الإسلامية' on the engineering page. Arts college is 'كلية الاداب' on the index, 'كلية الآداب والعلوم الإنسانية' in the fee table. Not included: 'الإمامة والوعظ والإرشاد' (Sharia; only seen in older 2017/18 pages and fee table, current status unverified), 'نظم المعلومات المحاسبية' and 'نظم المعلومات المالية والمصرفية' (only in fee table, current status unverified). IT college has a 'تكنولوجيا المعلومات' department but no matching bachelor programme was listed. Medical analysis (التحاليل الطبية) is listed under the Science college in the fee table but now has a department page under Applied Medical Sciences. Institute of Astronomy and Higher Institute of Islamic Studies appear to be graduate-only and are omitted. A 'كلية التعليم التقني' offering diplomas exists (2025 announcement) but its diploma list is only in a PDF brochure that was not readable, so no diplomas are included. Email: staff domain aabu.edu.jo confirmed (info@aabu.edu.jo, Outlook OWA link); student email domain/subdomain not verified. Coordinates from Wikipedia (32°21′40″N 36°13′08″E), not OSM. Colours per Wikipedia are green and white; no hex verified. English names are translations, not official.",
+ "buildings": []
 }

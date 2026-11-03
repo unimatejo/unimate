@@ -1,832 +1,833 @@
 {
-  "slug": "bau",
-  "name_ar": "جامعة البلقاء التطبيقية",
-  "name_en": "Al-Balqa Applied University",
-  "city": "السلط",
-  "type": "public",
-  "email_domains": [
-    "bau.edu.jo"
-  ],
-  "center": {
-    "lat": 32.024,
-    "lng": 35.7168
+ "slug": "bau",
+ "name_ar": "جامعة البلقاء التطبيقية",
+ "name_en": "Al-Balqa Applied University",
+ "city": "السلط",
+ "type": "public",
+ "email_domains": [
+  "bau.edu.jo"
+ ],
+ "center": {
+  "lat": 32.0249589,
+  "lng": 35.7167936
+ },
+ "brand_color": null,
+ "links": [
+  {
+   "kind": "website",
+   "title": "الموقع الرسمي لجامعة البلقاء التطبيقية",
+   "url": "https://www.bau.edu.jo/"
   },
-  "brand_color": null,
-  "links": [
+  {
+   "kind": "registration",
+   "title": "التسجيل الإلكتروني",
+   "url": "https://www.bau.edu.jo/Reg.aspx"
+  },
+  {
+   "kind": "portal",
+   "title": "وحدة القبول والتسجيل",
+   "url": "https://www.bau.edu.jo/bauar/Units/Reg/Home.aspx"
+  },
+  {
+   "kind": "calendar",
+   "title": "التقويم الجامعي 2026-2027",
+   "url": "https://www.bau.edu.jo/bauar/Units/Reg/media/2026-2027.pdf"
+  },
+  {
+   "kind": "library",
+   "title": "وحدة المكتبة المركزية",
+   "url": "https://bau-coe.app.deepknowledge.io/home"
+  }
+ ],
+ "colleges": [
+  {
+   "name_ar": "كلية الطب",
+   "name_en": "Faculty of Medicine (Salt)",
+   "majors": [
     {
-      "kind": "website",
-      "title": "الموقع الرسمي لجامعة البلقاء التطبيقية",
-      "url": "https://www.bau.edu.jo/"
-    },
-    {
-      "kind": "registration",
-      "title": "التسجيل الإلكتروني",
-      "url": "https://www.bau.edu.jo/Reg.aspx"
-    },
-    {
-      "kind": "portal",
-      "title": "وحدة القبول والتسجيل",
-      "url": "https://www.bau.edu.jo/bauar/Units/Reg/Home.aspx"
-    },
-    {
-      "kind": "calendar",
-      "title": "التقويم الجامعي 2026-2027",
-      "url": "https://www.bau.edu.jo/bauar/Units/Reg/media/2026-2027.pdf"
-    },
-    {
-      "kind": "library",
-      "title": "وحدة المكتبة المركزية",
-      "url": "https://bau-coe.app.deepknowledge.io/home"
+     "name_ar": "الطب",
+     "name_en": "Medicine",
+     "degree": "bachelor"
     }
-  ],
-  "colleges": [
+   ]
+  },
+  {
+   "name_ar": "كلية الهندسة",
+   "name_en": "Faculty of Engineering (Salt)",
+   "majors": [
     {
-      "name_ar": "كلية الطب",
-      "name_en": "Faculty of Medicine (Salt)",
-      "majors": [
-        {
-          "name_ar": "الطب",
-          "name_en": "Medicine",
-          "degree": "bachelor"
-        }
-      ]
+     "name_ar": "هندسة العمارة",
+     "name_en": "Architectural Engineering",
+     "degree": "bachelor"
     },
     {
-      "name_ar": "كلية الهندسة",
-      "name_en": "Faculty of Engineering (Salt)",
-      "majors": [
-        {
-          "name_ar": "هندسة العمارة",
-          "name_en": "Architectural Engineering",
-          "degree": "bachelor"
-        },
-        {
-          "name_ar": "الهندسة المدنية/ الإنشاءات",
-          "name_en": "Civil Engineering / Structures",
-          "degree": "bachelor"
-        },
-        {
-          "name_ar": "الهندسة الصناعية",
-          "name_en": "Industrial Engineering",
-          "degree": "bachelor"
-        },
-        {
-          "name_ar": "الهندسة الكهربائية/ الحاسوب",
-          "name_en": "Electrical Engineering / Computer",
-          "degree": "bachelor"
-        },
-        {
-          "name_ar": "هندسة المواد",
-          "name_en": "Materials Engineering",
-          "degree": "bachelor"
-        },
-        {
-          "name_ar": "الهندسة المدنية/ مساحة وجيوماتكس",
-          "name_en": "Civil Engineering / Surveying and Geomatics",
-          "degree": "bachelor"
-        },
-        {
-          "name_ar": "الهندسة الكهربائية/ القوى الكهربائية",
-          "name_en": "Electrical Engineering / Electrical Power",
-          "degree": "bachelor"
-        }
-      ]
+     "name_ar": "الهندسة المدنية/ الإنشاءات",
+     "name_en": "Civil Engineering / Structures",
+     "degree": "bachelor"
     },
     {
-      "name_ar": "كلية الأمير عبدالله بن غازي للاتصالات وتكنولوجيا المعلومات",
-      "name_en": "Prince Abdullah bin Ghazi Faculty of Communication and Information Technology (Salt)",
-      "majors": [
-        {
-          "name_ar": "نظم المعلومات الحاسوبية",
-          "name_en": "Computer Information Systems",
-          "degree": "bachelor"
-        },
-        {
-          "name_ar": "علم الحاسوب",
-          "name_en": "Computer Science",
-          "degree": "bachelor"
-        },
-        {
-          "name_ar": "هندسة البرمجيات",
-          "name_en": "Software Engineering",
-          "degree": "bachelor"
-        },
-        {
-          "name_ar": "الرسم الحاسوبي والرسوم المتحركة",
-          "name_en": "Computer Graphics and Animation",
-          "degree": "bachelor"
-        }
-      ]
+     "name_ar": "الهندسة الصناعية",
+     "name_en": "Industrial Engineering",
+     "degree": "bachelor"
     },
     {
-      "name_ar": "كلية التمريض",
-      "name_en": "Faculty of Nursing (Salt)",
-      "majors": [
-        {
-          "name_ar": "التمريض",
-          "name_en": "Nursing",
-          "degree": "bachelor"
-        },
-        {
-          "name_ar": "القبالة والعناية بحديثي الولادة",
-          "name_en": "Midwifery and Newborn Care",
-          "degree": "bachelor"
-        }
-      ]
+     "name_ar": "الهندسة الكهربائية/ الحاسوب",
+     "name_en": "Electrical Engineering / Computer",
+     "degree": "bachelor"
     },
     {
-      "name_ar": "كلية الذكاء الاصطناعي",
-      "name_en": "Faculty of Artificial Intelligence (Salt)",
-      "majors": [
-        {
-          "name_ar": "الذكاء الاصطناعي والروبوتات",
-          "name_en": "Artificial Intelligence and Robotics",
-          "degree": "bachelor"
-        },
-        {
-          "name_ar": "التحقيقات الجنائية الرقمية",
-          "name_en": "Digital Criminal Investigations",
-          "degree": "bachelor"
-        },
-        {
-          "name_ar": "علم البيانات",
-          "name_en": "Data Science",
-          "degree": "bachelor"
-        },
-        {
-          "name_ar": "الواقع الافتراضي وصناعة الألعاب",
-          "name_en": "Virtual Reality and Game Development",
-          "degree": "bachelor"
-        }
-      ]
+     "name_ar": "هندسة المواد",
+     "name_en": "Materials Engineering",
+     "degree": "bachelor"
     },
     {
-      "name_ar": "كلية العلوم الطبية المساندة",
-      "name_en": "Faculty of Allied Medical Sciences (Salt)",
-      "majors": [
-        {
-          "name_ar": "العلوم الطبية المخبرية",
-          "name_en": "Medical Laboratory Sciences",
-          "degree": "bachelor"
-        },
-        {
-          "name_ar": "تكنولوجيا الأشعة الطبية",
-          "name_en": "Medical Imaging (Radiography) Technology",
-          "degree": "bachelor"
-        }
-      ]
+     "name_ar": "الهندسة المدنية/ مساحة وجيوماتكس",
+     "name_en": "Civil Engineering / Surveying and Geomatics",
+     "degree": "bachelor"
     },
     {
-      "name_ar": "كلية العلوم",
-      "name_en": "Faculty of Science (Salt)",
-      "majors": [
-        {
-          "name_ar": "الرياضيات",
-          "name_en": "Mathematics",
-          "degree": "bachelor"
-        },
-        {
-          "name_ar": "الفيزياء",
-          "name_en": "Physics",
-          "degree": "bachelor"
-        },
-        {
-          "name_ar": "العلوم الحياتية التطبيقية",
-          "name_en": "Applied Biological Sciences",
-          "degree": "bachelor"
-        },
-        {
-          "name_ar": "الكيمياء",
-          "name_en": "Chemistry",
-          "degree": "bachelor"
-        }
-      ]
-    },
-    {
-      "name_ar": "كلية الزراعة التكنولوجية",
-      "name_en": "Faculty of Agricultural Technology (Salt)",
-      "majors": [
-        {
-          "name_ar": "إدارة موارد المياه والبيئة",
-          "name_en": "Water Resources and Environment Management",
-          "degree": "bachelor"
-        },
-        {
-          "name_ar": "التقنيات الحيوية الزراعية",
-          "name_en": "Agricultural Biotechnology",
-          "degree": "bachelor"
-        },
-        {
-          "name_ar": "التغذية والتصنيع الغذائي",
-          "name_en": "Nutrition and Food Processing",
-          "degree": "bachelor"
-        },
-        {
-          "name_ar": "تكنولوجيا الزراعة العضوية الذكية",
-          "name_en": "Smart Organic Agriculture Technology (technical bachelor)",
-          "degree": "bachelor"
-        },
-        {
-          "name_ar": "وقاية النبات",
-          "name_en": "Plant Protection",
-          "degree": "bachelor"
-        },
-        {
-          "name_ar": "إنتاج ووقاية النبات",
-          "name_en": "Plant Production and Protection",
-          "degree": "bachelor"
-        }
-      ]
-    },
-    {
-      "name_ar": "كلية الأعمال",
-      "name_en": "Faculty of Business (Salt)",
-      "majors": [
-        {
-          "name_ar": "التسويق",
-          "name_en": "Marketing",
-          "degree": "bachelor"
-        },
-        {
-          "name_ar": "إدارة الأعمال",
-          "name_en": "Business Administration",
-          "degree": "bachelor"
-        },
-        {
-          "name_ar": "نظم المعلومات المحاسبية",
-          "name_en": "Accounting Information Systems",
-          "degree": "bachelor"
-        },
-        {
-          "name_ar": "العلوم المالية والمصرفية",
-          "name_en": "Financial and Banking Sciences",
-          "degree": "bachelor"
-        },
-        {
-          "name_ar": "نظم المعلومات الإدارية",
-          "name_en": "Management Information Systems",
-          "degree": "bachelor"
-        },
-        {
-          "name_ar": "الاقتصاد",
-          "name_en": "Economics",
-          "degree": "bachelor"
-        },
-        {
-          "name_ar": "المحاسبة",
-          "name_en": "Accounting",
-          "degree": "bachelor"
-        },
-        {
-          "name_ar": "تخطيط وإدارة المشاريع",
-          "name_en": "Project Planning and Management",
-          "degree": "bachelor"
-        },
-        {
-          "name_ar": "الإدارة الضريبية والجمركية",
-          "name_en": "Tax and Customs Administration",
-          "degree": "bachelor"
-        }
-      ]
-    },
-    {
-      "name_ar": "كلية الحقوق",
-      "name_en": "Faculty of Law (Salt)",
-      "majors": [
-        {
-          "name_ar": "القانون",
-          "name_en": "Law",
-          "degree": "bachelor"
-        }
-      ]
-    },
-    {
-      "name_ar": "كلية الإعلام",
-      "name_en": "Faculty of Media (Salt)",
-      "majors": [
-        {
-          "name_ar": "تقنيات الإنتاج التلفزيوني والإخراج",
-          "name_en": "TV Production and Directing Techniques (technical bachelor)",
-          "degree": "bachelor"
-        },
-        {
-          "name_ar": "الإعلام الرقمي",
-          "name_en": "Digital Media",
-          "degree": "bachelor"
-        }
-      ]
-    },
-    {
-      "name_ar": "كلية السلط للعلوم الإنسانية",
-      "name_en": "Salt College for Humanities (Salt)",
-      "majors": [
-        {
-          "name_ar": "إدارة المكتبات والمعلومات",
-          "name_en": "Library and Information Management",
-          "degree": "bachelor"
-        },
-        {
-          "name_ar": "اللغة العربية وآدابها",
-          "name_en": "Arabic Language and Literature",
-          "degree": "bachelor"
-        },
-        {
-          "name_ar": "الترجمة التطبيقية",
-          "name_en": "Applied Translation",
-          "degree": "bachelor"
-        },
-        {
-          "name_ar": "التربية البدنية والصحية",
-          "name_en": "Physical and Health Education",
-          "degree": "bachelor"
-        },
-        {
-          "name_ar": "الطفولة المبكرة",
-          "name_en": "Early Childhood",
-          "degree": "bachelor"
-        },
-        {
-          "name_ar": "اللغة الإنجليزية وآدابها",
-          "name_en": "English Language and Literature",
-          "degree": "bachelor"
-        }
-      ]
-    },
-    {
-      "name_ar": "كلية الأميرة رحمة الجامعية",
-      "name_en": "Princess Rahma University College (Allan, Salt)",
-      "majors": [
-        {
-          "name_ar": "التربية الخاصة",
-          "name_en": "Special Education",
-          "degree": "bachelor"
-        },
-        {
-          "name_ar": "العمل الاجتماعي",
-          "name_en": "Social Work",
-          "degree": "bachelor"
-        },
-        {
-          "name_ar": "علم الاجتماع/ الانحراف والجريمة",
-          "name_en": "Sociology / Deviance and Crime",
-          "degree": "bachelor"
-        },
-        {
-          "name_ar": "علم النفس التطبيقي",
-          "name_en": "Applied Psychology",
-          "degree": "bachelor"
-        }
-      ]
-    },
-    {
-      "name_ar": "كلية عمان الجامعية",
-      "name_en": "Amman University College (Shafa Badran)",
-      "majors": [
-        {
-          "name_ar": "إدارة الأعمال",
-          "name_en": "Business Administration",
-          "degree": "bachelor"
-        },
-        {
-          "name_ar": "نظم المعلومات الإدارية",
-          "name_en": "Management Information Systems",
-          "degree": "bachelor"
-        },
-        {
-          "name_ar": "ذكاء الأعمال",
-          "name_en": "Business Intelligence",
-          "degree": "bachelor"
-        },
-        {
-          "name_ar": "التسويق الرقمي",
-          "name_en": "Digital Marketing",
-          "degree": "bachelor"
-        },
-        {
-          "name_ar": "نظم المعلومات المحاسبية",
-          "name_en": "Accounting Information Systems",
-          "degree": "bachelor"
-        },
-        {
-          "name_ar": "المحاسبة",
-          "name_en": "Accounting",
-          "degree": "bachelor"
-        },
-        {
-          "name_ar": "العلوم المالية والمصرفية",
-          "name_en": "Financial and Banking Sciences",
-          "degree": "bachelor"
-        }
-      ]
-    },
-    {
-      "name_ar": "كلية الأميرة عالية الجامعية",
-      "name_en": "Princess Alia University College (Shmeisani, female)",
-      "majors": [
-        {
-          "name_ar": "اللغة الإنجليزية وآدابها",
-          "name_en": "English Language and Literature",
-          "degree": "bachelor"
-        },
-        {
-          "name_ar": "اللغة العربية وآدابها",
-          "name_en": "Arabic Language and Literature",
-          "degree": "bachelor"
-        },
-        {
-          "name_ar": "التربية الخاصة",
-          "name_en": "Special Education",
-          "degree": "bachelor"
-        },
-        {
-          "name_ar": "الطفولة المبكرة",
-          "name_en": "Early Childhood",
-          "degree": "bachelor"
-        },
-        {
-          "name_ar": "التربية المهنية",
-          "name_en": "Vocational Education",
-          "degree": "bachelor"
-        },
-        {
-          "name_ar": "تصميم المحتوى التعليمي الرقمي",
-          "name_en": "Digital Educational Content Design",
-          "degree": "bachelor"
-        },
-        {
-          "name_ar": "إدارة المكتبات والمعلومات",
-          "name_en": "Library and Information Management",
-          "degree": "bachelor"
-        },
-        {
-          "name_ar": "التربية الخاصة/ الموهبة والإبداع",
-          "name_en": "Special Education / Giftedness and Creativity",
-          "degree": "bachelor"
-        },
-        {
-          "name_ar": "الاقتصاد المنزلي",
-          "name_en": "Home Economics",
-          "degree": "bachelor"
-        },
-        {
-          "name_ar": "الإرشاد النفسي والتربوي",
-          "name_en": "Psychological and Educational Counselling",
-          "degree": "bachelor"
-        }
-      ]
-    },
-    {
-      "name_ar": "كلية الهندسة التكنولوجية",
-      "name_en": "Faculty of Engineering Technology (Marka, Amman)",
-      "majors": [
-        {
-          "name_ar": "هندسة الميكاترونكس",
-          "name_en": "Mechatronics Engineering",
-          "degree": "bachelor"
-        },
-        {
-          "name_ar": "الهندسة المدنية/ طرق وجسور",
-          "name_en": "Civil Engineering / Roads and Bridges",
-          "degree": "bachelor"
-        },
-        {
-          "name_ar": "الهندسة الميكانيكية/ القوى الحرارية والهيدروليكية",
-          "name_en": "Mechanical Engineering / Thermal and Hydraulic Power",
-          "degree": "bachelor"
-        },
-        {
-          "name_ar": "هندسة الأتوترونكس",
-          "name_en": "Autotronics Engineering",
-          "degree": "bachelor"
-        },
-        {
-          "name_ar": "الهندسة الكهربائية/ القوى الكهربائية",
-          "name_en": "Electrical Engineering / Electrical Power",
-          "degree": "bachelor"
-        },
-        {
-          "name_ar": "تكنولوجيا خدمة المركبات الكهربائية والهجينة",
-          "name_en": "Electric and Hybrid Vehicle Service Technology",
-          "degree": "bachelor"
-        },
-        {
-          "name_ar": "تكنولوجيا العمارة الداخلية",
-          "name_en": "Interior Architecture Technology",
-          "degree": "bachelor"
-        },
-        {
-          "name_ar": "الهندسة الكيميائية/ الصناعات الكيميائية",
-          "name_en": "Chemical Engineering / Chemical Industries",
-          "degree": "bachelor"
-        },
-        {
-          "name_ar": "الهندسة الكهربائية/ الحاسوب",
-          "name_en": "Electrical Engineering / Computer",
-          "degree": "bachelor"
-        },
-        {
-          "name_ar": "تكنولوجيا الطاقة الكهربائية",
-          "name_en": "Electrical Power Technology (technical bachelor)",
-          "degree": "bachelor"
-        },
-        {
-          "name_ar": "تكنولوجيا الآليات الثقيلة وأنظمتها",
-          "name_en": "Heavy Machinery and Systems Technology (technical bachelor)",
-          "degree": "bachelor"
-        },
-        {
-          "name_ar": "تكنولوجيا تقييم المنشآت وصيانتها",
-          "name_en": "Facilities Assessment and Maintenance Technology (technical bachelor)",
-          "degree": "bachelor"
-        },
-        {
-          "name_ar": "الهندسة الميكانيكية",
-          "name_en": "Mechanical Engineering",
-          "degree": "bachelor"
-        },
-        {
-          "name_ar": "الهندسة الكهربائية/ اتصالات",
-          "name_en": "Electrical Engineering / Communications",
-          "degree": "bachelor"
-        },
-        {
-          "name_ar": "صيانة الطائرات",
-          "name_en": "Aircraft Maintenance (technical bachelor)",
-          "degree": "bachelor"
-        },
-        {
-          "name_ar": "الهندسة الكهربائية/ أنظمة وأمن الشبكات",
-          "name_en": "Electrical Engineering / Network Systems and Security",
-          "degree": "bachelor"
-        }
-      ]
-    },
-    {
-      "name_ar": "كلية الزرقاء الجامعية",
-      "name_en": "Zarqa University College (Zarqa)",
-      "majors": [
-        {
-          "name_ar": "العلوم الطبية المخبرية",
-          "name_en": "Medical Laboratory Sciences",
-          "degree": "bachelor"
-        },
-        {
-          "name_ar": "الأحياء الدقيقة التطبيقية",
-          "name_en": "Applied Microbiology",
-          "degree": "bachelor"
-        },
-        {
-          "name_ar": "العلوم الحياتية",
-          "name_en": "Biological Sciences",
-          "degree": "bachelor"
-        },
-        {
-          "name_ar": "التغذية والتصنيع الغذائي",
-          "name_en": "Nutrition and Food Processing",
-          "degree": "bachelor"
-        }
-      ]
-    },
-    {
-      "name_ar": "كلية اربد الجامعية",
-      "name_en": "Irbid University College (Irbid)",
-      "majors": [
-        {
-          "name_ar": "اللغة العربية وآدابها",
-          "name_en": "Arabic Language and Literature",
-          "degree": "bachelor"
-        },
-        {
-          "name_ar": "اللغة الإنجليزية وآدابها",
-          "name_en": "English Language and Literature",
-          "degree": "bachelor"
-        }
-      ]
-    },
-    {
-      "name_ar": "كلية الحصن الجامعية",
-      "name_en": "Al-Huson University College (Al-Husn, Irbid)",
-      "majors": [
-        {
-          "name_ar": "الهندسة الكيميائية/ الصناعات الكيميائية",
-          "name_en": "Chemical Engineering / Chemical Industries",
-          "degree": "bachelor"
-        },
-        {
-          "name_ar": "الهندسة الميكانيكية/ نظم التبريد وتكييف الهواء",
-          "name_en": "Mechanical Engineering / Refrigeration and Air-Conditioning Systems",
-          "degree": "bachelor"
-        },
-        {
-          "name_ar": "الهندسة الميكانيكية/ إنتاج وآلات",
-          "name_en": "Mechanical Engineering / Production and Machines",
-          "degree": "bachelor"
-        },
-        {
-          "name_ar": "الهندسة الكهربائية/ الاتصالات والبرمجيات",
-          "name_en": "Electrical Engineering / Communications and Software",
-          "degree": "bachelor"
-        },
-        {
-          "name_ar": "الهندسة المدنية/ المياه والبيئة",
-          "name_en": "Civil Engineering / Water and Environment",
-          "degree": "bachelor"
-        },
-        {
-          "name_ar": "المحاسبة",
-          "name_en": "Accounting",
-          "degree": "bachelor"
-        },
-        {
-          "name_ar": "إدارة المكتبات والمعلومات",
-          "name_en": "Library and Information Management",
-          "degree": "bachelor"
-        },
-        {
-          "name_ar": "التربية المهنية",
-          "name_en": "Vocational Education",
-          "degree": "bachelor"
-        },
-        {
-          "name_ar": "الهندسة الكهربائية/ أنظمة وأمن الشبكات",
-          "name_en": "Electrical Engineering / Network Systems and Security",
-          "degree": "bachelor"
-        },
-        {
-          "name_ar": "إدارة الأعمال",
-          "name_en": "Business Administration",
-          "degree": "bachelor"
-        },
-        {
-          "name_ar": "الاقتصاد المنزلي",
-          "name_en": "Home Economics (female)",
-          "degree": "bachelor"
-        },
-        {
-          "name_ar": "التغذية والتصنيع الغذائي",
-          "name_en": "Nutrition and Food Processing",
-          "degree": "bachelor"
-        },
-        {
-          "name_ar": "نظم المعلومات الإدارية",
-          "name_en": "Management Information Systems",
-          "degree": "bachelor"
-        },
-        {
-          "name_ar": "الهندسة الكهربائية/ القوى الكهربائية",
-          "name_en": "Electrical Engineering / Electrical Power",
-          "degree": "bachelor"
-        },
-        {
-          "name_ar": "تكنولوجيا التكييف والتبريد",
-          "name_en": "Air-Conditioning and Refrigeration Technology (technical bachelor)",
-          "degree": "bachelor"
-        },
-        {
-          "name_ar": "علم الحاسوب",
-          "name_en": "Computer Science",
-          "degree": "bachelor"
-        },
-        {
-          "name_ar": "علم الحاسوب/ إنترنت الأشياء",
-          "name_en": "Computer Science / Internet of Things",
-          "degree": "bachelor"
-        },
-        {
-          "name_ar": "الهندسة الميكانيكية/ هندسة الطاقة المتجددة",
-          "name_en": "Mechanical Engineering / Renewable Energy Engineering",
-          "degree": "bachelor"
-        }
-      ]
-    },
-    {
-      "name_ar": "كلية عجلون الجامعية",
-      "name_en": "Ajloun University College (Ajloun)",
-      "majors": [
-        {
-          "name_ar": "التربية الخاصة",
-          "name_en": "Special Education",
-          "degree": "bachelor"
-        },
-        {
-          "name_ar": "العمل الاجتماعي",
-          "name_en": "Social Work",
-          "degree": "bachelor"
-        },
-        {
-          "name_ar": "اللغة العربية وآدابها",
-          "name_en": "Arabic Language and Literature",
-          "degree": "bachelor"
-        },
-        {
-          "name_ar": "اللغة الإنجليزية وآدابها",
-          "name_en": "English Language and Literature",
-          "degree": "bachelor"
-        },
-        {
-          "name_ar": "الرياضيات",
-          "name_en": "Mathematics",
-          "degree": "bachelor"
-        },
-        {
-          "name_ar": "الإدارة السياحية",
-          "name_en": "Tourism Management",
-          "degree": "bachelor"
-        },
-        {
-          "name_ar": "علم الحاسوب",
-          "name_en": "Computer Science",
-          "degree": "bachelor"
-        },
-        {
-          "name_ar": "الدراسات الإسلامية التطبيقية (خطابة وإمامة وتلاوة)",
-          "name_en": "Applied Islamic Studies (Preaching, Imamate and Recitation)",
-          "degree": "bachelor"
-        }
-      ]
-    },
-    {
-      "name_ar": "كلية الشوبك الجامعية",
-      "name_en": "Shoubak University College (Shoubak)",
-      "majors": [
-        {
-          "name_ar": "إنتاج ووقاية النبات",
-          "name_en": "Plant Production and Protection",
-          "degree": "bachelor"
-        },
-        {
-          "name_ar": "التربية المهنية",
-          "name_en": "Vocational Education",
-          "degree": "bachelor"
-        }
-      ]
-    },
-    {
-      "name_ar": "كلية العقبة الجامعية",
-      "name_en": "Aqaba University College (Aqaba)",
-      "majors": [
-        {
-          "name_ar": "إدارة الفنادق",
-          "name_en": "Hotel Management",
-          "degree": "bachelor"
-        },
-        {
-          "name_ar": "المحاسبة",
-          "name_en": "Accounting",
-          "degree": "bachelor"
-        },
-        {
-          "name_ar": "اللوجستيات وإدارة التوريد",
-          "name_en": "Logistics and Supply Management",
-          "degree": "bachelor"
-        },
-        {
-          "name_ar": "تكنولوجيا النقل البحري",
-          "name_en": "Maritime Transport Technology",
-          "degree": "bachelor"
-        },
-        {
-          "name_ar": "إدارة الشحن والتخليص",
-          "name_en": "Shipping and Clearance Management",
-          "degree": "bachelor"
-        }
-      ]
-    },
-    {
-      "name_ar": "أكاديمية الأمير الحسين بن عبدالله الثاني للحماية المدنية",
-      "name_en": "Prince Hussein bin Abdullah II Academy for Civil Protection (Muwaqqar)",
-      "majors": [
-        {
-          "name_ar": "الهندسة الميكانيكية/ الإطفاء والسلامة",
-          "name_en": "Mechanical Engineering / Firefighting and Safety",
-          "degree": "bachelor"
-        },
-        {
-          "name_ar": "الإسعاف الطبي المتخصص",
-          "name_en": "Specialised Medical First Aid (Paramedic)",
-          "degree": "bachelor"
-        },
-        {
-          "name_ar": "الهندسة الميكانيكية/ الطاقة المتجددة",
-          "name_en": "Mechanical Engineering / Renewable Energy",
-          "degree": "bachelor"
-        },
-        {
-          "name_ar": "إدارة الكوارث والأزمات",
-          "name_en": "Disaster and Crisis Management",
-          "degree": "bachelor"
-        }
-      ]
+     "name_ar": "الهندسة الكهربائية/ القوى الكهربائية",
+     "name_en": "Electrical Engineering / Electrical Power",
+     "degree": "bachelor"
     }
-  ],
-  "sources": [
-    "https://www.bau.edu.jo/bauar/Units/Reg/media/ba2026-2027.pdf",
-    "https://www.bau.edu.jo/bauar/Units/Reg/Home.aspx",
-    "https://www.bau.edu.jo/",
-    "https://www.bau.edu.jo/bauar/Colleges/AI/Home.aspx",
-    "https://www.bau.edu.jo/bauar/Units/reg/media/n2025.pdf",
-    "https://www.bau.edu.jo/bauar/units/LearnTechCenter/media/Moodle_Guide_Students.pdf",
-    "https://en.wikipedia.org/wiki/Al-Balqa%CA%BC_Applied_University"
-  ],
-  "notes": "Majors = every row of BAU's official 'التخصصات ورسوم الساعات المعتمدة التفصيلية لكافة البرامج للعام الجامعي 2027/2026 (البكالوريوس والبكالوريوس التقني) – المسارات الأكاديمية' (ba2026-2027.pdf). Covers all colleges, not only Salt: the first 12 colleges are on the Salt main campus; the rest are BAU university colleges elsewhere (campus in name_en). Filter on that if only Salt is wanted. PDF text extraction broke lam-alef ligatures (e.g. 'االنشاءات', 'عبدهللا'); these were normalised to standard spelling (الإنشاءات، عبدالله). Hamza placement may differ slightly from the printed PDF. Programmes marked موقوف (suspended for new admission 2026/2027) are still included because current students may be enrolled: ICT – علم الحاسوب; AI – الواقع الافتراضي وصناعة الألعاب; Agri – وقاية النبات; Princess Alia – إدارة المكتبات والمعلومات; Huson – المحاسبة، الهندسة الكهربائية/ أنظمة وأمن الشبكات، علم الحاسوب، علم الحاسوب/ إنترنت الأشياء; Ajloun – علم الحاسوب; Aqaba – اللوجستيات وإدارة التوريد; Civil Protection Academy – الهندسة الميكانيكية/ الطاقة المتجددة. Technical bachelor (بكالوريوس تقني) programmes are marked in name_en and kept as degree 'bachelor'. Table layout was partly garbled: an English pass of the same PDF also placed 'الإرشاد النفسي والتربوي' and 'علم الاجتماع/ الانحراف والجريمة' under Ajloun University College, and did not show Nutrition / AC-technology under Huson – college assignment for these few rows is uncertain. College Arabic names follow the registration PDF; the homepage menu calls some differently: 'السلط للعلوم التربوية والإنسانية', 'عمان الجامعية للعلوم المالية والادارية', 'جرش الجامعية التقنية' (diploma only, no bachelor rows), AI faculty page header 'كلية الذكاء الإصطناعي' (PDF header garbled as 'كلية الذكاء أمن المعلومات والفضاء الالكتروني'). English names are translations, not official. Community-college/intermediate diplomas left out: the official diploma PDFs (d2025-2026-a.pdf, Da2026-2027.pdf) extract as garbled Arabic, so there is no clean list. Vocational-track bachelor list (bam2026-2027.pdf) and old-branch list not separately parsed. Email: only office addresses @bau.edu.jo (info@, reg@) confirmed; student Microsoft 365 address format/subdomain NOT verified (official NewEMail.aspx page failed to load). E-learning: the official student Moodle guide says each college has its own Moodle reached via the homepage (Student Services > E-learning); no single stable URL confirmed, so none listed. Reg.aspx (e-registration) is linked from the registration unit page but failed to load during verification. Centre coordinates from Wikipedia infobox (32.0240, 35.7168), not cross-checked on OSM. Wikipedia lists colours as olive green and khaki but gives no hex value, so brand_color is null. admhec.gov.jo could not be read (robots-disallowed)."
+   ]
+  },
+  {
+   "name_ar": "كلية الأمير عبدالله بن غازي للاتصالات وتكنولوجيا المعلومات",
+   "name_en": "Prince Abdullah bin Ghazi Faculty of Communication and Information Technology (Salt)",
+   "majors": [
+    {
+     "name_ar": "نظم المعلومات الحاسوبية",
+     "name_en": "Computer Information Systems",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "علم الحاسوب",
+     "name_en": "Computer Science",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "هندسة البرمجيات",
+     "name_en": "Software Engineering",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "الرسم الحاسوبي والرسوم المتحركة",
+     "name_en": "Computer Graphics and Animation",
+     "degree": "bachelor"
+    }
+   ]
+  },
+  {
+   "name_ar": "كلية التمريض",
+   "name_en": "Faculty of Nursing (Salt)",
+   "majors": [
+    {
+     "name_ar": "التمريض",
+     "name_en": "Nursing",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "القبالة والعناية بحديثي الولادة",
+     "name_en": "Midwifery and Newborn Care",
+     "degree": "bachelor"
+    }
+   ]
+  },
+  {
+   "name_ar": "كلية الذكاء الاصطناعي",
+   "name_en": "Faculty of Artificial Intelligence (Salt)",
+   "majors": [
+    {
+     "name_ar": "الذكاء الاصطناعي والروبوتات",
+     "name_en": "Artificial Intelligence and Robotics",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "التحقيقات الجنائية الرقمية",
+     "name_en": "Digital Criminal Investigations",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "علم البيانات",
+     "name_en": "Data Science",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "الواقع الافتراضي وصناعة الألعاب",
+     "name_en": "Virtual Reality and Game Development",
+     "degree": "bachelor"
+    }
+   ]
+  },
+  {
+   "name_ar": "كلية العلوم الطبية المساندة",
+   "name_en": "Faculty of Allied Medical Sciences (Salt)",
+   "majors": [
+    {
+     "name_ar": "العلوم الطبية المخبرية",
+     "name_en": "Medical Laboratory Sciences",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "تكنولوجيا الأشعة الطبية",
+     "name_en": "Medical Imaging (Radiography) Technology",
+     "degree": "bachelor"
+    }
+   ]
+  },
+  {
+   "name_ar": "كلية العلوم",
+   "name_en": "Faculty of Science (Salt)",
+   "majors": [
+    {
+     "name_ar": "الرياضيات",
+     "name_en": "Mathematics",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "الفيزياء",
+     "name_en": "Physics",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "العلوم الحياتية التطبيقية",
+     "name_en": "Applied Biological Sciences",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "الكيمياء",
+     "name_en": "Chemistry",
+     "degree": "bachelor"
+    }
+   ]
+  },
+  {
+   "name_ar": "كلية الزراعة التكنولوجية",
+   "name_en": "Faculty of Agricultural Technology (Salt)",
+   "majors": [
+    {
+     "name_ar": "إدارة موارد المياه والبيئة",
+     "name_en": "Water Resources and Environment Management",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "التقنيات الحيوية الزراعية",
+     "name_en": "Agricultural Biotechnology",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "التغذية والتصنيع الغذائي",
+     "name_en": "Nutrition and Food Processing",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "تكنولوجيا الزراعة العضوية الذكية",
+     "name_en": "Smart Organic Agriculture Technology (technical bachelor)",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "وقاية النبات",
+     "name_en": "Plant Protection",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "إنتاج ووقاية النبات",
+     "name_en": "Plant Production and Protection",
+     "degree": "bachelor"
+    }
+   ]
+  },
+  {
+   "name_ar": "كلية الأعمال",
+   "name_en": "Faculty of Business (Salt)",
+   "majors": [
+    {
+     "name_ar": "التسويق",
+     "name_en": "Marketing",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "إدارة الأعمال",
+     "name_en": "Business Administration",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "نظم المعلومات المحاسبية",
+     "name_en": "Accounting Information Systems",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "العلوم المالية والمصرفية",
+     "name_en": "Financial and Banking Sciences",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "نظم المعلومات الإدارية",
+     "name_en": "Management Information Systems",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "الاقتصاد",
+     "name_en": "Economics",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "المحاسبة",
+     "name_en": "Accounting",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "تخطيط وإدارة المشاريع",
+     "name_en": "Project Planning and Management",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "الإدارة الضريبية والجمركية",
+     "name_en": "Tax and Customs Administration",
+     "degree": "bachelor"
+    }
+   ]
+  },
+  {
+   "name_ar": "كلية الحقوق",
+   "name_en": "Faculty of Law (Salt)",
+   "majors": [
+    {
+     "name_ar": "القانون",
+     "name_en": "Law",
+     "degree": "bachelor"
+    }
+   ]
+  },
+  {
+   "name_ar": "كلية الإعلام",
+   "name_en": "Faculty of Media (Salt)",
+   "majors": [
+    {
+     "name_ar": "تقنيات الإنتاج التلفزيوني والإخراج",
+     "name_en": "TV Production and Directing Techniques (technical bachelor)",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "الإعلام الرقمي",
+     "name_en": "Digital Media",
+     "degree": "bachelor"
+    }
+   ]
+  },
+  {
+   "name_ar": "كلية السلط للعلوم الإنسانية",
+   "name_en": "Salt College for Humanities (Salt)",
+   "majors": [
+    {
+     "name_ar": "إدارة المكتبات والمعلومات",
+     "name_en": "Library and Information Management",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "اللغة العربية وآدابها",
+     "name_en": "Arabic Language and Literature",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "الترجمة التطبيقية",
+     "name_en": "Applied Translation",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "التربية البدنية والصحية",
+     "name_en": "Physical and Health Education",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "الطفولة المبكرة",
+     "name_en": "Early Childhood",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "اللغة الإنجليزية وآدابها",
+     "name_en": "English Language and Literature",
+     "degree": "bachelor"
+    }
+   ]
+  },
+  {
+   "name_ar": "كلية الأميرة رحمة الجامعية",
+   "name_en": "Princess Rahma University College (Allan, Salt)",
+   "majors": [
+    {
+     "name_ar": "التربية الخاصة",
+     "name_en": "Special Education",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "العمل الاجتماعي",
+     "name_en": "Social Work",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "علم الاجتماع/ الانحراف والجريمة",
+     "name_en": "Sociology / Deviance and Crime",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "علم النفس التطبيقي",
+     "name_en": "Applied Psychology",
+     "degree": "bachelor"
+    }
+   ]
+  },
+  {
+   "name_ar": "كلية عمان الجامعية",
+   "name_en": "Amman University College (Shafa Badran)",
+   "majors": [
+    {
+     "name_ar": "إدارة الأعمال",
+     "name_en": "Business Administration",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "نظم المعلومات الإدارية",
+     "name_en": "Management Information Systems",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "ذكاء الأعمال",
+     "name_en": "Business Intelligence",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "التسويق الرقمي",
+     "name_en": "Digital Marketing",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "نظم المعلومات المحاسبية",
+     "name_en": "Accounting Information Systems",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "المحاسبة",
+     "name_en": "Accounting",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "العلوم المالية والمصرفية",
+     "name_en": "Financial and Banking Sciences",
+     "degree": "bachelor"
+    }
+   ]
+  },
+  {
+   "name_ar": "كلية الأميرة عالية الجامعية",
+   "name_en": "Princess Alia University College (Shmeisani, female)",
+   "majors": [
+    {
+     "name_ar": "اللغة الإنجليزية وآدابها",
+     "name_en": "English Language and Literature",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "اللغة العربية وآدابها",
+     "name_en": "Arabic Language and Literature",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "التربية الخاصة",
+     "name_en": "Special Education",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "الطفولة المبكرة",
+     "name_en": "Early Childhood",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "التربية المهنية",
+     "name_en": "Vocational Education",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "تصميم المحتوى التعليمي الرقمي",
+     "name_en": "Digital Educational Content Design",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "إدارة المكتبات والمعلومات",
+     "name_en": "Library and Information Management",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "التربية الخاصة/ الموهبة والإبداع",
+     "name_en": "Special Education / Giftedness and Creativity",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "الاقتصاد المنزلي",
+     "name_en": "Home Economics",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "الإرشاد النفسي والتربوي",
+     "name_en": "Psychological and Educational Counselling",
+     "degree": "bachelor"
+    }
+   ]
+  },
+  {
+   "name_ar": "كلية الهندسة التكنولوجية",
+   "name_en": "Faculty of Engineering Technology (Marka, Amman)",
+   "majors": [
+    {
+     "name_ar": "هندسة الميكاترونكس",
+     "name_en": "Mechatronics Engineering",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "الهندسة المدنية/ طرق وجسور",
+     "name_en": "Civil Engineering / Roads and Bridges",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "الهندسة الميكانيكية/ القوى الحرارية والهيدروليكية",
+     "name_en": "Mechanical Engineering / Thermal and Hydraulic Power",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "هندسة الأتوترونكس",
+     "name_en": "Autotronics Engineering",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "الهندسة الكهربائية/ القوى الكهربائية",
+     "name_en": "Electrical Engineering / Electrical Power",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "تكنولوجيا خدمة المركبات الكهربائية والهجينة",
+     "name_en": "Electric and Hybrid Vehicle Service Technology",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "تكنولوجيا العمارة الداخلية",
+     "name_en": "Interior Architecture Technology",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "الهندسة الكيميائية/ الصناعات الكيميائية",
+     "name_en": "Chemical Engineering / Chemical Industries",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "الهندسة الكهربائية/ الحاسوب",
+     "name_en": "Electrical Engineering / Computer",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "تكنولوجيا الطاقة الكهربائية",
+     "name_en": "Electrical Power Technology (technical bachelor)",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "تكنولوجيا الآليات الثقيلة وأنظمتها",
+     "name_en": "Heavy Machinery and Systems Technology (technical bachelor)",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "تكنولوجيا تقييم المنشآت وصيانتها",
+     "name_en": "Facilities Assessment and Maintenance Technology (technical bachelor)",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "الهندسة الميكانيكية",
+     "name_en": "Mechanical Engineering",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "الهندسة الكهربائية/ اتصالات",
+     "name_en": "Electrical Engineering / Communications",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "صيانة الطائرات",
+     "name_en": "Aircraft Maintenance (technical bachelor)",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "الهندسة الكهربائية/ أنظمة وأمن الشبكات",
+     "name_en": "Electrical Engineering / Network Systems and Security",
+     "degree": "bachelor"
+    }
+   ]
+  },
+  {
+   "name_ar": "كلية الزرقاء الجامعية",
+   "name_en": "Zarqa University College (Zarqa)",
+   "majors": [
+    {
+     "name_ar": "العلوم الطبية المخبرية",
+     "name_en": "Medical Laboratory Sciences",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "الأحياء الدقيقة التطبيقية",
+     "name_en": "Applied Microbiology",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "العلوم الحياتية",
+     "name_en": "Biological Sciences",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "التغذية والتصنيع الغذائي",
+     "name_en": "Nutrition and Food Processing",
+     "degree": "bachelor"
+    }
+   ]
+  },
+  {
+   "name_ar": "كلية اربد الجامعية",
+   "name_en": "Irbid University College (Irbid)",
+   "majors": [
+    {
+     "name_ar": "اللغة العربية وآدابها",
+     "name_en": "Arabic Language and Literature",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "اللغة الإنجليزية وآدابها",
+     "name_en": "English Language and Literature",
+     "degree": "bachelor"
+    }
+   ]
+  },
+  {
+   "name_ar": "كلية الحصن الجامعية",
+   "name_en": "Al-Huson University College (Al-Husn, Irbid)",
+   "majors": [
+    {
+     "name_ar": "الهندسة الكيميائية/ الصناعات الكيميائية",
+     "name_en": "Chemical Engineering / Chemical Industries",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "الهندسة الميكانيكية/ نظم التبريد وتكييف الهواء",
+     "name_en": "Mechanical Engineering / Refrigeration and Air-Conditioning Systems",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "الهندسة الميكانيكية/ إنتاج وآلات",
+     "name_en": "Mechanical Engineering / Production and Machines",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "الهندسة الكهربائية/ الاتصالات والبرمجيات",
+     "name_en": "Electrical Engineering / Communications and Software",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "الهندسة المدنية/ المياه والبيئة",
+     "name_en": "Civil Engineering / Water and Environment",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "المحاسبة",
+     "name_en": "Accounting",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "إدارة المكتبات والمعلومات",
+     "name_en": "Library and Information Management",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "التربية المهنية",
+     "name_en": "Vocational Education",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "الهندسة الكهربائية/ أنظمة وأمن الشبكات",
+     "name_en": "Electrical Engineering / Network Systems and Security",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "إدارة الأعمال",
+     "name_en": "Business Administration",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "الاقتصاد المنزلي",
+     "name_en": "Home Economics (female)",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "التغذية والتصنيع الغذائي",
+     "name_en": "Nutrition and Food Processing",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "نظم المعلومات الإدارية",
+     "name_en": "Management Information Systems",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "الهندسة الكهربائية/ القوى الكهربائية",
+     "name_en": "Electrical Engineering / Electrical Power",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "تكنولوجيا التكييف والتبريد",
+     "name_en": "Air-Conditioning and Refrigeration Technology (technical bachelor)",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "علم الحاسوب",
+     "name_en": "Computer Science",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "علم الحاسوب/ إنترنت الأشياء",
+     "name_en": "Computer Science / Internet of Things",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "الهندسة الميكانيكية/ هندسة الطاقة المتجددة",
+     "name_en": "Mechanical Engineering / Renewable Energy Engineering",
+     "degree": "bachelor"
+    }
+   ]
+  },
+  {
+   "name_ar": "كلية عجلون الجامعية",
+   "name_en": "Ajloun University College (Ajloun)",
+   "majors": [
+    {
+     "name_ar": "التربية الخاصة",
+     "name_en": "Special Education",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "العمل الاجتماعي",
+     "name_en": "Social Work",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "اللغة العربية وآدابها",
+     "name_en": "Arabic Language and Literature",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "اللغة الإنجليزية وآدابها",
+     "name_en": "English Language and Literature",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "الرياضيات",
+     "name_en": "Mathematics",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "الإدارة السياحية",
+     "name_en": "Tourism Management",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "علم الحاسوب",
+     "name_en": "Computer Science",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "الدراسات الإسلامية التطبيقية (خطابة وإمامة وتلاوة)",
+     "name_en": "Applied Islamic Studies (Preaching, Imamate and Recitation)",
+     "degree": "bachelor"
+    }
+   ]
+  },
+  {
+   "name_ar": "كلية الشوبك الجامعية",
+   "name_en": "Shoubak University College (Shoubak)",
+   "majors": [
+    {
+     "name_ar": "إنتاج ووقاية النبات",
+     "name_en": "Plant Production and Protection",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "التربية المهنية",
+     "name_en": "Vocational Education",
+     "degree": "bachelor"
+    }
+   ]
+  },
+  {
+   "name_ar": "كلية العقبة الجامعية",
+   "name_en": "Aqaba University College (Aqaba)",
+   "majors": [
+    {
+     "name_ar": "إدارة الفنادق",
+     "name_en": "Hotel Management",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "المحاسبة",
+     "name_en": "Accounting",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "اللوجستيات وإدارة التوريد",
+     "name_en": "Logistics and Supply Management",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "تكنولوجيا النقل البحري",
+     "name_en": "Maritime Transport Technology",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "إدارة الشحن والتخليص",
+     "name_en": "Shipping and Clearance Management",
+     "degree": "bachelor"
+    }
+   ]
+  },
+  {
+   "name_ar": "أكاديمية الأمير الحسين بن عبدالله الثاني للحماية المدنية",
+   "name_en": "Prince Hussein bin Abdullah II Academy for Civil Protection (Muwaqqar)",
+   "majors": [
+    {
+     "name_ar": "الهندسة الميكانيكية/ الإطفاء والسلامة",
+     "name_en": "Mechanical Engineering / Firefighting and Safety",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "الإسعاف الطبي المتخصص",
+     "name_en": "Specialised Medical First Aid (Paramedic)",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "الهندسة الميكانيكية/ الطاقة المتجددة",
+     "name_en": "Mechanical Engineering / Renewable Energy",
+     "degree": "bachelor"
+    },
+    {
+     "name_ar": "إدارة الكوارث والأزمات",
+     "name_en": "Disaster and Crisis Management",
+     "degree": "bachelor"
+    }
+   ]
+  }
+ ],
+ "sources": [
+  "https://www.bau.edu.jo/bauar/Units/Reg/media/ba2026-2027.pdf",
+  "https://www.bau.edu.jo/bauar/Units/Reg/Home.aspx",
+  "https://www.bau.edu.jo/",
+  "https://www.bau.edu.jo/bauar/Colleges/AI/Home.aspx",
+  "https://www.bau.edu.jo/bauar/Units/reg/media/n2025.pdf",
+  "https://www.bau.edu.jo/bauar/units/LearnTechCenter/media/Moodle_Guide_Students.pdf",
+  "https://en.wikipedia.org/wiki/Al-Balqa%CA%BC_Applied_University"
+ ],
+ "notes": "Majors = every row of BAU's official 'التخصصات ورسوم الساعات المعتمدة التفصيلية لكافة البرامج للعام الجامعي 2027/2026 (البكالوريوس والبكالوريوس التقني) – المسارات الأكاديمية' (ba2026-2027.pdf). Covers all colleges, not only Salt: the first 12 colleges are on the Salt main campus; the rest are BAU university colleges elsewhere (campus in name_en). Filter on that if only Salt is wanted. PDF text extraction broke lam-alef ligatures (e.g. 'االنشاءات', 'عبدهللا'); these were normalised to standard spelling (الإنشاءات، عبدالله). Hamza placement may differ slightly from the printed PDF. Programmes marked موقوف (suspended for new admission 2026/2027) are still included because current students may be enrolled: ICT – علم الحاسوب; AI – الواقع الافتراضي وصناعة الألعاب; Agri – وقاية النبات; Princess Alia – إدارة المكتبات والمعلومات; Huson – المحاسبة، الهندسة الكهربائية/ أنظمة وأمن الشبكات، علم الحاسوب، علم الحاسوب/ إنترنت الأشياء; Ajloun – علم الحاسوب; Aqaba – اللوجستيات وإدارة التوريد; Civil Protection Academy – الهندسة الميكانيكية/ الطاقة المتجددة. Technical bachelor (بكالوريوس تقني) programmes are marked in name_en and kept as degree 'bachelor'. Table layout was partly garbled: an English pass of the same PDF also placed 'الإرشاد النفسي والتربوي' and 'علم الاجتماع/ الانحراف والجريمة' under Ajloun University College, and did not show Nutrition / AC-technology under Huson – college assignment for these few rows is uncertain. College Arabic names follow the registration PDF; the homepage menu calls some differently: 'السلط للعلوم التربوية والإنسانية', 'عمان الجامعية للعلوم المالية والادارية', 'جرش الجامعية التقنية' (diploma only, no bachelor rows), AI faculty page header 'كلية الذكاء الإصطناعي' (PDF header garbled as 'كلية الذكاء أمن المعلومات والفضاء الالكتروني'). English names are translations, not official. Community-college/intermediate diplomas left out: the official diploma PDFs (d2025-2026-a.pdf, Da2026-2027.pdf) extract as garbled Arabic, so there is no clean list. Vocational-track bachelor list (bam2026-2027.pdf) and old-branch list not separately parsed. Email: only office addresses @bau.edu.jo (info@, reg@) confirmed; student Microsoft 365 address format/subdomain NOT verified (official NewEMail.aspx page failed to load). E-learning: the official student Moodle guide says each college has its own Moodle reached via the homepage (Student Services > E-learning); no single stable URL confirmed, so none listed. Reg.aspx (e-registration) is linked from the registration unit page but failed to load during verification. Centre coordinates from Wikipedia infobox (32.0240, 35.7168), not cross-checked on OSM. Wikipedia lists colours as olive green and khaki but gives no hex value, so brand_color is null. admhec.gov.jo could not be read (robots-disallowed). BUILDINGS: empty list on purpose. OpenStreetMap could not be queried from this session (Nov 2026): overpass-api.de, overpass.kumi.systems, nominatim.openstreetmap.org and the OSM API were all refused by the fetch allowlist/egress proxy, and OSM element pages found via search show no coordinates for ways. No building coordinates were guessed. Campus center was NOT re-checked against OSM for the same reason (kept from the draft source named above).",
+ "buildings": []
 }

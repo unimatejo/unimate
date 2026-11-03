@@ -28,17 +28,17 @@ export default function Notifications() {
     if (!profile) return;
     setLoading(true);
     const [{ data: n }, { data: f }] = await Promise.all([
-      supabase.from('notifications').select('*').eq('user_id', profile.id).order('created_at', { ascending: false }).limit(60),
-      supabase.from('follows').select('follower_id, profile:profiles!follows_follower_id_fkey(id, full_name, avatar_url, major:majors(name_ar))').eq('followee_id', profile.id).eq('status', 'pending'),
+      supabase.from('notifications').select('*').eq('user_id', (profile?.id ?? '')).order('created_at', { ascending: false }).limit(60),
+      supabase.from('follows').select('follower_id, profile:profiles!follows_follower_id_fkey(id, full_name, avatar_url, major:majors(name_ar))').eq('followee_id', (profile?.id ?? '')).eq('status', 'pending'),
     ]);
     setItems((n ?? []) as N[]); setReqs((f ?? []) as unknown as FR[]); setLoading(false);
-    await supabase.from('notifications').update({ read_at: new Date().toISOString() }).eq('user_id', profile.id).is('read_at', null);
+    await supabase.from('notifications').update({ read_at: new Date().toISOString() }).eq('user_id', (profile?.id ?? '')).is('read_at', null);
   }, [profile]);
   useEffect(() => { load(); }, [load]);
 
   async function answer(r: FR, accept: boolean) {
-    if (accept) await supabase.from('follows').update({ status: 'accepted' }).eq('follower_id', r.follower_id).eq('followee_id', profile!.id);
-    else await supabase.from('follows').delete().eq('follower_id', r.follower_id).eq('followee_id', profile!.id);
+    if (accept) await supabase.from('follows').update({ status: 'accepted' }).eq('follower_id', r.follower_id).eq('followee_id', (profile?.id ?? ''));
+    else await supabase.from('follows').delete().eq('follower_id', r.follower_id).eq('followee_id', (profile?.id ?? ''));
     setReqs((x) => x.filter((y) => y.follower_id !== r.follower_id));
   }
 
@@ -77,7 +77,7 @@ export default function Notifications() {
           const [Icon, color] = ICON[item.kind] ?? [Bell, C.primary];
           return (
             <Animated.View entering={FadeInDown.delay(Math.min(index, 8) * 30)}>
-              <Tap scale={0.98} onPress={() => item.kind === 'swap_match' ? router.push('/swap') : item.data?.post_id ? router.push({ pathname: '/post/[id]', params: { id: item.data.post_id } }) : null}
+              <Tap scale={0.98} onPress={() => item.kind === 'swap_match' ? router.push('/swap') : item.data?.post_id ? router.push({ pathname: '/post/[id]', params: { id: item.data.post_id } }) : item.data?.user_id ? router.push({ pathname: '/user/[id]', params: { id: item.data.user_id } }) : null}
                 style={{ flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 66, backgroundColor: C.white, borderRadius: 20, paddingHorizontal: 12 }}>
                 <View style={{ width: 42, height: 42, borderRadius: 15, backgroundColor: color, alignItems: 'center', justifyContent: 'center' }}><Icon size={20} color={C.white} /></View>
                 <View style={{ flex: 1 }}>
