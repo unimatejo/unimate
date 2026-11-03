@@ -12,8 +12,8 @@ jobs:
         working-directory: app
     env:
       # The publishable key is meant to ship inside the app; access is enforced by RLS in the database.
-      EXPO_PUBLIC_SUPABASE_URL: ${{ secrets.EXPO_PUBLIC_SUPABASE_URL }}
-      EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY }}
+      EXPO_PUBLIC_SUPABASE_URL: https://slkfyblvpewlxrifzrhg.supabase.co
+      EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY: sb_publishable_1otcwSg3NdpjsEmXJWJO7g_yxdXR2xP
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
