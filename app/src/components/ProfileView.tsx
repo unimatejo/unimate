@@ -32,6 +32,19 @@ export function openSocial(site: 'instagram' | 'snapchat', handle: string) {
 const TILE_G: [string, string][] = [['#6E95FF', '#2E5BFF'], ['#FF8FB1', '#E0306B'], ['#5EE3A1', '#0E9F6E'], ['#FFB86B', '#FF6B2C'], ['#B794FF', '#7C3AED']];
 
 /** One square in the profile grid: the photo, or a colored card with the text. */
+function HighlightBubble({ h, owner }: { h: { id: string; title: string; cover_url: string | null }; owner: string }) {
+  const [uri, setUri] = useState<string | null>(null);
+  useEffect(() => { if (h.cover_url) mediaUrl('stories', h.cover_url).then(setUri); }, [h.cover_url]);
+  return (
+    <Tap onPress={() => router.push({ pathname: '/story/[id]', params: { id: owner, highlight: h.id } })} style={{ alignItems: 'center', gap: 5, width: 70 }} accessibilityLabel={h.title}>
+      <View style={{ width: 64, height: 64, borderRadius: 32, padding: 2.5, borderWidth: 1.5, borderColor: C.line }}>
+        <View style={{ flex: 1, borderRadius: 30, overflow: 'hidden', backgroundColor: C.soft }}>{uri && <Image source={{ uri }} style={{ flex: 1 }} contentFit="cover" />}</View>
+      </View>
+      <T v="tiny" numberOfLines={1}>{h.title}</T>
+    </Tap>
+  );
+}
+
 function GridTile({ post, i }: { post: Post; i: number }) {
   const img = (post.media ?? []).find((m) => m.kind === 'image');
   const file = (post.media ?? []).some((m) => m.kind === 'file');
@@ -67,6 +80,7 @@ export function ProfileView({ userId }: { userId: string }) {
   const [likesOf, setLikesOf] = useState<Post | null>(null);
   const [loading, setLoading] = useState(true);
   const [hasStory, setHasStory] = useState(false);
+  const [hls, setHls] = useState<{ id: string; title: string; cover_url: string | null }[]>([]);
 
   const load = useCallback(async () => {
     if (!me) return;
@@ -83,6 +97,7 @@ export function ProfileView({ userId }: { userId: string }) {
     }
     const { count: sc } = await supabase.from('stories').select('id', { count: 'exact', head: true }).eq('author_id', userId).gt('expires_at', new Date().toISOString());
     setHasStory((sc ?? 0) > 0);
+    supabase.from('highlights').select('id, title, cover_url').eq('owner_id', userId).order('position').then(({ data }) => setHls(data ?? []));
     const { data: ps } = await supabase.from('posts').select(POST_SELECT).eq('author_id', userId).order('created_at', { ascending: false }).limit(30);
     setPosts(await withMine((ps ?? []) as unknown as Post[], me.id));
     setLoading(false);
@@ -197,6 +212,11 @@ export function ProfileView({ userId }: { userId: string }) {
                 </Tap>
               )}
             </Animated.View>
+          )}
+          {canSee && hls.length > 0 && (
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
+              {hls.map((h) => <HighlightBubble key={h.id} h={h} owner={userId} />)}
+            </ScrollView>
           )}
         </View>
 

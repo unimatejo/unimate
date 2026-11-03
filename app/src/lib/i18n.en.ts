@@ -786,4 +786,11 @@ export const EN: Record<string, string> = {
   "{0} من {1}": "{0} of {1}",
   "الرسائل ما بتختفي": "Messages don't disappear",
   "الرسائل بتختفي {0}": "Messages disappear {0}",
+  "سمّي الهايلايت": "Name the highlight",
+  "وصلت الحد: 30 قصة بالهايلايت.": "Limit reached: 30 stories in highlights.",
+  "موجودة أصلاً بهالهايلايت.": "Already in this highlight.",
+  "انضافت لأبرز القصص ✓": "Added to highlights ✓",
+  "ثبّت بأبرز القصص": "Add to highlights",
+  "اسم جديد، مثلاً «سنة أولى»": "New name, e.g. \"First year\"",
+  "هايلايت جديد": "New highlight",
 };

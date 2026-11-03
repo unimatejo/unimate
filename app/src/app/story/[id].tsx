@@ -1,7 +1,7 @@
 import { Image } from 'expo-image';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useVideoPlayer, VideoView } from 'expo-video';
-import { Eye, Heart, Send, Trash2, X } from 'lucide-react-native';
+import { Eye, Heart, Plus, Send, Star, Trash2, X } from 'lucide-react-native';
 import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, Modal, Pressable, ScrollView, TextInput, View } from 'react-native';
 import Animated, { Easing, FadeIn, FadeInDown, cancelAnimation, runOnJS, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
@@ -28,7 +28,7 @@ function StoryVideo({ uri, onEnd }: { uri: string; onEnd: () => void }) {
 
 /** Instagram-style story viewer: tap sides to move, hold to pause, video plays to the end, your own story shows who viewed it. */
 export default function StoryViewer() {
-  const { id } = useLocalSearchParams<{ id: string }>(); // author id
+  const { id, highlight } = useLocalSearchParams<{ id: string; highlight?: string }>(); // author id, optional highlight
   const { profile } = useAuth();
   const mine = profile?.id === id;
   const [author, setAuthor] = useState<{ full_name: string; avatar_url: string | null } | null>(null);
@@ -39,14 +39,45 @@ export default function StoryViewer() {
   const [reply, setReply] = useState('');
   const [viewers, setViewers] = useState<Viewer[]>([]);
   const [showViewers, setShowViewers] = useState(false);
+  const [hlOpen, setHlOpen] = useState(false);
+  const [hls, setHls] = useState<{ id: string; title: string }[]>([]);
+  const [hlTitle, setHlTitle] = useState('');
+  const [hlName, setHlName] = useState<string | null>(null);
   const progress = useSharedValue(0);
   const bar = useAnimatedStyle(() => ({ width: `${progress.value * 100}%` }));
 
   useEffect(() => {
     supabase.from('profiles').select('full_name, avatar_url').eq('id', id).single().then(({ data }) => setAuthor(data));
+    if (highlight) {
+      supabase.from('highlights').select('title').eq('id', highlight).single().then(({ data }) => setHlName(data?.title ?? null));
+      supabase.from('highlight_items').select('added_at, s:stories(id, media_url, kind, caption, created_at, duration_sec)').eq('highlight_id', highlight).order('added_at')
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        .then(({ data }) => { const list = ((data ?? []) as any[]).map((x) => x.s).filter(Boolean) as S[]; setItems(list); if (list.length === 0) router.back(); });
+      return;
+    }
     supabase.from('stories').select('id, media_url, kind, caption, created_at, duration_sec').eq('author_id', id).gt('expires_at', new Date().toISOString()).order('created_at')
       .then(({ data }) => { const list = (data ?? []) as S[]; setItems(list); if (list.length === 0) router.back(); });
-  }, [id]);
+  }, [id, highlight]);
+
+  async function openHighlights() {
+    pause();
+    const { data } = await supabase.from('highlights').select('id, title').eq('owner_id', profile?.id ?? '').order('position');
+    setHls(data ?? []); setHlTitle(''); setHlOpen(true);
+  }
+  async function addTo(hid: string | null) {
+    if (!s) return;
+    let target = hid;
+    if (!target) {
+      if (hlTitle.trim().length < 1) { Alert.alert(t('سمّي الهايلايت')); return; }
+      const { data, error } = await supabase.from('highlights').insert({ owner_id: profile?.id ?? '', title: hlTitle.trim().slice(0, 30), cover_url: s.media_url }).select('id').single();
+      if (error || !data) { Alert.alert(t('ما زبط'), t('جرّب كمان مرة.')); return; }
+      target = data.id;
+    }
+    const { error } = await supabase.from('highlight_items').insert({ highlight_id: target, story_id: s.id });
+    setHlOpen(false); resume();
+    if (error) Alert.alert(t('ما زبط'), error.message.includes('limit') ? t('وصلت الحد: 30 قصة بالهايلايت.') : error.message.includes('duplicate') ? t('موجودة أصلاً بهالهايلايت.') : t('جرّب كمان مرة.'));
+    else Alert.alert(t('انضافت لأبرز القصص ✓'));
+  }
 
   const next = useCallback(() => {
     setI((x) => { if (items && x + 1 >= items.length) { router.back(); return x; } return x + 1; });
@@ -124,11 +155,12 @@ export default function StoryViewer() {
           <Tap onPress={() => router.push({ pathname: '/user/[id]', params: { id } })} style={{ flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1 }}>
             <Avatar id={id} name={author?.full_name} url={author?.avatar_url} size={40} />
             <View style={{ flex: 1 }}>
-              <T v="bold" color={C.white}>{mine ? t('قصتك') : author?.full_name}</T>
+              <T v="bold" color={C.white}>{hlName ?? (mine ? t('قصتك') : author?.full_name)}</T>
               {s && <T v="tiny" color="#E3E7F5">{timeAgo(s.created_at)}</T>}
             </View>
           </Tap>
-          {mine && <Tap onPress={remove} accessibilityLabel={t('احذف القصة')} style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}><Trash2 size={22} color={C.white} /></Tap>}
+          {mine && !highlight && s?.kind === 'image' && <Tap onPress={openHighlights} accessibilityLabel={t('ثبّت بأبرز القصص')} style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}><Star size={22} color={C.white} /></Tap>}
+          {mine && !highlight && <Tap onPress={remove} accessibilityLabel={t('احذف القصة')} style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}><Trash2 size={22} color={C.white} /></Tap>}
           <Tap onPress={() => router.back()} accessibilityLabel={t('إغلاق')} style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}><X size={26} color={C.white} /></Tap>
         </Row>
       </SafeAreaView>
@@ -153,6 +185,23 @@ export default function StoryViewer() {
           </Row>
         )}
       </SafeAreaView>
+
+      <Modal visible={hlOpen} transparent animationType="slide" onRequestClose={() => { setHlOpen(false); resume(); }}>
+        <Pressable style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.4)' }} onPress={() => { setHlOpen(false); resume(); }} />
+        <View style={{ backgroundColor: C.card, borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: 18, gap: 12, paddingBottom: 40 }}>
+          <T v="h3">{t('ثبّت بأبرز القصص')}</T>
+          {hls.map((h) => (
+            <Tap key={h.id} onPress={() => addTo(h.id)} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 50, paddingHorizontal: 12, borderRadius: 16, backgroundColor: C.soft }}>
+              <Star size={18} color={C.orange} fill={C.orange} /><T v="bodyMd">{h.title}</T>
+            </Tap>
+          ))}
+          <Row gap={8}>
+            <TextInput value={hlTitle} onChangeText={setHlTitle} maxLength={30} placeholder={t('اسم جديد، مثلاً «سنة أولى»')} placeholderTextColor={C.faint} keyboardAppearance={isDark ? 'dark' : 'light'}
+              style={{ flex: 1, minHeight: 48, borderRadius: 16, backgroundColor: C.field, paddingHorizontal: 14, fontFamily: F.body, fontSize: 15, color: C.ink, textAlign: ta }} />
+            <Tap onPress={() => addTo(null)} accessibilityLabel={t('هايلايت جديد')} style={{ width: 48, height: 48, borderRadius: 16, backgroundColor: C.primary, alignItems: 'center', justifyContent: 'center' }}><Plus size={22} color={C.white} /></Tap>
+          </Row>
+        </View>
+      </Modal>
 
       <Modal visible={showViewers} transparent animationType="slide" onRequestClose={() => { setShowViewers(false); resume(); }}>
         <Pressable style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.4)' }} onPress={() => { setShowViewers(false); resume(); }} />
