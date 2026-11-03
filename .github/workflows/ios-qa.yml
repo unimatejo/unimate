@@ -49,7 +49,7 @@ jobs:
           xcrun simctl install $UDID "$APP"
           xcrun simctl spawn $UDID log stream --style compact --predicate 'process == "UniMate"' > out/device.log 2>&1 &
           alive() { pgrep -f "UniMate.app/UniMate" > /dev/null; }
-          shot() { sleep "$2"; xcrun simctl io $UDID screenshot --display=internal "$PWD/out/shots/$1.png" >> out/shots.log 2>&1; if alive; then echo "OK    $1 pid $(pgrep -f UniMate.app/UniMate | head -1)" | tee -a out/summary.txt; else echo "CRASH $1" | tee -a out/summary.txt; xcrun simctl launch $UDID jo.unimate.app > /dev/null; sleep 12; fi; }
+          shot() { sleep "$2"; xcrun simctl io $UDID screenshot --display=1 "$PWD/out/shots/$1.png" >> out/shots.log 2>&1; if alive; then echo "OK    $1 pid $(pgrep -f UniMate.app/UniMate | head -1)" | tee -a out/summary.txt; else echo "CRASH $1" | tee -a out/summary.txt; xcrun simctl launch $UDID jo.unimate.app > /dev/null; sleep 12; fi; }
           # first launch turns on right-to-left, second launch uses it
           xcrun simctl launch $UDID jo.unimate.app; sleep 15; xcrun simctl terminate $UDID jo.unimate.app; sleep 2
           xcrun simctl launch $UDID jo.unimate.app; shot 00-login 15
@@ -58,7 +58,7 @@ jobs:
           while read -r r; do [ -z "$r" ] && continue; xcrun simctl openurl $UDID "unimate://$r"; shot "$(printf %02d $i)-${r//\//-}" 7; i=$((i+1)); done < qa/routes.txt
           xcrun simctl openurl $UDID "unimate://"; shot 90-home-again 6
           # real finger taps on each tab (idb)
-          brew tap facebook/fb > /dev/null 2>&1; brew install idb-companion > /dev/null 2>&1; pip3 install --break-system-packages fb-idb > /dev/null 2>&1 || pip3 install fb-idb > /dev/null 2>&1
+          brew tap facebook/fb > /dev/null 2>&1; brew install idb-companion > /dev/null 2>&1; sudo mkdir -p /usr/local/bin; sudo ln -sf "$(brew --prefix)/bin/idb_companion" /usr/local/bin/idb_companion; pip3 install --break-system-packages fb-idb > /dev/null 2>&1 || pip3 install fb-idb > /dev/null 2>&1
           read W H < <(python3 -c "import json,subprocess;d=json.loads(subprocess.check_output(['idb','describe','--udid','$UDID','--json']));s=d['screen_dimensions'];print(int(s['width_points']),int(s['height_points']))" 2>/dev/null || echo "402 874")
           echo "screen $W x $H" | tee -a out/summary.txt
           for i in 0 1 2 3 4 0 4 2; do X=$(( W * (2*i+1) / 10 )); Y=$(( H - 52 )); idb ui tap --udid $UDID $X $Y >> out/idb.log 2>&1; shot "91-tap-$i" 4; done
