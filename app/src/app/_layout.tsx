@@ -12,6 +12,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { AuthProvider, useAuth } from '@/lib/auth';
 import { installGlobalErrorHandler, reportError, setScreen } from '@/lib/errors';
+import { runQaLaunchArgs } from '@/lib/qa';
 import { C } from '@/lib/theme';
 
 SplashScreen.preventAutoHideAsync();
@@ -75,6 +76,7 @@ export default function RootLayout() {
     Rubik_400Regular, Rubik_500Medium, Rubik_600SemiBold,
   });
   useEffect(() => { if (loaded) SplashScreen.hideAsync(); }, [loaded]);
+  useEffect(() => { if (loaded) runQaLaunchArgs().catch(() => {}); }, [loaded]);
   if (!loaded) return null;
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>

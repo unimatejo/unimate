@@ -53,15 +53,11 @@ jobs:
           # first launch turns on right-to-left, second launch uses it
           xcrun simctl launch $UDID jo.unimate.app; sleep 15; xcrun simctl terminate $UDID jo.unimate.app; sleep 2
           xcrun simctl launch $UDID jo.unimate.app; shot 00-login 15
-          xcrun simctl openurl $UDID "unimate://callback?token_hash=$(cat qa/token.txt)&type=magiclink"; shot 01-after-login 15
+          TOK=$(cat qa/token.txt)
+          go() { xcrun simctl terminate $UDID jo.unimate.app > /dev/null 2>&1; sleep 1; xcrun simctl launch $UDID jo.unimate.app -qaToken "$TOK" -qaRoute "$2" > /dev/null; shot "$1" 10; }
+          go 01-home /
           i=2
-          while read -r r; do [ -z "$r" ] && continue; xcrun simctl openurl $UDID "unimate://$r"; shot "$(printf %02d $i)-${r//\//-}" 7; i=$((i+1)); done < qa/routes.txt
-          xcrun simctl openurl $UDID "unimate://"; shot 90-home-again 6
-          # real finger taps on each tab (idb)
-          brew tap facebook/fb > /dev/null 2>&1; brew install idb-companion > /dev/null 2>&1; sudo mkdir -p /usr/local/bin; sudo ln -sf "$(brew --prefix)/bin/idb_companion" /usr/local/bin/idb_companion; pip3 install --break-system-packages fb-idb > /dev/null 2>&1 || pip3 install fb-idb > /dev/null 2>&1
-          read W H < <(python3 -c "import json,subprocess;d=json.loads(subprocess.check_output(['idb','describe','--udid','$UDID','--json']));s=d['screen_dimensions'];print(int(s['width_points']),int(s['height_points']))" 2>/dev/null || echo "402 874")
-          echo "screen $W x $H" | tee -a out/summary.txt
-          for i in 0 1 2 3 4 0 4 2; do X=$(( W * (2*i+1) / 10 )); Y=$(( H - 52 )); idb ui tap --udid $UDID $X $Y >> out/idb.log 2>&1; shot "91-tap-$i" 4; done
+          while read -r r; do [ -z "$r" ] && continue; go "$(printf %02d $i)-${r//\//-}" "/$r"; i=$((i+1)); done < qa/routes.txt
           mkdir -p out/crashes; cp ~/Library/Logs/DiagnosticReports/UniMate* out/crashes/ 2>/dev/null; ls out/crashes | tee -a out/summary.txt
           exit 0
       - name: Publish results

@@ -14,3 +14,10 @@ settings/edit-profile
 swap
 study
 post/new
+settings/close-friends
+settings/blocked
+settings/support
+settings/legal
+event/new
+messages/requests
+section/lost_found
