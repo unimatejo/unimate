@@ -3,6 +3,9 @@
 name: iOS IPA
 on:
   workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ['app/**', '.github/workflows/ios-ipa.yml']
 jobs:
   build:
     runs-on: macos-15
