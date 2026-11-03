@@ -131,7 +131,7 @@ export default function Welcome() {
           <Row>
             {step > 0 ? <Tap onPress={() => setStep(step - 1)} style={{ minHeight: 36, justifyContent: 'center' }}><T v="bold" color={C.primary}>{t('رجوع')}</T></Tap> : <View />}
             <View style={{ flex: 1 }} />
-            <T v="tiny" color={C.muted}>{step + 1} {t('من')} {STEPS.length}</T>
+            <T v="tiny" color={C.muted}>{t('{0} من {1}', [step + 1, STEPS.length])}</T>
           </Row>
         </View>
         <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ flexGrow: 1, padding: 22, gap: 18 }}>
@@ -233,7 +233,7 @@ export default function Welcome() {
 
           <View style={{ marginTop: 'auto', gap: 8 }}>
             <Button title={step === 4 ? t('خلصنا، يلا نبلش') : t('التالي')} loading={saving} disabled={step === 0 && auto < 4}
-              icon={step < 4 ? <ChevronLeft size={18} color={C.white} style={flip} /> : <Check size={18} color={C.white} />} onPress={next} />
+              iconEnd icon={step < 4 ? <ChevronLeft size={18} color={C.white} style={flip} /> : <Check size={18} color={C.white} />} onPress={next} />
             {step === 4 && <T v="tiny" color={C.muted} style={{ textAlign: 'center', fontFamily: F.body }}>{t('بتقدر تعدّل كل إشي بعدين، إلا اليوزر.')}</T>}
           </View>
         </ScrollView>

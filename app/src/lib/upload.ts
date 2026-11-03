@@ -62,6 +62,33 @@ export async function pickPdf(): Promise<{ uri: string; mime: string; name: stri
   return { uri: a.uri, mime: 'application/pdf', name: a.name ?? t('ملف.pdf'), size: a.size ?? null };
 }
 
+/** Pick up to `max` photos at once (posts with several photos). Each is resized to JPEG. */
+export async function pickPhotos(max = 10): Promise<Picked[]> {
+  const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+  if (!perm.granted) {
+    Alert.alert(t('الصور مسكّرة'), t('افتح الإعدادات واسمح ليونيميت يوصل للصور والكاميرا.'), [
+      { text: t('لاحقاً'), style: 'cancel' }, { text: t('افتح الإعدادات'), onPress: () => Linking.openSettings() },
+    ]);
+    return [];
+  }
+  const res = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], allowsMultipleSelection: true, selectionLimit: max, orderedSelection: true, quality: 0.85 });
+  if (res.canceled) return [];
+  const out: Picked[] = [];
+  for (const a of res.assets.slice(0, max)) {
+    try {
+      const ctx = ImageManipulator.manipulate(a.uri);
+      if ((a.width ?? 0) > 1440) ctx.resize({ width: 1440 });
+      const img = await ctx.renderAsync();
+      const o = await img.saveAsync({ compress: 0.82, format: SaveFormat.JPEG });
+      out.push({ uri: o.uri, mime: 'image/jpeg', kind: 'image', width: o.width, height: o.height });
+    } catch (e) {
+      reportError(e);
+      out.push({ uri: a.uri, mime: a.mimeType ?? 'image/jpeg', kind: 'image', width: a.width, height: a.height });
+    }
+  }
+  return out;
+}
+
 async function readBytes(uri: string): Promise<ArrayBuffer> {
   if (Platform.OS === 'web') return (await fetch(uri)).arrayBuffer();
   return new File(uri).arrayBuffer();

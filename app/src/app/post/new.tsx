@@ -10,7 +10,7 @@ import { Avatar, Button, Chip, Row, Screen, Segmented, T, Tap } from '@/componen
 import { useAuth } from '@/lib/auth';
 import { supabase } from '@/lib/supabase';
 import { C, CATEGORY, F, isDark } from '@/lib/theme';
-import { pickMedia, pickPdf, uploadFile, type Picked } from '@/lib/upload';
+import { pickMedia, pickPdf, pickPhotos, uploadFile, type Picked } from '@/lib/upload';
 import { t, ta } from '@/lib/i18n';
 
 const POST_AUD = [['university', t('الجامعة')], ['college', t('كليتي')], ['major', t('تخصصي')], ['friends', t('أصدقائي')]] as const;
@@ -27,6 +27,7 @@ export default function NewPost() {
   const [cat, setCat] = useState(params.category ?? 'square');
   const [aud, setAud] = useState(0);
   const [media, setMedia] = useState<Picked | null>(null);
+  const [photos, setPhotos] = useState<Picked[]>([]);
   const [busy, setBusy] = useState(false);
   const [pdf, setPdf] = useState<{ uri: string; mime: string; name: string; size: number | null } | null>(null);
   const [poll, setPoll] = useState<string[] | null>(null);
@@ -44,7 +45,7 @@ export default function NewPost() {
       if (isPost) {
         const opts = poll?.map((o) => o.trim()).filter(Boolean) ?? null;
         if (poll && (!body.trim() || (opts?.length ?? 0) < 2)) { Alert.alert(t('الاستطلاع'), t('اكتب السؤال فوق وخيارين على الأقل.')); setBusy(false); return; }
-        if (!body.trim() && !media && !pdf) { Alert.alert(t('اكتب إشي أو ضيف صورة أو ملف')); setBusy(false); return; }
+        if (!body.trim() && !media && !photos.length && !pdf) { Alert.alert(t('اكتب إشي أو ضيف صورة أو ملف')); setBusy(false); return; }
         const { data: post, error } = await supabase.from('posts').insert({
           author_id: (profile?.id ?? ''), university_id: profile.university_id, community_id: params.community ?? null,
           category: cat, audience: params.community ? 'community' : POST_AUD[aud][0],
@@ -54,10 +55,9 @@ export default function NewPost() {
           poll: opts && opts.length >= 2 ? { options: opts.slice(0, 4) } : null,
         }).select('id').single();
         if (error) throw error;
-        if (media) {
-          const path = await uploadFile('posts', (profile?.id ?? ''), media);
-          await supabase.from('post_media').insert({ post_id: post.id, kind: 'image', url: path, size_bytes: media.size ?? null });
-        }
+        const all = [...(media ? [media] : []), ...photos];
+        const paths = await Promise.all(all.map((m) => uploadFile('posts', (profile?.id ?? ''), m)));
+        if (paths.length) await supabase.from('post_media').insert(paths.map((url, i) => ({ post_id: post.id, kind: 'image', url, position: i + 2 })));
         if (pdf) {
           const path = await uploadFile('posts', (profile?.id ?? ''), pdf);
           await supabase.from('post_media').insert({ post_id: post.id, kind: 'file', url: path, file_name: pdf.name, size_bytes: pdf.size, position: 1 });
@@ -83,7 +83,7 @@ export default function NewPost() {
     <Screen bg={C.card}>
       <Row gap={8} style={{ paddingHorizontal: 12, paddingVertical: 8 }}>
         <Tap onPress={() => router.back()} accessibilityLabel={t('إلغاء')} style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}><X size={24} color={C.ink} /></Tap>
-        <View style={{ flex: 1 }}><Segmented items={[t('منشور'), t('ستوري')]} value={mode} onChange={(i) => { setMode(i); setAud(0); setMedia(null); }} /></View>
+        <View style={{ flex: 1 }}><Segmented items={[t('منشور'), t('ستوري')]} value={mode} onChange={(i) => { setMode(i); setAud(0); setMedia(null); setPhotos([]); }} /></View>
         <Button title={isPost ? t('نشر') : t('شارك')} loading={busy} onPress={publish} style={{ minHeight: 42, borderRadius: 14, paddingHorizontal: 18 }} />
       </Row>
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
@@ -105,6 +105,18 @@ export default function NewPost() {
               <Image source={{ uri: media.uri }} style={{ flex: 1 }} contentFit="cover" />
               <Tap onPress={() => setMedia(null)} accessibilityLabel={t('شيل الصورة')} style={{ position: 'absolute', top: 10, left: 10, width: 36, height: 36, borderRadius: 18, backgroundColor: 'rgba(14,20,48,0.6)', alignItems: 'center', justifyContent: 'center' }}><X size={18} color={C.white} /></Tap>
             </Animated.View>
+          )}
+
+          {isPost && photos.length > 0 && (
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
+              {photos.map((ph, i) => (
+                <Animated.View key={ph.uri} entering={FadeIn} style={{ width: 130, height: 160, borderRadius: 18, overflow: 'hidden', backgroundColor: C.soft }}>
+                  <Image source={{ uri: ph.uri }} style={{ flex: 1 }} contentFit="cover" />
+                  <Tap onPress={() => setPhotos((cur) => cur.filter((_, j) => j !== i))} accessibilityLabel={t('شيل الصورة')} style={{ position: 'absolute', top: 6, left: 6, width: 30, height: 30, borderRadius: 15, backgroundColor: 'rgba(14,20,48,0.6)', alignItems: 'center', justifyContent: 'center' }}><X size={15} color={C.white} /></Tap>
+                  <View style={{ position: 'absolute', bottom: 6, right: 6, minWidth: 22, height: 22, borderRadius: 11, backgroundColor: 'rgba(14,20,48,0.6)', alignItems: 'center', justifyContent: 'center' }}><T v="tiny" color="#fff">{i + 1}</T></View>
+                </Animated.View>
+              ))}
+            </ScrollView>
           )}
 
           {isPost && pdf && (
@@ -130,7 +142,7 @@ export default function NewPost() {
 
           <Row gap={8}>
             {((isPost ? [
-              [t('صورة'), ImageIcon, C.green, C.greenSoft, () => pick()],
+              [t('صور'), ImageIcon, C.green, C.greenSoft, async () => { const ps = await pickPhotos(10 - photos.length - (media ? 1 : 0)); if (ps.length) setPhotos((cur) => [...cur, ...ps].slice(0, 10)); }],
               [t('كاميرا'), Camera, C.pink, C.pinkSoft, () => pick(true)],
               [t('ملف PDF'), FileText, C.primary, C.primarySoft, async () => { const f = await pickPdf(); if (f) setPdf(f); }],
               [t('استطلاع'), BarChart3, C.violet, C.violetSoft, () => setPoll(poll ? null : ['', ''])],

@@ -2,7 +2,7 @@ import { router } from 'expo-router';
 import { BadgeCheck, Bookmark, FileText, MoreHorizontal, Heart, MessageCircle, Send } from 'lucide-react-native';
 import { useEffect, useState } from 'react';
 import * as WebBrowser from 'expo-web-browser';
-import { ActionSheetIOS, Alert, Platform, View } from 'react-native';
+import { ActionSheetIOS, Alert, Platform, ScrollView, View } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withSequence, withSpring, withTiming } from 'react-native-reanimated';
 import { Image } from 'expo-image';
 
@@ -17,7 +17,7 @@ import { timeAgo } from '@/lib/util';
 import { nm, t } from '@/lib/i18n';
 
 /** Post photo: one tap opens it full screen, double tap likes (like Instagram). */
-function Photo({ path, onDoubleTap }: { path: string; onDoubleTap: () => void }) {
+function Photo({ path, onDoubleTap, width }: { path: string; onDoubleTap: () => void; width?: number }) {
   const [uri, setUri] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
   const [lastTap, setLastTap] = useState(0);
@@ -40,7 +40,7 @@ function Photo({ path, onDoubleTap }: { path: string; onDoubleTap: () => void })
   return (
     <>
       <Tap haptic={false} scale={0.99} throttle={0} onPress={press} accessibilityLabel={t('افتح الصورة')}
-        style={{ marginHorizontal: 10, height: 260, borderRadius: 20, backgroundColor: C.primarySoft, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' }}>
+        style={width ? { width, height: 300, backgroundColor: C.primarySoft, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' } : { marginHorizontal: 10, height: 260, borderRadius: 20, backgroundColor: C.primarySoft, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' }}>
         {uri && <Image source={{ uri }} style={{ position: 'absolute', top: 0, bottom: 0, left: 0, right: 0 }} contentFit="cover" transition={200} />}
         <Animated.View style={burstStyle} pointerEvents="none"><Heart size={90} color="#fff" fill="#fff" /></Animated.View>
       </Tap>
@@ -91,6 +91,28 @@ function Poll({ postId, options }: { postId: string; options: string[] }) {
         );
       })}
       <T v="tiny" color={C.muted}>{total} {t('صوت')}{mine == null ? t(' · اكبس على خيار لتصوّت') : ''}</T>
+    </View>
+  );
+}
+
+/** Several photos: swipe between them like Instagram, with dots and a 1/n counter. */
+function Photos({ paths, onDoubleTap }: { paths: string[]; onDoubleTap: () => void }) {
+  const [w, setW] = useState(0);
+  const [i, setI] = useState(0);
+  if (paths.length === 1) return <Photo path={paths[0]} onDoubleTap={onDoubleTap} />;
+  return (
+    <View style={{ marginHorizontal: 10, borderRadius: 20, overflow: 'hidden' }} onLayout={(e) => setW(e.nativeEvent.layout.width)}>
+      {w > 0 && (
+        <ScrollView horizontal pagingEnabled showsHorizontalScrollIndicator={false} onMomentumScrollEnd={(e) => setI(Math.round(Math.abs(e.nativeEvent.contentOffset.x) / w))}>
+          {paths.map((p) => <Photo key={p} path={p} onDoubleTap={onDoubleTap} width={w} />)}
+        </ScrollView>
+      )}
+      <View style={{ position: 'absolute', top: 10, right: 10, paddingHorizontal: 9, paddingVertical: 3, borderRadius: 10, backgroundColor: 'rgba(0,0,0,0.5)' }}>
+        <T v="tiny" color="#fff">{i + 1}/{paths.length}</T>
+      </View>
+      <View style={{ position: 'absolute', bottom: 10, left: 0, right: 0, flexDirection: 'row', justifyContent: 'center', gap: 5 }}>
+        {paths.map((p, k) => <View key={p} style={{ width: k === i ? 16 : 6, height: 6, borderRadius: 3, backgroundColor: k === i ? '#fff' : 'rgba(255,255,255,0.55)' }} />)}
+      </View>
     </View>
   );
 }
@@ -158,7 +180,7 @@ export function PostCard({ post, onLikes, compact, detail }: { post: Post; onLik
         </Tap>
       </Row>
 
-      {images[0] && <Photo path={images[0].url} onDoubleTap={() => { if (!p.liked) like(); }} />}
+      {images.length > 0 && <Photos paths={images.map((m) => m.url)} onDoubleTap={() => { if (!p.liked) like(); }} />}
       <Tap scale={0.99} haptic={false} disabled={detail} onPress={() => router.push({ pathname: '/post/[id]', params: { id: p.id } })}>
         <View style={{ paddingHorizontal: 16, paddingTop: 10, gap: 4 }}>
           {p.title ? <T v="h3">{p.title}</T> : null}

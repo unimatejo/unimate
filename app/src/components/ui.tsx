@@ -70,9 +70,9 @@ export function Tap({ children, style, onPress, haptic = true, scale = 0.96, thr
 }
 
 // ---------- buttons ----------
-export function Button({ title, onPress, kind = 'primary', loading, disabled, icon, style }: {
+export function Button({ title, onPress, kind = 'primary', loading, disabled, icon, iconEnd, style }: {
   title: string; onPress?: () => void; kind?: 'primary' | 'dark' | 'soft' | 'ghost' | 'danger' | 'green' | 'white';
-  loading?: boolean; disabled?: boolean; icon?: ReactNode; style?: StyleProp<ViewStyle>;
+  loading?: boolean; disabled?: boolean; icon?: ReactNode; iconEnd?: boolean; style?: StyleProp<ViewStyle>;
 }) {
   const bg = { primary: C.primary, dark: C.inverse, soft: C.primarySoft, ghost: 'transparent', danger: C.danger, green: C.green, white: C.card }[kind];
   const fg = { primary: C.white, dark: C.onInverse, soft: C.primary, ghost: C.primary, danger: C.white, green: C.white, white: C.ink }[kind];
@@ -86,8 +86,9 @@ export function Button({ title, onPress, kind = 'primary', loading, disabled, ic
     >
       {loading ? <ActivityIndicator color={fg} /> : (
         <>
-          {icon}
+          {!iconEnd && icon}
           <Text style={{ fontFamily: F.bodyBold, fontSize: 16, color: disabled ? C.muted : fg }}>{title}</Text>
+          {iconEnd && icon}
         </>
       )}
     </Tap>
