@@ -37,6 +37,8 @@ jobs:
           cache: npm
           cache-dependency-path: app/package-lock.json
       - run: npm ci 2>&1 | tee ../out/npm.log | tail -20
+      - name: Let expo-modules-jsi build with the Xcode on the runner (its sources target a newer Swift)
+        run: sed -i '' 's/swiftLanguageModes: \[\.v6\]/swiftLanguageModes: [.v5]/' node_modules/expo-modules-jsi/apple/Package.swift && grep -n swiftLanguageModes node_modules/expo-modules-jsi/apple/Package.swift
       - run: npx expo prebuild --platform ios --clean 2>&1 | tee ../out/prebuild.log
       - name: Pods
         run: cd ios && pod install 2>&1 | tee ../../out/pods.log | tail -30
@@ -44,7 +46,7 @@ jobs:
         run: |
           ls ios
           xcodebuild -workspace ios/UniMate.xcworkspace -scheme UniMate -configuration Release -sdk iphoneos -destination 'generic/platform=iOS' \
-            -derivedDataPath build CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" SWIFT_VERSION=5.0 SWIFT_STRICT_CONCURRENCY=minimal > ../out/xcodebuild.log 2>&1 \
+            -derivedDataPath build CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" > ../out/xcodebuild.log 2>&1 \
             || { grep -E "error:|\*\* BUILD" ../out/xcodebuild.log | head -80; tail -60 ../out/xcodebuild.log; exit 1; }
           tail -5 ../out/xcodebuild.log
       - name: Package .ipa
