@@ -116,7 +116,7 @@ export default function Chat() {
       [m.is_saved ? t('إلغاء الحفظ') : t('احفظ بالمحادثة'), () => toggleSave(m)],
       ...(mineMsg ? [[t('إلغاء الإرسال'), async () => {
         setMsgs((cur) => cur.filter((x) => x.id !== m.id));
-        await supabase.from('messages').update({ deleted_at: new Date().toISOString() }).eq('id', m.id);
+        await supabase.rpc('unsend_message', { msg: m.id });
       }] as [string, () => void]] : [[t('إبلاغ'), () => router.push({ pathname: '/report', params: { type: 'conversation', id, user: m.sender_id ?? '' } })] as [string, () => void]]),
     ];
     if (Platform.OS === 'ios') ActionSheetIOS.showActionSheetWithOptions({ options: [...opts.map((o) => o[0]), t('إلغاء')], cancelButtonIndex: opts.length, destructiveButtonIndex: opts.length - 1 }, (i) => opts[i]?.[1]());
