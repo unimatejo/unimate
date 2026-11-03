@@ -62,8 +62,8 @@ export default function CallScreen() {
         <T style={{ fontFamily: F.display, fontSize: 28, marginTop: 26 }} color={C.white}>{name}</T>
         <T v="body" color="#C9D1F0" style={{ marginTop: 6 }}>{label}</T>
         <View style={{ marginTop: 'auto', flexDirection: 'row', gap: 22 }}>
-          <Tap onPress={() => setMuted((m) => !m)} accessibilityLabel={muted ? t('إلغاء الكتم') : t('كتم')} style={{ width: 64, height: 64, borderRadius: 32, backgroundColor: muted ? C.card : 'rgba(255,255,255,0.14)', alignItems: 'center', justifyContent: 'center' }}>
-            {muted ? <MicOff size={26} color={C.ink} /> : <Mic size={26} color={C.white} />}
+          <Tap onPress={() => setMuted((m) => !m)} accessibilityLabel={muted ? t('إلغاء الكتم') : t('كتم')} style={{ width: 64, height: 64, borderRadius: 32, backgroundColor: muted ? '#FFFFFF' : 'rgba(255,255,255,0.14)', alignItems: 'center', justifyContent: 'center' }}>
+            {muted ? <MicOff size={26} color="#0E1430" /> : <Mic size={26} color={C.white} />}
           </Tap>
           <Tap accessibilityLabel={t('كاميرا')} style={{ width: 64, height: 64, borderRadius: 32, backgroundColor: 'rgba(255,255,255,0.14)', alignItems: 'center', justifyContent: 'center' }}>
             <Video size={28} color={C.white} />

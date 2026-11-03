@@ -97,8 +97,8 @@ export default function Home() {
                 </View>
                 <Row gap={8}>
                   <Tap onPress={() => router.push({ pathname: '/map', params: { building: nxt.building_id ?? '' } })}
-                    style={{ flex: 1, minHeight: 48, borderRadius: 16, backgroundColor: C.card, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-                    <Navigation size={18} color={C.ink} /><T v="bold">{t('وديني عالقاعة')}</T>
+                    style={{ flex: 1, minHeight: 48, borderRadius: 16, backgroundColor: '#FFFFFF', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+                    <Navigation size={18} color="#0E1430" /><T v="bold" color="#0E1430">{t('وديني عالقاعة')}</T>
                   </Tap>
                   <Tap onPress={() => router.push('/(tabs)/schedule')} accessibilityLabel={t('جدول اليوم')}
                     style={{ width: 48, minHeight: 48, borderRadius: 16, backgroundColor: 'rgba(255,255,255,0.14)', alignItems: 'center', justifyContent: 'center' }}>
@@ -110,8 +110,8 @@ export default function Home() {
               <View style={{ gap: 8 }}>
                 <T v="h2" color={C.white}>{t('جدولك بيطلع هون')}</T>
                 <T v="small" color="#C9D1F0">{t('أول ما تنضاف موادك من حسابك الجامعي، بتشوف محاضرتك الجاية مع العد التنازلي والقاعة.')}</T>
-                <Tap onPress={() => router.push('/(tabs)/schedule')} style={{ alignSelf: 'flex-start', marginTop: 6, minHeight: 44, paddingHorizontal: 16, borderRadius: 14, backgroundColor: C.card, justifyContent: 'center' }}>
-                  <T v="bold">{t('افتح الجدول')}</T>
+                <Tap onPress={() => router.push('/(tabs)/schedule')} style={{ alignSelf: 'flex-start', marginTop: 6, minHeight: 44, paddingHorizontal: 16, borderRadius: 14, backgroundColor: '#FFFFFF', justifyContent: 'center' }}>
+                  <T v="bold" color="#0E1430">{t('افتح الجدول')}</T>
                 </Tap>
               </View>
             )}

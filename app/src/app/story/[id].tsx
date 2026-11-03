@@ -116,7 +116,7 @@ export default function StoryViewer() {
         <Row gap={4} style={{ marginTop: 6 }}>
           {(items ?? []).map((it, k) => (
             <View key={it.id} style={{ flex: 1, height: 3, borderRadius: 2, backgroundColor: 'rgba(255,255,255,0.3)', overflow: 'hidden' }}>
-              {k < i ? <View style={{ flex: 1, backgroundColor: C.card }} /> : k === i ? <Animated.View style={[{ height: 3, backgroundColor: C.card }, bar]} /> : null}
+              {k < i ? <View style={{ flex: 1, backgroundColor: '#FFFFFF' }} /> : k === i ? <Animated.View style={[{ height: 3, backgroundColor: '#FFFFFF' }, bar]} /> : null}
             </View>
           ))}
         </Row>

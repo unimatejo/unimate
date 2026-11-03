@@ -210,8 +210,8 @@ export function Toggle({ value, onChange, label, hint, icon }: { value: boolean;
         <T v="bodyMd">{label}</T>
         {hint && <T v="small" color={C.muted}>{hint}</T>}
       </View>
-      <View style={{ width: 50, height: 30, borderRadius: 15, backgroundColor: value ? C.primary : C.line, justifyContent: 'center', paddingHorizontal: 3, alignItems: 'flex-start' }}>
-        <Animated.View style={[{ width: 24, height: 24, borderRadius: 12, backgroundColor: C.card }, shadow, x]} />
+      <View style={{ width: 50, height: 30, borderRadius: 15, backgroundColor: value ? C.primary : isDark ? '#3A3D48' : '#DDE1EC', justifyContent: 'center', paddingHorizontal: 3, alignItems: 'flex-start' }}>
+        <Animated.View style={[{ width: 24, height: 24, borderRadius: 12, backgroundColor: '#FFFFFF' }, shadow, x]} />
       </View>
     </Pressable>
   );
