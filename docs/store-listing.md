@@ -19,7 +19,9 @@ UniMate is the student app for Jordanian universities. Sign in with your univers
 - Groups for every course, major and college, joined automatically.
 - Messages without phone numbers: requests from people you don't follow, disappearing messages, view-once photos and screenshot protection.
 - Section swap and study buddy: find a classmate who wants the opposite section or wants to study the same course.
-- Stories, posts, likes, comments, close friends and highlights.
+- Stories, posts with several photos, likes, comments, polls, PDF summaries, close friends and highlights.
+- Instagram-style inbox: chats, message requests, and automatic groups for your college, major and cohort.
+- Light and dark mode, Arabic and English (follows your phone or your choice).
 
 Only students with a university email can join. Report and block are one tap away, and every report is reviewed.
 
@@ -32,7 +34,9 @@ Only students with a university email can join. Report and block are one tap awa
 - جروب لكل مادة وتخصص وكلية، بتنضملها تلقائياً.
 - رسائل بدون أرقام جوال: طلبات من اللي ما بتتابعهم، رسائل بتختفي، صور لمرة وحدة، وحماية من لقطة الشاشة.
 - تبديل الشعب وندرس سوا: لاقي زميل بده الشعبة العكس أو بده يدرس نفس المادة.
-- ستوري، منشورات، لايكات، تعليقات، أصدقاء مقربين، وهايلايت.
+- ستوري، منشورات بأكثر من صورة، لايكات، تعليقات، استطلاعات، ملخصات PDF، أصدقاء مقربين، وهايلايت.
+- رسائل زي إنستغرام: محادثات، طلبات مراسلة، وجروبات تلقائية لكليتك وتخصصك ودفعتك.
+- وضع فاتح وغامق، عربي وإنجليزي (حسب تلفونك أو اختيارك).
 
 بس طلاب الجامعات بإيميل جامعي بيقدروا يدخلوا. البلاغ والحظر بكبسة، وكل بلاغ بتراجعه الإدارة.
 

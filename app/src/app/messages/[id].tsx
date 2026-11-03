@@ -238,7 +238,7 @@ export default function Chat() {
           ListFooterComponent={
             <View style={{ alignItems: 'center', gap: 6, marginBottom: 10 }}>
               <Tap onPress={() => setSheet(true)} style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: C.card, paddingHorizontal: 12, paddingVertical: 7, borderRadius: 999 }}>
-                <Timer size={14} color={C.ink2} /><T v="tiny" color={C.ink2}>{t('الرسائل بتختفي من المحادثة')} {vanishLabel} {t('· بدون أرقام')}</T>
+                <Timer size={14} color={C.ink2} /><T v="tiny" color={C.ink2}>{conv?.vanish === 'never' ? t('الرسائل ما بتختفي') : t('الرسائل بتختفي {0}', [isAR ? vanishLabel : vanishLabel.toLowerCase()])} {t('· بدون أرقام')}</T>
               </Tap>
               {shield && <Row gap={6} style={{ backgroundColor: C.greenSoft, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 999 }}><ShieldCheck size={14} color={C.greenInk} /><T v="tiny" color={C.greenInk}>{t('محادثة محمية من التصوير')}</T></Row>}
             </View>

@@ -784,4 +784,6 @@ export const EN: Record<string, string> = {
   "يونيميت · الإصدار {0}": "UniMate · Version {0}",
   "صور": "Photos",
   "{0} من {1}": "{0} of {1}",
+  "الرسائل ما بتختفي": "Messages don't disappear",
+  "الرسائل بتختفي {0}": "Messages disappear {0}",
 };
