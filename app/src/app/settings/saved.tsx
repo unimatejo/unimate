@@ -11,6 +11,7 @@ import { supabase } from '@/lib/supabase';
 import { C } from '@/lib/theme';
 import type { Post } from '@/lib/types';
 import { t } from '@/lib/i18n';
+import { ListSkeleton } from '@/components/Skeleton';
 
 export default function Saved() {
   const { profile } = useAuth();
@@ -41,7 +42,7 @@ export default function Saved() {
         refreshControl={<RefreshControl refreshing={loading} onRefresh={load} />}
         contentContainerStyle={{ padding: 18, paddingTop: 4, gap: 14, paddingBottom: 60 }}
         renderItem={({ item }) => <PostCard post={item} onLikes={setLikesOf} compact />}
-        ListEmptyComponent={loading ? undefined : <Empty icon={<Bookmark size={28} color={C.primary} />} title={t('ما حفظت إشي')} body={t('اضغط علامة الحفظ على أي ملخص أو منشور وبيطلع هون.')} />}
+        ListEmptyComponent={loading ? <ListSkeleton n={3} kind="post" /> : <Empty icon={<Bookmark size={28} color={C.primary} />} title={t('ما حفظت إشي')} body={t('اضغط علامة الحفظ على أي ملخص أو منشور وبيطلع هون.')} />}
       />
       <LikesSheet post={likesOf} onClose={() => setLikesOf(null)} />
     </Screen>

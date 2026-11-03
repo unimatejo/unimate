@@ -1,19 +1,23 @@
 import { router, useFocusEffect } from 'expo-router';
-import { BadgeCheck, BookOpen, Flag, Lock, MessageCircle, Settings, Star } from 'lucide-react-native';
+import { BadgeCheck, BarChart3, BookOpen, FileText, Flag, Grid3x3, Lock, MessageCircle, Rows3, Settings, Star } from 'lucide-react-native';
 import { useCallback, useEffect, useState } from 'react';
 import { Alert, Linking, RefreshControl, ScrollView, View } from 'react-native';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 
+import { Image } from 'expo-image';
+import { LinearGradient } from 'expo-linear-gradient';
+
 import { LikesSheet } from './LikesSheet';
 import { InstagramGlyph, SnapGlyph } from './SocialGlyphs';
 import { PostCard } from './PostCard';
-import { Avatar, Button, Empty, IconButton, Row, Segmented, T, Tap } from './ui';
+import { Avatar, Button, Empty, IconButton, Row, T, Tap } from './ui';
 import { useAuth } from '@/lib/auth';
 import { POST_SELECT, withMine } from '@/lib/posts';
-import { supabase } from '@/lib/supabase';
+import { mediaUrl, supabase } from '@/lib/supabase';
 import { C, F } from '@/lib/theme';
 import type { Post, Profile } from '@/lib/types';
 import { nm, t, ta } from '@/lib/i18n';
+import { Bone } from './Skeleton';
 
 type Rel = 'none' | 'pending' | 'accepted';
 
@@ -23,6 +27,32 @@ export function openSocial(site: 'instagram' | 'snapchat', handle: string) {
   const app = site === 'instagram' ? `instagram://user?username=${h}` : `snapchat://add/${h}`;
   const web = site === 'instagram' ? `https://www.instagram.com/${h}/` : `https://www.snapchat.com/add/${h}`;
   Linking.openURL(app).catch(() => Linking.openURL(web).catch(() => Alert.alert(t('ما قدرنا نفتح الرابط'))));
+}
+
+const TILE_G: [string, string][] = [['#6E95FF', '#2E5BFF'], ['#FF8FB1', '#E0306B'], ['#5EE3A1', '#0E9F6E'], ['#FFB86B', '#FF6B2C'], ['#B794FF', '#7C3AED']];
+
+/** One square in the profile grid: the photo, or a colored card with the text. */
+function GridTile({ post, i }: { post: Post; i: number }) {
+  const img = (post.media ?? []).find((m) => m.kind === 'image');
+  const file = (post.media ?? []).some((m) => m.kind === 'file');
+  const [uri, setUri] = useState<string | null>(null);
+  useEffect(() => { if (img) mediaUrl('posts', img.url).then(setUri); }, [img]);
+  return (
+    <Tap haptic={false} scale={0.97} onPress={() => router.push({ pathname: '/post/[id]', params: { id: post.id } })} style={{ width: '33.333%', aspectRatio: 1, padding: 1.5 }} accessibilityLabel={post.title ?? post.body.slice(0, 40)}>
+      <View style={{ flex: 1, borderRadius: 6, overflow: 'hidden', backgroundColor: C.soft }}>
+        {img ? (uri ? <Image source={{ uri }} style={{ flex: 1 }} contentFit="cover" transition={150} /> : null) : (
+          <LinearGradient colors={TILE_G[i % TILE_G.length]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={{ flex: 1, padding: 8, justifyContent: 'center' }}>
+            <T v="tiny" color="#fff" numberOfLines={5} style={{ fontSize: 11, lineHeight: 16 }}>{post.title || post.body}</T>
+          </LinearGradient>
+        )}
+        {(file || post.poll) && (
+          <View style={{ position: 'absolute', top: 5, right: 5, width: 20, height: 20, borderRadius: 6, backgroundColor: 'rgba(0,0,0,0.35)', alignItems: 'center', justifyContent: 'center' }}>
+            {file ? <FileText size={12} color="#fff" /> : <BarChart3 size={12} color="#fff" />}
+          </View>
+        )}
+      </View>
+    </Tap>
+  );
 }
 
 export function ProfileView({ userId }: { userId: string }) {
@@ -36,6 +66,7 @@ export function ProfileView({ userId }: { userId: string }) {
   const [tab, setTab] = useState(0);
   const [likesOf, setLikesOf] = useState<Post | null>(null);
   const [loading, setLoading] = useState(true);
+  const [hasStory, setHasStory] = useState(false);
 
   const load = useCallback(async () => {
     if (!me) return;
@@ -50,6 +81,8 @@ export function ProfileView({ userId }: { userId: string }) {
       ]);
       setRel((f?.status as Rel) ?? 'none'); setFollowsMe(!!back); setIsClose(!!cf);
     }
+    const { count: sc } = await supabase.from('stories').select('id', { count: 'exact', head: true }).eq('author_id', userId).gt('expires_at', new Date().toISOString());
+    setHasStory((sc ?? 0) > 0);
     const { data: ps } = await supabase.from('posts').select(POST_SELECT).eq('author_id', userId).order('created_at', { ascending: false }).limit(30);
     setPosts(await withMine((ps ?? []) as unknown as Post[], me.id));
     setLoading(false);
@@ -76,11 +109,17 @@ export function ProfileView({ userId }: { userId: string }) {
     router.push({ pathname: '/messages/[id]', params: { id: data as string } });
   }
 
-  if (!p) return <View style={{ flex: 1 }} />;
+  if (!p) return (
+    <View style={{ flex: 1, padding: 18, gap: 16 }}>
+      <Row gap={16}><Bone w={86} h={86} r={43} /><View style={{ flex: 1, gap: 10 }}><Bone h={18} w="70%" /><Bone h={12} w="50%" /></View></Row>
+      <Bone h={16} w="40%" /><Bone h={12} w="60%" />
+      <Row gap={8}><Bone h={46} r={14} style={{ flex: 1 }} /><Bone h={46} r={14} style={{ flex: 1 }} /></Row>
+    </View>
+  );
   const canSee = mine || !p.is_private || rel === 'accepted';
   const friends = rel === 'accepted' && followsMe;
   const socialsVisible = mine || (p.socials_visible_to === 'everyone') || (p.socials_visible_to === 'friends' && friends) || (p.socials_visible_to === 'close_friends' && isClose);
-  const shown = tab === 0 ? posts : posts.filter((x) => x.category === 'summaries');
+  const shown = tab === 2 ? posts.filter((x) => x.category === 'summaries') : posts;
 
   return (
     <>
@@ -99,7 +138,13 @@ export function ProfileView({ userId }: { userId: string }) {
           </Row>
 
           <Row gap={16}>
-            <Avatar id={p.id} name={p.full_name} url={p.avatar_url} size={86} ring />
+            <Tap haptic={false} scale={0.95} disabled={!hasStory} onPress={() => router.push({ pathname: '/story/[id]', params: { id: p.id } })} accessibilityLabel={hasStory ? t('شوف قصته') : p.full_name}>
+              {hasStory ? (
+                <LinearGradient colors={['#FFB547', '#FF4F7B', '#7C3AED']} start={{ x: 0, y: 1 }} end={{ x: 1, y: 0 }} style={{ padding: 3, borderRadius: 50 }}>
+                  <View style={{ padding: 3, borderRadius: 48, backgroundColor: C.bg }}><Avatar id={p.id} name={p.full_name} url={p.avatar_url} size={82} /></View>
+                </LinearGradient>
+              ) : <Avatar id={p.id} name={p.full_name} url={p.avatar_url} size={86} ring />}
+            </Tap>
             <View style={{ flex: 1, flexDirection: 'row' }}>
               {[[p.post_count, t('منشور'), true], [p.follower_count, t('متابِع'), mine || !p.hide_followers], [p.following_count, t('يتابع'), mine || !p.hide_following]].map(([n, l, vis]) => (
                 <Tap key={l as string} haptic={false} scale={0.95} disabled={!vis || l === t('منشور') || !canSee}
@@ -156,9 +201,26 @@ export function ProfileView({ userId }: { userId: string }) {
         </View>
 
         {canSee ? (
-          <View style={{ paddingHorizontal: 18, gap: 14 }}>
-            <Segmented items={[t('المنشورات'), t('الملخصات')]} value={tab} onChange={setTab} />
-            {shown.length === 0 ? <Empty title={t('ما في منشورات لهلأ')} /> : shown.map((x) => <PostCard key={x.id} post={x} onLikes={setLikesOf} compact />)}
+          <View style={{ gap: 10 }}>
+            <Row style={{ borderBottomWidth: 0.5, borderBottomColor: C.line }}>
+              {[[Grid3x3, t('المنشورات')], [Rows3, t('القائمة')], [BookOpen, t('الملخصات')]].map(([Icon, label], i) => {
+                const I = Icon as typeof Grid3x3;
+                return (
+                  <Tap key={i} haptic={false} onPress={() => setTab(i)} accessibilityRole="tab" accessibilityLabel={label as string} accessibilityState={{ selected: tab === i }}
+                    style={{ flex: 1, alignItems: 'center', paddingVertical: 12, borderBottomWidth: 2, borderBottomColor: tab === i ? C.ink : 'transparent' }}>
+                    <I size={22} color={tab === i ? C.ink : C.faint} />
+                  </Tap>
+                );
+              })}
+            </Row>
+            {shown.length === 0 ? <Empty title={t('ما في منشورات لهلأ')} />
+              : tab === 0 ? (
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: 1.5 }}>
+                  {shown.map((x, i) => <GridTile key={x.id} post={x} i={i} />)}
+                </View>
+              ) : (
+                <View style={{ paddingHorizontal: 18, gap: 14 }}>{shown.map((x) => <PostCard key={x.id} post={x} onLikes={setLikesOf} compact />)}</View>
+              )}
           </View>
         ) : (
           <View style={{ margin: 18, backgroundColor: C.card, borderRadius: 26, padding: 28, alignItems: 'center', gap: 10 }}>

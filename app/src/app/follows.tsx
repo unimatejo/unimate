@@ -8,6 +8,7 @@ import { useAuth } from '@/lib/auth';
 import { supabase } from '@/lib/supabase';
 import { C, F, isDark } from '@/lib/theme';
 import { nm, t, ta } from '@/lib/i18n';
+import { ListSkeleton } from '@/components/Skeleton';
 
 type P = { id: string; full_name: string; avatar_url: string | null; username: string | null; major: { name_ar: string } | null };
 
@@ -77,7 +78,7 @@ export default function Follows() {
             )}
           </Row>
         )}
-        ListEmptyComponent={loading ? undefined : <Empty title={tab === 0 ? t('ما في متابعين لهلأ') : t('ما بيتابع حدا لهلأ')} />}
+        ListEmptyComponent={loading ? <ListSkeleton n={6} /> : <Empty title={tab === 0 ? t('ما في متابعين لهلأ') : t('ما بيتابع حدا لهلأ')} />}
       />
     </Screen>
   );

@@ -1,8 +1,8 @@
 import { router } from 'expo-router';
-import { BadgeCheck, Bookmark, FileText, Heart, MessageCircle, Send } from 'lucide-react-native';
+import { BadgeCheck, Bookmark, FileText, MoreHorizontal, Heart, MessageCircle, Send } from 'lucide-react-native';
 import { useEffect, useState } from 'react';
 import * as WebBrowser from 'expo-web-browser';
-import { Alert, View } from 'react-native';
+import { ActionSheetIOS, Alert, Platform, View } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withSequence, withSpring, withTiming } from 'react-native-reanimated';
 import { Image } from 'expo-image';
 
@@ -117,6 +117,26 @@ export function PostCard({ post, onLikes, compact, detail }: { post: Post; onLik
     setP({ ...p, saved: !p.saved });
     await toggleSave(p, (profile?.id ?? ''));
   }
+  const [gone, setGone] = useState(false);
+  const mine = p.author_id === profile?.id;
+
+  /** "⋯" menu like Instagram: save, send, report or delete. */
+  function menu() {
+    const opts: [string, () => void, ('destructive' | undefined)?][] = [
+      [p.saved ? t('إلغاء الحفظ') : t('حفظ'), save],
+      [t('أرسل لصديق'), () => router.push({ pathname: '/share', params: { post: p.id } })],
+      [t('شوف البروفايل'), () => router.push({ pathname: '/user/[id]', params: { id: p.author_id } })],
+      mine
+        ? [t('حذف المنشور'), () => Alert.alert(t('حذف المنشور؟'), t('ما بترجع.'), [{ text: t('إلغاء'), style: 'cancel' }, { text: t('حذف'), style: 'destructive', onPress: async () => { const { error } = await supabase.from('posts').delete().eq('id', p.id); if (!error) { setGone(true); if (detail) router.back(); } } }]), 'destructive']
+        : [t('إبلاغ'), () => router.push({ pathname: '/report', params: { type: 'post', id: p.id, user: p.author_id } }), 'destructive'],
+    ];
+    if (Platform.OS === 'ios') {
+      ActionSheetIOS.showActionSheetWithOptions({ options: [...opts.map((o) => o[0]), t('إلغاء')], cancelButtonIndex: opts.length, destructiveButtonIndex: opts.length - 1 }, (i) => opts[i]?.[1]());
+    } else {
+      Alert.alert('', undefined, [...opts.map(([text, onPress, style]) => ({ text, onPress, style })), { text: t('إلغاء'), style: 'cancel' as const }]);
+    }
+  }
+  if (gone) return null;
 
   return (
     <View style={[{ backgroundColor: C.card, borderRadius: 26, overflow: 'hidden' }, shadow]}>
@@ -133,6 +153,9 @@ export function PostCard({ post, onLikes, compact, detail }: { post: Post; onLik
         </View>
         {p.lost_found ? <Tag label={p.lost_found === 'lost' ? t('ضاع مني') : t('لقيت')} bg={p.lost_found === 'lost' ? C.orangeSoft : C.greenSoft} fg={p.lost_found === 'lost' ? '#C2410C' : C.greenInk} />
           : <Tag label={cat.label} bg={cat.soft} fg={cat.ink} />}
+        <Tap onPress={menu} accessibilityLabel={t('خيارات المنشور')} style={{ width: 34, height: 34, alignItems: 'center', justifyContent: 'center', marginEnd: -6 }}>
+          <MoreHorizontal size={20} color={C.muted} />
+        </Tap>
       </Row>
 
       {images[0] && <Photo path={images[0].url} onDoubleTap={() => { if (!p.liked) like(); }} />}

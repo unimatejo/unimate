@@ -7,10 +7,12 @@ import Animated, { FadeInDown, FadeOutLeft, LinearTransition } from 'react-nativ
 import { GlyphTile } from '@/components/Glyph';
 import { Avatar, Button, Empty, Header, IconButton, Row, Screen, T, Tap } from '@/components/ui';
 import { useAuth } from '@/lib/auth';
+import { inviteFriends } from '@/lib/invite';
 import { supabase } from '@/lib/supabase';
 import { C, F, isDark, shadow } from '@/lib/theme';
 import { timeAgo } from '@/lib/util';
 import { t, ta } from '@/lib/i18n';
+import { ListSkeleton } from '@/components/Skeleton';
 
 type Person = { id: string; full_name: string; avatar_url: string | null; is_verified?: boolean };
 type Item = {
@@ -157,10 +159,11 @@ export function Inbox({ inTab }: { inTab?: boolean }) {
             </Tap>
           </Animated.View>
         )}
-        ListEmptyComponent={loading ? undefined : tab === 1
+        ListEmptyComponent={loading ? <ListSkeleton n={6} /> : tab === 1
           ? <Empty icon={<InboxIcon size={28} color={C.primary} />} title={t('ما في طلبات')} body={t('لما حدا ما بتتابعه يراسلك، بيوصل هون أول.')} />
           : tab === 2 ? <Empty icon={<Users size={28} color={C.primary} />} title={t('ما في جروبات لهلأ')} body={t('بتنضاف لحالك لجروب كليتك وتخصصك ودفعتك لما تكمّل معلوماتك.')} />
-          : <Empty icon={<MessageCircle size={28} color={C.primary} />} title={t('ما في محادثات لهلأ')} body={t('اكبس على القلم فوق وابدأ مع زميل.')} />}
+          : <Empty icon={<MessageCircle size={28} color={C.primary} />} title={t('ما في محادثات لهلأ')} body={t('اكبس على القلم فوق وابدأ مع زميل.')}
+              action={<Button kind="soft" title={t('ادعي زملاءك')} onPress={() => inviteFriends()} style={{ marginTop: 10, paddingHorizontal: 20 }} />} />}
       />
     </Screen>
   );

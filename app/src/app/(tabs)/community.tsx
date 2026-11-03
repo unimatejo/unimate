@@ -10,6 +10,7 @@ import { LikesSheet } from '@/components/LikesSheet';
 import { PostCard } from '@/components/PostCard';
 import { GlyphTile, GRAD } from '@/components/Glyph';
 import { StoriesRow } from '@/components/StoriesRow';
+import { SuggestedPeople } from '@/components/SuggestedPeople';
 import { Avatar, Empty, IconButton, Row, Screen, Segmented, T, Tap } from '@/components/ui';
 import { useAuth } from '@/lib/auth';
 import { loadFeed, type FeedFilter } from '@/lib/posts';
@@ -17,6 +18,7 @@ import { supabase } from '@/lib/supabase';
 import { CATEGORY, C } from '@/lib/theme';
 import type { Post } from '@/lib/types';
 import { nm, t } from '@/lib/i18n';
+import { ListSkeleton } from '@/components/Skeleton';
 
 const TABS: FeedFilter['tab'][] = ['university', 'college', 'following'];
 const CAT_ICON = {
@@ -100,9 +102,11 @@ export default function Community() {
           <Animated.View entering={FadeInDown.delay(Math.min(index, 5) * 50)} style={{ paddingHorizontal: 18, gap: 14 }}>
             <PostCard post={item} onLikes={setLikesOf} compact />
             {index === 2 && <AdBanner placement="feed_card" />}
+            {index === 1 && <View style={{ marginHorizontal: -18 }}><SuggestedPeople /></View>}
           </Animated.View>
         )}
-        ListEmptyComponent={loading ? undefined : (
+        ListFooterComponent={!loading && posts.length < 2 ? <View style={{ marginTop: 10 }}><SuggestedPeople /></View> : undefined}
+        ListEmptyComponent={loading ? <View style={{ paddingHorizontal: 18 }}><ListSkeleton n={3} kind="post" /></View> : (
           <Empty icon={<Plus size={28} color={C.primary} />} title={tab === 2 ? t('تابع زملاءك عشان تشوف منشوراتهم') : t('كون أول واحد بينشر')}
             body={t('اسأل سؤال، شارك ملخص، أو بلّغ عن غرض ضايع.')} />
         )}

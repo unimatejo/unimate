@@ -1,6 +1,6 @@
 import { router } from 'expo-router';
 import {
-  Ban, Bell, Palette, Bookmark, ChevronLeft, CircleHelp, EyeOff, FileText, Lock, LogOut, MessageCircle, Shield, Star, Trash2, UserPen, Users,
+  Ban, Bell, Palette, Bookmark, ChevronLeft, CircleHelp, EyeOff, FileText, Lock, LogOut, MessageCircle, Shield, Star, Trash2, UserPen, UserPlus, Users,
 } from 'lucide-react-native';
 import type { ReactNode } from 'react';
 import { Alert, ScrollView, View } from 'react-native';
@@ -9,6 +9,7 @@ import Animated, { FadeInDown } from 'react-native-reanimated';
 import { Avatar, Header, IconTile, Row, Screen, T, Tap } from '@/components/ui';
 import { useAuth } from '@/lib/auth';
 import { supabase } from '@/lib/supabase';
+import { inviteFriends } from '@/lib/invite';
 import { C, isDark } from '@/lib/theme';
 import { flip, isAR, nm, t } from '@/lib/i18n';
 
@@ -78,6 +79,7 @@ export default function Settings() {
         </Group>
 
         <Group title={t('التطبيق')} delay={60}>
+          <Item icon={<UserPlus {...ic} />} color={C.green} label={t('ادعي زملاءك')} onPress={() => inviteFriends(nm(university))} />
           <Item icon={<Palette {...ic} />} color={C.violet} label={t('المظهر واللغة')} value={[isDark ? t('غامق') : t('فاتح'), isAR ? 'العربية' : 'English'].join(' · ')} onPress={() => router.push('/settings/appearance')} />
         </Group>
 

@@ -10,6 +10,7 @@ import { supabase } from '@/lib/supabase';
 import { C } from '@/lib/theme';
 import { timeAgo } from '@/lib/util';
 import { nm, t } from '@/lib/i18n';
+import { ListSkeleton } from '@/components/Skeleton';
 
 type N = { id: string; kind: string; title: string; body: string | null; data: Record<string, string>; read_at: string | null; created_at: string };
 type FR = { follower_id: string; profile: { id: string; full_name: string; avatar_url: string | null; major: { name_ar: string } | null } | null };
@@ -90,7 +91,7 @@ export default function Notifications() {
             </Animated.View>
           );
         }}
-        ListEmptyComponent={loading || reqs.length ? undefined : <Empty icon={<Bell size={28} color={C.primary} />} title={t('ما في إشعارات')} body={t('بنخبرك هون بالمحاضرات والامتحانات والتبديلات والتعليقات.')} />}
+        ListEmptyComponent={reqs.length ? undefined : loading ? <ListSkeleton n={6} /> : <Empty icon={<Bell size={28} color={C.primary} />} title={t('ما في إشعارات')} body={t('بنخبرك هون بالمحاضرات والامتحانات والتبديلات والتعليقات.')} />}
       />
     </Screen>
   );

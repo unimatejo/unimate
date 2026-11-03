@@ -42,6 +42,8 @@ export default function Chat() {
   const [sheet, setSheet] = useState(false);
   const [viewer, setViewer] = useState<string | null>(null);
   const [myState, setMyState] = useState<string>('active');
+  const [people, setPeople] = useState<Record<string, { full_name: string; avatar_url: string | null }>>({});
+  const [otherRead, setOtherRead] = useState<string | null>(null);
   const list = useRef<FlatList<Message>>(null);
 
   const shield = !!conv?.block_screenshots;
@@ -57,9 +59,11 @@ export default function Chat() {
     if (!profile) return;
     const { data: c } = await supabase.from('conversations').select('*').eq('id', id).single();
     setConv(c as Conversation);
-    const { data: mem } = await supabase.from('conversation_members').select('user_id, state, profile:profiles(id, full_name, avatar_url)').eq('conversation_id', id);
+    const { data: mem } = await supabase.from('conversation_members').select('user_id, state, last_read_at, profile:profiles(id, full_name, avatar_url)').eq('conversation_id', id);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const rows = (mem ?? []) as any[];
+    setPeople(Object.fromEntries(rows.filter((r) => r.profile).map((r) => [r.user_id, r.profile])));
+    setOtherRead(rows.find((m) => m.user_id !== (profile?.id ?? ''))?.last_read_at ?? null);
     setOther(rows.find((m) => m.user_id !== (profile?.id ?? ''))?.profile ?? null);
     setMyState(rows.find((m) => m.user_id === (profile?.id ?? ''))?.state ?? 'active');
     const { data: m } = await supabase.from('messages').select('*').eq('conversation_id', id).order('created_at', { ascending: false }).limit(60);
@@ -68,6 +72,17 @@ export default function Chat() {
   }, [id, profile]);
 
   useEffect(() => { load(); }, [load]);
+
+  // "Seen": refresh when the other side reads
+  useEffect(() => {
+    if (conv?.kind !== 'direct' || !profile) return;
+    const tick = async () => {
+      const { data } = await supabase.from('conversation_members').select('last_read_at').eq('conversation_id', id).neq('user_id', profile.id).maybeSingle();
+      setOtherRead(data?.last_read_at ?? null);
+    };
+    const tm = setInterval(tick, 8000);
+    return () => clearInterval(tm);
+  }, [conv?.kind, id, profile]);
 
   // live messages
   useEffect(() => {
@@ -172,11 +187,20 @@ export default function Chat() {
               {shield && <Row gap={6} style={{ backgroundColor: C.greenSoft, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 999 }}><ShieldCheck size={14} color={C.greenInk} /><T v="tiny" color={C.greenInk}>{t('محادثة محمية من التصوير')}</T></Row>}
             </View>
           }
-          renderItem={({ item: m }) => {
+          renderItem={({ item: m, index }) => {
             const mine = m.sender_id === profile?.id;
+            const older = visible[index + 1];
+            const showName = conv?.kind !== 'direct' && !mine && m.sender_id && older?.sender_id !== m.sender_id;
+            const lastMine = mine && index === visible.findIndex((x) => x.sender_id === profile?.id);
             if (m.kind === 'system') return <Animated.View entering={FadeIn} style={{ alignSelf: 'center', backgroundColor: C.soft, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 5 }}><T v="tiny" color={C.ink2}>{m.body}</T></Animated.View>;
             return (
               <Animated.View entering={FadeInUp.springify().damping(16)} style={{ alignSelf: mine ? 'flex-end' : 'flex-start', maxWidth: '80%', gap: 3 }}>
+                {showName && people[m.sender_id!] && (
+                  <Row gap={6} style={{ marginTop: 6 }}>
+                    <Avatar id={m.sender_id} name={people[m.sender_id!].full_name} url={people[m.sender_id!].avatar_url} size={20} />
+                    <T v="tiny" color={C.muted}>{people[m.sender_id!].full_name}</T>
+                  </Row>
+                )}
                 <Pressable onPress={async () => { if (m.kind === 'image' && m.media_url) setViewer(await mediaUrl('chat', m.media_url)); }} onLongPress={() => toggleSave(m)} delayLongPress={350}>
                   {m.kind === 'image' && m.media_url ? <ChatImage path={m.media_url} mine={mine} /> :
                    m.kind === 'view_once' ? (
@@ -194,6 +218,7 @@ export default function Chat() {
                 <Row gap={4} style={{ alignSelf: mine ? 'flex-end' : 'flex-start' }}>
                   {m.is_saved && <Bookmark size={11} color={C.primary} fill={C.primary} />}
                   <T v="tiny" color={C.faint} style={{ fontSize: 10 }}>{timeAgo(m.created_at)}</T>
+                  {lastMine && conv?.kind === 'direct' && <T v="tiny" color={otherRead && otherRead >= m.created_at ? C.primary : C.faint} style={{ fontSize: 10 }}>{otherRead && otherRead >= m.created_at ? t('شافها') : t('انبعتت')}</T>}
                 </Row>
               </Animated.View>
             );

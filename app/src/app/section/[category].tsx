@@ -12,6 +12,7 @@ import { loadFeed } from '@/lib/posts';
 import { CATEGORY, C } from '@/lib/theme';
 import type { Post } from '@/lib/types';
 import { t } from '@/lib/i18n';
+import { ListSkeleton } from '@/components/Skeleton';
 
 export default function SectionScreen() {
   const { category } = useLocalSearchParams<{ category: string }>();
@@ -47,7 +48,7 @@ export default function SectionScreen() {
           </View>
         }
         renderItem={({ item }) => <PostCard post={item} onLikes={setLikesOf} compact />}
-        ListEmptyComponent={loading ? undefined : <Empty title={t('ما في إشي هون لهلأ')} body={t('كون أول واحد بينشر بهالقسم.')} />}
+        ListEmptyComponent={loading ? <ListSkeleton n={3} kind="post" /> : <Empty title={t('ما في إشي هون لهلأ')} body={t('كون أول واحد بينشر بهالقسم.')} />}
       />
       <Tap onPress={() => router.push({ pathname: '/post/new', params: { category } })} accessibilityLabel={t('أضف')}
         style={{ position: 'absolute', left: 18, bottom: 30, width: 60, height: 60, borderRadius: 22, backgroundColor: meta.color, alignItems: 'center', justifyContent: 'center', shadowColor: meta.color, shadowOpacity: 0.45, shadowRadius: 16, shadowOffset: { width: 0, height: 10 }, elevation: 8 }}>
