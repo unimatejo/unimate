@@ -36,7 +36,7 @@ export default function Login() {
     setError(null); setBusy(true);
     const res = await signInWithMicrosoft();
     setBusy(false);
-    if ('error' in res && res.error && res.error.message !== 'cancelled') setError('الدخول بمايكروسوفت مش متاح هلأ. ادخل بإيميل الجامعة.');
+    if ('error' in res && res.error && res.error.message !== 'cancelled') setError('ما زبط الدخول بمايكروسوفت. ممكن جامعتك بتطلب موافقة، جرّب رابط على الإيميل.');
   }
 
   async function sendCode() {
@@ -83,13 +83,18 @@ export default function Login() {
             </Animated.View>
 
             <Animated.View entering={FadeInDown.delay(200).duration(500)} style={{ gap: 10 }}>
+              {MS_READY && (
+                <>
+                  <Button title="ادخل بحساب الجامعة (مايكروسوفت)" loading={busy && !email} onPress={microsoft} icon={<GraduationCap size={20} color={C.white} />} />
+                  <Row gap={10} style={{ marginVertical: 2 }}><View style={{ flex: 1, height: 1, backgroundColor: C.line }} /><T v="tiny" color={C.faint}>أو</T><View style={{ flex: 1, height: 1, backgroundColor: C.line }} /></Row>
+                </>
+              )}
               <Field
                 value={email} onChangeText={setEmail} placeholder="إيميلك الجامعي"
                 keyboardType="email-address" autoCapitalize="none" autoComplete="email" textContentType="emailAddress"
                 style={{ textAlign: 'left', writingDirection: 'ltr' }} onSubmitEditing={sendCode} returnKeyType="send"
               />
-              <Button title="ادخل بإيميل الجامعة" loading={busy} onPress={sendCode} disabled={!email.includes('@')} icon={<Mail size={19} color={C.white} />} />
-              {MS_READY && <Button kind="soft" title="ادخل بحساب مايكروسوفت الجامعي" onPress={microsoft} icon={<GraduationCap size={20} color={C.ink} />} />}
+              <Button kind={MS_READY ? 'soft' : 'primary'} title="ابعتلي رابط على إيميلي" loading={busy && !!email} onPress={sendCode} disabled={!email.includes('@')} icon={<Mail size={19} color={MS_READY ? C.ink : C.white} />} />
               {error && <T v="small" color={C.danger} style={{ textAlign: 'center' }}>{error}</T>}
             </Animated.View>
 

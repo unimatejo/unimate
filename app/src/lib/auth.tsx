@@ -85,7 +85,7 @@ export async function signInWithMicrosoft() {
   const redirectTo = Linking.createURL('callback');
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: 'azure',
-    options: { redirectTo, scopes: 'openid email profile offline_access', skipBrowserRedirect: true },
+    options: { redirectTo, scopes: 'openid email profile offline_access', skipBrowserRedirect: true, queryParams: { prompt: 'select_account' } },
   });
   if (error || !data?.url) return { error: error ?? new Error('no url') };
   const res = await WebBrowser.openAuthSessionAsync(data.url, redirectTo);

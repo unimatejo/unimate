@@ -23,6 +23,7 @@ jobs:
       # The publishable key is meant to ship inside the app; access is enforced by RLS in the database.
       EXPO_PUBLIC_SUPABASE_URL: https://slkfyblvpewlxrifzrhg.supabase.co
       EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY: sb_publishable_1otcwSg3NdpjsEmXJWJO7g_yxdXR2xP
+      EXPO_PUBLIC_MS_LOGIN: '1'
     steps:
       - uses: actions/checkout@v4
       - name: Show the Xcode in use (Expo SDK 58 needs Xcode 27)

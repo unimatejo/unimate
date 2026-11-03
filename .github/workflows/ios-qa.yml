@@ -22,6 +22,7 @@ jobs:
     env:
       EXPO_PUBLIC_SUPABASE_URL: https://slkfyblvpewlxrifzrhg.supabase.co
       EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY: sb_publishable_1otcwSg3NdpjsEmXJWJO7g_yxdXR2xP
+      EXPO_PUBLIC_MS_LOGIN: '1'
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
