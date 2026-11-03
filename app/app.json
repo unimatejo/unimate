@@ -14,18 +14,23 @@
         "NSCameraUsageDescription": "لتصوير الستوري والصور وإرسالها لزملائك.",
         "NSPhotoLibraryUsageDescription": "لاختيار صور للمنشورات والمحادثات وصورة البروفايل.",
         "NSLocationWhenInUseUsageDescription": "لعرض موقعك على خريطة الجامعة وحساب الطريق لقاعتك.",
-        "NSMicrophoneUsageDescription": "للرسائل الصوتية والمكالمات."
+        "NSMicrophoneUsageDescription": "للرسائل الصوتية والمكالمات.",
+        "CFBundleDisplayName": "يونيميت"
       }
     },
     "android": {
       "package": "jo.unimate.app",
       "adaptiveIcon": {
-        "backgroundColor": "#2E5BFF",
+        "backgroundColor": "#0B1022",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
         "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
-      "permissions": ["CAMERA", "ACCESS_FINE_LOCATION", "RECORD_AUDIO"],
+      "permissions": [
+        "CAMERA",
+        "ACCESS_FINE_LOCATION",
+        "RECORD_AUDIO"
+      ],
       "predictiveBackGestureEnabled": false
     },
     "web": {
@@ -37,11 +42,40 @@
       "expo-sqlite",
       "expo-secure-store",
       "expo-web-browser",
-      ["expo-localization", { "supportsRTL": true, "forcesRTL": true }],
-      ["expo-splash-screen", { "backgroundColor": "#0E1430", "image": "./assets/images/splash-icon.png", "imageWidth": 76 }],
-      ["expo-notifications", { "color": "#2E5BFF" }],
-      ["expo-location", { "locationWhenInUsePermission": "لعرض موقعك على خريطة الجامعة وحساب الطريق لقاعتك." }],
-      ["expo-image-picker", { "photosPermission": "لاختيار صور للمنشورات والمحادثات.", "cameraPermission": "لتصوير الستوري والصور." }]
+      [
+        "expo-localization",
+        {
+          "supportsRTL": true,
+          "forcesRTL": true
+        }
+      ],
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#0B1022",
+          "image": "./assets/images/splash-icon.png",
+          "imageWidth": 150
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "color": "#FF7A5C"
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "لعرض موقعك على خريطة الجامعة وحساب الطريق لقاعتك."
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "لاختيار صور للمنشورات والمحادثات.",
+          "cameraPermission": "لتصوير الستوري والصور."
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": false,

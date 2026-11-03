@@ -1,3 +1,4 @@
+import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
@@ -58,13 +59,11 @@ export default function Login() {
       <StatusBar style="light" />
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
         <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ flexGrow: 1 }} bounces={false}>
-          <LinearGradient colors={[C.primary, '#5B3FFF']} start={{ x: 1, y: 0 }} end={{ x: 0, y: 1 }}
+          <LinearGradient colors={['#1B2250', '#070A1C']} start={{ x: 1, y: 0 }} end={{ x: 0, y: 1 }}
             style={{ height: 330, borderBottomLeftRadius: 40, borderBottomRightRadius: 40, overflow: 'hidden' }}>
             <SafeAreaView edges={['top']} style={{ flex: 1 }}>
               <Row gap={10} style={{ paddingHorizontal: 24, paddingTop: 12 }}>
-                <View style={{ width: 40, height: 40, borderRadius: 14, backgroundColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center' }}>
-                  <GraduationCap size={22} color={C.white} />
-                </View>
+                <Image source={require('../../../assets/images/icon.png')} style={{ width: 42, height: 42, borderRadius: 12, borderWidth: 1, borderColor: 'rgba(255,255,255,0.18)' }} />
                 <T v="h2" color={C.white}>يونيميت</T>
               </Row>
               <View style={{ flex: 1 }}>
