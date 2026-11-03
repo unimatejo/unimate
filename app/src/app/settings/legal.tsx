@@ -36,7 +36,7 @@ export default function Legal() {
       <Header title={isTerms ? 'شروط الاستخدام' : 'سياسة الخصوصية'} subtitle="آخر تحديث: تشرين الثاني 2026" />
       <ScrollView contentContainerStyle={{ padding: 18, paddingTop: 4, gap: 12, paddingBottom: 60 }}>
         {list.map(([h, b]) => (
-          <View key={h} style={{ gap: 6, backgroundColor: C.white, borderRadius: 20, padding: 16 }}>
+          <View key={h} style={{ gap: 6, backgroundColor: C.card, borderRadius: 20, padding: 16 }}>
             <T v="h3">{h}</T>
             <T v="body" color={C.ink2} style={{ lineHeight: 26 }}>{b}</T>
           </View>

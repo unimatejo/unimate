@@ -1,5 +1,5 @@
 import { router, useFocusEffect } from 'expo-router';
-import { BadgeCheck, Camera, Inbox, MessageCircle, PenSquare, Search, Users, UsersRound } from 'lucide-react-native';
+import { BadgeCheck, Camera, Inbox as InboxIcon, MessageCircle, PenSquare, Search, Users, UsersRound } from 'lucide-react-native';
 import { useCallback, useState } from 'react';
 import { FlatList, RefreshControl, ScrollView, TextInput, View } from 'react-native';
 import Animated, { FadeInDown, FadeOutLeft, LinearTransition } from 'react-native-reanimated';
@@ -26,7 +26,9 @@ function preview(m?: { kind: string; body: string | null } | null) {
 }
 
 /** Inbox like Instagram: chats with people you know, message requests, and groups (auto groups for your college, major and cohort). */
-export default function Messages() {
+export default function Messages() { return <Inbox />; }
+
+export function Inbox({ inTab }: { inTab?: boolean }) {
   const { profile } = useAuth();
   const [tab, setTab] = useState(0);
   const [items, setItems] = useState<Item[]>([]);
@@ -90,7 +92,7 @@ export default function Messages() {
 
   return (
     <Screen>
-      <Header title={profile?.username ? `\u200E@${profile.username}` : 'الرسائل'} right={<IconButton label="رسالة جديدة" onPress={() => router.push('/messages/new')}><PenSquare size={20} color={C.ink} /></IconButton>} />
+      <Header back={!inTab} title={profile?.username ? `\u200E@${profile.username}` : 'الرسائل'} right={<IconButton label="رسالة جديدة" onPress={() => router.push('/messages/new')}><PenSquare size={20} color={C.ink} /></IconButton>} />
       <FlatList
         data={shown}
         keyExtractor={(i) => i.id}
@@ -98,7 +100,7 @@ export default function Messages() {
         contentContainerStyle={{ paddingHorizontal: 18, paddingBottom: 120, gap: 6 }}
         ListHeaderComponent={
           <View style={{ gap: 14, marginBottom: 6 }}>
-            <Row gap={8} style={{ minHeight: 46, borderRadius: 15, backgroundColor: '#E7EAF3', paddingHorizontal: 14 }}>
+            <Row gap={8} style={{ minHeight: 46, borderRadius: 15, backgroundColor: C.soft, paddingHorizontal: 14 }}>
               <Search size={19} color={C.muted} />
               <TextInput value={q} onChangeText={setQ} placeholder="ابحث بالمحادثات" placeholderTextColor={C.faint} style={{ flex: 1, fontFamily: F.body, fontSize: 15, textAlign: 'right', color: C.ink }} />
             </Row>
@@ -115,8 +117,8 @@ export default function Messages() {
             <Row gap={8}>
               {TABS.map((t, i) => (
                 <Tap key={t} onPress={() => setTab(i)} accessibilityRole="tab" accessibilityState={{ selected: tab === i }}
-                  style={{ flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 40, paddingHorizontal: 16, borderRadius: 20, backgroundColor: tab === i ? C.ink : C.white }}>
-                  <T v="bold" style={{ fontSize: 14 }} color={tab === i ? C.white : C.ink}>{t}</T>
+                  style={{ flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 40, paddingHorizontal: 16, borderRadius: 20, backgroundColor: tab === i ? C.inverse : C.card }}>
+                  <T v="bold" style={{ fontSize: 14 }} color={tab === i ? C.onInverse : C.ink}>{t}</T>
                   {badges[i] > 0 && <View style={{ minWidth: 20, height: 20, borderRadius: 10, paddingHorizontal: 5, backgroundColor: i === 1 ? C.pink : C.primary, alignItems: 'center', justifyContent: 'center' }}><T v="tiny" color={C.white} style={{ fontSize: 11 }}>{badges[i]}</T></View>}
                 </Tap>
               ))}
@@ -128,7 +130,7 @@ export default function Messages() {
         renderItem={({ item, index }) => (
           <Animated.View entering={FadeInDown.delay(Math.min(index, 8) * 35)} exiting={FadeOutLeft} layout={LinearTransition}>
             <Tap scale={0.98} onPress={() => router.push({ pathname: '/messages/[id]', params: { id: item.id } })}
-              style={[{ flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 74, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 20, backgroundColor: C.white }, item.unread && shadow]}>
+              style={[{ flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 74, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 20, backgroundColor: C.card }, item.unread && shadow]}>
               {item.kind === 'direct' ? <Avatar id={item.other?.id} name={item.title} url={item.other?.avatar_url} size={54} />
                 : <GlyphTile icon={item.kind === 'community' ? Users : UsersRound} colors={item.kind === 'community' ? ['#34D399', '#059669'] : ['#A78BFA', '#7C3AED']} size={54} />}
               <View style={{ flex: 1, minWidth: 0, gap: 2 }}>
@@ -155,7 +157,7 @@ export default function Messages() {
           </Animated.View>
         )}
         ListEmptyComponent={loading ? undefined : tab === 1
-          ? <Empty icon={<Inbox size={28} color={C.primary} />} title="ما في طلبات" body="لما حدا ما بتتابعه يراسلك، بيوصل هون أول." />
+          ? <Empty icon={<InboxIcon size={28} color={C.primary} />} title="ما في طلبات" body="لما حدا ما بتتابعه يراسلك، بيوصل هون أول." />
           : tab === 2 ? <Empty icon={<Users size={28} color={C.primary} />} title="ما في جروبات لهلأ" body="بتنضاف لحالك لجروب كليتك وتخصصك ودفعتك لما تكمّل معلوماتك." />
           : <Empty icon={<MessageCircle size={28} color={C.primary} />} title="ما في محادثات لهلأ" body="اكبس على القلم فوق وابدأ مع زميل." />}
       />

@@ -141,7 +141,7 @@ export default function EditProfile() {
             </Row>
           </View>
 
-          <View style={{ gap: 10, backgroundColor: C.white, borderRadius: 22, padding: 14 }}>
+          <View style={{ gap: 10, backgroundColor: C.card, borderRadius: 22, padding: 14 }}>
             <T v="h3">حساباتك التانية</T>
             <T v="tiny" color={C.muted}>اكتب اسم المستخدم أو الصق رابط حسابك. بيطلع زر على بروفايلك بيفتح حسابك بكبسة، حسب «مين بيشوف حساباتي» بالخصوصية.</T>
             <Row gap={10}><InstagramGlyph size={40} /><View style={{ flex: 1 }}><Field label="إنستغرام" value={ig} onChangeText={setIg} autoCapitalize="none" autoCorrect={false} placeholder="username أو instagram.com/username" style={{ textAlign: 'left', writingDirection: 'ltr' }} /></View></Row>
@@ -149,7 +149,7 @@ export default function EditProfile() {
             <Row gap={10}><SnapGlyph size={40} /><View style={{ flex: 1 }}><Field label="سناب شات" value={snap} onChangeText={setSnap} autoCapitalize="none" autoCorrect={false} placeholder="username أو الرابط" style={{ textAlign: 'left', writingDirection: 'ltr' }} /></View></Row>
           </View>
 
-          <View style={{ gap: 10, backgroundColor: C.white, borderRadius: 22, padding: 14 }}>
+          <View style={{ gap: 10, backgroundColor: C.card, borderRadius: 22, padding: 14 }}>
             <T v="h3">الكلية والتخصص</T>
             <MajorPicker universityId={university?.id} collegeId={col} majorId={maj} onChange={(c, m) => { setCol(c); setMaj(m); }} />
           </View>

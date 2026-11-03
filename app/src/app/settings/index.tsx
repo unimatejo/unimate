@@ -15,7 +15,7 @@ function Group({ title, children, delay = 0 }: { title: string; children: ReactN
   return (
     <Animated.View entering={FadeInDown.delay(delay)} style={{ gap: 8 }}>
       <T v="small" color={C.muted} style={{ paddingHorizontal: 6 }}>{title}</T>
-      <View style={{ backgroundColor: C.white, borderRadius: 22, overflow: 'hidden' }}>{children}</View>
+      <View style={{ backgroundColor: C.card, borderRadius: 22, overflow: 'hidden' }}>{children}</View>
     </Animated.View>
   );
 }
@@ -58,7 +58,7 @@ export default function Settings() {
       <Header title="الإعدادات" />
       <ScrollView contentContainerStyle={{ padding: 18, paddingTop: 4, gap: 20, paddingBottom: 60 }}>
         <Tap scale={0.98} onPress={() => router.push('/settings/edit-profile')}
-          style={{ flexDirection: 'row', alignItems: 'center', gap: 14, backgroundColor: C.white, borderRadius: 24, padding: 14 }}>
+          style={{ flexDirection: 'row', alignItems: 'center', gap: 14, backgroundColor: C.card, borderRadius: 24, padding: 14 }}>
           <Avatar id={profile?.id} name={profile?.full_name} url={profile?.avatar_url} size={60} ring />
           <View style={{ flex: 1 }}>
             <T v="h3">{profile?.full_name}</T>

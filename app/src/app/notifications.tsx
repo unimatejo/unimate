@@ -61,7 +61,7 @@ export default function Notifications() {
               <Chip label="اجتماعي" active={filter === 'social'} onPress={() => setFilter('social')} />
             </Row>
             {filter !== 'study' && reqs.map((r) => (
-              <Row key={r.follower_id} gap={12} style={{ backgroundColor: C.white, borderRadius: 22, padding: 12 }}>
+              <Row key={r.follower_id} gap={12} style={{ backgroundColor: C.card, borderRadius: 22, padding: 12 }}>
                 <Tap onPress={() => router.push({ pathname: '/user/[id]', params: { id: r.follower_id } })}><Avatar id={r.follower_id} name={r.profile?.full_name} url={r.profile?.avatar_url} size={46} /></Tap>
                 <View style={{ flex: 1 }}>
                   <T v="small"><T v="bold" style={{ fontSize: 14 }}>{r.profile?.full_name}</T> بده يتابعك</T>
@@ -78,7 +78,7 @@ export default function Notifications() {
           return (
             <Animated.View entering={FadeInDown.delay(Math.min(index, 8) * 30)}>
               <Tap scale={0.98} onPress={() => item.kind === 'swap_match' ? router.push('/swap') : item.data?.post_id ? router.push({ pathname: '/post/[id]', params: { id: item.data.post_id } }) : item.data?.user_id ? router.push({ pathname: '/user/[id]', params: { id: item.data.user_id } }) : null}
-                style={{ flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 66, backgroundColor: C.white, borderRadius: 20, paddingHorizontal: 12 }}>
+                style={{ flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 66, backgroundColor: C.card, borderRadius: 20, paddingHorizontal: 12 }}>
                 <View style={{ width: 42, height: 42, borderRadius: 15, backgroundColor: color, alignItems: 'center', justifyContent: 'center' }}><Icon size={20} color={C.white} /></View>
                 <View style={{ flex: 1 }}>
                   <T v="small">{item.title}{item.body ? ` · ${item.body}` : ''}</T>

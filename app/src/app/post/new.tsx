@@ -79,7 +79,7 @@ export default function NewPost() {
 
   const auds = isPost ? POST_AUD : STORY_AUD;
   return (
-    <Screen bg={C.white}>
+    <Screen bg={C.card}>
       <Row gap={8} style={{ paddingHorizontal: 12, paddingVertical: 8 }}>
         <Tap onPress={() => router.back()} accessibilityLabel="إلغاء" style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}><X size={24} color={C.ink} /></Tap>
         <View style={{ flex: 1 }}><Segmented items={['منشور', 'ستوري']} value={mode} onChange={(i) => { setMode(i); setAud(0); setMedia(null); }} /></View>
@@ -107,7 +107,7 @@ export default function NewPost() {
           )}
 
           {isPost && pdf && (
-            <Row gap={10} style={{ backgroundColor: '#F6F8FC', borderRadius: 16, padding: 12 }}>
+            <Row gap={10} style={{ backgroundColor: C.soft, borderRadius: 16, padding: 12 }}>
               <FileText size={22} color="#E11D48" />
               <T v="bold" numberOfLines={1} style={{ flex: 1, fontSize: 14 }}>{pdf.name}</T>
               <Tap onPress={() => setPdf(null)} accessibilityLabel="شيل الملف" style={{ width: 36, height: 36, alignItems: 'center', justifyContent: 'center' }}><X size={18} color={C.muted} /></Tap>
@@ -119,7 +119,7 @@ export default function NewPost() {
               {poll.map((o, i) => (
                 <Row key={i} gap={6}>
                   <TextInput value={o} onChangeText={(t) => setPoll(poll.map((x, j) => (j === i ? t : x)))} maxLength={60} placeholder={`الخيار ${i + 1}`} placeholderTextColor={C.faint}
-                    style={{ flex: 1, minHeight: 44, borderRadius: 12, backgroundColor: C.white, paddingHorizontal: 12, fontFamily: F.body, fontSize: 15, color: C.ink, textAlign: 'right' }} />
+                    style={{ flex: 1, minHeight: 44, borderRadius: 12, backgroundColor: C.card, paddingHorizontal: 12, fontFamily: F.body, fontSize: 15, color: C.ink, textAlign: 'right' }} />
                   {poll.length > 2 && <Tap onPress={() => setPoll(poll.filter((_, j) => j !== i))} accessibilityLabel="شيل الخيار" style={{ width: 36, height: 44, alignItems: 'center', justifyContent: 'center' }}><X size={16} color={C.muted} /></Tap>}
                 </Row>
               ))}
@@ -135,7 +135,7 @@ export default function NewPost() {
               ['استطلاع', BarChart3, C.violet, C.violetSoft, () => setPoll(poll ? null : ['', ''])],
             ] : [
               ['كاميرا', Camera, C.pink, C.pinkSoft, () => pick(true, true)],
-              ['فيديو 15ث', Video, C.ink, '#EEF0F6', () => pick(false, true)],
+              ['فيديو 15ث', Video, C.ink, C.soft, () => pick(false, true)],
               ['صورة', ImageIcon, C.green, C.greenSoft, () => pick()],
             ]) as [string, typeof Camera, string, string, () => void | Promise<void>][]).map(([label, Icon, fg, bg, fn]) => (
               <Tap key={label} onPress={fn} style={{ flex: 1, minHeight: 76, borderRadius: 20, backgroundColor: bg, alignItems: 'center', justifyContent: 'center', gap: 6 }}>
@@ -161,8 +161,8 @@ export default function NewPost() {
           )}
           {!isPost && (
             <Row gap={8} center={false} style={{ backgroundColor: C.primarySoft, borderRadius: 16, padding: 12 }}>
-              <MapPin size={17} color="#1E3A8A" />
-              <T v="small" color="#1E3A8A" style={{ flex: 1 }}>الستوري بتختفي بعد 24 ساعة. الفيديو لحد 15 ثانية، والصور بتقدر تثبّتها بأبرز القصص.</T>
+              <MapPin size={17} color={C.primaryDark} />
+              <T v="small" color={C.primaryDark} style={{ flex: 1 }}>الستوري بتختفي بعد 24 ساعة. الفيديو لحد 15 ثانية، والصور بتقدر تثبّتها بأبرز القصص.</T>
             </Row>
           )}
 
@@ -172,7 +172,7 @@ export default function NewPost() {
               <Row gap={6}>
                 {auds.map(([k, l], i) => (
                   <Tap key={k} onPress={() => setAud(i)} accessibilityRole="radio" accessibilityState={{ selected: aud === i }}
-                    style={{ flex: 1, minHeight: 44, borderRadius: 13, alignItems: 'center', justifyContent: 'center', borderWidth: aud === i ? 2 : 1, borderColor: aud === i ? C.primary : C.line, backgroundColor: aud === i ? C.primarySoft : C.white }}>
+                    style={{ flex: 1, minHeight: 44, borderRadius: 13, alignItems: 'center', justifyContent: 'center', borderWidth: aud === i ? 2 : 1, borderColor: aud === i ? C.primary : C.line, backgroundColor: aud === i ? C.primarySoft : C.card }}>
                     <T v="tiny" color={aud === i ? C.primary : C.ink2}>{l}</T>
                   </Tap>
                 ))}
@@ -183,7 +183,7 @@ export default function NewPost() {
       </KeyboardAvoidingView>
       {busy && (
         <Animated.View entering={FadeIn} style={{ position: 'absolute', top: 0, bottom: 0, left: 0, right: 0, backgroundColor: 'rgba(14,20,48,0.55)', alignItems: 'center', justifyContent: 'center' }}>
-          <View style={{ backgroundColor: C.white, borderRadius: 26, paddingVertical: 26, paddingHorizontal: 34, alignItems: 'center', gap: 12 }}>
+          <View style={{ backgroundColor: C.card, borderRadius: 26, paddingVertical: 26, paddingHorizontal: 34, alignItems: 'center', gap: 12 }}>
             <ActivityIndicator size="large" color={C.primary} />
             <T v="bold">{isPost ? 'عم ننشر منشورك…' : 'عم نرفع قصتك…'}</T>
             {media?.kind === 'video' && <T v="tiny" color={C.muted}>الفيديو بياخذ ثواني أكثر</T>}

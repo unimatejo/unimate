@@ -67,7 +67,7 @@ export default function NewMessage() {
       <Header title={group ? 'جروب جديد' : 'رسالة جديدة'} />
       <View style={{ paddingHorizontal: 18, gap: 12 }}>
         {!group && (
-          <Tap onPress={() => setGroup(true)} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: C.white, borderRadius: 18, padding: 12 }}>
+          <Tap onPress={() => setGroup(true)} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: C.card, borderRadius: 18, padding: 12 }}>
             <GlyphTile icon={UsersRound} colors={GRAD.violet} size={44} />
             <T v="bold" style={{ flex: 1 }}>اعمل جروب</T>
           </Tap>
@@ -86,7 +86,7 @@ export default function NewMessage() {
             )}
           </>
         )}
-        <Row gap={8} style={{ minHeight: 46, borderRadius: 15, backgroundColor: '#E7EAF3', paddingHorizontal: 14 }}>
+        <Row gap={8} style={{ minHeight: 46, borderRadius: 15, backgroundColor: C.soft, paddingHorizontal: 14 }}>
           <Search size={19} color={C.muted} />
           <TextInput value={q} onChangeText={setQ} autoCapitalize="none" placeholder="دوّر بالاسم أو اليوزر" placeholderTextColor={C.faint} style={{ flex: 1, fontFamily: F.body, fontSize: 15, textAlign: 'right', color: C.ink }} />
         </Row>
@@ -98,14 +98,14 @@ export default function NewMessage() {
         keyboardShouldPersistTaps="handled"
         contentContainerStyle={{ padding: 18, gap: 6, paddingBottom: 120 }}
         renderItem={({ item }) => (
-          <Tap onPress={() => (group ? toggle(item) : openChat(item))} scale={0.98} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: C.white, borderRadius: 18, padding: 10 }}>
+          <Tap onPress={() => (group ? toggle(item) : openChat(item))} scale={0.98} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: C.card, borderRadius: 18, padding: 10 }}>
             <Avatar id={item.id} name={item.full_name} url={item.avatar_url} size={46} />
             <View style={{ flex: 1 }}>
               <Row gap={4}><T v="bodyMd" numberOfLines={1} style={{ flexShrink: 1 }}>{item.full_name}</T>{item.is_verified && <BadgeCheck size={14} color={C.white} fill={C.primary} />}</Row>
               <T v="tiny" color={C.muted} numberOfLines={1}>{[item.username ? `@${item.username}` : null, item.major?.name_ar].filter(Boolean).join(' · ')}</T>
             </View>
             {group && (
-              <View style={{ width: 26, height: 26, borderRadius: 13, borderWidth: 2, borderColor: ids.has(item.id) ? C.primary : C.line, backgroundColor: ids.has(item.id) ? C.primary : C.white, alignItems: 'center', justifyContent: 'center' }}>
+              <View style={{ width: 26, height: 26, borderRadius: 13, borderWidth: 2, borderColor: ids.has(item.id) ? C.primary : C.line, backgroundColor: ids.has(item.id) ? C.primary : C.card, alignItems: 'center', justifyContent: 'center' }}>
                 {ids.has(item.id) && <Animated.View entering={ZoomIn}><Check size={15} color={C.white} strokeWidth={3} /></Animated.View>}
               </View>
             )}

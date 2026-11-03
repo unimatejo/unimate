@@ -43,7 +43,7 @@ export default function Report() {
           <T v="small" color={C.muted} style={{ marginBottom: 6 }}>شو المشكلة؟ البلاغ سري.</T>
           {REASONS.map((r) => (
             <Tap key={r} scale={0.98} onPress={() => setReason(r)}
-              style={{ flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 54, borderRadius: 16, paddingHorizontal: 14, backgroundColor: reason === r ? C.redSoft : C.white, borderWidth: reason === r ? 1.5 : 0, borderColor: C.red }}>
+              style={{ flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 54, borderRadius: 16, paddingHorizontal: 14, backgroundColor: reason === r ? C.redSoft : C.card, borderWidth: reason === r ? 1.5 : 0, borderColor: C.red }}>
               <View style={{ width: 20, height: 20, borderRadius: 10, borderWidth: 2, borderColor: reason === r ? C.red : C.line, alignItems: 'center', justifyContent: 'center' }}>
                 {reason === r && <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: C.red }} />}
               </View>
@@ -54,7 +54,7 @@ export default function Report() {
             <View style={{ gap: 12, marginTop: 10 }}>
               <Field value={details} onChangeText={setDetails} multiline maxLength={1000} placeholder="تفاصيل تساعدنا (اختياري)" style={{ minHeight: 90, textAlignVertical: 'top', paddingTop: 12 }} />
               {user && user !== profile?.id && (
-                <View style={{ backgroundColor: C.white, borderRadius: 18, padding: 12 }}>
+                <View style={{ backgroundColor: C.card, borderRadius: 18, padding: 12 }}>
                   <Toggle label="احظر هالشخص كمان" hint="ما بيقدر يشوفك ولا يراسلك" value={block} onChange={setBlock} />
                 </View>
               )}

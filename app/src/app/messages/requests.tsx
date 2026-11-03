@@ -47,7 +47,7 @@ export default function Requests() {
         keyExtractor={(r) => r.id}
         contentContainerStyle={{ paddingHorizontal: 18, gap: 12, paddingBottom: 40 }}
         ListHeaderComponent={
-          <Row gap={10} center={false} style={{ backgroundColor: C.white, borderRadius: 20, padding: 14, marginBottom: 4 }}>
+          <Row gap={10} center={false} style={{ backgroundColor: C.card, borderRadius: 20, padding: 14, marginBottom: 4 }}>
             <View style={{ width: 38, height: 38, borderRadius: 13, backgroundColor: C.green, alignItems: 'center', justifyContent: 'center' }}><ShieldCheck size={20} color={C.white} /></View>
             <T v="small" color={C.ink2} style={{ flex: 1 }}>المرسل ما بيعرف إذا شفت رسالته. إذا تجاهلتها، بتختفي بهدوء وما حدا بيعرف.</T>
           </Row>
@@ -67,7 +67,7 @@ export default function Requests() {
               <Row gap={8}>
                 <Button title="قبول" onPress={() => answer(item.id, true)} style={{ flex: 1, minHeight: 44 }} />
                 <Button kind="soft" title="تجاهل" onPress={() => answer(item.id, false)} style={{ flex: 1, minHeight: 44 }} />
-                <Button kind="white" title="إبلاغ" onPress={() => router.push({ pathname: '/report', params: { type: 'conversation', id: item.id, user: item.from?.id } })} style={{ flex: 1, minHeight: 44, borderWidth: 1, borderColor: '#FFD1DA' }} />
+                <Button kind="white" title="إبلاغ" onPress={() => router.push({ pathname: '/report', params: { type: 'conversation', id: item.id, user: item.from?.id } })} style={{ flex: 1, minHeight: 44, borderWidth: 1, borderColor: C.pinkSoft }} />
               </Row>
             </Card>
           </Animated.View>

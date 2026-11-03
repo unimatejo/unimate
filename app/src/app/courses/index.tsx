@@ -96,7 +96,7 @@ export default function Courses() {
     <Screen>
       <Header title="موادي" right={<Tap onPress={() => setAdding(true)} accessibilityLabel="ضيف مادة" style={{ width: 42, height: 42, borderRadius: 14, backgroundColor: C.primary, alignItems: 'center', justifyContent: 'center' }}><Plus size={22} color={C.white} /></Tap>} />
       <ScrollView contentContainerStyle={{ padding: 18, gap: 14, paddingBottom: 80 }}>
-        <Tap onPress={fromTeams} disabled={importing} scale={0.98} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: C.white, borderRadius: 22, padding: 14 }}>
+        <Tap onPress={fromTeams} disabled={importing} scale={0.98} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: C.card, borderRadius: 22, padding: 14 }}>
           <GlyphTile icon={Sparkles} colors={GRAD.indigo} size={48} live />
           <View style={{ flex: 1 }}>
             <T v="bold">جيب موادي من Microsoft Teams</T>
@@ -108,7 +108,7 @@ export default function Courses() {
         {rows === null ? <ActivityIndicator color={C.primary} style={{ marginTop: 30 }} /> : rows.length === 0 ? (
           <Empty icon={<BookOpen size={30} color={C.primary} />} title="ما في مواد لهلأ" body="جيبهم من Teams، أو ضيف كل مادة مرة وحدة. زملاءك بنفس الشعبة بياخذوا المادة ووقتها جاهزة." />
         ) : rows.map((s, i) => (
-          <Animated.View key={s.id} entering={FadeInDown.delay(i * 50)} style={{ backgroundColor: C.white, borderRadius: 24, padding: 14, gap: 10 }}>
+          <Animated.View key={s.id} entering={FadeInDown.delay(i * 50)} style={{ backgroundColor: C.card, borderRadius: 24, padding: 14, gap: 10 }}>
             <Row gap={12}>
               <GlyphTile icon={BookOpen} colors={[GRAD.blue, GRAD.pink, GRAD.green, GRAD.orange, GRAD.violet][i % 5]} size={44} />
               <View style={{ flex: 1 }}>
@@ -118,7 +118,7 @@ export default function Courses() {
               <Tap onPress={() => leave(s)} accessibilityLabel="شيل المادة" style={{ width: 38, height: 38, alignItems: 'center', justifyContent: 'center' }}><Trash2 size={18} color={C.faint} /></Tap>
             </Row>
             {s.meetings.map((m) => (
-              <Row key={m.id} gap={8} style={{ backgroundColor: '#F5F7FC', borderRadius: 14, padding: 10 }}>
+              <Row key={m.id} gap={8} style={{ backgroundColor: C.soft, borderRadius: 14, padding: 10 }}>
                 <Clock size={15} color={C.primary} />
                 <T v="small" style={{ flex: 1 }}>{WEEKDAYS_SHORT[m.weekday]} {clock(m.starts_at)} - {clock(m.ends_at)}{m.room_text ? ` · ${m.room_text}` : ''}</T>
                 {m.confirmations >= 3 ? <Row gap={3}><CheckCircle2 size={14} color={C.greenInk} /><T v="tiny" color={C.greenInk}>مؤكد</T></Row>

@@ -8,7 +8,7 @@ export default function TabsLayout() {
       <Tabs.Screen name="index" />
       <Tabs.Screen name="schedule" />
       <Tabs.Screen name="community" />
-      <Tabs.Screen name="map" />
+      <Tabs.Screen name="inbox" />
       <Tabs.Screen name="profile" />
     </Tabs>
   );

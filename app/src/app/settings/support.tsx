@@ -40,7 +40,7 @@ export default function Support() {
       <Header title="الدعم والمساعدة" />
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView contentContainerStyle={{ padding: 18, paddingTop: 4, gap: 14, paddingBottom: 60 }} keyboardShouldPersistTaps="handled">
-          <View style={{ gap: 12, backgroundColor: C.white, borderRadius: 22, padding: 14 }}>
+          <View style={{ gap: 12, backgroundColor: C.card, borderRadius: 22, padding: 14 }}>
             <Row gap={10}><LifeBuoy size={22} color={C.primary} /><T v="h3">احكيلنا شو صاير</T></Row>
             <Row gap={8} style={{ flexWrap: 'wrap' }}>{TOPICS.map((t) => <Chip key={t} label={t} active={topic === t} onPress={() => setTopic(t)} />)}</Row>
             <Field value={body} onChangeText={setBody} multiline maxLength={1500} placeholder="اكتب التفاصيل..." style={{ minHeight: 120, textAlignVertical: 'top', paddingTop: 12 }} />
@@ -49,7 +49,7 @@ export default function Support() {
 
           {tickets.length > 0 && <T v="h3" style={{ paddingHorizontal: 4 }}>طلباتك</T>}
           {tickets.map((t) => (
-            <View key={t.id} style={{ gap: 8, backgroundColor: C.white, borderRadius: 20, padding: 14 }}>
+            <View key={t.id} style={{ gap: 8, backgroundColor: C.card, borderRadius: 20, padding: 14 }}>
               <Row gap={8}>
                 {t.status === 'open' ? <Clock size={16} color={C.orange} /> : <CheckCircle2 size={16} color={C.green} />}
                 <T v="bold" style={{ flex: 1 }}>{t.subject}</T>

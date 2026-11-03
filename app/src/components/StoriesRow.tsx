@@ -18,7 +18,7 @@ function Ring({ seen, children }: { seen: boolean; children: React.ReactNode }) 
   const s = useAnimatedStyle(() => ({ transform: [{ rotate: `${r.value}deg` }] }));
   return (
     <View style={{ width: 66, height: 66, alignItems: 'center', justifyContent: 'center' }}>
-      {seen ? <View style={{ position: 'absolute', inset: 0, borderRadius: 24, backgroundColor: '#C9CFE0' }} /> : (
+      {seen ? <View style={{ position: 'absolute', inset: 0, borderRadius: 24, backgroundColor: C.line }} /> : (
         <Animated.View style={[{ position: 'absolute', width: 66, height: 66, borderRadius: 24, overflow: 'hidden' }, s]}>
           <LinearGradient colors={[C.primary, C.pink, '#FFB020', C.primary]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={{ flex: 1 }} />
         </Animated.View>
@@ -69,7 +69,7 @@ export function StoriesRow() {
         </View>
       ) : (
         <Tap onPress={() => router.push({ pathname: '/post/new', params: { mode: 'story' } })} style={{ alignItems: 'center', gap: 6, width: 68 }}>
-          <View style={{ width: 66, height: 66, borderRadius: 24, borderWidth: 1.5, borderStyle: 'dashed', borderColor: '#AAB4D4', backgroundColor: C.white, alignItems: 'center', justifyContent: 'center' }}>
+          <View style={{ width: 66, height: 66, borderRadius: 24, borderWidth: 1.5, borderStyle: 'dashed', borderColor: C.faint, backgroundColor: C.card, alignItems: 'center', justifyContent: 'center' }}>
             <Camera size={26} color={C.primary} />
           </View>
           <T v="tiny">قصتك</T>

@@ -46,7 +46,7 @@ export default function Search() {
     if (r.kind === 'person') router.push({ pathname: '/user/[id]', params: { id: r.id } });
     else if (r.kind === 'link') Linking.openURL(r.subtitle);
     else if (r.kind === 'course') router.push('/swap');
-    else router.push({ pathname: '/(tabs)/map', params: { building: r.id } });
+    else router.push({ pathname: '/map', params: { building: r.id } });
   }
 
   const icon = (k: string) => k === 'course' ? <BookOpen size={20} color={C.green} /> : k === 'link' ? <LinkIcon size={20} color={C.violet} /> : k === 'building' ? <Building2 size={20} color={C.primary} /> : <MapPin size={20} color={C.orange} />;
@@ -55,7 +55,7 @@ export default function Search() {
     <Screen>
       <Header title="بحث" />
       <View style={{ paddingHorizontal: 18, gap: 12 }}>
-        <Row gap={8} style={[{ minHeight: 50, borderRadius: 16, backgroundColor: C.white, paddingHorizontal: 14 }, shadow]}>
+        <Row gap={8} style={[{ minHeight: 50, borderRadius: 16, backgroundColor: C.card, paddingHorizontal: 14 }, shadow]}>
           <SearchIcon size={20} color={C.muted} />
           <TextInput value={q} onChangeText={setQ} autoFocus placeholder="طلاب، مواد، مباني، ألقاب، روابط الجامعة" placeholderTextColor={C.faint}
             style={{ flex: 1, fontFamily: F.body, fontSize: 15, color: C.ink, textAlign: 'right' }} accessibilityLabel="بحث" />
@@ -73,7 +73,7 @@ export default function Search() {
         contentContainerStyle={{ padding: 18, gap: 6 }}
         renderItem={({ item }) => (
           <Animated.View entering={FadeIn}>
-            <Tap scale={0.98} onPress={() => open(item)} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 64, backgroundColor: C.white, borderRadius: 18, paddingHorizontal: 12 }}>
+            <Tap scale={0.98} onPress={() => open(item)} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 64, backgroundColor: C.card, borderRadius: 18, paddingHorizontal: 12 }}>
               {item.kind === 'person' ? <Avatar id={item.id} name={item.title} url={item.avatar} size={44} /> :
                 <View style={{ width: 44, height: 44, borderRadius: 15, backgroundColor: C.bg, alignItems: 'center', justifyContent: 'center' }}>{icon(item.kind)}</View>}
               <View style={{ flex: 1 }}>
@@ -87,7 +87,7 @@ export default function Search() {
           <View style={{ gap: 10 }}>
             <T v="h3">روابط جامعتك</T>
             {links.length === 0 ? <T v="small" color={C.muted}>بتنضاف قريباً.</T> : links.map((l) => (
-              <Tap key={l.id} onPress={() => Linking.openURL(l.url)} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 56, backgroundColor: C.white, borderRadius: 18, paddingHorizontal: 14 }}>
+              <Tap key={l.id} onPress={() => Linking.openURL(l.url)} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 56, backgroundColor: C.card, borderRadius: 18, paddingHorizontal: 14 }}>
                 <LinkIcon size={19} color={C.violet} /><T v="bodyMd">{l.title}</T>
               </Tap>
             ))}

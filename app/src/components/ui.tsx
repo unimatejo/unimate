@@ -73,15 +73,15 @@ export function Button({ title, onPress, kind = 'primary', loading, disabled, ic
   title: string; onPress?: () => void; kind?: 'primary' | 'dark' | 'soft' | 'ghost' | 'danger' | 'green' | 'white';
   loading?: boolean; disabled?: boolean; icon?: ReactNode; style?: StyleProp<ViewStyle>;
 }) {
-  const bg = { primary: C.primary, dark: C.ink, soft: C.primarySoft, ghost: 'transparent', danger: C.danger, green: C.green, white: C.white }[kind];
-  const fg = { primary: C.white, dark: C.white, soft: C.primary, ghost: C.primary, danger: C.white, green: C.white, white: C.ink }[kind];
+  const bg = { primary: C.primary, dark: C.inverse, soft: C.primarySoft, ghost: 'transparent', danger: C.danger, green: C.green, white: C.card }[kind];
+  const fg = { primary: C.white, dark: C.onInverse, soft: C.primary, ghost: C.primary, danger: C.white, green: C.white, white: C.ink }[kind];
   const glow = kind === 'primary' ? { shadowColor: C.primary, shadowOpacity: 0.35, shadowRadius: 14, shadowOffset: { width: 0, height: 8 }, elevation: 6 } : null;
   return (
     <Tap
       onPress={disabled || loading ? undefined : onPress}
       accessibilityRole="button"
       accessibilityState={{ disabled: !!disabled }}
-      style={[{ minHeight: 54, borderRadius: 18, backgroundColor: disabled ? '#DCE1EE' : bg, paddingHorizontal: 18, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 }, !disabled && glow, style]}
+      style={[{ minHeight: 54, borderRadius: 18, backgroundColor: disabled ? C.line : bg, paddingHorizontal: 18, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 }, !disabled && glow, style]}
     >
       {loading ? <ActivityIndicator color={fg} /> : (
         <>
@@ -96,7 +96,7 @@ export function Button({ title, onPress, kind = 'primary', loading, disabled, ic
 export function IconButton({ children, onPress, label, dark, badge, style }: { children: ReactNode; onPress?: () => void; label: string; dark?: boolean; badge?: number; style?: StyleProp<ViewStyle> }) {
   return (
     <Tap onPress={onPress} accessibilityRole="button" accessibilityLabel={label}
-      style={[{ width: 44, height: 44, borderRadius: 15, backgroundColor: dark ? C.ink : C.card, alignItems: 'center', justifyContent: 'center' }, !dark && shadow, style]}>
+      style={[{ width: 44, height: 44, borderRadius: 15, backgroundColor: dark ? C.inverse : C.card, alignItems: 'center', justifyContent: 'center' }, !dark && shadow, style]}>
       {children}
       {!!badge && badge > 0 && (
         <View style={{ position: 'absolute', top: -5, left: -5, minWidth: 20, height: 20, borderRadius: 10, paddingHorizontal: 5, backgroundColor: C.pink, borderWidth: 2, borderColor: C.bg, alignItems: 'center', justifyContent: 'center' }}>
@@ -110,9 +110,9 @@ export function IconButton({ children, onPress, label, dark, badge, style }: { c
 export function Chip({ label, active, onPress, dot, style }: { label: string; active?: boolean; onPress?: () => void; dot?: string; style?: StyleProp<ViewStyle> }) {
   return (
     <Tap onPress={onPress} accessibilityRole="button" accessibilityState={{ selected: !!active }}
-      style={[{ minHeight: 38, paddingHorizontal: 14, borderRadius: R.pill, flexDirection: 'row', alignItems: 'center', gap: 7, backgroundColor: active ? C.ink : C.card }, !active && { borderWidth: 1, borderColor: C.line }, style]}>
+      style={[{ minHeight: 38, paddingHorizontal: 14, borderRadius: R.pill, flexDirection: 'row', alignItems: 'center', gap: 7, backgroundColor: active ? C.inverse : C.card }, !active && { borderWidth: 1, borderColor: C.line }, style]}>
       {dot && <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: dot }} />}
-      <Text style={{ fontFamily: active ? F.bodyBold : F.bodyMd, fontSize: 13, color: active ? C.white : C.ink }}>{label}</Text>
+      <Text style={{ fontFamily: active ? F.bodyBold : F.bodyMd, fontSize: 13, color: active ? C.onInverse : C.ink }}>{label}</Text>
     </Tap>
   );
 }
@@ -133,9 +133,9 @@ export function Segmented({ items, value, onChange, dark }: { items: string[]; v
   return (
     <View
       onLayout={(e) => { const cw = (e.nativeEvent.layout.width - 8) / items.length; w.value = cw; x.value = -value * cw; }}
-      style={{ flexDirection: 'row', backgroundColor: dark ? 'rgba(255,255,255,0.16)' : '#E9ECF5', borderRadius: 14, padding: 4 }}
+      style={{ flexDirection: 'row', backgroundColor: dark ? 'rgba(255,255,255,0.16)' : C.soft, borderRadius: 14, padding: 4 }}
     >
-      <Animated.View style={[{ position: 'absolute', top: 4, bottom: 4, right: 4, borderRadius: 11, backgroundColor: C.white }, shadow, pill]} />
+      <Animated.View style={[{ position: 'absolute', top: 4, bottom: 4, right: 4, borderRadius: 11, backgroundColor: C.card }, shadow, pill]} />
       {items.map((it, i) => (
         <Pressable key={it} accessibilityRole="tab" accessibilityState={{ selected: i === value }}
           onPress={() => { Haptics.selectionAsync(); onChange(i); x.value = withSpring(-i * w.value, { damping: 18, stiffness: 220 }); }}
@@ -161,7 +161,7 @@ export function Avatar({ id, name, url, size = 44, ring, radius }: { id?: string
   if (!ring) return inner;
   return (
     <View style={{ padding: 3, borderRadius: r + 4, backgroundColor: C.primary }}>
-      <View style={{ padding: 2, borderRadius: r + 2, backgroundColor: C.white }}>{inner}</View>
+      <View style={{ padding: 2, borderRadius: r + 2, backgroundColor: C.card }}>{inner}</View>
     </View>
   );
 }
@@ -209,8 +209,8 @@ export function Toggle({ value, onChange, label, hint, icon }: { value: boolean;
         <T v="bodyMd">{label}</T>
         {hint && <T v="small" color={C.muted}>{hint}</T>}
       </View>
-      <View style={{ width: 50, height: 30, borderRadius: 15, backgroundColor: value ? C.primary : '#CDD3E2', justifyContent: 'center', paddingHorizontal: 3, alignItems: 'flex-start' }}>
-        <Animated.View style={[{ width: 24, height: 24, borderRadius: 12, backgroundColor: C.white }, shadow, x]} />
+      <View style={{ width: 50, height: 30, borderRadius: 15, backgroundColor: value ? C.primary : C.line, justifyContent: 'center', paddingHorizontal: 3, alignItems: 'flex-start' }}>
+        <Animated.View style={[{ width: 24, height: 24, borderRadius: 12, backgroundColor: C.card }, shadow, x]} />
       </View>
     </Pressable>
   );
@@ -242,7 +242,7 @@ export function ListRow({ icon, label, value, onPress, danger }: { icon?: ReactN
       {icon}
       <T v="bodyMd" color={danger ? C.danger : C.ink} style={{ flex: 1 }}>{label}</T>
       {value ? <T v="small" color={C.muted}>{value}</T> : null}
-      <ChevronRight size={18} color="#A3ABC2" style={{ transform: [{ scaleX: -1 }] }} />
+      <ChevronRight size={18} color={C.faint} style={{ transform: [{ scaleX: -1 }] }} />
     </Tap>
   );
 }
@@ -253,7 +253,7 @@ function FloatIcon({ children }: { children: ReactNode }) {
   useEffect(() => { t.value = withRepeat(withSequence(withTiming(1, { duration: 1700 }), withTiming(0, { duration: 1700 })), -1); }, [t]);
   const a = useAnimatedStyle(() => ({ transform: [{ translateY: -6 * t.value }, { rotate: `${(t.value - 0.5) * 8}deg` }] }));
   return (
-    <Animated.View style={[{ width: 76, height: 76, borderRadius: 26, backgroundColor: C.primarySoft, alignItems: 'center', justifyContent: 'center', borderWidth: 6, borderColor: '#F3F6FF', marginBottom: 6 }, a]}>
+    <Animated.View style={[{ width: 76, height: 76, borderRadius: 26, backgroundColor: C.primarySoft, alignItems: 'center', justifyContent: 'center', borderWidth: 6, borderColor: C.primarySoft, marginBottom: 6 }, a]}>
       {children}
     </Animated.View>
   );

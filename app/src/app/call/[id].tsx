@@ -50,7 +50,7 @@ export default function CallScreen() {
   const label = status === 'active' ? `${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, '0')}` : status === 'missed' ? 'ما رد' : status === 'declined' ? 'رفض المكالمة' : status === 'ended' ? 'انتهت المكالمة' : kind === 'video' ? 'مكالمة فيديو... بترن' : 'مكالمة صوتية... بترن';
 
   return (
-    <View style={{ flex: 1, backgroundColor: C.ink }}>
+    <View style={{ flex: 1, backgroundColor: '#0E1430' }}>
       <View pointerEvents="none" style={{ position: 'absolute', top: 60, right: -80, width: 300, height: 300, borderRadius: 150, backgroundColor: C.primary, opacity: 0.35 }} />
       <View pointerEvents="none" style={{ position: 'absolute', bottom: 140, left: -100, width: 320, height: 320, borderRadius: 160, backgroundColor: C.pink, opacity: 0.25 }} />
       <SafeAreaView style={{ flex: 1, alignItems: 'center', paddingTop: 80, paddingBottom: 40 }}>
@@ -61,7 +61,7 @@ export default function CallScreen() {
         <T style={{ fontFamily: F.display, fontSize: 28, marginTop: 26 }} color={C.white}>{name}</T>
         <T v="body" color="#C9D1F0" style={{ marginTop: 6 }}>{label}</T>
         <View style={{ marginTop: 'auto', flexDirection: 'row', gap: 22 }}>
-          <Tap onPress={() => setMuted((m) => !m)} accessibilityLabel={muted ? 'إلغاء الكتم' : 'كتم'} style={{ width: 64, height: 64, borderRadius: 32, backgroundColor: muted ? C.white : 'rgba(255,255,255,0.14)', alignItems: 'center', justifyContent: 'center' }}>
+          <Tap onPress={() => setMuted((m) => !m)} accessibilityLabel={muted ? 'إلغاء الكتم' : 'كتم'} style={{ width: 64, height: 64, borderRadius: 32, backgroundColor: muted ? C.card : 'rgba(255,255,255,0.14)', alignItems: 'center', justifyContent: 'center' }}>
             {muted ? <MicOff size={26} color={C.ink} /> : <Mic size={26} color={C.white} />}
           </Tap>
           <Tap accessibilityLabel="كاميرا" style={{ width: 64, height: 64, borderRadius: 32, backgroundColor: 'rgba(255,255,255,0.14)', alignItems: 'center', justifyContent: 'center' }}>

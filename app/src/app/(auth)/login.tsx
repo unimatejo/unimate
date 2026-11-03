@@ -20,7 +20,7 @@ function Bubble({ children, label, color, style, delay }: { children: ReactNode;
   useEffect(() => { y.value = withDelay(delay, withRepeat(withTiming(-8, { duration: 2600, easing: Easing.inOut(Easing.sin) }), -1, true)); }, [y, delay]);
   const s = useAnimatedStyle(() => ({ transform: [{ translateY: y.value }] }));
   return (
-    <Animated.View style={[{ position: 'absolute', flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: C.white, borderRadius: 18, paddingVertical: 9, paddingHorizontal: 12,
+    <Animated.View style={[{ position: 'absolute', flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: C.card, borderRadius: 18, paddingVertical: 9, paddingHorizontal: 12,
       shadowColor: '#0E1430', shadowOpacity: 0.16, shadowRadius: 14, shadowOffset: { width: 0, height: 8 }, elevation: 6 }, style, s]}>
       <View style={{ width: 30, height: 30, borderRadius: 10, backgroundColor: color, alignItems: 'center', justifyContent: 'center' }}>{children}</View>
       <T v="bold" style={{ fontSize: 13 }}>{label}</T>

@@ -160,7 +160,7 @@ export function ProfileView({ userId }: { userId: string }) {
             {shown.length === 0 ? <Empty title="ما في منشورات لهلأ" /> : shown.map((x) => <PostCard key={x.id} post={x} onLikes={setLikesOf} compact />)}
           </View>
         ) : (
-          <View style={{ margin: 18, backgroundColor: C.white, borderRadius: 26, padding: 28, alignItems: 'center', gap: 10 }}>
+          <View style={{ margin: 18, backgroundColor: C.card, borderRadius: 26, padding: 28, alignItems: 'center', gap: 10 }}>
             <View style={{ width: 60, height: 60, borderRadius: 22, backgroundColor: C.primarySoft, alignItems: 'center', justifyContent: 'center' }}><Lock size={28} color={C.primary} /></View>
             <T v="h3">هاد الحساب خاص</T>
             <T v="small" color={C.muted} style={{ textAlign: 'center' }}>لما يتقبل طلب متابعتك، بتشوف منشوراته وقصصه وحساباته الثانية.</T>

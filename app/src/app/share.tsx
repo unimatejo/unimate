@@ -50,7 +50,7 @@ export default function Share() {
     <Screen>
       <Header title="أرسل لصديق" />
       <View style={{ paddingHorizontal: 18 }}>
-        <Row gap={8} style={{ minHeight: 46, borderRadius: 14, backgroundColor: C.white, paddingHorizontal: 12 }}>
+        <Row gap={8} style={{ minHeight: 46, borderRadius: 14, backgroundColor: C.card, paddingHorizontal: 12 }}>
           <Search size={18} color={C.muted} />
           <TextInput value={q} onChangeText={setQ} placeholder="دوّر" placeholderTextColor={C.faint} style={{ flex: 1, fontFamily: F.body, fontSize: 14, color: C.ink, textAlign: 'right' }} />
         </Row>
@@ -78,7 +78,7 @@ export default function Share() {
       {picked.size > 0 && (
         <View style={{ padding: 18, gap: 10, borderTopWidth: 0.5, borderTopColor: C.line, backgroundColor: C.bg }}>
           <TextInput value={note} onChangeText={setNote} placeholder="اكتب رسالة..." placeholderTextColor={C.faint}
-            style={{ minHeight: 46, borderRadius: 14, backgroundColor: C.white, paddingHorizontal: 14, fontFamily: F.body, fontSize: 14, color: C.ink, textAlign: 'right' }} />
+            style={{ minHeight: 46, borderRadius: 14, backgroundColor: C.card, paddingHorizontal: 14, fontFamily: F.body, fontSize: 14, color: C.ink, textAlign: 'right' }} />
           <Button title={picked.size > 1 ? `أرسل لـ ${picked.size}` : 'أرسل'} icon={<Send size={17} color={C.white} />} onPress={send} loading={busy} />
         </View>
       )}

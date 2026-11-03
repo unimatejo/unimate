@@ -68,7 +68,7 @@ export default function PostScreen() {
               <Animated.View entering={FadeInDown} style={{ flexDirection: 'row', gap: 10, marginRight: item.parent_id ? 40 : 0 }}>
                 <Avatar id={item.author_id} name={item.author?.full_name} url={item.author?.avatar_url} size={item.parent_id ? 32 : 36} />
                 <View style={{ flex: 1, gap: 4 }}>
-                  <View style={{ backgroundColor: C.white, borderRadius: 18, borderTopRightRadius: 6, paddingHorizontal: 12, paddingVertical: 8, alignSelf: 'flex-start' }}>
+                  <View style={{ backgroundColor: C.card, borderRadius: 18, borderTopRightRadius: 6, paddingHorizontal: 12, paddingVertical: 8, alignSelf: 'flex-start' }}>
                     <Row gap={6}>
                       <T v="bold" style={{ fontSize: 13 }}>{item.author?.full_name}</T>
                       {own && <View style={{ backgroundColor: C.primarySoft, borderRadius: 999, paddingHorizontal: 6 }}><T v="tiny" color={C.primary} style={{ fontSize: 10 }}>صاحب المنشور</T></View>}
@@ -85,12 +85,12 @@ export default function PostScreen() {
           }}
           ListEmptyComponent={<T v="small" color={C.muted}>كون أول واحد بيعلّق.</T>}
         />
-        <View style={{ backgroundColor: C.white, paddingHorizontal: 12, paddingTop: 8, paddingBottom: insets.bottom + 8, borderTopWidth: 1, borderTopColor: C.line, gap: 6 }}>
+        <View style={{ backgroundColor: C.card, paddingHorizontal: 12, paddingTop: 8, paddingBottom: insets.bottom + 8, borderTopWidth: 1, borderTopColor: C.line, gap: 6 }}>
           {replyTo && <Row gap={6}><T v="tiny" color={C.muted} style={{ flex: 1 }}>رد على {replyTo.author?.full_name}</T><Tap onPress={() => setReplyTo(null)}><T v="tiny" color={C.primary}>إلغاء</T></Tap></Row>}
           <Row gap={8}>
             <TextInput value={draft} onChangeText={setDraft} placeholder="اكتب تعليق..." placeholderTextColor={C.faint} multiline
               style={{ flex: 1, minHeight: 46, maxHeight: 110, borderRadius: 23, backgroundColor: C.field, paddingHorizontal: 16, paddingVertical: 11, fontFamily: F.body, fontSize: 15, textAlign: 'right', color: C.ink }} accessibilityLabel="اكتب تعليق" />
-            <Tap onPress={send} accessibilityLabel="إرسال" style={{ width: 46, height: 46, borderRadius: 23, backgroundColor: draft.trim() ? C.primary : '#DCE1EE', alignItems: 'center', justifyContent: 'center' }}>
+            <Tap onPress={send} accessibilityLabel="إرسال" style={{ width: 46, height: 46, borderRadius: 23, backgroundColor: draft.trim() ? C.primary : C.line, alignItems: 'center', justifyContent: 'center' }}>
               <Send size={19} color={C.white} style={{ transform: [{ scaleX: -1 }] }} />
             </Tap>
           </Row>

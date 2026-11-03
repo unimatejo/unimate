@@ -25,7 +25,7 @@ export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
     <View style={{ flex: 1, backgroundColor: C.bg, padding: 24, paddingTop: 90, gap: 14 }}>
       <Text style={{ fontSize: 22, fontWeight: '700', color: C.ink, textAlign: 'right' }}>صار خطأ بهالصفحة</Text>
       <Text style={{ fontSize: 15, color: C.muted, textAlign: 'right' }}>انبعت تقرير لفريق يونيميت تلقائياً.</Text>
-      <ScrollView style={{ maxHeight: 260, backgroundColor: C.white, borderRadius: 14, padding: 12 }}>
+      <ScrollView style={{ maxHeight: 260, backgroundColor: C.card, borderRadius: 14, padding: 12 }}>
         <Text selectable style={{ fontSize: 12, color: C.ink2, textAlign: 'left' }}>{error.message}</Text>
       </ScrollView>
       <Text onPress={retry} style={{ fontSize: 16, fontWeight: '700', color: C.white, backgroundColor: C.primary, textAlign: 'center', paddingVertical: 14, borderRadius: 16, overflow: 'hidden' }}>جرّب كمان مرة</Text>
@@ -76,13 +76,20 @@ export default function RootLayout() {
     Rubik_400Regular, Rubik_500Medium, Rubik_600SemiBold,
   });
   useEffect(() => { if (loaded) SplashScreen.hideAsync(); }, [loaded]);
+  // following the phone's light/dark setting: reload so every screen picks up the new palette
+  useEffect(() => {
+    const sub = Appearance.addChangeListener(({ colorScheme }) => {
+      if (themePref() === 'system' && (colorScheme === 'dark') !== isDark) reloadApp();
+    });
+    return () => sub.remove();
+  }, []);
   useEffect(() => { if (loaded) runQaLaunchArgs().catch(() => {}); }, [loaded]);
   if (!loaded) return null;
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
+    <GestureHandlerRootView style={{ flex: 1, backgroundColor: C.bg }}>
       <SafeAreaProvider>
         <AuthProvider>
-          <StatusBar style="dark" />
+          <StatusBar style={isDark ? 'light' : 'dark'} />
           <Gate />
         </AuthProvider>
       </SafeAreaProvider>

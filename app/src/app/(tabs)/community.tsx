@@ -1,6 +1,6 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, useFocusEffect } from 'expo-router';
-import { Briefcase, BookOpen, Bus, Gift, GraduationCap, Image as ImageIcon, LayoutGrid, MessageSquare, NotebookPen, PartyPopper, Plus, Search, SearchCheck, Send, ShoppingBag } from 'lucide-react-native';
+import { Briefcase, BookOpen, Bus, Gift, GraduationCap, Image as ImageIcon, LayoutGrid, MessageSquare, NotebookPen, PartyPopper, Plus, Map as MapIcon, Search, SearchCheck, ShoppingBag } from 'lucide-react-native';
 import { useCallback, useEffect, useState } from 'react';
 import { FlatList, RefreshControl, ScrollView, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
@@ -31,7 +31,6 @@ export default function Community() {
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
   const [likesOf, setLikesOf] = useState<Post | null>(null);
-  const [requests, setRequests] = useState(0);
 
   const load = useCallback(async () => {
     if (!profile) return;
@@ -43,11 +42,6 @@ export default function Community() {
   useEffect(() => { load(); }, [load]);
   // new posts show up as soon as you come back from posting
   useFocusEffect(useCallback(() => { load(); }, [load]));
-  useEffect(() => {
-    if (!profile) return;
-    supabase.from('conversation_members').select('conversation_id', { count: 'exact', head: true }).eq('user_id', (profile?.id ?? '')).eq('state', 'request')
-      .then(({ count }) => setRequests(count ?? 0));
-  }, [profile]);
 
   async function more() {
     if (!profile || posts.length < 20) return;
@@ -72,13 +66,13 @@ export default function Community() {
                 <T v="small" color={C.muted}>{university?.name_ar}</T>
               </View>
               <IconButton label="بحث" onPress={() => router.push('/search')}><Search size={21} color={C.ink} /></IconButton>
-              <IconButton label="الرسائل" dark badge={requests} onPress={() => router.push('/messages')}><Send size={20} color={C.white} /></IconButton>
+              <IconButton label="الخريطة" onPress={() => router.push('/map')}><MapIcon size={21} color={C.ink} /></IconButton>
             </Row>
             <StoriesRow />
             <View style={{ paddingHorizontal: 18 }}>
               <Segmented items={['جامعتي', 'كليتي', 'أتابعهم']} value={tab} onChange={setTab} />
             </View>
-            <Tap onPress={() => router.push('/post/new')} scale={0.98} style={{ marginHorizontal: 18, flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: C.white, borderRadius: 22, padding: 10 }}>
+            <Tap onPress={() => router.push('/post/new')} scale={0.98} style={{ marginHorizontal: 18, flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: C.card, borderRadius: 22, padding: 10 }}>
               <Avatar id={profile?.id} name={profile?.full_name} url={profile?.avatar_url} size={40} />
               <T v="body" color={C.faint} style={{ flex: 1 }}>شو ببالك؟ اسأل أو شارك ملخص...</T>
               <View style={{ width: 40, height: 40, borderRadius: 14, backgroundColor: C.greenSoft, alignItems: 'center', justifyContent: 'center' }}><ImageIcon size={20} color={C.green} /></View>

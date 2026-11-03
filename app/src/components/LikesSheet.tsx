@@ -40,8 +40,8 @@ export function LikesSheet({ post, onClose }: { post: Post | null; onClose: () =
   return (
     <Modal visible={!!post} transparent animationType="slide" onRequestClose={onClose}>
       <Pressable style={{ flex: 1, backgroundColor: 'rgba(14,20,48,0.45)' }} onPress={onClose} accessibilityLabel="إغلاق" />
-      <View style={{ maxHeight: '70%', backgroundColor: C.white, borderTopLeftRadius: 30, borderTopRightRadius: 30, paddingHorizontal: 18, paddingTop: 10, paddingBottom: insets.bottom + 16 }}>
-        <View style={{ alignSelf: 'center', width: 42, height: 5, borderRadius: 3, backgroundColor: '#DCE1EE', marginBottom: 12 }} />
+      <View style={{ maxHeight: '70%', backgroundColor: C.card, borderTopLeftRadius: 30, borderTopRightRadius: 30, paddingHorizontal: 18, paddingTop: 10, paddingBottom: insets.bottom + 16 }}>
+        <View style={{ alignSelf: 'center', width: 42, height: 5, borderRadius: 3, backgroundColor: C.line, marginBottom: 12 }} />
         <Row style={{ justifyContent: 'space-between', marginBottom: 8 }}>
           <T v="h2">الإعجابات</T>
           <Row gap={5}><Heart size={16} color={C.pink} fill={C.pink} /><T v="bold" color="#D12C4F">{post?.like_count ?? 0}</T></Row>

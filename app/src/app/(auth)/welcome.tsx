@@ -124,7 +124,7 @@ export default function Welcome() {
         <View style={{ paddingHorizontal: 22, paddingTop: 12, gap: 10 }}>
           <Row gap={6}>
             {STEPS.map((s, i) => (
-              <View key={s} style={{ flex: 1, height: 5, borderRadius: 3, backgroundColor: i <= step ? C.primary : '#E3E7F2' }} />
+              <View key={s} style={{ flex: 1, height: 5, borderRadius: 3, backgroundColor: i <= step ? C.primary : C.line }} />
             ))}
           </Row>
           <Row>

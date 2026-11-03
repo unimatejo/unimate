@@ -97,7 +97,7 @@ export default function Schedule() {
             </Row>
             {nextExam && (
               <Row gap={10} style={{ backgroundColor: 'rgba(255,255,255,0.16)', borderRadius: 18, padding: 10 }}>
-                <View style={{ width: 46, height: 46, borderRadius: 15, backgroundColor: C.white, alignItems: 'center', justifyContent: 'center' }}>
+                <View style={{ width: 46, height: 46, borderRadius: 15, backgroundColor: C.card, alignItems: 'center', justifyContent: 'center' }}>
                   <T style={{ fontFamily: F.display, fontSize: 19, lineHeight: 22 }} color={C.orange}>{daysLeft}</T>
                   <T v="tiny" color={C.orange} style={{ fontSize: 10 }}>{daysLeft === 1 ? 'يوم' : 'أيام'}</T>
                 </View>
@@ -115,9 +115,9 @@ export default function Schedule() {
             const on = d === day; const has = meetings.some((m) => m.weekday === d); const today = d === new Date().getDay();
             return (
               <Tap key={d} onPress={() => setDay(d)} scale={0.92} accessibilityRole="tab" accessibilityState={{ selected: on }}
-                style={[{ flex: 1, minHeight: 76, borderRadius: 20, alignItems: 'center', justifyContent: 'center', gap: 2, backgroundColor: on ? C.ink : C.card, borderWidth: today && !on ? 1.5 : 0, borderColor: C.primary }, on ? { shadowColor: C.ink, shadowOpacity: 0.3, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 6 } : shadow]}>
-                <T v="tiny" color={on ? '#B9C2E0' : C.muted}>{WEEKDAYS_SHORT[d]}</T>
-                <T style={{ fontFamily: F.display, fontSize: 20, lineHeight: 26 }} color={on ? C.white : C.ink}>{date.getDate()}</T>
+                style={[{ flex: 1, minHeight: 76, borderRadius: 20, alignItems: 'center', justifyContent: 'center', gap: 2, backgroundColor: on ? C.inverse : C.card, borderWidth: today && !on ? 1.5 : 0, borderColor: C.primary }, on ? { shadowColor: C.ink, shadowOpacity: 0.3, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 6 } : shadow]}>
+                <T v="tiny" color={on ? C.faint : C.muted}>{WEEKDAYS_SHORT[d]}</T>
+                <T style={{ fontFamily: F.display, fontSize: 20, lineHeight: 26 }} color={on ? C.onInverse : C.ink}>{date.getDate()}</T>
                 <View style={{ width: 5, height: 5, borderRadius: 3, backgroundColor: has ? (on ? '#FFB547' : C.primary) : 'transparent' }} />
               </Tap>
             );
@@ -160,7 +160,7 @@ export default function Schedule() {
                     ) : <Tag label={k[0]} bg={k[1]} fg={k[2]} />}
                   </Row>
                   {live && (
-                    <View style={{ height: 6, borderRadius: 3, backgroundColor: '#EEF1F8', overflow: 'hidden' }}>
+                    <View style={{ height: 6, borderRadius: 3, backgroundColor: C.soft, overflow: 'hidden' }}>
                       <View style={{ width: `${Math.round(pct * 100)}%`, height: 6, borderRadius: 3, backgroundColor: g[1] }} />
                     </View>
                   )}
@@ -170,12 +170,12 @@ export default function Schedule() {
                         <Video size={15} color={C.violet} /><T v="small" color={C.violet}>ادخل المحاضرة</T>
                       </Tap>
                     ) : (
-                      <Tap onPress={() => router.push({ pathname: '/(tabs)/map', params: { building: m.building_id ?? '' } })} style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 38, paddingHorizontal: 12, borderRadius: 12, backgroundColor: C.primarySoft }}>
+                      <Tap onPress={() => router.push({ pathname: '/map', params: { building: m.building_id ?? '' } })} style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 38, paddingHorizontal: 12, borderRadius: 12, backgroundColor: C.primarySoft }}>
                         <MapPin size={15} color={C.primary} /><T v="small" color={C.primary} numberOfLines={1} style={{ flexShrink: 1 }}>{placeLine(m)}</T>
                       </Tap>
                     )}
                     <Tap onPress={() => flip(m.id, !enabled)} accessibilityLabel={enabled ? 'وقّف التنبيه' : 'شغّل التنبيه'} accessibilityState={{ checked: enabled }}
-                      style={{ width: 38, height: 38, borderRadius: 12, backgroundColor: enabled ? C.orangeSoft : '#EEF0F6', alignItems: 'center', justifyContent: 'center' }}>
+                      style={{ width: 38, height: 38, borderRadius: 12, backgroundColor: enabled ? C.orangeSoft : C.soft, alignItems: 'center', justifyContent: 'center' }}>
                       {enabled ? <Bell size={17} color={C.orange} fill={C.orange} /> : <BellOff size={17} color={C.muted} />}
                     </Tap>
                   </Row>

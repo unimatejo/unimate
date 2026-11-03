@@ -1,6 +1,6 @@
 import * as Location from 'expo-location';
-import { useLocalSearchParams } from 'expo-router';
-import { Building2, Coffee, Crosshair, ExternalLink, Layers, MapPin, Maximize2, Navigation, Search, X } from 'lucide-react-native';
+import { router, useLocalSearchParams } from 'expo-router';
+import { Building2, ChevronRight, Coffee, Crosshair, ExternalLink, Layers, MapPin, Maximize2, Navigation, Search, X } from 'lucide-react-native';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { FlatList, Keyboard, Linking, Platform, ScrollView, TextInput, View } from 'react-native';
 import MapView, { Marker, Polyline, PROVIDER_DEFAULT } from 'react-native-maps';
@@ -62,7 +62,7 @@ export default function CampusMap() {
 
   const fitAll = useCallback(() => {
     if (pins.length < 2) return;
-    map.current?.fitToCoordinates(pins.map((p) => ({ latitude: p.lat, longitude: p.lng })), { edgePadding: { top: 170, bottom: 140, left: 40, right: 40 }, animated: true });
+    map.current?.fitToCoordinates(pins.map((p) => ({ latitude: p.lat, longitude: p.lng })), { edgePadding: { top: 170, bottom: 80, left: 40, right: 40 }, animated: true });
   }, [pins]);
   useEffect(() => { if (pins.length && !params.building && !params.advertiser) setTimeout(fitAll, 400); }, [pins, fitAll, params.building, params.advertiser]);
 
@@ -105,7 +105,7 @@ export default function CampusMap() {
   const center = university?.center_lat ? { latitude: university.center_lat, longitude: university.center_lng! } : { latitude: 32.1, longitude: 36.18 };
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#ECEFE7' }}>
+    <View style={{ flex: 1, backgroundColor: C.bg }}>
       <MapView ref={map} provider={PROVIDER_DEFAULT} style={{ flex: 1 }} showsUserLocation showsCompass={false} showsPointsOfInterests={false} showsBuildings pitchEnabled rotateEnabled
         mapType={sat ? (Platform.OS === 'ios' ? 'hybridFlyover' : 'hybrid') : Platform.OS === 'ios' ? 'mutedStandard' : 'standard'}
         initialCamera={{ center, zoom: 16, heading: 0, pitch: 0 }} onPress={() => { Keyboard.dismiss(); }}
@@ -119,8 +119,8 @@ export default function CampusMap() {
               <View style={{ alignItems: 'center', gap: 3 }}>
                 <GlyphTile icon={Icon} colors={on ? ['#2A2F4F', '#0E1430'] : g} size={on ? 40 : 30} />
                 {(on || zoom > 16.6) && (
-                  <View style={[{ paddingHorizontal: 8, paddingVertical: 3, borderRadius: 9, backgroundColor: on ? C.ink : 'rgba(255,255,255,0.95)', maxWidth: 150 }, shadow]}>
-                    <T v="tiny" numberOfLines={1} color={on ? C.white : C.ink} style={{ fontSize: 11 }}>{p.name}</T>
+                  <View style={[{ paddingHorizontal: 8, paddingVertical: 3, borderRadius: 9, backgroundColor: on ? C.inverse : C.glass, maxWidth: 150 }, shadow]}>
+                    <T v="tiny" numberOfLines={1} color={on ? C.onInverse : C.ink} style={{ fontSize: 11 }}>{p.name}</T>
                   </View>
                 )}
               </View>
@@ -133,14 +133,20 @@ export default function CampusMap() {
       </MapView>
 
       <SafeAreaView edges={['top']} style={{ position: 'absolute', top: 0, left: 0, right: 0, paddingHorizontal: 16, gap: 10 }} pointerEvents="box-none">
-        <Row gap={8} style={[{ minHeight: 52, borderRadius: 18, backgroundColor: C.white, paddingHorizontal: 16, marginTop: 6 }, shadow]}>
+        <Row gap={8} style={{ marginTop: 6 }}>
+        <Tap onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))} accessibilityLabel="رجوع"
+          style={[{ width: 52, height: 52, borderRadius: 18, backgroundColor: C.card, alignItems: 'center', justifyContent: 'center' }, shadow]}>
+          <ChevronRight size={22} color={C.ink} />
+        </Tap>
+        <Row gap={8} style={[{ flex: 1, minHeight: 52, borderRadius: 18, backgroundColor: C.card, paddingHorizontal: 16 }, shadow]}>
           <Search size={20} color={C.muted} />
           <TextInput value={q} onChangeText={setQ} placeholder="ابحث عن مبنى، قاعة، أو لقب زي «الكراج»" placeholderTextColor={C.faint}
             style={{ flex: 1, fontFamily: F.body, fontSize: 15, color: C.ink, textAlign: 'right', minHeight: 48 }} accessibilityLabel="ابحث بالخريطة" />
           {q ? <Tap onPress={() => setQ('')} accessibilityLabel="مسح"><X size={18} color={C.muted} /></Tap> : null}
         </Row>
+        </Row>
         {hits.length > 0 ? (
-          <Animated.View entering={FadeIn} style={[{ backgroundColor: C.white, borderRadius: 18, maxHeight: 280 }, shadow]}>
+          <Animated.View entering={FadeIn} style={[{ backgroundColor: C.card, borderRadius: 18, maxHeight: 280 }, shadow]}>
             <FlatList data={hits} keyExtractor={(h) => h.kind + h.id + h.title} keyboardShouldPersistTaps="handled"
               renderItem={({ item }) => (
                 <Tap onPress={() => { setQ(''); setHits([]); Keyboard.dismiss(); focus({ id: item.id, kind: item.kind, name: item.title, sub: item.subtitle, lat: item.lat!, lng: item.lng! }); }}
@@ -158,18 +164,18 @@ export default function CampusMap() {
       </SafeAreaView>
 
       {!sel && (
-        <View style={{ position: 'absolute', left: 16, bottom: 110, gap: 10 }}>
+        <View style={{ position: 'absolute', left: 16, bottom: 40, gap: 10 }}>
           <Tap onPress={() => setSat((x) => !x)} accessibilityLabel="غيّر شكل الخريطة"
-            style={[{ width: 48, height: 48, borderRadius: 16, backgroundColor: sat ? C.ink : C.white, alignItems: 'center', justifyContent: 'center' }, shadow]}>
-            <Layers size={21} color={sat ? C.white : C.ink} />
+            style={[{ width: 48, height: 48, borderRadius: 16, backgroundColor: sat ? C.inverse : C.card, alignItems: 'center', justifyContent: 'center' }, shadow]}>
+            <Layers size={21} color={sat ? C.onInverse : C.ink} />
           </Tap>
           <Tap onPress={fitAll} accessibilityLabel="شوف الجامعة كاملة"
-            style={[{ width: 48, height: 48, borderRadius: 16, backgroundColor: C.white, alignItems: 'center', justifyContent: 'center' }, shadow]}>
+            style={[{ width: 48, height: 48, borderRadius: 16, backgroundColor: C.card, alignItems: 'center', justifyContent: 'center' }, shadow]}>
             <Maximize2 size={20} color={C.ink} />
           </Tap>
           {me && (
             <Tap onPress={() => map.current?.animateCamera({ center: { latitude: me.lat, longitude: me.lng }, zoom: 17.5 }, { duration: 600 })} accessibilityLabel="موقعي"
-              style={[{ width: 48, height: 48, borderRadius: 16, backgroundColor: C.white, alignItems: 'center', justifyContent: 'center' }, shadow]}>
+              style={[{ width: 48, height: 48, borderRadius: 16, backgroundColor: C.card, alignItems: 'center', justifyContent: 'center' }, shadow]}>
               <Crosshair size={22} color={C.primary} />
             </Tap>
           )}
@@ -177,8 +183,8 @@ export default function CampusMap() {
       )}
 
       {sel && (
-        <Animated.View entering={SlideInDown.springify().damping(18)} style={[{ position: 'absolute', left: 12, right: 12, bottom: 96, backgroundColor: C.white, borderRadius: 30, padding: 18, paddingTop: 10, gap: 12 }, shadow]}>
-          <View style={{ alignSelf: 'center', width: 42, height: 5, borderRadius: 3, backgroundColor: '#DCE1EE' }} />
+        <Animated.View entering={SlideInDown.springify().damping(18)} style={[{ position: 'absolute', left: 12, right: 12, bottom: 28, backgroundColor: C.card, borderRadius: 30, padding: 18, paddingTop: 10, gap: 12 }, shadow]}>
+          <View style={{ alignSelf: 'center', width: 42, height: 5, borderRadius: 3, backgroundColor: C.line }} />
           <Row gap={12}>
             <GlyphTile icon={sel.kind === 'building' ? Building2 : FOOD.includes(sel.kind) ? Coffee : MapPin} colors={sel.kind === 'building' ? GRAD.blue : FOOD.includes(sel.kind) ? GRAD.orange : GRAD.green} size={56} pop />
             <View style={{ flex: 1 }}>

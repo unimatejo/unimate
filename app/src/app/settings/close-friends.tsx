@@ -46,7 +46,7 @@ export default function CloseFriends() {
           <Star size={18} color={C.green} fill={C.green} />
           <T v="small" color={C.ink2} style={{ flex: 1 }}>بس هدول بيشوفوا الستوري اللي بتحطها «للمقربين»، وما حدا بيعرف إنه بالقائمة.</T>
         </Row>
-        <Row gap={8} style={{ minHeight: 46, borderRadius: 14, backgroundColor: C.white, paddingHorizontal: 12 }}>
+        <Row gap={8} style={{ minHeight: 46, borderRadius: 14, backgroundColor: C.card, paddingHorizontal: 12 }}>
           <Search size={18} color={C.muted} />
           <TextInput value={q} onChangeText={setQ} placeholder="دوّر بين متابعينك" placeholderTextColor={C.faint} style={{ flex: 1, fontFamily: F.body, fontSize: 14, color: C.ink, textAlign: 'right' }} />
         </Row>
@@ -58,7 +58,7 @@ export default function CloseFriends() {
         renderItem={({ item }) => {
           const on = picked.has(item.id);
           return (
-            <Tap scale={0.98} onPress={() => toggle(item.id)} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 62, backgroundColor: C.white, borderRadius: 18, paddingHorizontal: 12 }}>
+            <Tap scale={0.98} onPress={() => toggle(item.id)} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 62, backgroundColor: C.card, borderRadius: 18, paddingHorizontal: 12 }}>
               <Avatar id={item.id} name={item.full_name} url={item.avatar_url} size={44} />
               <View style={{ flex: 1 }}><T v="bodyMd">{item.full_name}</T><T v="tiny" color={C.muted}>{item.major?.name_ar ?? ''}</T></View>
               <View style={{ width: 28, height: 28, borderRadius: 14, borderWidth: on ? 0 : 2, borderColor: C.line, backgroundColor: on ? C.green : 'transparent', alignItems: 'center', justifyContent: 'center' }}>

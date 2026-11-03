@@ -38,12 +38,12 @@ export default function HiddenWords() {
         </Row>
         <Row gap={8}>
           <TextInput value={w} onChangeText={setW} onSubmitEditing={add} placeholder="أضف كلمة أو جملة" placeholderTextColor={C.faint} returnKeyType="done"
-            style={{ flex: 1, minHeight: 50, borderRadius: 16, backgroundColor: C.white, paddingHorizontal: 14, fontFamily: F.body, fontSize: 15, color: C.ink, textAlign: 'right' }} />
-          <Tap onPress={add} accessibilityLabel="أضف" style={{ width: 50, height: 50, borderRadius: 16, backgroundColor: C.ink, alignItems: 'center', justifyContent: 'center' }}><Plus size={22} color={C.white} /></Tap>
+            style={{ flex: 1, minHeight: 50, borderRadius: 16, backgroundColor: C.card, paddingHorizontal: 14, fontFamily: F.body, fontSize: 15, color: C.ink, textAlign: 'right' }} />
+          <Tap onPress={add} accessibilityLabel="أضف" style={{ width: 50, height: 50, borderRadius: 16, backgroundColor: C.inverse, alignItems: 'center', justifyContent: 'center' }}><Plus size={22} color={C.onInverse} /></Tap>
         </Row>
         <Row gap={8} style={{ flexWrap: 'wrap' }}>
           {words.map((x) => (
-            <View key={x} style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: C.white, borderRadius: 999, paddingRight: 14, paddingLeft: 6, minHeight: 40 }}>
+            <View key={x} style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: C.card, borderRadius: 999, paddingRight: 14, paddingLeft: 6, minHeight: 40 }}>
               <T v="bodyMd">{x}</T>
               <Tap onPress={() => remove(x)} accessibilityLabel={`احذف ${x}`} style={{ width: 30, height: 30, borderRadius: 15, alignItems: 'center', justifyContent: 'center', backgroundColor: C.bg }}><X size={14} color={C.ink2} /></Tap>
             </View>

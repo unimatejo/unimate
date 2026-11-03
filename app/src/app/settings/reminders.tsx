@@ -46,7 +46,7 @@ export default function Reminders() {
     <Screen>
       <Header title="التنبيهات والمنبّهات" />
       <ScrollView contentContainerStyle={{ padding: 18, paddingTop: 4, gap: 14, paddingBottom: 60 }}>
-        <View style={{ gap: 12, backgroundColor: C.white, borderRadius: 22, padding: 14 }}>
+        <View style={{ gap: 12, backgroundColor: C.card, borderRadius: 22, padding: 14 }}>
           <Toggle icon={ic(<BellRing size={18} color={C.primary} />)} label="نبّهني قبل المحاضرات" value={prefs.lectures} onChange={(v) => set({ lectures: v })} />
           {prefs.lectures && (
             <>
@@ -59,7 +59,7 @@ export default function Reminders() {
           )}
         </View>
 
-        <View style={{ gap: 12, backgroundColor: C.white, borderRadius: 22, padding: 14 }}>
+        <View style={{ gap: 12, backgroundColor: C.card, borderRadius: 22, padding: 14 }}>
           <Toggle icon={ic(<Moon size={18} color={C.violet} />)} label="ملخص بكرة كل ليلة" hint="محاضراتك وتسليماتك لبكرة الساعة 9 بالليل" value={prefs.nightly_summary} onChange={(v) => set({ nightly_summary: v })} />
           <Toggle icon={ic(<CalendarDays size={18} color={C.orange} />)} label="الامتحانات والتسليمات" value={prefs.exams} onChange={(v) => set({ exams: v })} />
           <Toggle icon={ic(<MessageCircle size={18} color={C.pink} />)} label="الرسائل" value={prefs.messages} onChange={(v) => set({ messages: v })} />
@@ -76,7 +76,7 @@ export default function Reminders() {
             const r = rems[m.id];
             const on = r?.enabled ?? true;
             return (
-              <View key={m.id} style={{ backgroundColor: C.white, borderRadius: 20, padding: 12, gap: 10, opacity: prefs.lectures ? 1 : 0.5 }}>
+              <View key={m.id} style={{ backgroundColor: C.card, borderRadius: 20, padding: 12, gap: 10, opacity: prefs.lectures ? 1 : 0.5 }}>
                 <Row gap={10}>
                   <AlarmClock size={20} color={on ? C.primary : C.faint} />
                   <Tap haptic={false} scale={1} onPress={() => setOpen(open === m.id ? null : m.id)} style={{ flex: 1 }}>

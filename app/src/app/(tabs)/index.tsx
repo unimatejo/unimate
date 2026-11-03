@@ -1,6 +1,6 @@
 import { router } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Bell, BookOpen, CalendarDays, GraduationCap, MapPin, MessageCircle, Navigation, PartyPopper, Repeat, Search, SearchCheck, ShoppingBag, Sparkles, Users } from 'lucide-react-native';
+import { Bell, BookOpen, CalendarDays, GraduationCap, MapPin, Navigation, PartyPopper, Repeat, Search, SearchCheck, ShoppingBag, Sparkles, Users } from 'lucide-react-native';
 import { useEffect, useState } from 'react';
 import { RefreshControl, ScrollView, View } from 'react-native';
 import Animated, { Easing, FadeInDown, useAnimatedStyle, useSharedValue, withRepeat, withTiming } from 'react-native-reanimated';
@@ -34,7 +34,7 @@ function Pulse() {
 }
 
 const QUICK = [
-  { label: 'وين قاعتي', icon: MapPin, g: GRAD.green, to: '/(tabs)/map' },
+  { label: 'وين قاعتي', icon: MapPin, g: GRAD.green, to: '/map' },
   { label: 'تبديل شعب', icon: Repeat, g: GRAD.blue, to: '/swap' },
   { label: 'ملخصات', icon: BookOpen, g: GRAD.violet, to: '/section/summaries' },
   { label: 'السوق', icon: ShoppingBag, g: GRAD.pink, to: '/section/market' },
@@ -48,7 +48,6 @@ export default function Home() {
   const { profile, university } = useAuth();
   const { meetings, next, reload, loading } = useSchedule(profile?.id);
   const [unread, setUnread] = useState(0);
-  const [unreadMsg, setUnreadMsg] = useState(0);
   const today = new Date().getDay();
   const todays = meetings.filter((m) => m.weekday === today);
 
@@ -56,9 +55,6 @@ export default function Home() {
     if (!profile) return;
     supabase.from('notifications').select('id', { count: 'exact', head: true }).eq('user_id', (profile?.id ?? '')).is('read_at', null)
       .then(({ count }) => setUnread(count ?? 0));
-    supabase.from('conversation_members').select('last_read_at, state, c:conversations(last_message_at)').eq('user_id', profile.id).in('state', ['active', 'request'])
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      .then(({ data }) => setUnreadMsg(((data ?? []) as any[]).filter((r) => r.state === 'request' || (r.c && (!r.last_read_at || new Date(r.c.last_message_at) > new Date(r.last_read_at)))).length));
   }, [profile]);
 
   const nm = next?.m;
@@ -71,7 +67,7 @@ export default function Home() {
       <ScrollView contentContainerStyle={{ padding: 18, gap: 18, paddingBottom: 130 }} refreshControl={<RefreshControl refreshing={loading} onRefresh={reload} />}>
         <Row gap={12}>
           <View accessibilityLabel={`شعار ${university?.name_ar ?? 'الجامعة'}`} style={{ width: 48, height: 48, borderRadius: 24, padding: 3, backgroundColor: university?.brand_color ?? C.primary }}>
-            <View style={{ flex: 1, borderRadius: 21, backgroundColor: C.white, alignItems: 'center', justifyContent: 'center' }}>
+            <View style={{ flex: 1, borderRadius: 21, backgroundColor: C.card, alignItems: 'center', justifyContent: 'center' }}>
               <T v="tiny" color={university?.brand_color ?? C.primary} style={{ textAlign: 'center', fontFamily: F.title }}>{university?.name_ar?.replace('الجامعة ', '').replace('جامعة ', '').slice(0, 6)}</T>
             </View>
           </View>
@@ -80,12 +76,11 @@ export default function Home() {
             <T v="h2" style={{ fontFamily: F.display, fontSize: 22 }}>{greeting()}، {profile?.full_name?.split(' ')[0]}</T>
           </View>
           <IconButton label="بحث" onPress={() => router.push('/search')}><Search size={21} color={C.ink} /></IconButton>
-          <IconButton label="الرسائل" badge={unreadMsg} onPress={() => router.push('/messages')}><Wiggle trigger={unreadMsg} kind="pop"><MessageCircle size={21} color={C.ink} /></Wiggle></IconButton>
           <IconButton label="الإشعارات" badge={unread} onPress={() => router.push('/notifications')}><Wiggle trigger={unread}><Bell size={21} color={C.ink} /></Wiggle></IconButton>
         </Row>
 
         <Animated.View entering={FadeInDown.duration(500)}>
-          <View style={{ borderRadius: 30, backgroundColor: C.ink, padding: 20, overflow: 'hidden', gap: 14 }}>
+          <View style={{ borderRadius: 30, backgroundColor: '#101633', padding: 20, overflow: 'hidden', gap: 14 }}>
             <Glow color={C.primary} size={260} style={{ top: -120, left: -90 }} dur={8000} />
             <Glow color={C.pink} size={200} style={{ bottom: -100, left: 40 }} dur={10000} />
             {nm ? (
@@ -100,8 +95,8 @@ export default function Home() {
                   <T v="small" color="#C9D1F0">{placeLine(nm)} · {clock(nm.starts_at)}</T>
                 </View>
                 <Row gap={8}>
-                  <Tap onPress={() => router.push({ pathname: '/(tabs)/map', params: { building: nm.building_id ?? '' } })}
-                    style={{ flex: 1, minHeight: 48, borderRadius: 16, backgroundColor: C.white, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+                  <Tap onPress={() => router.push({ pathname: '/map', params: { building: nm.building_id ?? '' } })}
+                    style={{ flex: 1, minHeight: 48, borderRadius: 16, backgroundColor: C.card, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
                     <Navigation size={18} color={C.ink} /><T v="bold">وديني عالقاعة</T>
                   </Tap>
                   <Tap onPress={() => router.push('/(tabs)/schedule')} accessibilityLabel="جدول اليوم"
@@ -114,7 +109,7 @@ export default function Home() {
               <View style={{ gap: 8 }}>
                 <T v="h2" color={C.white}>جدولك بيطلع هون</T>
                 <T v="small" color="#C9D1F0">أول ما تنضاف موادك من حسابك الجامعي، بتشوف محاضرتك الجاية مع العد التنازلي والقاعة.</T>
-                <Tap onPress={() => router.push('/(tabs)/schedule')} style={{ alignSelf: 'flex-start', marginTop: 6, minHeight: 44, paddingHorizontal: 16, borderRadius: 14, backgroundColor: C.white, justifyContent: 'center' }}>
+                <Tap onPress={() => router.push('/(tabs)/schedule')} style={{ alignSelf: 'flex-start', marginTop: 6, minHeight: 44, paddingHorizontal: 16, borderRadius: 14, backgroundColor: C.card, justifyContent: 'center' }}>
                   <T v="bold">افتح الجدول</T>
                 </Tap>
               </View>

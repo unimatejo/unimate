@@ -72,10 +72,10 @@ export default function NewEvent() {
         )}
         <Field label="العنوان" value={title} onChangeText={setTitle} placeholder={[label, courseName].filter(Boolean).join(' · ')} maxLength={80} />
         <Row gap={10}>
-          <Tap onPress={() => setShow('date')} style={{ flex: 1.4, flexDirection: 'row', alignItems: 'center', gap: 8, minHeight: 52, borderRadius: 16, backgroundColor: C.white, paddingHorizontal: 14 }}>
+          <Tap onPress={() => setShow('date')} style={{ flex: 1.4, flexDirection: 'row', alignItems: 'center', gap: 8, minHeight: 52, borderRadius: 16, backgroundColor: C.card, paddingHorizontal: 14 }}>
             <CalendarDays size={18} color={C.primary} /><T v="bodyMd">{fmtDate}</T>
           </Tap>
-          <Tap onPress={() => setShow('time')} style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 8, minHeight: 52, borderRadius: 16, backgroundColor: C.white, paddingHorizontal: 14 }}>
+          <Tap onPress={() => setShow('time')} style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 8, minHeight: 52, borderRadius: 16, backgroundColor: C.card, paddingHorizontal: 14 }}>
             <Clock size={18} color={C.primary} /><T v="bodyMd">{fmtTime}</T>
           </Tap>
         </Row>
@@ -86,7 +86,7 @@ export default function NewEvent() {
         {show && Platform.OS === 'ios' && <Button kind="soft" title="تم" onPress={() => setShow(null)} />}
         <Field label="المكان (اختياري)" value={location} onChangeText={setLocation} placeholder="مثلاً قاعة 204 أو المدرج الكبير" />
         {section && kind !== 'custom' && (
-          <View style={{ backgroundColor: C.white, borderRadius: 18, padding: 12 }}>
+          <View style={{ backgroundColor: C.card, borderRadius: 18, padding: 12 }}>
             <Toggle label="شاركه مع طلاب الشعبة" hint="بيطلع بجدولهم، وكل ما أكّده حدا بيصير موثوق أكتر" value={share} onChange={setShare} />
           </View>
         )}

@@ -45,7 +45,7 @@ export default function Advertiser() {
           </View>
         </Row>
         <Row gap={10}>
-          {a.hours ? <Row gap={6} style={{ flex: 1, backgroundColor: C.white, borderRadius: 16, padding: 12 }}><Clock size={17} color={C.green} /><T v="small">{a.hours}</T></Row> : null}
+          {a.hours ? <Row gap={6} style={{ flex: 1, backgroundColor: C.card, borderRadius: 16, padding: 12 }}><Clock size={17} color={C.green} /><T v="small">{a.hours}</T></Row> : null}
           {a.phone ? <Button kind="green" title="اتصل" icon={<Phone size={17} color={C.white} />} onPress={call} style={{ minHeight: 46 }} /> : null}
         </Row>
 
@@ -53,7 +53,7 @@ export default function Advertiser() {
           <View style={{ gap: 8 }}>
             <T v="h3">القائمة</T>
             {a.menu.map((m, i) => (
-              <Row key={i} gap={12} style={{ backgroundColor: C.white, borderRadius: 18, padding: 10 }}>
+              <Row key={i} gap={12} style={{ backgroundColor: C.card, borderRadius: 18, padding: 10 }}>
                 {m.photo_url ? <Image source={{ uri: m.photo_url }} style={{ width: 54, height: 54, borderRadius: 14 }} /> : null}
                 <T v="bodyMd" style={{ flex: 1 }}>{m.name}</T>
                 {m.price_jod != null ? <T v="bold" color={C.primary}>{m.price_jod} د.أ</T> : null}
@@ -76,7 +76,7 @@ export default function Advertiser() {
                 <Marker coordinate={{ latitude: a.lat, longitude: a.lng }} title={a.name} />
               </MapView>
             </View>
-            <Button kind="soft" title="شوفه على خريطة الجامعة" onPress={() => router.push({ pathname: '/(tabs)/map', params: { advertiser: a.id } })} />
+            <Button kind="soft" title="شوفه على خريطة الجامعة" onPress={() => router.push({ pathname: '/map', params: { advertiser: a.id } })} />
           </View>
         )}
       </ScrollView>

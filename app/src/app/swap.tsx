@@ -83,7 +83,7 @@ export default function Swap() {
         {reqs.map((r) => {
           const partner = r.matched_with ? partners[r.matched_with] : null;
           return (
-            <Animated.View key={r.id} entering={FadeInDown} style={{ gap: 10, backgroundColor: r.status === 'matched' ? C.greenSoft : C.white, borderRadius: 22, padding: 14 }}>
+            <Animated.View key={r.id} entering={FadeInDown} style={{ gap: 10, backgroundColor: r.status === 'matched' ? C.greenSoft : C.card, borderRadius: 22, padding: 14 }}>
               <Row gap={10}>
                 {r.status === 'matched' ? <CheckCircle2 size={20} color={C.green} /> : <Clock size={20} color={C.orange} />}
                 <T v="bold" style={{ flex: 1 }}>{courseName(r.course_id)}</T>
@@ -106,7 +106,7 @@ export default function Swap() {
         {mine.map((mm) => {
           const alts = (others[mm.section.course.id] ?? []).filter((s) => s.id !== mm.section.id);
           return (
-            <View key={mm.section.id} style={{ gap: 10, backgroundColor: C.white, borderRadius: 22, padding: 14 }}>
+            <View key={mm.section.id} style={{ gap: 10, backgroundColor: C.card, borderRadius: 22, padding: 14 }}>
               <T v="bold">{mm.section.course.name_ar}</T>
               <T v="tiny" color={C.muted}>شعبتك {mm.section.section_no} · {when(mm.section)}</T>
               {alts.length === 0 ? <T v="small" color={C.muted}>ما في شعب تانية مسجلة لهالمادة لهلأ.</T> : (

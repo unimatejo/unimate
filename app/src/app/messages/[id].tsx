@@ -25,7 +25,7 @@ const VANISH: { key: VanishMode; label: string; hint: string }[] = [
 function ChatImage({ path, mine }: { path: string; mine: boolean }) {
   const [uri, setUri] = useState<string | null>(null);
   useEffect(() => { mediaUrl('chat', path).then(setUri); }, [path]);
-  return <View style={{ width: 210, height: 160, borderRadius: 22, borderBottomRightRadius: mine ? 6 : 22, borderBottomLeftRadius: mine ? 22 : 6, overflow: 'hidden', backgroundColor: '#DDE4FF' }}>
+  return <View style={{ width: 210, height: 160, borderRadius: 22, borderBottomRightRadius: mine ? 6 : 22, borderBottomLeftRadius: mine ? 22 : 6, overflow: 'hidden', backgroundColor: C.primarySoft }}>
     {uri && <Image source={{ uri }} style={{ flex: 1 }} contentFit="cover" transition={150} />}
   </View>;
 }
@@ -131,8 +131,8 @@ export default function Chat() {
   const vanishLabel = VANISH.find((v) => v.key === conv?.vanish)?.label ?? '';
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#F3F4FA' }}>
-      <SafeAreaView edges={['top']} style={{ backgroundColor: 'rgba(255,255,255,0.95)', borderBottomWidth: 1, borderBottomColor: C.line }}>
+    <View style={{ flex: 1, backgroundColor: C.bg }}>
+      <SafeAreaView edges={['top']} style={{ backgroundColor: C.glass, borderBottomWidth: 1, borderBottomColor: C.line }}>
         <Row gap={4} style={{ paddingHorizontal: 8, paddingVertical: 8 }}>
           <Tap onPress={() => router.back()} accessibilityLabel="رجوع" style={{ width: 42, height: 44, alignItems: 'center', justifyContent: 'center' }}><ChevronRight size={24} color={C.ink} /></Tap>
           <Tap onPress={() => other && router.push({ pathname: '/user/[id]', params: { id: other.id } })} style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 10 }}>
@@ -165,7 +165,7 @@ export default function Chat() {
           contentContainerStyle={{ padding: 14, gap: 8 }}
           ListFooterComponent={
             <View style={{ alignItems: 'center', gap: 6, marginBottom: 10 }}>
-              <Tap onPress={() => setSheet(true)} style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: C.white, paddingHorizontal: 12, paddingVertical: 7, borderRadius: 999 }}>
+              <Tap onPress={() => setSheet(true)} style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: C.card, paddingHorizontal: 12, paddingVertical: 7, borderRadius: 999 }}>
                 <Timer size={14} color={C.ink2} /><T v="tiny" color={C.ink2}>الرسائل بتختفي من المحادثة {vanishLabel} · بدون أرقام</T>
               </Tap>
               {shield && <Row gap={6} style={{ backgroundColor: C.greenSoft, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 999 }}><ShieldCheck size={14} color={C.greenInk} /><T v="tiny" color={C.greenInk}>محادثة محمية من التصوير</T></Row>}
@@ -173,18 +173,18 @@ export default function Chat() {
           }
           renderItem={({ item: m }) => {
             const mine = m.sender_id === profile?.id;
-            if (m.kind === 'system') return <Animated.View entering={FadeIn} style={{ alignSelf: 'center', backgroundColor: '#E7EAF3', borderRadius: 999, paddingHorizontal: 12, paddingVertical: 5 }}><T v="tiny" color={C.ink2}>{m.body}</T></Animated.View>;
+            if (m.kind === 'system') return <Animated.View entering={FadeIn} style={{ alignSelf: 'center', backgroundColor: C.soft, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 5 }}><T v="tiny" color={C.ink2}>{m.body}</T></Animated.View>;
             return (
               <Animated.View entering={FadeInUp.springify().damping(16)} style={{ alignSelf: mine ? 'flex-end' : 'flex-start', maxWidth: '80%', gap: 3 }}>
                 <Pressable onPress={async () => { if (m.kind === 'image' && m.media_url) setViewer(await mediaUrl('chat', m.media_url)); }} onLongPress={() => toggleSave(m)} delayLongPress={350}>
                   {m.kind === 'image' && m.media_url ? <ChatImage path={m.media_url} mine={mine} /> :
                    m.kind === 'view_once' ? (
-                    <Tap onPress={() => !mine && !m.viewed_once_at && openOnce(m)} style={{ flexDirection: 'row', alignItems: 'center', gap: 10, minHeight: 48, paddingHorizontal: 16, borderRadius: 22, borderWidth: 1.5, borderColor: m.viewed_once_at ? C.line : C.pink, backgroundColor: C.white }}>
+                    <Tap onPress={() => !mine && !m.viewed_once_at && openOnce(m)} style={{ flexDirection: 'row', alignItems: 'center', gap: 10, minHeight: 48, paddingHorizontal: 16, borderRadius: 22, borderWidth: 1.5, borderColor: m.viewed_once_at ? C.line : C.pink, backgroundColor: C.card }}>
                       <Camera size={20} color={m.viewed_once_at ? C.faint : C.pinkInk} />
                       <T v="bold" color={m.viewed_once_at ? C.faint : C.pinkInk} style={{ fontSize: 14 }}>{m.viewed_once_at ? 'تمت المشاهدة' : mine ? 'صورة بتنشاف مرة' : 'صورة، اكبس لتشوفها مرة'}</T>
                     </Tap>
                   ) : (
-                    <View style={[{ paddingHorizontal: 14, paddingVertical: 10, borderRadius: 22, backgroundColor: mine ? C.primary : C.white },
+                    <View style={[{ paddingHorizontal: 14, paddingVertical: 10, borderRadius: 22, backgroundColor: mine ? C.primary : C.card },
                       mine ? { borderBottomRightRadius: 6, shadowColor: C.primary, shadowOpacity: 0.25, shadowRadius: 10, shadowOffset: { width: 0, height: 5 } } : { borderBottomLeftRadius: 6 }]}>
                       <T v="body" color={mine ? C.white : C.ink}>{m.body}</T>
                     </View>
@@ -200,7 +200,7 @@ export default function Chat() {
         />
 
         {myState === 'request' ? (
-          <View style={{ backgroundColor: C.white, padding: 14, paddingBottom: insets.bottom + 10, gap: 8 }}>
+          <View style={{ backgroundColor: C.card, padding: 14, paddingBottom: insets.bottom + 10, gap: 8 }}>
             <T v="small" color={C.muted} style={{ textAlign: 'center' }}>هاد طلب مراسلة. اقبله عشان تقدر ترد.</T>
             <Row gap={8}>
               <Tap onPress={async () => { await supabase.rpc('answer_request', { conv: id, accept: true }); setMyState('active'); }} style={{ flex: 1, minHeight: 46, borderRadius: 15, backgroundColor: C.primary, alignItems: 'center', justifyContent: 'center' }}><T v="bold" color={C.white}>قبول</T></Tap>
@@ -208,7 +208,7 @@ export default function Chat() {
             </Row>
           </View>
         ) : (
-          <Row gap={6} style={{ backgroundColor: 'rgba(255,255,255,0.95)', paddingHorizontal: 10, paddingTop: 10, paddingBottom: insets.bottom + 10, borderTopWidth: 1, borderTopColor: C.line }}>
+          <Row gap={6} style={{ backgroundColor: C.glass, paddingHorizontal: 10, paddingTop: 10, paddingBottom: insets.bottom + 10, borderTopWidth: 1, borderTopColor: C.line }}>
             <Tap onPress={() => sendPhoto(true, true)} accessibilityLabel="صورة بتنشاف مرة" style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: C.primary, alignItems: 'center', justifyContent: 'center' }}><Camera size={21} color={C.white} /></Tap>
             <Row gap={0} style={{ flex: 1, minHeight: 44, borderRadius: 22, backgroundColor: C.field, paddingHorizontal: 6 }}>
               <TextInput value={draft} onChangeText={setDraft} placeholder="رسالة..." placeholderTextColor={C.faint} multiline
@@ -226,15 +226,15 @@ export default function Chat() {
 
       <Modal visible={sheet} transparent animationType="fade" onRequestClose={() => setSheet(false)}>
         <Pressable style={{ flex: 1, backgroundColor: 'rgba(14,20,48,0.45)' }} onPress={() => setSheet(false)} />
-        <Animated.View entering={SlideInDown.springify().damping(18)} style={{ backgroundColor: C.white, borderTopLeftRadius: 30, borderTopRightRadius: 30, padding: 18, paddingBottom: insets.bottom + 20, gap: 14 }}>
-          <View style={{ alignSelf: 'center', width: 42, height: 5, borderRadius: 3, backgroundColor: '#DCE1EE' }} />
+        <Animated.View entering={SlideInDown.springify().damping(18)} style={{ backgroundColor: C.card, borderTopLeftRadius: 30, borderTopRightRadius: 30, padding: 18, paddingBottom: insets.bottom + 20, gap: 14 }}>
+          <View style={{ alignSelf: 'center', width: 42, height: 5, borderRadius: 3, backgroundColor: C.line }} />
           <T v="h2">متى تختفي الرسائل؟</T>
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
             {VANISH.map((v) => {
               const on = conv?.vanish === v.key;
               return (
                 <Tap key={v.key} onPress={() => setVanish(v.key)} accessibilityRole="radio" accessibilityState={{ selected: on }}
-                  style={{ width: '48.5%', minHeight: 64, borderRadius: 18, alignItems: 'center', justifyContent: 'center', borderWidth: on ? 2 : 1, borderColor: on ? C.primary : C.line, backgroundColor: on ? C.primarySoft : C.white }}>
+                  style={{ width: '48.5%', minHeight: 64, borderRadius: 18, alignItems: 'center', justifyContent: 'center', borderWidth: on ? 2 : 1, borderColor: on ? C.primary : C.line, backgroundColor: on ? C.primarySoft : C.card }}>
                   <T v="bold" color={on ? C.primaryDark : C.ink} style={{ fontSize: 14 }}>{v.label}</T>
                   {v.hint ? <T v="tiny" color={C.muted}>{v.hint}</T> : null}
                 </Tap>
@@ -246,7 +246,7 @@ export default function Chat() {
               icon={<View style={{ width: 38, height: 38, borderRadius: 13, backgroundColor: C.green, alignItems: 'center', justifyContent: 'center' }}><EyeOff size={19} color={C.white} /></View>} />
           </View>
           <T v="tiny" color={C.muted}>اضغط مطوّل على أي رسالة عشان تحفظها بالمحادثة.</T>
-          <Tap onPress={() => { setSheet(false); router.push({ pathname: '/report', params: { type: 'conversation', id, user: other?.id ?? '' } }); }} style={{ minHeight: 48, borderRadius: 16, backgroundColor: '#FFF1F3', alignItems: 'center', justifyContent: 'center' }}>
+          <Tap onPress={() => { setSheet(false); router.push({ pathname: '/report', params: { type: 'conversation', id, user: other?.id ?? '' } }); }} style={{ minHeight: 48, borderRadius: 16, backgroundColor: C.redSoft, alignItems: 'center', justifyContent: 'center' }}>
             <T v="bold" color={C.danger}>إبلاغ أو حظر</T>
           </Tap>
         </Animated.View>

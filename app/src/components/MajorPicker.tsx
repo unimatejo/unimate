@@ -55,7 +55,7 @@ export function MajorPicker({ universityId, collegeId, majorId, onChange }: {
 
   function List() {
     return (
-      <View style={{ backgroundColor: C.white, borderRadius: 16, borderWidth: 1, borderColor: C.line, overflow: 'hidden' }}>
+      <View style={{ backgroundColor: C.card, borderRadius: 16, borderWidth: 1, borderColor: C.line, overflow: 'hidden' }}>
         {list.length > 8 && (
           <Row gap={8} style={{ paddingHorizontal: 12, minHeight: 44, borderBottomWidth: 1, borderBottomColor: C.line }}>
             <Search size={16} color={C.muted} />

@@ -39,7 +39,7 @@ function Photo({ path, onDoubleTap }: { path: string; onDoubleTap: () => void })
   return (
     <>
       <Tap haptic={false} scale={0.99} throttle={0} onPress={press} accessibilityLabel="افتح الصورة"
-        style={{ marginHorizontal: 10, height: 260, borderRadius: 20, backgroundColor: '#DDE4FF', overflow: 'hidden', alignItems: 'center', justifyContent: 'center' }}>
+        style={{ marginHorizontal: 10, height: 260, borderRadius: 20, backgroundColor: C.primarySoft, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' }}>
         {uri && <Image source={{ uri }} style={{ position: 'absolute', top: 0, bottom: 0, left: 0, right: 0 }} contentFit="cover" transition={200} />}
         <Animated.View style={burstStyle} pointerEvents="none"><Heart size={90} color="#fff" fill="#fff" /></Animated.View>
       </Tap>
@@ -130,7 +130,7 @@ export function PostCard({ post, onLikes, compact, detail }: { post: Post; onLik
           </Row>
           <T v="tiny" color={C.muted} style={{ fontFamily: 'Rubik_400Regular' }}>{[p.author?.major?.name_ar, timeAgo(p.created_at)].filter(Boolean).join(' · ')}</T>
         </View>
-        {p.lost_found ? <Tag label={p.lost_found === 'lost' ? 'ضاع مني' : 'لقيت'} bg={p.lost_found === 'lost' ? '#FFE6D5' : C.greenSoft} fg={p.lost_found === 'lost' ? '#C2410C' : C.greenInk} />
+        {p.lost_found ? <Tag label={p.lost_found === 'lost' ? 'ضاع مني' : 'لقيت'} bg={p.lost_found === 'lost' ? C.orangeSoft : C.greenSoft} fg={p.lost_found === 'lost' ? '#C2410C' : C.greenInk} />
           : <Tag label={cat.label} bg={cat.soft} fg={cat.ink} />}
       </Row>
 
@@ -144,8 +144,8 @@ export function PostCard({ post, onLikes, compact, detail }: { post: Post; onLik
         {p.poll?.options?.length ? <Poll postId={p.id} options={p.poll.options} /> : null}
         {files.map((f) => (
           <Tap key={f.id} haptic={false} scale={0.98} onPress={() => openFile(f.url)} accessibilityLabel={`افتح ${f.file_name ?? 'الملف'}`}
-            style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginHorizontal: 14, marginTop: 10, backgroundColor: '#F6F8FC', borderRadius: 14, padding: 10 }}>
-            <View style={{ width: 36, height: 40, borderRadius: 8, backgroundColor: '#FDE7EA', alignItems: 'center', justifyContent: 'center' }}><FileText size={18} color="#E11D48" /></View>
+            style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginHorizontal: 14, marginTop: 10, backgroundColor: C.soft, borderRadius: 14, padding: 10 }}>
+            <View style={{ width: 36, height: 40, borderRadius: 8, backgroundColor: C.redSoft, alignItems: 'center', justifyContent: 'center' }}><FileText size={18} color="#E11D48" /></View>
             <View style={{ flex: 1 }}>
               <T v="bold" style={{ fontSize: 13 }} numberOfLines={1}>{f.file_name ?? 'ملف'}</T>
               {f.size_bytes ? <T v="tiny" color={C.muted}>{(f.size_bytes / 1048576).toFixed(1)} ميجا · اكبس لتفتحه</T> : null}
@@ -156,7 +156,7 @@ export function PostCard({ post, onLikes, compact, detail }: { post: Post; onLik
 
       <Row gap={2} style={{ paddingHorizontal: 8, paddingVertical: 8 }}>
         <Tap onPress={like} accessibilityLabel="إعجاب" accessibilityState={{ selected: !!p.liked }}
-          style={{ flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 44, paddingHorizontal: 10, borderRadius: 14, backgroundColor: p.liked ? '#FFEEF1' : 'transparent' }}>
+          style={{ flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 44, paddingHorizontal: 10, borderRadius: 14, backgroundColor: p.liked ? C.pinkSoft : 'transparent' }}>
           <Animated.View style={heartStyle}><Heart size={22} color={p.liked ? C.pink : C.ink2} fill={p.liked ? C.pink : 'none'} /></Animated.View>
         </Tap>
         {!p.hide_likes || p.author_id === profile?.id ? (

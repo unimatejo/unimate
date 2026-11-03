@@ -9,7 +9,7 @@ import type { Profile, VanishMode } from '@/lib/types';
 
 function Box({ title, hint, children }: { title: string; hint?: string; children: ReactNode }) {
   return (
-    <View style={{ gap: 10, backgroundColor: C.white, borderRadius: 22, padding: 14 }}>
+    <View style={{ gap: 10, backgroundColor: C.card, borderRadius: 22, padding: 14 }}>
       <T v="h3">{title}</T>
       {hint ? <T v="tiny" color={C.muted} style={{ marginTop: -6 }}>{hint}</T> : null}
       {children}
@@ -64,7 +64,7 @@ export default function Privacy() {
             منشوراتك بأقسام الجامعة (ملخصات، مفقودات، سوق...) بتضل ظاهرة لطلاب جامعتك حتى لو حسابك خاص، عشان هيك هي معمولة.
           </T>
         </View>
-        <View style={{ flexDirection: 'row', gap: 10, backgroundColor: C.white, borderRadius: 18, padding: 14 }}>
+        <View style={{ flexDirection: 'row', gap: 10, backgroundColor: C.card, borderRadius: 18, padding: 14 }}>
           <MessageCircle size={18} color={C.muted} />
           <T v="small" color={C.muted} style={{ flex: 1 }}>
             إدارة يونيميت بتقدر تفتح أي محادثة لما يوصلها بلاغ أو للحماية والأمان، وكل فتح بينسجل. التفاصيل بسياسة الخصوصية.

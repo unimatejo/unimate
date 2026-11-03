@@ -33,7 +33,7 @@ export default function Blocked() {
         keyExtractor={(r) => r.blocked_id}
         contentContainerStyle={{ padding: 18, paddingTop: 4, gap: 6 }}
         renderItem={({ item }) => (
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 64, backgroundColor: C.white, borderRadius: 18, paddingHorizontal: 12 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 64, backgroundColor: C.card, borderRadius: 18, paddingHorizontal: 12 }}>
             <Avatar id={item.blocked_id} name={item.p?.full_name} url={item.p?.avatar_url} size={44} />
             <View style={{ flex: 1 }}><T v="bodyMd">{item.p?.full_name ?? 'مستخدم'}</T><T v="tiny" color={C.muted}>انحظر {timeAgo(item.created_at)}</T></View>
             <Button kind="soft" title="فك الحظر" onPress={() => unblock(item.blocked_id)} style={{ minHeight: 38, paddingHorizontal: 14, borderRadius: 12 }} />

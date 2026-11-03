@@ -53,7 +53,7 @@ export default function Follows() {
       <Header title={params.name ?? ''} />
       <View style={{ paddingHorizontal: 18, gap: 10 }}>
         <Segmented items={['المتابِعين', 'يتابع']} value={tab} onChange={setTab} />
-        <Row gap={8} style={{ minHeight: 44, borderRadius: 14, backgroundColor: C.white, paddingHorizontal: 12 }}>
+        <Row gap={8} style={{ minHeight: 44, borderRadius: 14, backgroundColor: C.card, paddingHorizontal: 12 }}>
           <Search size={18} color={C.muted} />
           <TextInput value={q} onChangeText={setQ} placeholder="دوّر" placeholderTextColor={C.faint} style={{ flex: 1, fontFamily: F.body, fontSize: 14, color: C.ink, textAlign: 'right' }} />
         </Row>
@@ -63,7 +63,7 @@ export default function Follows() {
         keyExtractor={(p) => p.id}
         contentContainerStyle={{ padding: 18, gap: 6 }}
         renderItem={({ item }) => (
-          <Row gap={12} style={{ backgroundColor: C.white, borderRadius: 18, padding: 10 }}>
+          <Row gap={12} style={{ backgroundColor: C.card, borderRadius: 18, padding: 10 }}>
             <Tap haptic={false} scale={0.98} onPress={() => router.push({ pathname: '/user/[id]', params: { id: item.id } })} style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 12 }}>
               <Avatar id={item.id} name={item.full_name} url={item.avatar_url} size={46} />
               <View style={{ flex: 1 }}>

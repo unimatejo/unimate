@@ -32,7 +32,7 @@ export function AdBanner({ placement }: { placement: 'home_banner' | 'feed_card'
       {ad.image_url ? <Image source={{ uri: ad.image_url }} style={{ height: 120, width: '100%' }} contentFit="cover" /> : null}
       <Row gap={10} style={{ padding: 14 }}>
         <View style={{ flex: 1, gap: 2 }}>
-          <Row gap={6}><Tag label="ممول" bg="#EEF0F6" fg={C.muted} /><T v="tiny" color={C.muted}>{ad.advertiser_name}</T></Row>
+          <Row gap={6}><Tag label="ممول" bg={C.soft} fg={C.muted} /><T v="tiny" color={C.muted}>{ad.advertiser_name}</T></Row>
           <T v="bold">{ad.title}</T>
           {ad.offer ? <T v="small" color={C.greenInk}>{ad.offer}</T> : ad.body ? <T v="small" color={C.muted}>{ad.body}</T> : null}
         </View>

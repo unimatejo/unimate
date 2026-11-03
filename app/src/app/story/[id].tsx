@@ -115,7 +115,7 @@ export default function StoryViewer() {
         <Row gap={4} style={{ marginTop: 6 }}>
           {(items ?? []).map((it, k) => (
             <View key={it.id} style={{ flex: 1, height: 3, borderRadius: 2, backgroundColor: 'rgba(255,255,255,0.3)', overflow: 'hidden' }}>
-              {k < i ? <View style={{ flex: 1, backgroundColor: C.white }} /> : k === i ? <Animated.View style={[{ height: 3, backgroundColor: C.white }, bar]} /> : null}
+              {k < i ? <View style={{ flex: 1, backgroundColor: C.card }} /> : k === i ? <Animated.View style={[{ height: 3, backgroundColor: C.card }, bar]} /> : null}
             </View>
           ))}
         </Row>
@@ -155,7 +155,7 @@ export default function StoryViewer() {
 
       <Modal visible={showViewers} transparent animationType="slide" onRequestClose={() => { setShowViewers(false); resume(); }}>
         <Pressable style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.4)' }} onPress={() => { setShowViewers(false); resume(); }} />
-        <Animated.View entering={FadeIn} style={{ backgroundColor: C.white, borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: 18, maxHeight: '60%', gap: 12 }}>
+        <Animated.View entering={FadeIn} style={{ backgroundColor: C.card, borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: 18, maxHeight: '60%', gap: 12 }}>
           <T v="h3">مين شاف قصتك</T>
           <ScrollView contentContainerStyle={{ gap: 10, paddingBottom: 30 }}>
             {viewers.length === 0 ? <T v="small" color={C.muted}>ما حدا شافها لهلأ.</T> : viewers.map((v) => (

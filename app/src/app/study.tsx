@@ -94,7 +94,7 @@ export default function Study() {
         {courses.length === 0 && !loading && <T v="small" color={C.muted}>لما توصل موادك بتقدر تدوّر على حدا يدرس معك.</T>}
 
         {course && (
-          <View style={{ gap: 12, backgroundColor: C.white, borderRadius: 22, padding: 14 }}>
+          <View style={{ gap: 12, backgroundColor: C.card, borderRadius: 22, padding: 14 }}>
             <Toggle icon={<BookOpen size={20} color={C.primary} />} label="بدي حدا أدرس معه هالمادة" hint="بتبيّن لطلاب نفس المادة بجامعتك" value={!!my?.active} onChange={(v) => saveIntent({ active: v })} />
             {my?.active && (
               <>
@@ -113,7 +113,7 @@ export default function Study() {
         {people.map((p) => {
           const s = stateWith(p.user_id);
           return (
-            <View key={p.user_id} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: C.white, borderRadius: 20, padding: 12 }}>
+            <View key={p.user_id} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: C.card, borderRadius: 20, padding: 12 }}>
               <Tap onPress={() => router.push({ pathname: '/user/[id]', params: { id: p.user_id } })}><Avatar id={p.user_id} name={p.p?.full_name} url={p.p?.avatar_url} size={46} /></Tap>
               <View style={{ flex: 1, gap: 2 }}>
                 <T v="bodyMd">{p.p?.full_name}</T>
