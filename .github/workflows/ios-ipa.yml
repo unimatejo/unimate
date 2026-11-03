@@ -1,0 +1,40 @@
+# Builds an unsigned UniMate .ipa for sideloading with your own certificate (Esign, Sideloadly, Scarlet...).
+# Run it from GitHub → Actions → "iOS IPA" → Run workflow. The .ipa appears under the run's Artifacts.
+name: iOS IPA
+on:
+  workflow_dispatch:
+jobs:
+  build:
+    runs-on: macos-15
+    timeout-minutes: 60
+    defaults:
+      run:
+        working-directory: app
+    env:
+      # The publishable key is meant to ship inside the app; access is enforced by RLS in the database.
+      EXPO_PUBLIC_SUPABASE_URL: ${{ secrets.EXPO_PUBLIC_SUPABASE_URL }}
+      EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+      - run: npm ci
+      - run: npx expo prebuild --platform ios --clean
+      - name: Pods
+        run: cd ios && pod install
+      - name: Build (Release, no signing)
+        run: |
+          xcodebuild -workspace ios/*.xcworkspace -scheme UniMate -configuration Release -sdk iphoneos \
+            -derivedDataPath build CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" | xcpretty || exit ${PIPESTATUS[0]}
+      - name: Package .ipa
+        run: |
+          mkdir -p Payload
+          cp -R build/Build/Products/Release-iphoneos/*.app Payload/
+          zip -qry UniMate.ipa Payload
+      - uses: actions/upload-artifact@v4
+        with:
+          name: UniMate-ipa
+          path: app/UniMate.ipa

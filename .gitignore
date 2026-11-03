@@ -6,3 +6,5 @@ dist/
 !.env.example
 *.log
 .DS_Store
+app/ios/
+app/android/
