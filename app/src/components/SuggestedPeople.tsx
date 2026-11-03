@@ -19,6 +19,7 @@ export function SuggestedPeople() {
   const { profile } = useAuth();
   const [rows, setRows] = useState<S[]>([]);
   const [done, setDone] = useState<Set<string>>(new Set());
+  const [pending, setPending] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     if (!profile) return;
@@ -28,7 +29,8 @@ export function SuggestedPeople() {
   async function follow(id: string) {
     if (!profile) return;
     setDone((d) => new Set(d).add(id));
-    await supabase.from('follows').insert({ follower_id: profile.id, followee_id: id });
+    const { data } = await supabase.from('follows').insert({ follower_id: profile.id, followee_id: id }).select('status').single();
+    if (data?.status === 'pending') setPending((x) => new Set(x).add(id));
   }
 
   const shown = rows;
@@ -54,7 +56,7 @@ export function SuggestedPeople() {
               <T v="tiny" color={C.muted} numberOfLines={1}>{t(WHY[p.reason] ?? WHY.university)}</T>
               <T v="tiny" color={C.faint} numberOfLines={1} style={{ maxWidth: 126 }}>{(isAR ? p.major_ar : p.major_en || p.major_ar) ?? ''}</T>
             </Tap>
-            <Button kind={done.has(p.id) ? 'soft' : 'primary'} title={done.has(p.id) ? t('تتابعه') : t('متابعة')} onPress={() => (done.has(p.id) ? undefined : follow(p.id))}
+            <Button kind={done.has(p.id) ? 'soft' : 'primary'} title={pending.has(p.id) ? t('تم إرسال الطلب') : done.has(p.id) ? t('تتابعه') : t('متابعة')} onPress={() => (done.has(p.id) ? undefined : follow(p.id))}
               style={{ minHeight: 34, alignSelf: 'stretch', borderRadius: 12 }} />
           </Animated.View>
         ))}
