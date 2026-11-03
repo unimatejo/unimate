@@ -1,17 +1,20 @@
 # Builds an unsigned UniMate .ipa for sideloading with your own certificate (Esign, Sideloadly, Scarlet...).
-# Run it from GitHub → Actions → "iOS IPA" → Run workflow. The .ipa appears under the run's Artifacts.
+# Runs on every push to main that touches the app. The .ipa and the build log are pushed to the "builds" branch.
 name: iOS IPA
 on:
   workflow_dispatch:
   push:
     branches: [main]
     paths: ['app/**', '.github/workflows/ios-ipa.yml']
+permissions:
+  contents: write
 jobs:
   build:
     runs-on: macos-15
-    timeout-minutes: 60
+    timeout-minutes: 75
     defaults:
       run:
+        shell: bash -eo pipefail {0}
         working-directory: app
     env:
       # The publishable key is meant to ship inside the app; access is enforced by RLS in the database.
@@ -24,20 +27,31 @@ jobs:
           node-version: 22
           cache: npm
           cache-dependency-path: app/package-lock.json
-      - run: npm ci
-      - run: npx expo prebuild --platform ios --clean
+      - run: mkdir -p ../out && npm ci 2>&1 | tee ../out/npm.log | tail -20
+      - run: npx expo prebuild --platform ios --clean 2>&1 | tee ../out/prebuild.log
       - name: Pods
-        run: cd ios && pod install
+        run: cd ios && pod install 2>&1 | tee ../../out/pods.log | tail -30
       - name: Build (Release, no signing)
         run: |
-          xcodebuild -workspace ios/*.xcworkspace -scheme UniMate -configuration Release -sdk iphoneos \
-            -derivedDataPath build CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" | xcpretty || exit ${PIPESTATUS[0]}
+          ls ios
+          xcodebuild -workspace ios/UniMate.xcworkspace -scheme UniMate -configuration Release -sdk iphoneos -destination 'generic/platform=iOS' \
+            -derivedDataPath build CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" > ../out/xcodebuild.log 2>&1 \
+            || { grep -E "error:|\*\* BUILD" ../out/xcodebuild.log | head -80; tail -60 ../out/xcodebuild.log; exit 1; }
+          tail -5 ../out/xcodebuild.log
       - name: Package .ipa
         run: |
-          mkdir -p Payload
-          cp -R build/Build/Products/Release-iphoneos/*.app Payload/
-          zip -qry UniMate.ipa Payload
-      - uses: actions/upload-artifact@v4
-        with:
-          name: UniMate-ipa
-          path: app/UniMate.ipa
+          APP=$(ls -d build/Build/Products/Release-iphoneos/*.app)
+          test -f "$APP/main.jsbundle" || { echo "no JS bundle inside the app"; exit 1; }
+          mkdir -p Payload && cp -R "$APP" Payload/
+          zip -qry ../out/UniMate.ipa Payload
+          ls -la ../out
+      - name: Publish to the builds branch
+        if: always()
+        working-directory: .
+        run: |
+          mkdir -p /tmp/pub && cp -R out/. /tmp/pub/ 2>/dev/null || true
+          echo "${{ github.sha }} ${{ job.status }} $(date -u)" > /tmp/pub/BUILD.txt
+          cd /tmp/pub && git init -q && git checkout -q -b builds
+          git -c user.name=ci -c user.email=ci@unimate.local add -A
+          git -c user.name=ci -c user.email=ci@unimate.local commit -qm "build ${{ github.sha }}"
+          git push -qf "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" builds
