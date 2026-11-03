@@ -38,7 +38,8 @@ jobs:
           cache-dependency-path: app/package-lock.json
       - run: npm ci 2>&1 | tee ../out/npm.log | tail -20
       - name: Let expo-modules-jsi build with the Xcode on the runner (its sources target a newer Swift)
-        run: sed -i '' 's/swiftLanguageModes: \[\.v6\]/swiftLanguageModes: [.v5]/' node_modules/expo-modules-jsi/apple/Package.swift && grep -n swiftLanguageModes node_modules/expo-modules-jsi/apple/Package.swift
+        run: |
+          sed -i '' 's/swiftLanguageModes: \[\.v6\]/swiftLanguageModes: [.v5]/' node_modules/expo-modules-jsi/apple/Package.swift && grep -n swiftLanguageModes node_modules/expo-modules-jsi/apple/Package.swift
       - run: npx expo prebuild --platform ios --clean 2>&1 | tee ../out/prebuild.log
       - name: Pods
         run: cd ios && pod install 2>&1 | tee ../../out/pods.log | tail -30
