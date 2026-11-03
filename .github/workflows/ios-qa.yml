@@ -47,8 +47,8 @@ jobs:
           xcrun simctl boot $UDID; xcrun simctl bootstatus $UDID -b > /dev/null
           xcrun simctl install $UDID "$APP"
           xcrun simctl spawn $UDID log stream --style compact --predicate 'process == "UniMate"' > out/device.log 2>&1 &
-          alive() { xcrun simctl spawn $UDID launchctl list 2>/dev/null | grep -q "UIKitApplication:jo.unimate.app"; }
-          shot() { sleep "$2"; xcrun simctl io $UDID screenshot "out/shots/$1.png" > /dev/null 2>&1; if alive; then echo "OK    $1" | tee -a out/summary.txt; else echo "CRASH $1" | tee -a out/summary.txt; xcrun simctl launch $UDID jo.unimate.app > /dev/null; sleep 12; fi; }
+          alive() { pgrep -f "UniMate.app/UniMate" > /dev/null; }
+          shot() { sleep "$2"; xcrun simctl io $UDID screenshot "$PWD/out/shots/$1.png" >> out/shots.log 2>&1; if alive; then echo "OK    $1 pid $(pgrep -f UniMate.app/UniMate | head -1)" | tee -a out/summary.txt; else echo "CRASH $1" | tee -a out/summary.txt; xcrun simctl launch $UDID jo.unimate.app > /dev/null; sleep 12; fi; }
           # first launch turns on right-to-left, second launch uses it
           xcrun simctl launch $UDID jo.unimate.app; sleep 15; xcrun simctl terminate $UDID jo.unimate.app; sleep 2
           xcrun simctl launch $UDID jo.unimate.app; shot 00-login 15
