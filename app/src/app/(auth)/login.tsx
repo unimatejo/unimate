@@ -9,7 +9,7 @@ import Animated, { Easing, FadeInDown, useAnimatedStyle, useSharedValue, withDel
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Button, Field, Row, T } from '@/components/ui';
-import { sendEmailCode, signInWithMicrosoft, universityForEmail } from '@/lib/auth';
+import { sendEmailCode, signInWithMicrosoftAndCourses, universityForEmail } from '@/lib/auth';
 import { C, F } from '@/lib/theme';
 import { nm, t } from '@/lib/i18n';
 
@@ -41,7 +41,7 @@ export default function Login() {
     if (busy) return;
     setError(null); setMsBusy(true);
     try {
-      const res = await signInWithMicrosoft();
+      const res = await signInWithMicrosoftAndCourses();
       if ('error' in res && res.error && res.error.message !== 'cancelled' && res.error.message !== 'redirecting') setError(t('ما زبط الدخول بمايكروسوفت. ممكن جامعتك بتطلب موافقة، جرّب رابط على الإيميل.'));
     } catch {
       setError(t('ما قدرنا نبعث الرسالة. تأكد من الإنترنت وجرّب مرة ثانية.'));

@@ -883,4 +883,5 @@ export const EN: Record<string, string> = {
   "نذكّرك بمحاضراتك؟": "Remind you about lectures?",
   "عروض على الإيميل": "Offers by email",
   "عروض وخصومات حوالين جامعتك على إيميلك الجامعي، وبتقدر توقفها من أي إيميل": "Deals near your campus sent to your university email. Unsubscribe from any email.",
+  "انضافت {0} مواد من Teams لجدولك ✓": "{0} courses from Teams added to your schedule ✓",
 };

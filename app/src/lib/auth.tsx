@@ -6,6 +6,8 @@ import { createContext, useCallback, useContext, useEffect, useRef, useState, ty
 
 import { reportError } from './errors';
 import { getPref, setPref } from './prefs';
+import { toast } from './toast';
+import { t } from './i18n';
 import { clearMediaCache, supabase } from './supabase';
 import type { Profile, University } from './types';
 
@@ -104,24 +106,62 @@ export async function verifyEmailCode(email: string, token: string) {
   return supabase.auth.verifyOtp({ email: email.trim().toLowerCase(), token: token.trim(), type: 'email' });
 }
 
+const TEAMS_SCOPES = 'User.Read Team.ReadBasic.All';
+
 /** Sign in with the university's Microsoft 365 account (Azure / Entra ID through Supabase). */
 export async function signInWithMicrosoft(extraScopes = '') {
   const redirectTo = Linking.createURL('callback');
+  const scopes = `openid email profile offline_access ${extraScopes}`.trim();
   if (Platform.OS === 'web') {
     // the web version leaves the page for Microsoft and comes back to /callback, which finishes sign-in
-    const { error } = await supabase.auth.signInWithOAuth({ provider: 'azure', options: { redirectTo, scopes: `openid email profile offline_access ${extraScopes}`.trim(), queryParams: { prompt: extraScopes ? 'consent' : 'select_account' } } });
+    const { error } = await supabase.auth.signInWithOAuth({ provider: 'azure', options: { redirectTo, scopes, queryParams: { prompt: 'select_account' } } });
     return error ? { error } : { error: new Error('redirecting') };
   }
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: 'azure',
-    options: { redirectTo, scopes: `openid email profile offline_access ${extraScopes}`.trim(), skipBrowserRedirect: true, queryParams: { prompt: extraScopes ? 'consent' : 'select_account' } },
+    options: { redirectTo, scopes, skipBrowserRedirect: true, queryParams: { prompt: 'select_account' } },
   });
   if (error || !data?.url) return { error: error ?? new Error('no url') };
   const res = await WebBrowser.openAuthSessionAsync(data.url, redirectTo);
   if (res.type !== 'success') return { error: new Error('cancelled') };
-  const code = new URL(res.url).searchParams.get('code');
-  if (!code) return { error: new Error('no code') };
+  const q = new URL(res.url).searchParams;
+  const code = q.get('code');
+  if (!code) return { error: new Error(q.get('error') ? 'consent' : 'no code') };
   return supabase.auth.exchangeCodeForSession(code);
+}
+
+/**
+ * One Microsoft sign-in that also brings the student's courses from Teams.
+ * If the university doesn't allow the Teams permission, it quietly signs in without it.
+ */
+export async function signInWithMicrosoftAndCourses() {
+  if (Platform.OS === 'web') {
+    setPref('ms_teams_login', String(Date.now())); // /callback finishes the import, or retries without Teams
+    setPref('teams_import', String(Date.now()));
+    return signInWithMicrosoft(TEAMS_SCOPES);
+  }
+  let r = await signInWithMicrosoft(TEAMS_SCOPES);
+  if ('error' in r && r.error?.message === 'consent') r = await signInWithMicrosoft();
+  const token = (r as { data?: { session?: { provider_token?: string | null } | null } }).data?.session?.provider_token;
+  if (token) importTeamsInBackground(token);
+  return r;
+}
+
+/** Import Teams courses without making the student wait; tell them when it's done. */
+export function importTeamsInBackground(token: string) {
+  importTeamsWithToken(token).then((res) => {
+    if ('count' in res && res.count > 0) toast(t('انضافت {0} مواد من Teams لجدولك ✓', [res.count]));
+  }).catch(() => {});
+}
+
+/** Web: the Teams-permission sign-in came back refused, so sign in again without it (once). */
+export function retryMicrosoftWithoutTeams(): boolean {
+  const at = Number(getPref('ms_teams_login') || 0);
+  setPref('ms_teams_login', '');
+  if (!at || Date.now() - at > 10 * 60 * 1000) return false;
+  setPref('teams_import', '');
+  signInWithMicrosoft();
+  return true;
 }
 
 /**
@@ -132,10 +172,10 @@ export async function importTeamsCourses(): Promise<{ count: number } | { error:
   if (Platform.OS === 'web') {
     // the web version leaves for Microsoft; /callback finishes the import when it comes back
     setPref('teams_import', String(Date.now()));
-    const r = await signInWithMicrosoft('User.Read Team.ReadBasic.All');
+    const r = await signInWithMicrosoft(TEAMS_SCOPES);
     return { error: r.error?.message === 'redirecting' ? 'redirecting' : 'consent' };
   }
-  const r = await signInWithMicrosoft('User.Read Team.ReadBasic.All');
+  const r = await signInWithMicrosoft(TEAMS_SCOPES);
   if ('error' in r && r.error) return { error: r.error.message === 'cancelled' ? 'cancelled' : 'consent' };
   const token = (r as { data?: { session?: { provider_token?: string | null } | null } }).data?.session?.provider_token;
   return importTeamsWithToken(token);

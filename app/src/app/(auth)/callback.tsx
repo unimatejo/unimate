@@ -4,7 +4,8 @@ import { ActivityIndicator, View } from 'react-native';
 
 import { Button, Screen, T } from '@/components/ui';
 import { supabase } from '@/lib/supabase';
-import { importTeamsWithToken, takePendingTeamsImport } from '@/lib/auth';
+import { importTeamsInBackground, importTeamsWithToken, retryMicrosoftWithoutTeams, takePendingTeamsImport } from '@/lib/auth';
+import { getPref, setPref } from '@/lib/prefs';
 import { C } from '@/lib/theme';
 import { t } from '@/lib/i18n';
 
@@ -15,6 +16,8 @@ export default function Callback() {
 
   useEffect(() => {
     (async () => {
+      // web: the university refused the Teams permission, so sign in without it
+      if (p.error_description && retryMicrosoftWithoutTeams()) return;
       if (p.error_description) { setError(t('الرابط انتهى أو انستخدم قبل. اطلب رابط جديد.')); return; }
       let r: { error: unknown; data?: { session?: { provider_token?: string | null } | null } };
       try {
@@ -26,8 +29,11 @@ export default function Callback() {
       } catch (e) { r = { error: e }; }
       if (r.error) { setError(t('ما زبط الدخول بهالرابط. افتح الرابط على نفس التلفون اللي طلبت منه، أو اطلب رابط جديد.')); return; }
       // web: coming back from "bring my courses from Teams"
+      const fromLogin = getPref('ms_teams_login'); setPref('ms_teams_login', '');
       if (takePendingTeamsImport()) {
-        const res = await importTeamsWithToken(r.data?.session?.provider_token);
+        const token = r.data?.session?.provider_token;
+        if (fromLogin) { if (token) importTeamsInBackground(token); router.replace('/'); return; } // first sign-in: don't make them wait
+        const res = await importTeamsWithToken(token);
         router.replace({ pathname: '/courses', params: { teams: 'count' in res ? String(res.count) : res.error } });
         return;
       }
