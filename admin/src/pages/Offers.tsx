@@ -33,7 +33,7 @@ export default function Offers() {
         const { data: e, error: ee } = await supabase.functions.invoke('send-offer-email', { body: { send_id: r.id } });
         if (ee) {
           const code = await (ee as { context?: Response }).context?.json?.().catch(() => null);
-          line += code?.error === 'smtp_not_configured' ? '. الإيميل لسا مش مفعّل: لازم تحط كلمة سر support@unimate.my بأسرار Supabase (SMTP_PASS).' : `. الإيميل ما انبعت: ${ee.message}`;
+          line += code?.error === 'smtp_not_configured' ? '. الإيميل لسا مش مفعّل: لازم تحط كلمة سر shannik@unimate.my بأسرار Supabase (SMTP_PASS).' : `. الإيميل ما انبعت: ${ee.message}`;
         } else line += `، وعلى الإيميل لـ ${fmtNum((e as { sent: number }).sent)} من ${fmtNum((e as { total: number }).total)}`;
       } else if (email) line += '. ما في حدا مفعّل العروض على الإيميل لهلأ.';
       setMsg(line); setTitle(''); setBody(''); setLink(''); setTick((x) => x + 1);

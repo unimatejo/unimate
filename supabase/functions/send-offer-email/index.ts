@@ -1,5 +1,5 @@
 // Sends one offer (already saved by admin_send_offer) by email to students who opted in.
-// Needs the secret SMTP_PASS (the support@unimate.my mailbox password), set by the owner in Supabase › Edge Functions › Secrets.
+// Needs the secret SMTP_PASS (the shannik@unimate.my mailbox password), set by the owner in Supabase › Edge Functions › Secrets.
 import { createClient } from 'npm:@supabase/supabase-js@2.45.4';
 import nodemailer from 'npm:nodemailer@6.9.14';
 import { FN_BASE, sign } from '../_shared/offer.ts';
@@ -28,7 +28,7 @@ Deno.serve(async (req) => {
   const { data: people, error } = await db.rpc('offer_email_targets', { sid: send_id });
   if (error) return json({ error: error.message }, 500);
 
-  const from = Deno.env.get('SMTP_USER') ?? 'support@unimate.my';
+  const from = Deno.env.get('SMTP_USER') ?? 'shannik@unimate.my';
   const tx = nodemailer.createTransport({ host: Deno.env.get('SMTP_HOST') ?? 'smtp.hostinger.com', port: 465, secure: true, auth: { user: from, pass } });
   let sent = 0; const failed: string[] = [];
   for (const p of (people ?? []) as { user_id: string; email: string; full_name: string | null }[]) {
