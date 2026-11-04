@@ -9,3 +9,6 @@ dist/
 app/ios/
 app/android/
 web.zip
+site/download/*.apk
+site.zip
+admin.zip
