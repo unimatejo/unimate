@@ -42,7 +42,7 @@ export default function Login() {
     setError(null); setMsBusy(true);
     try {
       const res = await signInWithMicrosoft();
-      if ('error' in res && res.error && res.error.message !== 'cancelled') setError(t('ما زبط الدخول بمايكروسوفت. ممكن جامعتك بتطلب موافقة، جرّب رابط على الإيميل.'));
+      if ('error' in res && res.error && res.error.message !== 'cancelled' && res.error.message !== 'redirecting') setError(t('ما زبط الدخول بمايكروسوفت. ممكن جامعتك بتطلب موافقة، جرّب رابط على الإيميل.'));
     } catch {
       setError(t('ما قدرنا نبعث الرسالة. تأكد من الإنترنت وجرّب مرة ثانية.'));
     } finally { setMsBusy(false); }

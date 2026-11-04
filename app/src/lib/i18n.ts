@@ -49,8 +49,16 @@ export async function reloadApp() {
 export function setLanguage(p: LangPref) { setPref('lang', p); reloadApp(); }
 
 /** Make the native layout direction match the language; flips need one reload. */
+/** Is the screen laid out right-to-left? (native: I18nManager; web: the html dir we set). */
+export const rtlLayout = () => (Platform.OS === 'web' ? isAR : I18nManager.isRTL);
+
 export function syncDirection() {
-  if (Platform.OS === 'web' || I18nManager.isRTL === isAR) return;
+  if (Platform.OS === 'web') {
+    // the browser lays the page out right-to-left from the html dir attribute
+    if (typeof document !== 'undefined') { document.documentElement.dir = isAR ? 'rtl' : 'ltr'; document.documentElement.lang = isAR ? 'ar' : 'en'; }
+    return;
+  }
+  if (I18nManager.isRTL === isAR) return;
   I18nManager.allowRTL(isAR);
   I18nManager.forceRTL(isAR);
   I18nManager.swapLeftAndRightInRTL(true);

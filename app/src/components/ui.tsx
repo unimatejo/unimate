@@ -5,14 +5,14 @@ import { router } from 'expo-router';
 import { ChevronRight, CircleAlert } from 'lucide-react-native';
 import { forwardRef, useEffect, useRef, type ComponentRef, type ReactNode } from 'react';
 import {
-  ActivityIndicator, I18nManager, Pressable, StyleSheet, Text, TextInput, View,
+  ActivityIndicator, Platform, Pressable, StyleSheet, Text, TextInput, View,
   type PressableProps, type StyleProp, type TextInputProps, type TextProps, type TextStyle, type ViewStyle,
 } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withRepeat, withSequence, withSpring, withTiming } from 'react-native-reanimated';
 import { SafeAreaView, type Edge } from 'react-native-safe-area-context';
 
 import { C, F, R, avatarColors, isDark, shadow } from '@/lib/theme';
-import { flip, isAR, t, ta } from '@/lib/i18n';
+import { flip, isAR, t, ta, rtlLayout } from '@/lib/i18n';
 
 // ---------- text ----------
 type Variant = 'display' | 'h1' | 'h2' | 'h3' | 'body' | 'bodyMd' | 'bold' | 'small' | 'tiny';
@@ -133,14 +133,14 @@ export function Segmented({ items, value, onChange, dark }: { items: string[]; v
   const x = useSharedValue(0);
   const pill = useAnimatedStyle(() => ({ width: w.value, transform: [{ translateX: x.value }] }));
   // the first tab sits at the "start" edge: right in Arabic, left in English
-  const dir = I18nManager.isRTL ? -1 : 1;
+  const dir = rtlLayout() ? -1 : 1;
   useEffect(() => { if (w.value) x.value = withSpring(dir * value * w.value, { damping: 18, stiffness: 220 }); }, [value, dir, w, x]);
   return (
     <View
       onLayout={(e) => { const cw = (e.nativeEvent.layout.width - 8) / items.length; w.value = cw; x.value = dir * value * cw; }}
       style={{ flexDirection: 'row', backgroundColor: dark ? 'rgba(255,255,255,0.16)' : C.soft, borderRadius: 14, padding: 4 }}
     >
-      <Animated.View style={[{ position: 'absolute', top: 4, bottom: 4, start: 4, borderRadius: 11, backgroundColor: C.card }, shadow, pill]} />
+      <Animated.View style={[{ position: 'absolute', top: 4, bottom: 4, ...(Platform.OS === 'web' ? (rtlLayout() ? { right: 4 } : { left: 4 }) : { start: 4 }), borderRadius: 11, backgroundColor: C.card }, shadow, pill]} />
       {items.map((it, i) => (
         <Pressable key={it} accessibilityRole="tab" accessibilityState={{ selected: i === value }}
           onPress={() => { if (i === value) return; Haptics.selectionAsync().catch(() => {}); onChange(i); }}
@@ -206,7 +206,7 @@ export const Field = forwardRef<ComponentRef<typeof TextInput>, TextInputProps &
 
 export function Toggle({ value, onChange, label, hint, icon, a11yLabel }: { value: boolean; onChange: (v: boolean) => void; label: string; hint?: string; icon?: ReactNode; a11yLabel?: string }) {
   // knob starts at the "start" edge when off and slides to the end when on, mirrored like iOS in Arabic
-  const end = I18nManager.isRTL ? -20 : 20;
+  const end = rtlLayout() ? -20 : 20;
   const x = useAnimatedStyle(() => ({ transform: [{ translateX: withSpring(value ? end : 0, { damping: 16, stiffness: 240 }) }] }), [value, end]);
   return (
     <Pressable onPress={() => { Haptics.selectionAsync().catch(() => {}); onChange(!value); }} accessibilityRole="switch" accessibilityLabel={a11yLabel ?? label} accessibilityHint={hint} accessibilityState={{ checked: value }}

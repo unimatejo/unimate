@@ -1,3 +1,4 @@
+import { Platform } from 'react-native';
 import * as Linking from 'expo-linking';
 import * as WebBrowser from 'expo-web-browser';
 import type { Session } from '@supabase/supabase-js';
@@ -105,6 +106,11 @@ export async function verifyEmailCode(email: string, token: string) {
 /** Sign in with the university's Microsoft 365 account (Azure / Entra ID through Supabase). */
 export async function signInWithMicrosoft(extraScopes = '') {
   const redirectTo = Linking.createURL('callback');
+  if (Platform.OS === 'web') {
+    // the web version leaves the page for Microsoft and comes back to /callback, which finishes sign-in
+    const { error } = await supabase.auth.signInWithOAuth({ provider: 'azure', options: { redirectTo, scopes: `openid email profile offline_access ${extraScopes}`.trim(), queryParams: { prompt: extraScopes ? 'consent' : 'select_account' } } });
+    return error ? { error } : { error: new Error('redirecting') };
+  }
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: 'azure',
     options: { redirectTo, scopes: `openid email profile offline_access ${extraScopes}`.trim(), skipBrowserRedirect: true, queryParams: { prompt: extraScopes ? 'consent' : 'select_account' } },
@@ -122,6 +128,7 @@ export async function signInWithMicrosoft(extraScopes = '') {
  * Runs as a separate consent so sign-in still works if a university blocks the Teams permission.
  */
 export async function importTeamsCourses(): Promise<{ count: number } | { error: string }> {
+  if (Platform.OS === 'web') return { error: 'web' };
   const r = await signInWithMicrosoft('User.Read Team.ReadBasic.All');
   if ('error' in r && r.error) return { error: r.error.message === 'cancelled' ? 'cancelled' : 'consent' };
   const token = (r as { data?: { session?: { provider_token?: string | null } | null } }).data?.session?.provider_token;
