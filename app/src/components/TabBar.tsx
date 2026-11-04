@@ -33,16 +33,14 @@ function TabItem({ name, on, onPress, badge = 0 }: { name: string; on: boolean; 
   return (
     <Pressable onPress={onPress} accessibilityRole="tab" accessibilityState={{ selected: on }} accessibilityLabel={LABELS[name]}
       style={{ height: 50, minWidth: 50, borderRadius: 18, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingHorizontal: on ? 14 : 0 }}>
-      <Animated.View style={[{ position: 'absolute', top: 0, bottom: 0, left: 0, right: 0, borderRadius: 18, overflow: 'hidden', shadowColor: COLORS[name][1], shadowOpacity: 0.4, shadowRadius: 12, shadowOffset: { width: 0, height: 6 } }, pill]}>
-        <LinearGradient colors={COLORS[name]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={{ flex: 1, borderRadius: 18 }} />
-      </Animated.View>
-      <Animated.View style={icon}><Icon size={23} color={on ? C.white : C.faint} strokeWidth={on ? 2.4 : 2} fill={on ? 'rgba(255,255,255,0.22)' : 'none'} /></Animated.View>
+      <Animated.View style={[{ position: 'absolute', top: 0, bottom: 0, left: 0, right: 0, borderRadius: 18, overflow: 'hidden', backgroundColor: C.inverse }, pill]} />
+      <Animated.View style={icon}><Icon size={23} color={on ? C.onInverse : C.muted} strokeWidth={on ? 2.4 : 2} /></Animated.View>
       {badge > 0 && (
-        <View style={{ position: 'absolute', top: 4, right: on ? 4 : 2, minWidth: 18, height: 18, borderRadius: 9, paddingHorizontal: 4, backgroundColor: C.pink, borderWidth: 2, borderColor: C.card, alignItems: 'center', justifyContent: 'center' }}>
-          <Animated.Text style={{ fontFamily: F.bodyBold, fontSize: 10, color: '#fff' }}>{badge > 9 ? '9+' : badge}</Animated.Text>
+        <View style={{ position: 'absolute', top: 4, right: on ? 4 : 2, minWidth: 18, height: 18, borderRadius: 9, paddingHorizontal: 4, backgroundColor: C.primary, borderWidth: 2, borderColor: C.card, alignItems: 'center', justifyContent: 'center' }}>
+          <Animated.Text style={{ fontFamily: F.bodyBold, fontSize: 10, color: C.onPrimary }}>{badge > 9 ? '9+' : badge}</Animated.Text>
         </View>
       )}
-      <Animated.Text numberOfLines={1} style={[{ fontFamily: F.bodyBold, fontSize: 13, color: C.white, overflow: 'hidden' }, label]}>{LABELS[name]}</Animated.Text>
+      <Animated.Text numberOfLines={1} style={[{ fontFamily: F.bodyBold, fontSize: 13, color: C.onInverse, overflow: 'hidden' }, label]}>{LABELS[name]}</Animated.Text>
     </Pressable>
   );
 }
@@ -63,7 +61,7 @@ export function TabBar({ state, emitter, navigateToTab, navigation }: any) {
   if (kb) return null;
   return (
     <View pointerEvents="box-none" style={{ position: 'absolute', left: 0, right: 0, bottom: 0, paddingHorizontal: 14, paddingBottom: Math.max(insets.bottom - 6, 10) }}>
-      <View style={{ borderRadius: 26, overflow: 'hidden', borderWidth: 1, borderColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.7)', shadowColor: isDark ? '#000' : '#1B2250', shadowOpacity: isDark ? 0.6 : 0.16, shadowRadius: 22, shadowOffset: { width: 0, height: 10 }, elevation: 12, backgroundColor: Platform.OS === 'android' ? C.glass : 'transparent' }}>
+      <View style={{ borderRadius: 26, overflow: 'hidden', borderWidth: 1, borderColor: isDark ? C.line : 'rgba(255,255,255,0.7)', shadowColor: isDark ? '#000' : '#1B2250', shadowOpacity: isDark ? 0.6 : 0.16, shadowRadius: 22, shadowOffset: { width: 0, height: 10 }, elevation: 12, backgroundColor: Platform.OS === 'android' ? C.glass : 'transparent' }}>
         {Platform.OS === 'ios' && <BlurView intensity={60} tint={isDark ? 'dark' : 'light'} style={{ position: 'absolute', top: 0, bottom: 0, left: 0, right: 0 }} />}
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 8, paddingVertical: 7, backgroundColor: C.glass }}>
           {state.routes.map((route: { key: string; name: string }, i: number) => {
