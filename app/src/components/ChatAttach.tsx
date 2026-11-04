@@ -8,6 +8,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, FlatList, Linking, Modal, Platform, Pressable, ScrollView, TextInput, View } from 'react-native';
 import Animated, { FadeIn, SlideInDown } from 'react-native-reanimated';
 
+import { canLift, liftSubject } from '../../modules/subject-lift';
 import { AvatarCropper } from './AvatarCropper';
 import { Avatar, Button, Row, T, Tap } from './ui';
 import { useAuth } from '@/lib/auth';
@@ -156,8 +157,14 @@ function ContactPicker({ open, onClose, onPick }: { open: boolean; onClose: () =
 /** Sticker drawer: my saved stickers (kept in my account) and big emoji. Make a sticker from any photo. */
 export function StickerPanel({ open, onClose, send }: { open: boolean; onClose: () => void; send: Send }) {
   const { profile } = useAuth();
-  const [tab, setTab] = useState<'mine' | 'emoji'>('mine');
+  const [tab, setTab] = useState<'pack' | 'mine' | 'emoji'>('pack');
   const [mine, setMine] = useState<{ id: string; url: string }[] | null>(null);
+  const [pack, setPack] = useState<{ id: string; url: string; animated: boolean }[] | null>(null);
+  const [lifted, setLifted] = useState<{ uri: string; original: { uri: string; width: number; height: number } } | null>(null);
+  useEffect(() => {
+    if (!open || pack) return;
+    supabase.from('pack_stickers').select('id, url, animated').order('position').then(({ data }) => setPack((data ?? []) as never), () => setPack([]));
+  }, [open, pack]);
   const [cropSrc, setCropSrc] = useState<{ uri: string; width: number; height: number } | null>(null);
   const [making, setMaking] = useState(false);
   const load = useCallback(() => {
@@ -166,12 +173,20 @@ export function StickerPanel({ open, onClose, send }: { open: boolean; onClose: 
   }, [profile]);
   useEffect(() => { if (open) load(); }, [open, load]);
 
+  // like WhatsApp: cut the person/object out of the photo (iPhone, iOS 17+); otherwise crop it
   async function make() {
-    const f = await pickMedia({ maxWidth: 1200 });
-    if (f) setCropSrc({ uri: f.uri, width: f.width ?? 800, height: f.height ?? 800 });
+    const f = await pickMedia({ maxWidth: 1600 });
+    if (!f) return;
+    const original = { uri: f.uri, width: f.width ?? 800, height: f.height ?? 800 };
+    if (canLift()) {
+      setMaking(true);
+      try { const r = await liftSubject(f.uri); setLifted({ uri: r.uri, original }); }
+      catch { setCropSrc(original); }
+      finally { setMaking(false); }
+    } else setCropSrc(original);
   }
   async function cropped(f: { uri: string; mime: string }) {
-    setCropSrc(null);
+    setCropSrc(null); setLifted(null);
     if (!profile) return;
     setMaking(true);
     try {
@@ -192,12 +207,22 @@ export function StickerPanel({ open, onClose, send }: { open: boolean; onClose: 
       <Pressable style={{ flex: 1 }} onPress={onClose} />
       <Animated.View entering={SlideInDown.springify().damping(18)} style={[{ backgroundColor: C.card, borderTopLeftRadius: 26, borderTopRightRadius: 26, height: 360, paddingTop: 10 }, shadow]}>
         <Row gap={8} style={{ paddingHorizontal: 14, paddingBottom: 8 }}>
+          <Tap onPress={() => setTab('pack')} style={{ paddingHorizontal: 14, minHeight: 36, borderRadius: 18, justifyContent: 'center', backgroundColor: tab === 'pack' ? C.primarySoft : 'transparent' }}><T v="small" color={tab === 'pack' ? C.primary : C.muted}>{t('يوني')}</T></Tap>
           <Tap onPress={() => setTab('mine')} style={{ paddingHorizontal: 14, minHeight: 36, borderRadius: 18, justifyContent: 'center', backgroundColor: tab === 'mine' ? C.primarySoft : 'transparent' }}><Row gap={6}><Sticker size={17} color={tab === 'mine' ? C.primary : C.muted} /><T v="small" color={tab === 'mine' ? C.primary : C.muted}>{t('ستيكراتي')}</T></Row></Tap>
           <Tap onPress={() => setTab('emoji')} style={{ paddingHorizontal: 14, minHeight: 36, borderRadius: 18, justifyContent: 'center', backgroundColor: tab === 'emoji' ? C.primarySoft : 'transparent' }}><Row gap={6}><Smile size={17} color={tab === 'emoji' ? C.primary : C.muted} /><T v="small" color={tab === 'emoji' ? C.primary : C.muted}>{t('إيموجي كبير')}</T></Row></Tap>
           <View style={{ flex: 1 }} />
           <Tap onPress={onClose} accessibilityLabel={t('إغلاق')}><X size={20} color={C.muted} /></Tap>
         </Row>
-        {tab === 'emoji' ? (
+        {tab === 'pack' ? (
+          <ScrollView contentContainerStyle={{ flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: 8, paddingBottom: 30 }}>
+            {pack === null && <ActivityIndicator color={C.primary} style={{ margin: 30 }} />}
+            {(pack ?? []).map((s) => (
+              <Tap key={s.id} onPress={() => { onClose(); send({ kind: 'sticker', media: s.url }); }} scale={0.88} style={{ width: '25%', aspectRatio: 1, padding: 4 }}>
+                <Image source={{ uri: s.url }} style={{ flex: 1 }} contentFit="contain" autoplay />
+              </Tap>
+            ))}
+          </ScrollView>
+        ) : tab === 'emoji' ? (
           <ScrollView contentContainerStyle={{ flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: 8, paddingBottom: 30 }}>
             {BIG_EMOJI.map((e) => (
               <Tap key={e} onPress={() => { onClose(); send({ kind: 'sticker', body: e }); }} scale={0.85} style={{ width: '16.66%', aspectRatio: 1, alignItems: 'center', justifyContent: 'center' }}>
@@ -210,7 +235,7 @@ export function StickerPanel({ open, onClose, send }: { open: boolean; onClose: 
             <Tap onPress={make} disabled={making} style={{ width: '25%', aspectRatio: 1, padding: 6 }}>
               <View style={{ flex: 1, borderRadius: 18, borderWidth: 1.5, borderStyle: 'dashed', borderColor: C.primary, alignItems: 'center', justifyContent: 'center', gap: 4 }}>
                 {making ? <ActivityIndicator color={C.primary} /> : <Plus size={24} color={C.primary} />}
-                <T v="tiny" color={C.primary} style={{ fontSize: 10, textAlign: 'center' }}>{t('من صورة')}</T>
+                <T v="tiny" color={C.primary} style={{ fontSize: 10, textAlign: 'center' }}>{canLift() ? t('من صورة (بنشيل الخلفية)') : t('من صورة')}</T>
               </View>
             </Tap>
             {(mine ?? []).map((s) => (
@@ -224,6 +249,19 @@ export function StickerPanel({ open, onClose, send }: { open: boolean; onClose: 
         )}
       </Animated.View>
       <AvatarCropper src={cropSrc} onCancel={() => setCropSrc(null)} onDone={cropped} />
+      <Modal visible={!!lifted} transparent animationType="fade" onRequestClose={() => setLifted(null)}>
+        <View style={{ flex: 1, backgroundColor: 'rgba(10,14,30,0.85)', alignItems: 'center', justifyContent: 'center', padding: 24, gap: 18 }}>
+          <T v="h3" color="#fff">{t('هاد الستيكر')}</T>
+          <View style={{ width: 260, height: 260, borderRadius: 24, backgroundColor: '#ECE5DD', alignItems: 'center', justifyContent: 'center' }}>
+            {lifted && <Image source={{ uri: lifted.uri }} style={{ width: 230, height: 230 }} contentFit="contain" />}
+          </View>
+          <Row gap={10}>
+            <Button kind="white" title={t('بالخلفية')} onPress={() => { const o = lifted?.original; setLifted(null); if (o) setCropSrc(o); }} style={{ minWidth: 120 }} />
+            <Button title={t('احفظه')} onPress={() => lifted && cropped({ uri: lifted.uri, mime: 'image/png' })} style={{ minWidth: 120 }} />
+          </Row>
+          <Tap onPress={() => setLifted(null)}><T v="small" color="#AEB8D8">{t('إلغاء')}</T></Tap>
+        </View>
+      </Modal>
     </Modal>
   );
 }

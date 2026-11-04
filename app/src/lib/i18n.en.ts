@@ -1154,4 +1154,9 @@ export const EN: Record<string, string> = {
   "📄 ملف": "📄 File",
   "📊 استطلاع رأي": "📊 Poll",
   "📍 موقع": "📍 Location",
+  "يوني": "Yuni",
+  "هاد الستيكر": "Your sticker",
+  "بالخلفية": "Keep background",
+  "احفظه": "Save it",
+  "من صورة (بنشيل الخلفية)": "From photo (background removed)",
 };
