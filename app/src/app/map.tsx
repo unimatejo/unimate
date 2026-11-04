@@ -2,7 +2,7 @@ import * as Location from 'expo-location';
 import { router, useLocalSearchParams } from 'expo-router';
 import {
   BookOpen, Building2, MapPinPlus, Banknote, Bus, Car, ChevronRight, Coffee, Crosshair, DoorOpen, ExternalLink, Footprints, Landmark, Layers, MapPin, Maximize2, Moon, Navigation,
-  Pause, Pill, Play, Printer, Rotate3d, Search, ShoppingBag, SkipBack, SkipForward, Stethoscope, Store, Trees, Trophy, UtensilsCrossed, X, type LucideIcon,
+  Pause, Pill, Play, Printer, Rotate3d, Search, Send, ShoppingBag, SkipBack, SkipForward, Stethoscope, Store, Trees, Trophy, UtensilsCrossed, X, type LucideIcon,
 } from 'lucide-react-native';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, FlatList, Keyboard, Linking, Platform, ScrollView, TextInput, View } from 'react-native';
@@ -11,6 +11,7 @@ import Animated, { FadeIn, SlideInDown } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { GlyphTile, GRAD } from '@/components/Glyph';
+import { ShareToChat } from '@/components/ShareToChat';
 import { Button, Chip, Field, Row, T, Tap } from '@/components/ui';
 import { useAuth } from '@/lib/auth';
 import { supabase } from '@/lib/supabase';
@@ -75,7 +76,13 @@ function distM(a: { lat: number; lng: number }, b: { lat: number; lng: number })
 
 export default function CampusMap() {
   const { university, profile } = useAuth();
-  const params = useLocalSearchParams<{ building?: string; advertiser?: string }>();
+  const params = useLocalSearchParams<{ building?: string; advertiser?: string; lat?: string; lng?: string; name?: string }>();
+  // a place someone shared in a chat ("lat,lng,name"): pinned and opened on arrival
+  const shared = useMemo<Pin | null>(() => {
+    const la = Number(params.lat), ln = Number(params.lng);
+    return params.lat && params.lng && Number.isFinite(la) && Number.isFinite(ln) ? { id: 'shared', kind: 'shared', name: params.name || t('موقع مشارك'), sub: t('من محادثة'), lat: la, lng: ln } : null;
+  }, [params.lat, params.lng, params.name]);
+  const [shareFor, setShareFor] = useState<Pin | null>(null);
   const map = useRef<MapView>(null);
   const [pins, setPins] = useState<Pin[]>([]);
   const [pinsState, setPinsState] = useState<'loading' | 'ok' | 'empty' | 'error'>('loading');
@@ -136,7 +143,8 @@ export default function CampusMap() {
     if (near.length < 2) return;
     map.current?.fitToCoordinates(near.map((p) => ({ latitude: p.lat, longitude: p.lng })), { edgePadding: { top: 170, bottom: 80, left: 40, right: 40 }, animated: true });
   }, [pins, university]);
-  useEffect(() => { if (pins.length && !params.building && !params.advertiser) setTimeout(fitAll, 400); }, [pins, fitAll, params.building, params.advertiser]);
+  useEffect(() => { if (pins.length && !params.building && !params.advertiser && !shared) setTimeout(fitAll, 400); }, [pins, fitAll, params.building, params.advertiser, shared]);
+  useEffect(() => { if (shared) { const tm = setTimeout(() => focus(shared), 500); return () => clearTimeout(tm); } }, [shared]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if ((params.building || params.advertiser) && pins.length) {
@@ -283,6 +291,13 @@ export default function CampusMap() {
             </Marker>
           );
         })}
+        {shared && (
+          <Marker key="shared" coordinate={{ latitude: shared.lat, longitude: shared.lng }} onPress={() => focus(shared)} anchor={{ x: 0.5, y: 0.5 }} tracksViewChanges={false} zIndex={998}>
+            <View style={{ width: 40, height: 40, borderRadius: 14, backgroundColor: C.primary, borderWidth: 3, borderColor: '#FFFFFF', alignItems: 'center', justifyContent: 'center' }}>
+              <MapPin size={20} color={C.onPrimary} />
+            </View>
+          </Marker>
+        )}
         {trail.length > 1 && <Polyline coordinates={trail} strokeColor="#FFFFFF" strokeWidth={6} />}
         {trail.length > 1 && <Polyline coordinates={trail} strokeColor={C.primary} strokeWidth={3} />}
         {walker && (
@@ -499,13 +514,18 @@ export default function CampusMap() {
               <T v="bodyMd">{t('صور 360°')}</T>
             </Tap>
           </Row>
+          <Tap onPress={() => setShareFor(sel)} accessibilityLabel={t('شارك بالمحادثة')}
+            style={{ flexDirection: 'row', gap: 8, minHeight: 46, borderRadius: 23, backgroundColor: C.soft, alignItems: 'center', justifyContent: 'center' }}>
+            <Send size={17} color={C.ink} style={flip ? undefined : { transform: [{ scaleX: -1 }] }} />
+            <T v="bodyMd">{t('شارك بالمحادثة')}</T>
+          </Tap>
           {sel.advertiser_id && (
             <Button kind="soft" title={t('شوف صفحة المحل')} onPress={() => router.push({ pathname: '/advertiser/[id]', params: { id: sel.advertiser_id! } })} style={{ minHeight: 46 }} />
           )}
           <Row gap={8}>
           <View style={{ flex: 1 }}>
           <Button kind={routing ? 'dark' : 'primary'} title={routing ? t('إيقاف') : me ? t('وريني الطريق') : t('فعّل الموقع')}
-            icon={<Navigation size={19} color={C.white} />}
+            icon={<Navigation size={19} color={routing ? C.onInverse : C.onPrimary} />}
             onPress={async () => {
               if (!me) { await startLocation(true); return; }
               setRouting((r) => !r);
@@ -521,6 +541,7 @@ export default function CampusMap() {
           </Row>
         </Animated.View>
       )}
+      <ShareToChat place={shareFor} onClose={() => setShareFor(null)} />
     </View>
   );
 }

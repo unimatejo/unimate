@@ -14,6 +14,7 @@ import { Avatar, Button, Row, T, Tap } from './ui';
 import { useAuth } from '@/lib/auth';
 import { mediaUrl, supabase } from '@/lib/supabase';
 import { C, F, isDark, shadow } from '@/lib/theme';
+import { bubble, SheetModal, subOn } from './ChatExtras';
 import type { Message } from '@/lib/types';
 import { pickMedia, publicUrl, uploadFile } from '@/lib/upload';
 import { t, ta } from '@/lib/i18n';
@@ -70,22 +71,18 @@ export function AttachSheet({ open, onClose, conv, send, onStickers }: { open: b
 
   return (
     <>
-      <Modal visible={open} transparent animationType="fade" onRequestClose={onClose}>
-        <Pressable style={{ flex: 1, backgroundColor: 'rgba(14,20,48,0.35)' }} onPress={onClose} />
-        <Animated.View entering={SlideInDown.springify().damping(18)} style={{ backgroundColor: C.card, borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: 18, paddingBottom: 40 }}>
-          <View style={{ alignSelf: 'center', width: 42, height: 5, borderRadius: 3, backgroundColor: C.line, marginBottom: 14 }} />
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', rowGap: 18 }}>
+      <SheetModal open={open} onClose={onClose}>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', rowGap: 18, paddingTop: 4 }}>
             {items.map((it) => (
               <Tap key={it.key} onPress={it.onPress} disabled={!!busy} scale={0.92} accessibilityLabel={it.label} style={{ width: '25%', alignItems: 'center', gap: 7 }}>
-                <View style={[{ width: 62, height: 62, borderRadius: 31, backgroundColor: it.color, alignItems: 'center', justifyContent: 'center' }, shadow]}>
+                <View style={{ width: 62, height: 62, borderRadius: 31, backgroundColor: it.color, alignItems: 'center', justifyContent: 'center' }}>
                   {busy === it.key ? <ActivityIndicator color="#fff" /> : it.icon}
                 </View>
                 <T v="tiny" color={C.ink2}>{it.label}</T>
               </Tap>
             ))}
           </View>
-        </Animated.View>
-      </Modal>
+      </SheetModal>
       <PollComposer open={pollOpen} onClose={() => setPollOpen(false)} onSend={async (q, opts) => { setPollOpen(false); onClose(); await send({ kind: 'poll', body: JSON.stringify({ q, options: opts }) }); }} />
       <ContactPicker open={contactOpen} onClose={() => setContactOpen(false)} onPick={async (p) => { setContactOpen(false); onClose(); await send({ kind: 'contact', ref: p.id, body: p.full_name }); }} />
     </>
@@ -203,19 +200,17 @@ export function StickerPanel({ open, onClose, send }: { open: boolean; onClose: 
   }
 
   return (
-    <Modal visible={open} transparent animationType="fade" onRequestClose={onClose}>
-      <Pressable style={{ flex: 1 }} onPress={onClose} />
-      <Animated.View entering={SlideInDown.springify().damping(18)} style={[{ backgroundColor: C.card, borderTopLeftRadius: 26, borderTopRightRadius: 26, height: 360, paddingTop: 10 }, shadow]}>
+    <SheetModal open={open} onClose={onClose} dim={false} style={{ height: 400, paddingHorizontal: 0, paddingBottom: 0, gap: 0 }}>
         <Row gap={8} style={{ paddingHorizontal: 14, paddingBottom: 8 }}>
-          <Tap onPress={() => setTab('pack')} style={{ paddingHorizontal: 14, minHeight: 36, borderRadius: 18, justifyContent: 'center', backgroundColor: tab === 'pack' ? C.primarySoft : 'transparent' }}><T v="small" color={tab === 'pack' ? C.primary : C.muted}>{t('يوني')}</T></Tap>
-          <Tap onPress={() => setTab('mine')} style={{ paddingHorizontal: 14, minHeight: 36, borderRadius: 18, justifyContent: 'center', backgroundColor: tab === 'mine' ? C.primarySoft : 'transparent' }}><Row gap={6}><Sticker size={17} color={tab === 'mine' ? C.primary : C.muted} /><T v="small" color={tab === 'mine' ? C.primary : C.muted}>{t('ستيكراتي')}</T></Row></Tap>
-          <Tap onPress={() => setTab('emoji')} style={{ paddingHorizontal: 14, minHeight: 36, borderRadius: 18, justifyContent: 'center', backgroundColor: tab === 'emoji' ? C.primarySoft : 'transparent' }}><Row gap={6}><Smile size={17} color={tab === 'emoji' ? C.primary : C.muted} /><T v="small" color={tab === 'emoji' ? C.primary : C.muted}>{t('إيموجي كبير')}</T></Row></Tap>
+          <Tap onPress={() => setTab('pack')} style={{ paddingHorizontal: 14, minHeight: 36, borderRadius: 18, justifyContent: 'center', backgroundColor: tab === 'pack' ? C.inverse : C.soft }}><T v="small" color={tab === 'pack' ? C.onInverse : C.muted}>{t('يوني')}</T></Tap>
+          <Tap onPress={() => setTab('mine')} style={{ paddingHorizontal: 14, minHeight: 36, borderRadius: 18, justifyContent: 'center', backgroundColor: tab === 'mine' ? C.inverse : C.soft }}><Row gap={6}><Sticker size={17} color={tab === 'mine' ? C.onInverse : C.muted} /><T v="small" color={tab === 'mine' ? C.onInverse : C.muted}>{t('ستيكراتي')}</T></Row></Tap>
+          <Tap onPress={() => setTab('emoji')} style={{ paddingHorizontal: 14, minHeight: 36, borderRadius: 18, justifyContent: 'center', backgroundColor: tab === 'emoji' ? C.inverse : C.soft }}><Row gap={6}><Smile size={17} color={tab === 'emoji' ? C.onInverse : C.muted} /><T v="small" color={tab === 'emoji' ? C.onInverse : C.muted}>{t('إيموجي كبير')}</T></Row></Tap>
           <View style={{ flex: 1 }} />
           <Tap onPress={onClose} accessibilityLabel={t('إغلاق')}><X size={20} color={C.muted} /></Tap>
         </Row>
         {tab === 'pack' ? (
           <ScrollView contentContainerStyle={{ flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: 8, paddingBottom: 30 }}>
-            {pack === null && <ActivityIndicator color={C.primary} style={{ margin: 30 }} />}
+            {pack === null && Array.from({ length: 8 }, (_, i) => <View key={i} style={{ width: '25%', aspectRatio: 1, padding: 6 }}><View style={{ flex: 1, borderRadius: 16, backgroundColor: C.soft }} /></View>)}
             {(pack ?? []).map((s) => (
               <Tap key={s.id} onPress={() => { onClose(); send({ kind: 'sticker', media: s.url }); }} scale={0.88} style={{ width: '25%', aspectRatio: 1, padding: 4 }}>
                 <Image source={{ uri: s.url }} style={{ flex: 1 }} contentFit="contain" autoplay />
@@ -248,7 +243,6 @@ export function StickerPanel({ open, onClose, send }: { open: boolean; onClose: 
             {mine && mine.length === 0 && <T v="small" color={C.muted} style={{ width: '70%', padding: 14 }}>{t('اعمل ستيكر من أي صورة، أو اكبس مطوّل على ستيكر بالمحادثة واحفظه. بيضلوا بحسابك.')}</T>}
           </ScrollView>
         )}
-      </Animated.View>
       <AvatarCropper src={cropSrc} onCancel={() => setCropSrc(null)} onDone={cropped} />
       <Modal visible={!!lifted} transparent animationType="fade" onRequestClose={() => setLifted(null)}>
         <View style={{ flex: 1, backgroundColor: 'rgba(10,14,30,0.85)', alignItems: 'center', justifyContent: 'center', padding: 24, gap: 18 }}>
@@ -263,7 +257,7 @@ export function StickerPanel({ open, onClose, send }: { open: boolean; onClose: 
           <Tap onPress={() => setLifted(null)}><T v="small" color="#AEB8D8">{t('إلغاء')}</T></Tap>
         </View>
       </Modal>
-    </Modal>
+    </SheetModal>
   );
 }
 
@@ -293,32 +287,59 @@ export function FileBubble({ m, mine }: { m: Message; mine: boolean }) {
   }
   const ext = (meta.name?.split('.').pop() ?? 'FILE').toUpperCase().slice(0, 4);
   return (
-    <Tap onPress={open} haptic={false} style={[{ flexDirection: 'row', alignItems: 'center', gap: 10, width: 240, padding: 10, borderRadius: 18, backgroundColor: mine ? C.primary : C.card }, mine ? { borderBottomRightRadius: 6 } : { borderBottomLeftRadius: 6 }]}>
-      <View style={{ width: 42, height: 50, borderRadius: 8, backgroundColor: mine ? 'rgba(255,255,255,0.2)' : C.primarySoft, alignItems: 'center', justifyContent: 'center' }}>
-        {busy ? <ActivityIndicator color={mine ? '#fff' : C.primary} /> : <T v="tiny" color={mine ? '#fff' : C.primary} style={{ fontSize: 10 }}>{ext}</T>}
+    <Tap onPress={open} haptic={false} style={[{ flexDirection: 'row', alignItems: 'center', gap: 10, width: 240, padding: 10, borderRadius: 18, }, bubble(mine)]}>
+      <View style={{ width: 42, height: 50, borderRadius: 8, backgroundColor: mine ? 'rgba(14,20,48,0.14)' : C.primarySoft, alignItems: 'center', justifyContent: 'center' }}>
+        {busy ? <ActivityIndicator color={mine ? C.onPrimary : C.primary} /> : <T v="tiny" color={mine ? C.onPrimary : C.primary} style={{ fontSize: 10 }}>{ext}</T>}
       </View>
       <View style={{ flex: 1 }}>
-        <T v="bodyMd" numberOfLines={2} color={mine ? '#fff' : C.ink}>{meta.name ?? t('ملف')}</T>
-        <T v="tiny" color={mine ? '#DCE3FF' : C.muted}>{[fmtSize(meta.size), t('اكبس لتفتحه')].filter(Boolean).join(' · ')}</T>
+        <T v="bodyMd" numberOfLines={2} color={mine ? C.onPrimary : C.ink}>{meta.name ?? t('ملف')}</T>
+        <T v="tiny" color={mine ? subOn(true) : C.muted}>{[fmtSize(meta.size), t('اكبس لتفتحه')].filter(Boolean).join(' · ')}</T>
       </View>
     </Tap>
   );
 }
 
+/** Body is "lat,lng" (my location) or "lat,lng,place name" (shared from the campus map). */
+export function parseLocation(body?: string | null) {
+  const [la, ln, ...rest] = (body ?? '').split(',');
+  const lat = Number(la), lng = Number(ln);
+  return { lat, lng, name: rest.join(',').trim() || null, ok: Number.isFinite(lat) && Number.isFinite(lng) };
+}
+
+/** A place card: accent pin tile, the place name, walking minutes from you, and it opens the campus map there. */
 export function LocationBubble({ m, mine }: { m: Message; mine: boolean }) {
-  const [lat, lng] = (m.body ?? '').split(',').map(Number);
+  const { lat, lng, name, ok } = parseLocation(m.body);
+  const [mins, setMins] = useState<number | null>(null);
+  useEffect(() => {
+    if (!ok || Platform.OS === 'web') return;
+    (async () => {
+      const { status } = await Location.getForegroundPermissionsAsync();
+      if (status !== 'granted') return;
+      const p = await Location.getLastKnownPositionAsync();
+      if (!p) return;
+      const r = Math.PI / 180, dLat = (lat - p.coords.latitude) * r, dLng = (lng - p.coords.longitude) * r;
+      const x = Math.sin(dLat / 2) ** 2 + Math.cos(p.coords.latitude * r) * Math.cos(lat * r) * Math.sin(dLng / 2) ** 2;
+      const meters = 2 * 6371000 * Math.asin(Math.sqrt(x)) * 1.25; // paths are ~25% longer than a straight line
+      if (meters < 8000) setMins(Math.max(1, Math.round(meters / 80)));
+    })().catch(() => {});
+  }, [lat, lng, ok]);
   const open = () => {
+    if (!ok) return;
+    router.push({ pathname: '/map', params: { lat: String(lat), lng: String(lng), name: name ?? '' } });
+  };
+  const external = () => {
     const url = Platform.OS === 'ios' ? `maps://?q=${lat},${lng}` : `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`;
     Linking.openURL(url).catch(() => Linking.openURL(`https://www.google.com/maps/search/?api=1&query=${lat},${lng}`));
   };
   return (
-    <Tap onPress={open} haptic={false} style={[{ width: 230, borderRadius: 18, overflow: 'hidden', backgroundColor: mine ? C.primary : C.card }, mine ? { borderBottomRightRadius: 6 } : { borderBottomLeftRadius: 6 }]}>
-      <View style={{ height: 100, backgroundColor: isDark ? '#1C2B24' : '#DDEFE6', alignItems: 'center', justifyContent: 'center' }}>
-        <MapPin size={38} color="#E5383B" fill="#E5383B" />
+    <Tap onPress={open} onLongPress={external} haptic={false} accessibilityRole="button" accessibilityLabel={`${name ?? t('موقعي')} · ${t('افتح بالخريطة')}`}
+      style={{ flexDirection: 'row', alignItems: 'center', gap: 10, width: 250, paddingHorizontal: 12, paddingVertical: 10, borderRadius: 18, backgroundColor: C.card, borderWidth: 1, borderColor: C.line }}>
+      <View style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: C.primary, alignItems: 'center', justifyContent: 'center' }}>
+        <MapPin size={20} color={C.onPrimary} strokeWidth={2.2} />
       </View>
-      <View style={{ padding: 10 }}>
-        <T v="bodyMd" color={mine ? '#fff' : C.ink}>{t('موقعي')}</T>
-        <T v="tiny" color={mine ? '#DCE3FF' : C.muted}>{t('اكبس لتفتحه بالخرائط')}</T>
+      <View style={{ flex: 1 }}>
+        <T v="bold" numberOfLines={1} style={{ fontSize: 14 }}>{name ?? (mine ? t('موقعي') : t('موقعه'))}</T>
+        <T v="tiny" color={C.muted} numberOfLines={1}>{mins != null ? t('{0} دقائق مشي · افتح بالخريطة', [String(mins)]) : t('افتح بالخريطة')}</T>
       </View>
     </Tap>
   );
@@ -328,16 +349,16 @@ export function ContactBubble({ m, mine }: { m: Message; mine: boolean }) {
   const [p, setP] = useState<Person | null>(null);
   useEffect(() => { if (m.ref_id) supabase.from('profiles').select('id, full_name, avatar_url, username, is_verified').eq('id', m.ref_id).maybeSingle().then(({ data }) => setP(data as Person | null), () => {}); }, [m.ref_id]);
   return (
-    <View style={[{ width: 240, borderRadius: 18, padding: 12, gap: 10, backgroundColor: mine ? C.primary : C.card }, mine ? { borderBottomRightRadius: 6 } : { borderBottomLeftRadius: 6 }]}>
+    <View style={[{ width: 240, borderRadius: 18, padding: 12, gap: 10, }, bubble(mine)]}>
       <Row gap={10}>
         <Avatar id={m.ref_id} name={p?.full_name ?? m.body ?? ''} url={p?.avatar_url ?? null} size={44} />
         <View style={{ flex: 1 }}>
-          <Row gap={4}><T v="bodyMd" numberOfLines={1} color={mine ? '#fff' : C.ink} style={{ flexShrink: 1 }}>{p?.full_name ?? m.body}</T>{p?.is_verified && <BadgeCheck size={14} color="#fff" fill={C.primary} />}</Row>
-          {p?.username ? <T v="tiny" color={mine ? '#DCE3FF' : C.muted}>@{p.username}</T> : null}
+          <Row gap={4}><T v="bodyMd" numberOfLines={1} color={mine ? C.onPrimary : C.ink} style={{ flexShrink: 1 }}>{p?.full_name ?? m.body}</T>{p?.is_verified && <BadgeCheck size={14} color="#fff" fill={C.primary} />}</Row>
+          {p?.username ? <T v="tiny" color={mine ? subOn(true) : C.muted}>@{p.username}</T> : null}
         </View>
       </Row>
-      <Tap onPress={() => m.ref_id && router.push({ pathname: '/user/[id]', params: { id: m.ref_id } })} style={{ minHeight: 36, borderRadius: 12, alignItems: 'center', justifyContent: 'center', backgroundColor: mine ? 'rgba(255,255,255,0.2)' : C.primarySoft }}>
-        <T v="small" color={mine ? '#fff' : C.primary}>{t('شوف الحساب')}</T>
+      <Tap onPress={() => m.ref_id && router.push({ pathname: '/user/[id]', params: { id: m.ref_id } })} style={{ minHeight: 36, borderRadius: 12, alignItems: 'center', justifyContent: 'center', backgroundColor: mine ? 'rgba(14,20,48,0.14)' : C.primarySoft }}>
+        <T v="small" color={mine ? C.onPrimary : C.primary}>{t('شوف الحساب')}</T>
       </Tap>
     </View>
   );
@@ -367,29 +388,29 @@ export function PollBubble({ m, mine, me }: { m: Message; mine: boolean; me?: st
     }
   }
   const total = votes.length;
-  const fg = mine ? '#fff' : C.ink;
+  const fg = mine ? C.onPrimary : C.ink;
   return (
-    <View style={[{ width: 260, borderRadius: 18, padding: 12, gap: 8, backgroundColor: mine ? C.primary : C.card }, mine ? { borderBottomRightRadius: 6 } : { borderBottomLeftRadius: 6 }]}>
-      <Row gap={6}><BarChart3 size={16} color={mine ? '#fff' : C.primary} /><T v="tiny" color={mine ? '#DCE3FF' : C.muted}>{t('استطلاع رأي')}</T></Row>
+    <View style={[{ width: 260, borderRadius: 18, padding: 12, gap: 8, }, bubble(mine)]}>
+      <Row gap={6}><BarChart3 size={16} color={mine ? C.onPrimary : C.primary} /><T v="tiny" color={mine ? subOn(true) : C.muted}>{t('استطلاع رأي')}</T></Row>
       <T v="bold" color={fg}>{poll.q}</T>
       {poll.options.map((o, i) => {
         const n = votes.filter((v) => v.option === i).length;
         const pct = total ? n / total : 0;
         const on = mineVote === i;
         return (
-          <Tap key={i} onPress={() => vote(i)} haptic={false} accessibilityState={{ selected: on }} style={{ borderRadius: 12, overflow: 'hidden', backgroundColor: mine ? 'rgba(255,255,255,0.15)' : C.soft }}>
-            <View style={{ position: 'absolute', top: 0, bottom: 0, left: 0, width: `${Math.round(pct * 100)}%`, backgroundColor: mine ? 'rgba(255,255,255,0.3)' : C.primarySoft }} />
+          <Tap key={i} onPress={() => vote(i)} haptic={false} accessibilityState={{ selected: on }} style={{ borderRadius: 12, overflow: 'hidden', backgroundColor: mine ? 'rgba(14,20,48,0.1)' : C.soft }}>
+            <View style={{ position: 'absolute', top: 0, bottom: 0, left: 0, width: `${Math.round(pct * 100)}%`, backgroundColor: mine ? 'rgba(14,20,48,0.2)' : C.primarySoft }} />
             <Row gap={8} style={{ minHeight: 40, paddingHorizontal: 10 }}>
-              <View style={{ width: 20, height: 20, borderRadius: 10, borderWidth: 2, borderColor: mine ? '#fff' : C.primary, alignItems: 'center', justifyContent: 'center', backgroundColor: on ? (mine ? '#fff' : C.primary) : 'transparent' }}>
-                {on && <Check size={12} color={mine ? C.primary : '#fff'} />}
+              <View style={{ width: 20, height: 20, borderRadius: 10, borderWidth: 2, borderColor: mine ? C.onPrimary : C.primary, alignItems: 'center', justifyContent: 'center', backgroundColor: on ? (mine ? C.onPrimary : C.primary) : 'transparent' }}>
+                {on && <Check size={12} color={mine ? C.primary : C.onPrimary} />}
               </View>
               <T v="small" color={fg} style={{ flex: 1 }}>{o}</T>
-              <T v="tiny" color={mine ? '#DCE3FF' : C.muted}>{n}</T>
+              <T v="tiny" color={mine ? subOn(true) : C.muted}>{n}</T>
             </Row>
           </Tap>
         );
       })}
-      <T v="tiny" color={mine ? '#DCE3FF' : C.muted}>{total ? t('{0} صوّتوا', [String(total)]) : t('ما حدا صوّت لهلأ')}</T>
+      <T v="tiny" color={mine ? subOn(true) : C.muted}>{total ? t('{0} صوّتوا', [String(total)]) : t('ما حدا صوّت لهلأ')}</T>
     </View>
   );
 }

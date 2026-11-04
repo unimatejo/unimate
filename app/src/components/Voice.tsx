@@ -7,6 +7,7 @@ import { ActivityIndicator, Alert, Linking, Platform, View } from 'react-native'
 import Animated, { FadeIn, useAnimatedStyle, useSharedValue, withRepeat, withTiming } from 'react-native-reanimated';
 
 import { T, Tap } from './ui';
+import { bubble, subOn } from './ChatExtras';
 import { mediaUrl } from '@/lib/supabase';
 import { C } from '@/lib/theme';
 import { isAR, t } from '@/lib/i18n';
@@ -76,15 +77,15 @@ export function VoiceRecorder({ onRecorded, onRecording, disabled }: {
   if (!on) {
     return (
       <Tap onPress={start} disabled={disabled} accessibilityLabel={t('سجّل رسالة صوتية')} scale={0.9}
-        style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: C.soft, alignItems: 'center', justifyContent: 'center' }}>
-        <Mic size={21} color={C.ink} />
+        style={{ width: 40, height: 44, alignItems: 'center', justifyContent: 'center' }}>
+        <Mic size={21} color={C.ink} strokeWidth={1.8} />
       </Tap>
     );
   }
   return (
     <Animated.View entering={FadeIn} style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 8 }}>
       <Tap onPress={() => finish(false)} accessibilityLabel={t('احذف التسجيل')} style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: C.redSoft, alignItems: 'center', justifyContent: 'center' }}><Trash2 size={19} color={C.red} /></Tap>
-      <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 10, minHeight: 44, borderRadius: 22, backgroundColor: C.field, paddingHorizontal: 14 }}>
+      <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 10, minHeight: 44, borderRadius: 22, backgroundColor: C.soft, paddingHorizontal: 14 }}>
         <Dot />
         <T v="bold" style={{ fontVariant: ['tabular-nums'] }}>{fmt(secs)}</T>
         <T v="tiny" color={C.muted} style={{ flex: 1 }} numberOfLines={1}>{t('عم يسجّل… اكبس إرسال لما تخلص')}</T>
@@ -96,7 +97,7 @@ export function VoiceRecorder({ onRecorded, onRecording, disabled }: {
   );
 }
 
-const BARS = [6, 12, 18, 10, 22, 14, 8, 20, 16, 9, 19, 13, 7, 17, 11, 21, 12, 8, 15, 10];
+const BARS = [8, 14, 20, 12, 24, 18, 10, 22, 16, 26, 12, 8, 18, 24, 14, 10, 20, 16, 12, 22, 8, 14, 18, 10, 12, 8];
 
 /** A voice message in the chat: play/pause, progress over a little waveform, and the length. */
 export function VoiceBubble({ path, seconds, mine }: { path: string; seconds: number; mine: boolean }) {
@@ -106,7 +107,7 @@ export function VoiceBubble({ path, seconds, mine }: { path: string; seconds: nu
   const st = useAudioPlayerStatus(player);
   const total = st.duration || seconds || 1;
   const pct = Math.min(1, (st.currentTime || 0) / total);
-  const fg = mine ? C.white : C.primary;
+  const fg = mine ? C.onPrimary : C.ink;
 
   function toggle() {
     if (!uri) return;
@@ -117,18 +118,17 @@ export function VoiceBubble({ path, seconds, mine }: { path: string; seconds: nu
   }
 
   return (
-    <View style={[{ flexDirection: 'row', alignItems: 'center', gap: 10, minWidth: 210, paddingHorizontal: 10, paddingVertical: 8, borderRadius: 22, backgroundColor: mine ? C.primary : C.card },
-      mine ? { borderBottomRightRadius: 6 } : { borderBottomLeftRadius: 6 }]}>
-      <Tap onPress={toggle} disabled={!uri} accessibilityLabel={st.playing ? t('وقّف') : t('شغّل')} scale={0.9}
-        style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: mine ? 'rgba(255,255,255,0.22)' : C.primarySoft, alignItems: 'center', justifyContent: 'center' }}>
-        {!uri ? <ActivityIndicator size="small" color={fg} /> : st.playing ? <Pause size={17} color={fg} fill={fg} /> : <Play size={17} color={fg} fill={fg} />}
+    <View style={[{ flexDirection: 'row', alignItems: 'center', gap: 10, width: 230, paddingHorizontal: 12, paddingVertical: 8 }, bubble(mine), { borderRadius: 22 }]}>
+      <Tap onPress={toggle} disabled={!uri} accessibilityLabel={st.playing ? t('وقّف الرسالة الصوتية') : t('تشغيل الرسالة الصوتية')} scale={0.9} hitSlop={4}
+        style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: mine ? C.onPrimary : C.inverse, alignItems: 'center', justifyContent: 'center' }}>
+        {!uri ? <ActivityIndicator size="small" color={mine ? C.primary : C.onInverse} /> : st.playing ? <Pause size={15} color={mine ? C.primary : C.onInverse} fill={mine ? C.primary : C.onInverse} /> : <Play size={15} color={mine ? C.primary : C.onInverse} fill={mine ? C.primary : C.onInverse} style={{ marginStart: 2 }} />}
       </Tap>
-      <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 2, height: 24, direction: 'ltr' }}>
+      <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', height: 26, direction: 'ltr' }}>
         {BARS.map((h, i) => (
-          <View key={i} style={{ flex: 1, height: h, borderRadius: 2, backgroundColor: i / BARS.length <= pct ? fg : mine ? 'rgba(255,255,255,0.4)' : C.line }} />
+          <View key={i} style={{ width: 3, height: h, borderRadius: 2, backgroundColor: i / BARS.length <= pct ? fg : mine ? 'rgba(14,20,48,0.3)' : C.line }} />
         ))}
       </View>
-      <T v="tiny" color={mine ? '#E4EAFF' : C.muted} style={{ fontVariant: ['tabular-nums'] }}>{fmt(st.playing || pct > 0 ? st.currentTime || 0 : total)}</T>
+      <T v="tiny" color={subOn(mine)} style={{ fontVariant: ['tabular-nums'], writingDirection: 'ltr' }}>{fmt(st.playing || pct > 0 ? st.currentTime || 0 : total)}</T>
     </View>
   );
 }
