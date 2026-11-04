@@ -64,7 +64,7 @@ export default function StoryViewer() {
   }));
 
   useEffect(() => {
-    supabase.from('profiles').select('full_name, avatar_url').eq('id', id).single().then(({ data }) => setAuthor(data));
+    supabase.from('profiles').select('full_name, avatar_url').eq('id', id).maybeSingle().then(({ data }) => setAuthor(data));
     if (highlight) {
       supabase.from('highlights').select('title').eq('id', highlight).single().then(({ data }) => setHlName(data?.title ?? null));
       supabase.from('highlight_items').select('added_at, s:stories(id, media_url, kind, caption, created_at, duration_sec, overlays)').eq('highlight_id', highlight).order('added_at')

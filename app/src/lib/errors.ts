@@ -10,7 +10,11 @@ export function setScreen(s: string) { current = s; }
 /** Send an error report to the database so problems on real phones can be fixed. Never throws. */
 export async function reportError(e: unknown, fatal = false) {
   try {
-    const err = e instanceof Error ? e : new Error(String(e));
+    // Supabase / fetch errors are plain objects: keep their message, code and details instead of "[object Object]"
+    const o = (e && typeof e === 'object' && !(e instanceof Error)) ? e as { message?: string; code?: string; details?: string; hint?: string; status?: number; name?: string } : null;
+    const err = e instanceof Error ? e
+      : o ? new Error([o.name, o.code, o.status, o.message, o.details, o.hint].filter((x) => x !== undefined && x !== null && x !== '').join(' · ') || JSON.stringify(e).slice(0, 500))
+      : new Error(String(e));
     await supabase.from('client_errors').insert({
       fatal, message: (err.message || 'unknown').slice(0, 2000), stack: (err.stack ?? '').slice(0, 8000),
       screen: current, platform: `${Platform.OS} ${Platform.Version}`, app_version: Constants.expoConfig?.version ?? null,
