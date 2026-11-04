@@ -10,10 +10,12 @@ export function useUnreadMessages(userId?: string | null) {
     if (!userId) return;
     let alive = true;
     const load = async () => {
-      const { data } = await supabase.from('conversation_members').select('last_read_at, state, c:conversations(last_message_at)').eq('user_id', userId).in('state', ['active', 'request']);
+      const { data } = await supabase.from('conversation_members').select('conversation_id, state').eq('user_id', userId).in('state', ['active', 'request']);
+      const rows = (data ?? []) as { conversation_id: string; state: string }[];
+      const active = rows.filter((r) => r.state === 'active').map((r) => r.conversation_id);
+      const { data: counts } = active.length ? await supabase.rpc('unread_counts', { conv_ids: active }) : { data: [] };
       if (!alive) return;
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      setN(((data ?? []) as any[]).filter((r) => r.state === 'request' || (r.c && (!r.last_read_at || new Date(r.c.last_message_at) > new Date(r.last_read_at)))).length);
+      setN(rows.filter((r) => r.state === 'request').length + ((counts ?? []) as { n: number }[]).filter((c) => c.n > 0).length);
     };
     load();
     const t = setInterval(load, 45000);

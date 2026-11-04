@@ -35,7 +35,7 @@ export default function Advertiser() {
 
   function call() {
     if (!a?.phone) return;
-    if (campaign) supabase.rpc('track_ad', { campaign, what: 'call' });
+    if (campaign) supabase.rpc('track_ad', { campaign, what: 'call' }).then(() => {}, () => {});
     Linking.openURL(`tel:${a.phone.replace(/[^\d+]/g, '')}`).catch(() => Alert.alert(t('ما قدرنا نفتح الرابط')));
   }
 

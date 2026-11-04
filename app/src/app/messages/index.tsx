@@ -19,7 +19,7 @@ import { ListSkeleton } from '@/components/Skeleton';
 type Person = { id: string; full_name: string; avatar_url: string | null; is_verified?: boolean };
 type Item = {
   id: string; kind: string; title: string; other?: Person | null; state: string; created_by: string | null;
-  last?: string | null; last_at: string; unread: boolean; streak: number; context?: string | null;
+  last?: string | null; last_at: string; unread: boolean; count?: number; streak: number; context?: string | null;
 };
 
 const TABS = [t('الرئيسية'), t('الطلبات'), t('الجروبات')] as const;
@@ -52,10 +52,12 @@ export function Inbox({ inTab }: { inTab?: boolean }) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const rows = ((mine ?? []) as any[]).filter((r) => r.conversation);
     const ids = rows.map((r) => r.conversation.id);
-    const [{ data: members }, { data: lasts }] = ids.length ? await Promise.all([
+    const [{ data: members }, { data: lasts }, { data: counts }] = ids.length ? await Promise.all([
       supabase.from('conversation_members').select('conversation_id, user_id, profile:profiles(id, full_name, avatar_url, is_verified)').in('conversation_id', ids).neq('user_id', profile.id),
       supabase.rpc('inbox_last_messages', { conv_ids: ids }),
-    ]) : [{ data: [] }, { data: [] }];
+      supabase.rpc('unread_counts', { conv_ids: ids }),
+    ]) : [{ data: [] }, { data: [] }, { data: [] }];
+    const countBy = new Map(((counts ?? []) as { conversation_id: string; n: number }[]).map((x) => [x.conversation_id, x.n]));
     const lastBy = new Map<string, { kind: string; body: string | null; sender_id: string | null }>();
     for (const m of (lasts ?? []) as { conversation_id: string; kind: string; body: string | null; sender_id: string | null }[]) if (!lastBy.has(m.conversation_id)) lastBy.set(m.conversation_id, m);
     const out: Item[] = rows.map((r) => {
@@ -66,7 +68,8 @@ export function Inbox({ inTab }: { inTab?: boolean }) {
         id: c.id, kind: c.kind, state: r.state, created_by: c.created_by, title: other?.full_name ?? c.title ?? t('محادثة'), other, context: c.context_label,
         last: preview(lastBy.get(c.id)) ?? c.context_label, last_at: c.last_message_at,
         // my own last message is never "unread"
-        unread: lastBy.get(c.id)?.sender_id !== profile.id && (!r.last_read_at || new Date(c.last_message_at ?? 0) > new Date(r.last_read_at)), streak: c.streak_days,
+        // unread = real messages from others after I last opened the chat (an empty group isn't "unread")
+        unread: (countBy.get(c.id) ?? 0) > 0, streak: c.streak_days, count: countBy.get(c.id) ?? 0,
       };
     });
     out.sort((a, b) => (b.last_at ?? '').localeCompare(a.last_at ?? ''));
@@ -163,7 +166,11 @@ export function Inbox({ inTab }: { inTab?: boolean }) {
                   </Row>
                 )}
               </View>
-              {item.unread ? <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: C.primary }} />
+              {item.unread && (item.count ?? 0) > 1 ? (
+                <View style={{ minWidth: 22, height: 22, borderRadius: 11, paddingHorizontal: 6, backgroundColor: C.primary, alignItems: 'center', justifyContent: 'center' }}>
+                  <T v="tiny" color={C.white} style={{ fontSize: 11 }}>{(item.count ?? 0) >= 99 ? '99+' : item.count}</T>
+                </View>
+              ) : item.unread ? <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: C.primary }} />
                 : item.kind === 'direct' && item.state === 'active' ? <Camera size={22} color={C.faint} strokeWidth={1.8} /> : null}
             </Tap>
           </Animated.View>

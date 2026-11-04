@@ -123,6 +123,13 @@ export function PostCard({ post, onLikes, compact, detail }: { post: Post; onLik
   const { profile } = useAuth();
   const [p, setP] = useState(post);
   useEffect(() => setP(post), [post]);
+  // a few faces of who liked it (refreshed when the count changes)
+  const [likers, setLikers] = useState<{ id: string; full_name: string; avatar_url: string | null }[]>([]);
+  useEffect(() => {
+    if (!p.like_count) { setLikers([]); return; }
+    supabase.from('post_likes').select('p:profiles(id, full_name, avatar_url)').eq('post_id', p.id).order('created_at', { ascending: false }).limit(3)
+      .then(({ data }) => setLikers(((data ?? []) as unknown as { p: { id: string; full_name: string; avatar_url: string | null } | null }[]).map((x) => x.p).filter((x): x is NonNullable<typeof x> => !!x)), () => {});
+  }, [p.id, p.like_count]);
   const heart = useSharedValue(1);
   const heartStyle = useAnimatedStyle(() => ({ transform: [{ scale: heart.value }] }));
   const cat = CATEGORY[p.category] ?? CATEGORY.square;
@@ -227,6 +234,19 @@ export function PostCard({ post, onLikes, compact, detail }: { post: Post; onLik
           <Bookmark size={22} color={p.saved ? C.primary : C.ink2} fill={p.saved ? C.primary : 'none'} />
         </Tap>
       </Row>
+      {/* like Instagram: "Liked by sara and 4 others" */}
+      {likers.length > 0 && (!p.hide_likes || p.author_id === profile?.id) && (
+        <Tap haptic={false} onPress={() => onLikes?.(p)} style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 14, paddingBottom: 10, marginTop: -4 }}>
+          <View style={{ flexDirection: 'row' }}>
+            {likers.slice(0, 3).map((l, i) => (
+              <View key={l.id} style={{ marginStart: i ? -7 : 0, borderRadius: 11, borderWidth: 2, borderColor: C.card }}><Avatar id={l.id} name={l.full_name} url={l.avatar_url} size={20} /></View>
+            ))}
+          </View>
+          <T v="tiny" color={C.ink2} style={{ flex: 1 }} numberOfLines={1}>
+            {p.like_count > 1 ? t('عجبت {0} و{1} غيره', [likers[0].full_name.split(' ')[0], String(p.like_count - 1)]) : t('عجبت {0}', [likers[0].full_name.split(' ')[0]])}
+          </T>
+        </Tap>
+      )}
     </View>
   );
 }

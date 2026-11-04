@@ -4,6 +4,7 @@ import { AtSign, Camera, Check, Lock, Trash2 } from 'lucide-react-native';
 import { useEffect, useState } from 'react';
 import { ActionSheetIOS, ActivityIndicator, Alert, KeyboardAvoidingView, Platform, ScrollView, View } from 'react-native';
 
+import { DateField } from '@/components/DateField';
 import { MajorPicker } from '@/components/MajorPicker';
 import { InstagramGlyph, SnapGlyph } from '@/components/SocialGlyphs';
 import { Avatar, Button, Chip, Field, Header, Row, Screen, T, Tap } from '@/components/ui';
@@ -11,6 +12,7 @@ import { useAuth } from '@/lib/auth';
 import { reportError } from '@/lib/errors';
 import { supabase } from '@/lib/supabase';
 import { C } from '@/lib/theme';
+import { AvatarCropper } from '@/components/AvatarCropper';
 import { pickMedia, publicUrl, uploadFile } from '@/lib/upload';
 import { handleFrom } from '@/lib/util';
 import { t } from '@/lib/i18n';
@@ -33,6 +35,16 @@ export default function EditProfile() {
   const [saving, setSaving] = useState(false);
   const [ready, setReady] = useState(false);
   const [cooldown, setCooldown] = useState(0);
+  const [birth, setBirth] = useState<Date | null>(null);
+  const [birthWas, setBirthWas] = useState<string | null>(null);
+  const [showBirth, setShowBirth] = useState<'none' | 'year' | 'full'>('year');
+  useEffect(() => {
+    if (!profile) return;
+    setShowBirth((profile.show_birth as 'none' | 'year' | 'full') ?? 'year');
+    supabase.from('profile_private').select('birth_date').eq('user_id', profile.id).maybeSingle().then(({ data }) => {
+      if (data?.birth_date) { setBirth(new Date(`${data.birth_date}T12:00:00`)); setBirthWas(data.birth_date); }
+    }, () => {});
+  }, [profile?.id]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => { supabase.rpc('username_cooldown_days').then(({ data }) => setCooldown(Number(data) || 0), () => {}); }, []);
   const lockedDays = cooldown > 0 && profile?.username && profile.username_changed_at
     ? Math.max(0, Math.ceil((new Date(profile.username_changed_at).getTime() + cooldown * 86400000 - Date.now()) / 86400000)) : 0;
@@ -53,9 +65,15 @@ export default function EditProfile() {
     setAvatar(url); await refreshProfile();
   }
 
+  // pick a photo, then crop it ourselves (drag + pinch under a circle) like Instagram
+  const [cropSrc, setCropSrc] = useState<{ uri: string; width: number; height: number } | null>(null);
   async function choose(camera: boolean) {
-    const f = await pickMedia({ square: true, camera });
+    const f = await pickMedia({ camera, maxWidth: 1600 });
     if (!f) return;
+    setCropSrc({ uri: f.uri, width: f.width ?? 1000, height: f.height ?? 1000 });
+  }
+  async function cropped(f: { uri: string; mime: string }) {
+    setCropSrc(null);
     setPreview(f.uri); setUploading(true);
     try {
       const path = await uploadFile('avatars', profile?.id ?? '', f);
@@ -108,6 +126,10 @@ export default function EditProfile() {
       Alert.alert(t('ما انحفظ'), error.code === '23505' ? t('اسم المستخدم مأخوذ، جرّب غيره.') : error.message.includes('username_cooldown') ? t('بتقدر تغيّر اليوزر بعد {0} يوم.', [error.message.match(/username_cooldown:(\d+)/)?.[1] ?? cooldown]) : t('تأكد من الإنترنت وجرّب كمان مرة.'));
       return;
     }
+    // birthday: the date stays private; what shows on the profile follows the choice
+    const bd = birth ? `${birth.getFullYear()}-${String(birth.getMonth() + 1).padStart(2, '0')}-${String(birth.getDate()).padStart(2, '0')}` : null;
+    if (bd && bd !== birthWas) await supabase.rpc('set_birth_date', { d: bd });
+    if (showBirth !== (profile.show_birth ?? 'year') || (bd && bd !== birthWas)) await supabase.rpc('set_birth_visibility', { v: showBirth });
     await refreshProfile();
     if (router.canGoBack()) router.back(); else router.replace('/profile');
   }
@@ -117,6 +139,7 @@ export default function EditProfile() {
 
   return (
     <Screen>
+      <AvatarCropper src={cropSrc} onCancel={() => setCropSrc(null)} onDone={cropped} />
       <Header title={t('تعديل البروفايل')} right={
         <Tap onPress={save} disabled={saving || uploading} accessibilityLabel={t('احفظ')} style={{ minHeight: 40, paddingHorizontal: 14, borderRadius: 12, backgroundColor: C.primary, alignItems: 'center', justifyContent: 'center', opacity: saving || uploading ? 0.5 : 1 }}>
           {saving ? <ActivityIndicator color={C.white} /> : <T v="bold" color={C.white}>{t('احفظ')}</T>}
@@ -149,6 +172,18 @@ export default function EditProfile() {
             <Row gap={8} style={{ flexWrap: 'wrap' }}>
               {[1, 2, 3, 4, 5, 6].map((y) => <Chip key={y} label={t('سنة {0}', [y])} active={year === y} onPress={() => setYear(year === y ? null : y)} />)}
             </Row>
+          </View>
+
+          <View style={{ gap: 10, backgroundColor: C.card, borderRadius: 22, padding: 14 }}>
+            <T v="h3">{t('تاريخ الميلاد')} 🎂</T>
+            <DateField value={birth} onChange={setBirth} max={new Date(new Date().getFullYear() - 14, 11, 31)} />
+            <T v="small" color={C.ink2}>{t('شو بيبيّن على بروفايلك؟')}</T>
+            <Row gap={8} style={{ flexWrap: 'wrap' }}>
+              <Chip label={t('السنة بس (مواليد {0})', [birth ? String(birth.getFullYear()) : '…'])} active={showBirth === 'year'} onPress={() => setShowBirth('year')} />
+              <Chip label={t('التاريخ كامل')} active={showBirth === 'full'} onPress={() => setShowBirth('full')} />
+              <Chip label={t('ولا إشي')} active={showBirth === 'none'} onPress={() => setShowBirth('none')} />
+            </Row>
+            <T v="tiny" color={C.muted}>{t('بيومك بيطلع على بروفايلك إنه عيد ميلادك، إذا اخترت التاريخ كامل.')}</T>
           </View>
 
           <View style={{ gap: 10, backgroundColor: C.card, borderRadius: 22, padding: 14 }}>

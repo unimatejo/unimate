@@ -98,7 +98,7 @@ export default function Chat() {
     if (Platform.OS === 'web') return; // browsers can't block or detect screenshots
     ScreenCapture.preventScreenCaptureAsync('chat').catch(() => {});
     let sub: { remove: () => void } | null = null;
-    try { sub = ScreenCapture.addScreenshotListener(() => { supabase.rpc('report_screenshot', { conv: id, plat: Platform.OS }); }); } catch { /* not available */ }
+    try { sub = ScreenCapture.addScreenshotListener(() => { supabase.rpc('report_screenshot', { conv: id, plat: Platform.OS }).then(() => {}, () => {}); }); } catch { /* not available */ }
     return () => { ScreenCapture.allowScreenCaptureAsync('chat').catch(() => {}); sub?.remove(); };
   }, [shield, id]);
 
@@ -117,7 +117,7 @@ export default function Chat() {
     const { data: m } = await supabase.from('messages').select('*').eq('conversation_id', id).order('created_at', { ascending: false }).limit(60);
     setMsgs((m ?? []) as Message[]);
     loadReactions(((m ?? []) as Message[]).map((x) => x.id));
-    supabase.rpc('mark_read', { conv: id });
+    supabase.rpc('mark_read', { conv: id }).then(() => {}, () => {});
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id, profile]);
 
@@ -230,7 +230,7 @@ export default function Chat() {
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: `conversation_id=eq.${id}` }, (p) => {
         const m = p.new as Message;
         setMsgs((cur) => cur.some((x) => x.id === m.id) ? cur : [m, ...cur]);
-        if (m.sender_id !== profile?.id) supabase.rpc('mark_read', { conv: id });
+        if (m.sender_id !== profile?.id) supabase.rpc('mark_read', { conv: id }).then(() => {}, () => {});
       })
       // saved / unsent / viewed-once / vanished messages change live too
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'messages', filter: `conversation_id=eq.${id}` }, (p) => {

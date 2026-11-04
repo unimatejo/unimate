@@ -16,7 +16,7 @@ import { POST_SELECT, withMine } from '@/lib/posts';
 import { mediaUrl, supabase } from '@/lib/supabase';
 import { C, F } from '@/lib/theme';
 import type { Post, Profile } from '@/lib/types';
-import { nm, t, ta } from '@/lib/i18n';
+import { nm, t, ta, LOCALE } from '@/lib/i18n';
 import { Bone } from './Skeleton';
 import { run } from '@/lib/run';
 
@@ -238,6 +238,12 @@ export function ProfileView({ userId, onTitle }: { userId: string; onTitle?: (ti
             {/* the @username is already at the top (or in the screen header), like Instagram */}
             <T v="small" color={C.ink2}>{[nm(p.major), p.study_year ? t('سنة {0}', [p.study_year]) : null].filter(Boolean).join(t('، '))}</T>
             {p.bio ? <T v="body">{p.bio}</T> : null}
+            {p.birth_year ? (() => {
+              const today = new Date();
+              const isToday = p.birth_day === `${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+              const full = p.birth_day ? new Date(`${p.birth_year}-${p.birth_day}T12:00:00`).toLocaleDateString(LOCALE, { day: 'numeric', month: 'long', year: 'numeric' }) : null;
+              return <T v="small" color={isToday ? C.pink : C.ink2}>🎂 {isToday ? t('عيد ميلاده اليوم! 🎉') : full ? t('مواليد {0}', [full]) : t('مواليد {0}', [String(p.birth_year)])}</T>;
+            })() : null}
             {p.points > 0 && <Row gap={5}><Star size={14} color="#F59E0B" fill="#F59E0B" /><T v="tiny" color={C.muted}>{p.points} {t('نقطة مساعدة')}</T></Row>}
           </View>
 

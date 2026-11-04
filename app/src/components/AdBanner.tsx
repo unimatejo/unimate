@@ -19,7 +19,7 @@ export function AdBanner({ placement }: { placement: 'home_banner' | 'feed_card'
     supabase.rpc('live_ads', { placement_filter: placement }).then(({ data }) => {
       const a = (data as Ad[] | null)?.[0] ?? null;
       setAd(a);
-      if (a && !tracked.current) { tracked.current = true; supabase.rpc('track_ad', { campaign: a.campaign_id, what: 'impression' }); }
+      if (a && !tracked.current) { tracked.current = true; supabase.rpc('track_ad', { campaign: a.campaign_id, what: 'impression' }).then(() => {}, () => {}); }
     });
   }, [placement]);
 
@@ -27,7 +27,7 @@ export function AdBanner({ placement }: { placement: 'home_banner' | 'feed_card'
   return (
     <Tap
       accessibilityLabel={t('إعلان ممول: {0}', [ad.advertiser_name])}
-      onPress={() => { supabase.rpc('track_ad', { campaign: ad.campaign_id, what: 'click' }); router.push({ pathname: '/advertiser/[id]', params: { id: ad.advertiser_id, campaign: ad.campaign_id } }); }}
+      onPress={() => { supabase.rpc('track_ad', { campaign: ad.campaign_id, what: 'click' }).then(() => {}, () => {}); router.push({ pathname: '/advertiser/[id]', params: { id: ad.advertiser_id, campaign: ad.campaign_id } }); }}
       style={[{ backgroundColor: C.card, borderRadius: 22, overflow: 'hidden' }, shadow]}
     >
       {ad.image_url ? <Image source={{ uri: ad.image_url }} style={{ height: 120, width: '100%' }} contentFit="cover" /> : null}

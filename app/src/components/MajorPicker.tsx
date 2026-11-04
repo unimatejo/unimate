@@ -1,6 +1,6 @@
 import { Check, ChevronDown, Search } from 'lucide-react-native';
 import { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, ScrollView, TextInput, View } from 'react-native';
+import { ActivityIndicator, Alert, ScrollView, TextInput, View } from 'react-native';
 
 import { Row, T, Tap } from '@/components/ui';
 import { supabase } from '@/lib/supabase';
@@ -18,6 +18,23 @@ export function MajorPicker({ universityId, collegeId, majorId, onChange }: {
   const [open, setOpen] = useState<'college' | 'major' | null>(null);
   const [q, setQ] = useState('');
   const [state, setState] = useState<'loading' | 'ok' | 'error'>('loading');
+  const [adding, setAdding] = useState(false);
+  const [newMajor, setNewMajor] = useState('');
+  const [saving, setSaving] = useState(false);
+
+  // "my major isn't here": add it for everyone in the college (an admin checks it later)
+  async function addMajor() {
+    if (!collegeId || saving) return;
+    const name = newMajor.trim();
+    if (name.length < 3) { Alert.alert(t('اكتب اسم التخصص كامل')); return; }
+    setSaving(true);
+    const { data, error } = await supabase.rpc('add_my_major', { col: collegeId, major_name: name });
+    setSaving(false);
+    if (error || !data) { Alert.alert(t('ما انضاف التخصص'), String(error?.message).includes('too_many') ? t('ضفت تخصصات كثير اليوم، جرّب بكرة.') : t('جرّب كمان مرة.')); return; }
+    setCols((cur) => cur.map((c) => (c.id === collegeId && !c.majors.some((m) => m.id === data) ? { ...c, majors: [...c.majors, { id: data as string, name_ar: name, degree: 'bachelor' }] } : c)));
+    onChange(collegeId, data as string);
+    setAdding(false); setNewMajor(''); setOpen(null);
+  }
 
   const load = () => {
     if (!universityId) return;
@@ -92,6 +109,19 @@ export function MajorPicker({ universityId, collegeId, majorId, onChange }: {
             );
           })}
         </ScrollView>
+        {open === 'major' && (adding ? (
+          <Row gap={8} style={{ padding: 10, borderTopWidth: 1, borderTopColor: C.line }}>
+            <TextInput keyboardAppearance={isDark ? 'dark' : 'light'} value={newMajor} onChangeText={setNewMajor} autoFocus placeholder={t('اسم تخصصك')} placeholderTextColor={C.faint} maxLength={90}
+              style={{ flex: 1, minHeight: 42, borderRadius: 12, backgroundColor: C.field, paddingHorizontal: 12, fontFamily: F.body, fontSize: 14, color: C.ink, textAlign: ta }} />
+            <Tap onPress={addMajor} disabled={saving} style={{ minHeight: 42, paddingHorizontal: 14, borderRadius: 12, backgroundColor: C.primary, alignItems: 'center', justifyContent: 'center' }}>
+              {saving ? <ActivityIndicator color={C.white} /> : <T v="bold" color={C.white} style={{ fontSize: 14 }}>{t('ضيف')}</T>}
+            </Tap>
+          </Row>
+        ) : (
+          <Tap haptic={false} onPress={() => { setAdding(true); setNewMajor(q); }} style={{ minHeight: 46, paddingHorizontal: 14, justifyContent: 'center', borderTopWidth: 1, borderTopColor: C.line }}>
+            <T v="small" color={C.primary}>{t('مش لاقي تخصصك؟ ضيفه')}</T>
+          </Tap>
+        ))}
       </View>
     );
   }

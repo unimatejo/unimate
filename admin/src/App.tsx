@@ -59,6 +59,12 @@ function Login() {
     if (error) setMsg(error.message.includes('Signups not allowed') ? 'هالإيميل مش مسجّل. سجّل من التطبيق أول.' : error.message);
     else setSent(true);
   }
+  // the same Microsoft account you use in the app (no code needed)
+  async function microsoft() {
+    setBusy(true); setMsg(null);
+    const { error } = await supabase.auth.signInWithOAuth({ provider: 'azure', options: { scopes: 'email openid profile', redirectTo: location.origin + location.pathname } });
+    if (error) { setBusy(false); setMsg(error.message); }
+  }
   async function verify() {
     setBusy(true); setMsg(null);
     const { error } = await supabase.auth.verifyOtp({ email: email.trim().toLowerCase(), token: code.trim(), type: 'email' });
@@ -74,6 +80,8 @@ function Login() {
           <>
             <label className="f">الإيميل<input className="input ltr" type="email" value={email} onChange={(e) => setEmail(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && send()} autoFocus /></label>
             <button className="btn" onClick={send} disabled={busy || !email.includes('@')}>ابعت رمز الدخول</button>
+            <div className="muted small" style={{ textAlign: 'center' }}>أو</div>
+            <button className="btn ghost" onClick={microsoft} disabled={busy}>ادخل بحساب Microsoft الجامعي</button>
           </>
         ) : (
           <>
