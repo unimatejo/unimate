@@ -12,6 +12,8 @@ export async function run<T>(p: PromiseLike<Res<T>>, opts: { quiet?: boolean; ms
   try {
     const { data, error } = await p;
     if (error) {
+      // anti-spam limit (0048): not a bug, just slow down
+      if (isRateLimited(error)) { if (!opts.quiet) toast.error(friendly(error)); return { ok: false, data: null, error }; }
       reportError(new Error(`${error.code ?? ''} ${error.message}`));
       if (!opts.quiet) toast.error(opts.msg ?? friendly(error));
       return { ok: false, data: null, error };
@@ -24,8 +26,11 @@ export async function run<T>(p: PromiseLike<Res<T>>, opts: { quiet?: boolean; ms
   }
 }
 
+export const isRateLimited = (e: { message?: string } | null | undefined) => /rate_limited/.test(e?.message ?? '');
+
 export function friendly(e: { message?: string; code?: string } | null | undefined): string {
   const m = e?.message ?? '';
+  if (isRateLimited(e)) return t('استنى شوي، بعتت كثير بوقت قصير.');
   if (/fetch|network|Failed to fetch|timeout/i.test(m)) return t('تأكد من الإنترنت وجرّب كمان مرة.');
   if (e?.code === '23505') return t('موجود من قبل.');
   if (e?.code === '42501' || /row-level security|permission/i.test(m)) return t('ما عندك صلاحية لهالإشي.');

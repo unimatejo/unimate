@@ -1597,4 +1597,5 @@ export const EN: Record<string, string> = {
   "موظف": "Staff",
   "نائب رئيس الجامعة": "Vice president",
   "نائب عميد": "Vice dean",
+  "استنى شوي، بعتت كثير بوقت قصير.": "Slow down a little — you sent a lot in a short time.",
 };
