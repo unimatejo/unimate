@@ -23,7 +23,7 @@ const at = (h: number, m = 0) => { const d = new Date(); d.setHours(h, m, 0, 0);
 /** My courses: brought in from Microsoft Teams, or added once by anyone in the section. Times added once fill in for all classmates. */
 export default function Courses() {
   const { profile } = useAuth();
-  const { add } = useLocalSearchParams<{ add?: string }>();
+  const { add, teams } = useLocalSearchParams<{ add?: string; teams?: string }>();
   const [rows, setRows] = useState<Sec[] | null>(null);
   const [importing, setImporting] = useState(false);
   const [adding, setAdding] = useState(false);
@@ -36,6 +36,14 @@ export default function Courses() {
   const [busy, setBusy] = useState(false);
   // opened from search on a course: start adding it straight away
   useEffect(() => { if (add) { setName(add); setAdding(true); } }, [add]);
+  // web: back from Microsoft with the Teams import result
+  useEffect(() => {
+    if (!teams) return;
+    const n = Number(teams);
+    if (Number.isFinite(n)) Alert.alert(n ? t('انضافت {0} مواد ✓', [n]) : t('ما لقينا مواد بحسابك على Teams'), n ? t('وانضميت لجروب كل مادة.') : t('ضيف موادك بإيدك.'));
+    else Alert.alert(t('ما قدرنا نجيب موادك من Teams'), teams === 'consent' ? t('جامعتك ممكن تكون مانعة هالصلاحية. ضيف موادك بإيدك مرة وحدة، وزملاؤك بشعبتك بتنضافلهم لحالها.') : t('تأكد من الإنترنت وجرّب كمان مرة.'));
+    router.setParams({ teams: undefined });
+  }, [teams]);
 
   const load = useCallback(async () => {
     if (!profile) return;
@@ -57,7 +65,7 @@ export default function Courses() {
     const r = await importTeamsCourses();
     setImporting(false);
     if ('error' in r) {
-      if (r.error !== 'cancelled') Alert.alert(t('ما قدرنا نجيب موادك من Teams'), r.error === 'consent' ? t('جامعتك ممكن تكون مانعة هالصلاحية. ضيف موادك بإيدك مرة وحدة، وزملاؤك بشعبتك بتنضافلهم لحالها.') : t('تأكد من الإنترنت وجرّب كمان مرة.'));
+      if (r.error !== 'cancelled' && r.error !== 'redirecting') Alert.alert(t('ما قدرنا نجيب موادك من Teams'), r.error === 'consent' ? t('جامعتك ممكن تكون مانعة هالصلاحية. ضيف موادك بإيدك مرة وحدة، وزملاؤك بشعبتك بتنضافلهم لحالها.') : t('تأكد من الإنترنت وجرّب كمان مرة.'));
       return;
     }
     Alert.alert(r.count ? t('انضافت {0} مواد ✓', [r.count]) : t('ما لقينا مواد بحسابك على Teams'), r.count ? t('وانضميت لجروب كل مادة.') : t('ضيف موادك بإيدك.'));

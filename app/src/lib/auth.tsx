@@ -5,6 +5,7 @@ import type { Session } from '@supabase/supabase-js';
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
 
 import { reportError } from './errors';
+import { getPref, setPref } from './prefs';
 import { clearMediaCache, supabase } from './supabase';
 import type { Profile, University } from './types';
 
@@ -128,10 +129,20 @@ export async function signInWithMicrosoft(extraScopes = '') {
  * Runs as a separate consent so sign-in still works if a university blocks the Teams permission.
  */
 export async function importTeamsCourses(): Promise<{ count: number } | { error: string }> {
-  if (Platform.OS === 'web') return { error: 'web' };
+  if (Platform.OS === 'web') {
+    // the web version leaves for Microsoft; /callback finishes the import when it comes back
+    setPref('teams_import', String(Date.now()));
+    const r = await signInWithMicrosoft('User.Read Team.ReadBasic.All');
+    return { error: r.error?.message === 'redirecting' ? 'redirecting' : 'consent' };
+  }
   const r = await signInWithMicrosoft('User.Read Team.ReadBasic.All');
   if ('error' in r && r.error) return { error: r.error.message === 'cancelled' ? 'cancelled' : 'consent' };
   const token = (r as { data?: { session?: { provider_token?: string | null } | null } }).data?.session?.provider_token;
+  return importTeamsWithToken(token);
+}
+
+/** Read the student's Teams classes with a Microsoft token and turn them into courses and sections. */
+export async function importTeamsWithToken(token?: string | null): Promise<{ count: number } | { error: string }> {
   if (!token) return { error: 'consent' };
   try {
     const res = await fetch('https://graph.microsoft.com/v1.0/me/joinedTeams?$select=id,displayName,description', { headers: { Authorization: `Bearer ${token}` } });
@@ -143,4 +154,12 @@ export async function importTeamsCourses(): Promise<{ count: number } | { error:
   } catch {
     return { error: 'network' };
   }
+}
+
+/** True once, right after coming back from a web Teams import started in the last 10 minutes. */
+export function takePendingTeamsImport(): boolean {
+  const at = Number(getPref('teams_import') || 0);
+  if (!at) return false;
+  setPref('teams_import', '');
+  return Date.now() - at < 10 * 60 * 1000;
 }

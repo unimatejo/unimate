@@ -201,7 +201,7 @@ export default function Welcome() {
                 <T v="small" color={C.muted}>{t('بنضيفك تلقائياً لجروب كليتك وتخصصك ودفعتك.')}</T>
                 <MajorPicker universityId={university?.id} collegeId={col} majorId={maj} onChange={(c, m) => { setCol(c); setMaj(m); }} />
                 <Button kind="soft" title={teams === null ? t('جيب موادي هالفصل من Teams') : teams > 0 ? t('انضافت {0} مواد ✓', [teams]) : t('ما لقينا مواد، بتضيفها بعدين')} loading={teamsBusy}
-                  onPress={async () => { setTeamsBusy(true); const r = await importTeamsCourses(); setTeamsBusy(false); if ('count' in r) setTeams(r.count); else if (r.error !== 'cancelled') { setTeams(0); Alert.alert(t('ما زبط'), t('بتقدر تضيف موادك من صفحة الجدول.')); } }} />
+                  onPress={async () => { setTeamsBusy(true); const r = await importTeamsCourses(); setTeamsBusy(false); if ('count' in r) setTeams(r.count); else if (r.error !== 'cancelled' && r.error !== 'redirecting') { setTeams(0); Alert.alert(t('ما زبط'), t('بتقدر تضيف موادك من صفحة الجدول.')); } }} />
               </>
             )}
 

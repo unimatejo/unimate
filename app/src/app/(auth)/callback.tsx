@@ -4,6 +4,7 @@ import { ActivityIndicator, View } from 'react-native';
 
 import { Button, Screen, T } from '@/components/ui';
 import { supabase } from '@/lib/supabase';
+import { importTeamsWithToken, takePendingTeamsImport } from '@/lib/auth';
 import { C } from '@/lib/theme';
 import { t } from '@/lib/i18n';
 
@@ -15,7 +16,7 @@ export default function Callback() {
   useEffect(() => {
     (async () => {
       if (p.error_description) { setError(t('الرابط انتهى أو انستخدم قبل. اطلب رابط جديد.')); return; }
-      let r: { error: unknown };
+      let r: { error: unknown; data?: { session?: { provider_token?: string | null } | null } };
       try {
         r = p.code
           ? await supabase.auth.exchangeCodeForSession(p.code)
@@ -24,6 +25,12 @@ export default function Callback() {
             : { error: new Error('no code') };
       } catch (e) { r = { error: e }; }
       if (r.error) { setError(t('ما زبط الدخول بهالرابط. افتح الرابط على نفس التلفون اللي طلبت منه، أو اطلب رابط جديد.')); return; }
+      // web: coming back from "bring my courses from Teams"
+      if (takePendingTeamsImport()) {
+        const res = await importTeamsWithToken(r.data?.session?.provider_token);
+        router.replace({ pathname: '/courses', params: { teams: 'count' in res ? String(res.count) : res.error } });
+        return;
+      }
       router.replace('/');  // the gate sends the user to setup or home
     })();
   }, [p.code, p.token_hash, p.type, p.error_description]);

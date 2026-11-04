@@ -10,6 +10,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { ToastHost } from '@/components/Toast';
+import { WebAlertHost } from '@/components/WebAlert';
 import { AuthProvider, useAuth } from '@/lib/auth';
 import { installGlobalErrorHandler, reportError, setScreen } from '@/lib/errors';
 import { runQaLaunchArgs } from '@/lib/qa';
@@ -127,6 +128,7 @@ export default function RootLayout() {
           <StatusBar style={isDark ? 'light' : 'dark'} />
           <Gate />
           <ToastHost />
+          <WebAlertHost />
         </AuthProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>
