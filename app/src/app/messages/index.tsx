@@ -5,8 +5,10 @@ import { FlatList, RefreshControl, ScrollView, TextInput, View } from 'react-nat
 import Animated, { FadeInDown, FadeOutLeft, LinearTransition } from 'react-native-reanimated';
 
 import { GlyphTile } from '@/components/Glyph';
-import { Avatar, Button, Empty, Header, IconButton, Row, Screen, T, Tap } from '@/components/ui';
+import { Avatar, Button, Empty, Header, IconButton, Row, Screen, StateView, T, Tap } from '@/components/ui';
 import { useAuth } from '@/lib/auth';
+import { reportError } from '@/lib/errors';
+import { optimistic } from '@/lib/run';
 import { inviteFriends } from '@/lib/invite';
 import { supabase } from '@/lib/supabase';
 import { C, F, isDark, shadow } from '@/lib/theme';
@@ -39,9 +41,11 @@ export function Inbox({ inTab }: { inTab?: boolean }) {
   const [q, setQ] = useState('');
   const [loading, setLoading] = useState(true);
 
+  const [failed, setFailed] = useState(false);
   const load = useCallback(async () => {
     if (!profile) return;
-    setLoading(true);
+    setLoading(true); setFailed(false);
+    try {
     const { data: mine } = await supabase.from('conversation_members')
       .select('state, last_read_at, conversation:conversations(id, kind, title, context_label, streak_days, last_message_at, created_by)')
       .eq('user_id', profile.id).neq('state', 'left');
@@ -50,9 +54,9 @@ export function Inbox({ inTab }: { inTab?: boolean }) {
     const ids = rows.map((r) => r.conversation.id);
     const [{ data: members }, { data: lasts }] = ids.length ? await Promise.all([
       supabase.from('conversation_members').select('conversation_id, user_id, profile:profiles(id, full_name, avatar_url, is_verified)').in('conversation_id', ids).neq('user_id', profile.id),
-      supabase.from('messages').select('conversation_id, body, kind, created_at').in('conversation_id', ids).is('deleted_at', null).neq('kind', 'system').order('created_at', { ascending: false }).limit(400),
+      supabase.from('messages').select('conversation_id, sender_id, body, kind, created_at').in('conversation_id', ids).is('deleted_at', null).neq('kind', 'system').order('created_at', { ascending: false }).limit(400),
     ]) : [{ data: [] }, { data: [] }];
-    const lastBy = new Map<string, { kind: string; body: string | null }>();
+    const lastBy = new Map<string, { kind: string; body: string | null; sender_id: string | null }>();
     for (const m of lasts ?? []) if (!lastBy.has(m.conversation_id)) lastBy.set(m.conversation_id, m);
     const out: Item[] = rows.map((r) => {
       const c = r.conversation;
@@ -61,24 +65,30 @@ export function Inbox({ inTab }: { inTab?: boolean }) {
       return {
         id: c.id, kind: c.kind, state: r.state, created_by: c.created_by, title: other?.full_name ?? c.title ?? t('محادثة'), other, context: c.context_label,
         last: preview(lastBy.get(c.id)) ?? c.context_label, last_at: c.last_message_at,
-        unread: !r.last_read_at || new Date(c.last_message_at) > new Date(r.last_read_at), streak: c.streak_days,
+        // my own last message is never "unread"
+        unread: lastBy.get(c.id)?.sender_id !== profile.id && (!r.last_read_at || new Date(c.last_message_at ?? 0) > new Date(r.last_read_at)), streak: c.streak_days,
       };
     });
-    out.sort((a, b) => b.last_at.localeCompare(a.last_at));
+    out.sort((a, b) => (b.last_at ?? '').localeCompare(a.last_at ?? ''));
     setItems(out);
     // mutual friends for the quick row
     const { data: f } = await supabase.from('follows').select('p:profiles!follows_followee_id_fkey(id, full_name, avatar_url, is_verified)').eq('follower_id', profile.id).eq('status', 'accepted').limit(30);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     setFriends(((f ?? []) as any[]).map((x) => x.p).filter(Boolean));
-    setLoading(false);
+    } catch (e) {
+      reportError(e); setFailed(true);
+    } finally { setLoading(false); }
   }, [profile]);
 
   useFocusEffect(useCallback(() => { load(); }, [load]));
 
   async function answer(id: string, accept: boolean) {
-    setItems((all) => all.map((x) => (x.id === id ? { ...x, state: accept ? 'active' : 'left' } : x)));
-    await supabase.rpc('answer_request', { conv: id, accept });
-    if (accept) router.push({ pathname: '/messages/[id]', params: { id } });
+    const prev = items;
+    const ok = await optimistic(`answer-${id}`,
+      () => setItems((all) => all.map((x) => (x.id === id ? { ...x, state: accept ? 'active' : 'left' } : x))),
+      () => setItems(prev),
+      () => supabase.rpc('answer_request', { conv: id, accept }));
+    if (ok && accept) router.push({ pathname: '/messages/[id]', params: { id } });
   }
 
   async function openWith(p: Person) {
@@ -159,7 +169,7 @@ export function Inbox({ inTab }: { inTab?: boolean }) {
             </Tap>
           </Animated.View>
         )}
-        ListEmptyComponent={loading ? <ListSkeleton n={6} /> : tab === 1
+        ListEmptyComponent={loading ? <ListSkeleton n={6} /> : failed ? <StateView error onRetry={load} /> : tab === 1
           ? <Empty icon={<InboxIcon size={28} color={C.primary} />} title={t('ما في طلبات')} body={t('لما حدا ما بتتابعه يراسلك، بيوصل هون أول.')} />
           : tab === 2 ? <Empty icon={<Users size={28} color={C.primary} />} title={t('ما في جروبات لهلأ')} body={t('بتنضاف لحالك لجروب كليتك وتخصصك ودفعتك لما تكمّل معلوماتك.')} />
           : <Empty icon={<MessageCircle size={28} color={C.primary} />} title={t('ما في محادثات لهلأ')} body={t('اكبس على القلم فوق وابدأ مع زميل.')}

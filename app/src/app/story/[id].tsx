@@ -2,8 +2,8 @@ import { Image } from 'expo-image';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import { Eye, Heart, Plus, Send, Star, Trash2, X } from 'lucide-react-native';
-import { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, Modal, Pressable, ScrollView, TextInput, View } from 'react-native';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { ActivityIndicator, Alert, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, TextInput, View } from 'react-native';
 import Animated, { Easing, FadeIn, FadeInDown, cancelAnimation, runOnJS, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -13,16 +13,19 @@ import { mediaUrl, supabase } from '@/lib/supabase';
 import { C, F, isDark } from '@/lib/theme';
 import { timeAgo } from '@/lib/util';
 import { isAR, t, ta } from '@/lib/i18n';
+import { optimistic } from '@/lib/run';
+import { toast } from '@/lib/toast';
 
 type S = { id: string; media_url: string; kind: string; caption: string | null; created_at: string; duration_sec: number | null };
 type Viewer = { viewer_id: string; liked: boolean; p: { full_name: string; avatar_url: string | null } | null };
 
-function StoryVideo({ uri, onEnd }: { uri: string; onEnd: () => void }) {
+function StoryVideo({ uri, onEnd, onReady }: { uri: string; onEnd: () => void; onReady: () => void }) {
   const player = useVideoPlayer(uri, (p) => { p.loop = false; p.play(); });
   useEffect(() => {
     const sub = player.addListener('playToEnd', onEnd);
-    return () => sub.remove();
-  }, [player, onEnd]);
+    const st = player.addListener('statusChange', ({ status }) => { if (status === 'readyToPlay' || status === 'error') onReady(); });
+    return () => { sub.remove(); st.remove(); };
+  }, [player, onEnd, onReady]);
   return <VideoView player={player} style={{ position: 'absolute', top: 0, bottom: 0, left: 0, right: 0 }} contentFit="cover" nativeControls={false} />;
 }
 
@@ -34,6 +37,7 @@ export default function StoryViewer() {
   const [author, setAuthor] = useState<{ full_name: string; avatar_url: string | null } | null>(null);
   const [items, setItems] = useState<S[] | null>(null);
   const [i, setI] = useState(0);
+  const [ready, setReady] = useState(false);
   const [uri, setUri] = useState<string | null>(null);
   const [liked, setLiked] = useState(false);
   const [reply, setReply] = useState('');
@@ -52,11 +56,11 @@ export default function StoryViewer() {
       supabase.from('highlights').select('title').eq('id', highlight).single().then(({ data }) => setHlName(data?.title ?? null));
       supabase.from('highlight_items').select('added_at, s:stories(id, media_url, kind, caption, created_at, duration_sec)').eq('highlight_id', highlight).order('added_at')
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        .then(({ data }) => { const list = ((data ?? []) as any[]).map((x) => x.s).filter(Boolean) as S[]; setItems(list); if (list.length === 0) router.back(); });
+        .then(({ data }) => { const list = ((data ?? []) as any[]).map((x) => x.s).filter(Boolean) as S[]; setItems(list); if (list.length === 0) close(); });
       return;
     }
     supabase.from('stories').select('id, media_url, kind, caption, created_at, duration_sec').eq('author_id', id).gt('expires_at', new Date().toISOString()).order('created_at')
-      .then(({ data }) => { const list = (data ?? []) as S[]; setItems(list); if (list.length === 0) router.back(); });
+      .then(({ data }) => { const list = (data ?? []) as S[]; setItems(list); if (list.length === 0) close(); });
   }, [id, highlight]);
 
   async function openHighlights() {
@@ -79,29 +83,40 @@ export default function StoryViewer() {
     else Alert.alert(t('انضافت لأبرز القصص ✓'));
   }
 
+  // leave once (never call navigation inside a state updater: it can run twice)
+  const closed = useRef(false);
+  const close = useCallback(() => { if (closed.current) return; closed.current = true; if (router.canGoBack()) router.back(); else router.replace('/'); }, []);
+  const iRef = useRef(0);
+  useEffect(() => { iRef.current = i; }, [i]);
   const next = useCallback(() => {
-    setI((x) => { if (items && x + 1 >= items.length) { router.back(); return x; } return x + 1; });
-  }, [items]);
+    if (items && iRef.current + 1 >= items.length) { close(); return; }
+    setI(iRef.current + 1);
+  }, [items, close]);
 
   const s = items?.[i];
 
   useEffect(() => {
     if (!s || !profile) return;
-    setLiked(false); setUri(null);
+    setLiked(false); setUri(null); setReady(false);
     mediaUrl('stories', s.media_url).then(setUri);
-    if (!mine) supabase.from('story_views').upsert({ story_id: s.id, viewer_id: profile.id }, { onConflict: 'story_id,viewer_id' }).then(() => {});
+    if (!mine) {
+      supabase.from('story_views').upsert({ story_id: s.id, viewer_id: profile.id }, { onConflict: 'story_id,viewer_id', ignoreDuplicates: true }).then(() => {
+        // show the heart as it really is (if you liked it before)
+        supabase.from('story_views').select('liked').eq('story_id', s.id).eq('viewer_id', profile.id).maybeSingle().then(({ data }) => setLiked(!!data?.liked));
+      });
+    }
     else supabase.from('story_views').select('viewer_id, liked, p:profiles!story_views_viewer_id_fkey(full_name, avatar_url)').eq('story_id', s.id)
       .then(({ data }) => setViewers((data ?? []) as unknown as Viewer[]));
   }, [s, profile, mine]);
 
-  // the progress bar starts once the photo/video is loaded
+  // the progress bar starts once the photo/video has actually loaded
   useEffect(() => {
-    if (!s || !uri) return;
+    if (!s || !uri || !ready) return;
     progress.value = 0;
     const ms = s.kind === 'video' ? (s.duration_sec ?? 15) * 1000 : 5000;
     progress.value = withTiming(1, { duration: ms, easing: Easing.linear }, (done) => { if (done && s.kind !== 'video') runOnJS(next)(); });
     return () => cancelAnimation(progress);
-  }, [uri, s, next, progress]);
+  }, [uri, ready, s, next, progress]);
 
   function pause() { cancelAnimation(progress); }
   function resume() {
@@ -112,17 +127,24 @@ export default function StoryViewer() {
 
   async function like() {
     if (!s || !profile) return;
-    setLiked(!liked);
-    await supabase.from('story_views').update({ liked: !liked }).eq('story_id', s.id).eq('viewer_id', profile.id);
+    const was = liked;
+    await optimistic(`story-like-${s.id}`, () => setLiked(!was), () => setLiked(was),
+      () => supabase.from('story_views').update({ liked: !was }).eq('story_id', s.id).eq('viewer_id', profile.id));
   }
 
+  const [replying, setReplying] = useState(false);
   async function sendReply() {
-    if (!reply.trim() || !s) return;
-    const text = reply.trim(); setReply('');
-    const { data: conv, error } = await supabase.rpc('start_direct', { target: id, context: t('رد على ستوري') });
-    if (error || !conv) { Alert.alert(t('ما انبعت الرد'), t('هاد الشخص مسكّر الرسائل.')); return; }
-    await supabase.from('messages').insert({ conversation_id: conv, sender_id: profile?.id ?? '', kind: 'story_reply', body: text, ref_id: s.id });
-    Alert.alert(t('انبعت ✓'));
+    if (!reply.trim() || !s || replying) return;
+    const text = reply.trim();
+    setReplying(true);
+    try {
+      const { data: conv, error } = await supabase.rpc('start_direct', { target: id, context: t('رد على ستوري') });
+      if (error || !conv) { Alert.alert(t('ما انبعت الرد'), t('هاد الشخص مسكّر الرسائل.')); return; }
+      const { error: me } = await supabase.from('messages').insert({ conversation_id: conv, sender_id: profile?.id ?? '', kind: 'story_reply', body: text, ref_id: s.id });
+      if (me) { Alert.alert(t('ما انبعت الرد'), t('جرّب مرة ثانية.')); return; }
+      setReply(''); toast(t('انبعت ✓'));
+    } catch { Alert.alert(t('ما انبعت الرد'), t('تأكد من الإنترنت وجرّب كمان مرة.')); }
+    finally { setReplying(false); resume(); }
   }
 
   function remove() {
@@ -131,7 +153,7 @@ export default function StoryViewer() {
       text: t('احذف'), style: 'destructive', onPress: async () => {
         await supabase.from('stories').delete().eq('id', s.id);
         const rest = (items ?? []).filter((x) => x.id !== s.id);
-        if (rest.length === 0) router.back(); else { setItems(rest); setI(Math.min(i, rest.length - 1)); }
+        if (rest.length === 0) close(); else { setItems(rest); setI(Math.min(i, rest.length - 1)); }
       },
     }]);
   }
@@ -139,8 +161,8 @@ export default function StoryViewer() {
   return (
     <View style={{ flex: 1, backgroundColor: '#000' }}>
       {!uri && <View style={{ position: 'absolute', top: 0, bottom: 0, left: 0, right: 0, alignItems: 'center', justifyContent: 'center' }}><ActivityIndicator color={C.white} size="large" /></View>}
-      {uri && s?.kind === 'video' ? <StoryVideo key={s.id} uri={uri} onEnd={next} />
-        : uri ? <Image source={{ uri }} style={{ position: 'absolute', top: 0, bottom: 0, left: 0, right: 0 }} contentFit="cover" transition={150} /> : null}
+      {uri && s?.kind === 'video' ? <StoryVideo key={s.id} uri={uri} onEnd={next} onReady={() => setReady(true)} />
+        : uri ? <Image key={uri} source={{ uri }} style={{ position: 'absolute', top: 0, bottom: 0, left: 0, right: 0 }} contentFit="cover" transition={150} onLoad={() => setReady(true)} onError={() => setReady(true)} /> : null}
       <Pressable style={{ position: 'absolute', top: 110, bottom: 130, left: 0, width: '40%' }} onPress={next} onLongPress={pause} onPressOut={resume} delayLongPress={200} accessibilityLabel={t('التالي')} />
       <Pressable style={{ position: 'absolute', top: 110, bottom: 130, right: 0, width: '40%' }} onPress={() => setI((x) => Math.max(0, x - 1))} onLongPress={pause} onPressOut={resume} delayLongPress={200} accessibilityLabel={t('السابق')} />
       <SafeAreaView edges={['top']} style={{ paddingHorizontal: 12, gap: 12, paddingBottom: 12 }}>
@@ -161,7 +183,7 @@ export default function StoryViewer() {
           </Tap>
           {mine && !highlight && s?.kind === 'image' && <Tap onPress={openHighlights} accessibilityLabel={t('ثبّت بأبرز القصص')} style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}><Star size={22} color={C.white} /></Tap>}
           {mine && !highlight && <Tap onPress={remove} accessibilityLabel={t('احذف القصة')} style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}><Trash2 size={22} color={C.white} /></Tap>}
-          <Tap onPress={() => router.back()} accessibilityLabel={t('إغلاق')} style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}><X size={26} color={C.white} /></Tap>
+          <Tap onPress={close} accessibilityLabel={t('إغلاق')} style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}><X size={26} color={C.white} /></Tap>
         </Row>
       </SafeAreaView>
       {s?.caption ? (
@@ -169,7 +191,8 @@ export default function StoryViewer() {
           <T style={{ fontFamily: F.display, fontSize: 24, lineHeight: 36, alignSelf: 'flex-start', backgroundColor: 'rgba(14,20,48,0.55)', paddingHorizontal: 14, paddingVertical: 6, borderRadius: 14, overflow: 'hidden' }} color={C.white}>{s.caption}</T>
         </Animated.View>
       ) : null}
-      <SafeAreaView edges={['bottom']} style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: 12 }}>
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'position' : undefined} style={{ position: 'absolute', bottom: 0, left: 0, right: 0 }}>
+      <SafeAreaView edges={['bottom']} style={{ padding: 12 }}>
         {mine ? (
           <Tap onPress={() => { pause(); setShowViewers(true); }} style={{ alignSelf: 'center', flexDirection: 'row', alignItems: 'center', gap: 8, minHeight: 46, paddingHorizontal: 18, borderRadius: 23, backgroundColor: 'rgba(14,20,48,0.55)' }}>
             <Eye size={20} color={C.white} />
@@ -185,6 +208,7 @@ export default function StoryViewer() {
           </Row>
         )}
       </SafeAreaView>
+      </KeyboardAvoidingView>
 
       <Modal visible={hlOpen} transparent animationType="slide" onRequestClose={() => { setHlOpen(false); resume(); }}>
         <Pressable style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.4)' }} onPress={() => { setHlOpen(false); resume(); }} />

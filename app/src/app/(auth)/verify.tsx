@@ -1,35 +1,36 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { MailCheck } from 'lucide-react-native';
-import { useRef, useState, type ComponentRef } from 'react';
+import { useEffect, useRef, useState, type ComponentRef } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, Text, TextInput, View } from 'react-native';
 import Animated, { FadeInDown, useAnimatedStyle, useSharedValue, withSequence, withTiming } from 'react-native-reanimated';
 
 import { Button, Header, Screen, T } from '@/components/ui';
 import { sendEmailCode, verifyEmailCode } from '@/lib/auth';
 import { C, F, isDark } from '@/lib/theme';
-import { t } from '@/lib/i18n';
+import { isAR, t } from '@/lib/i18n';
 
 export default function Verify() {
   const { email, uni } = useLocalSearchParams<{ email: string; uni: string }>();
   const [code, setCode] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [resent, setResent] = useState(false);
+  const [wait, setWait] = useState(60); // seconds until "send again" is allowed
+  useEffect(() => { if (wait <= 0) return; const tm = setTimeout(() => setWait(wait - 1), 1000); return () => clearTimeout(tm); }, [wait]);
   const input = useRef<ComponentRef<typeof TextInput>>(null);
   const shake = useSharedValue(0);
   const shakeStyle = useAnimatedStyle(() => ({ transform: [{ translateX: shake.value }] }));
 
   async function verify(c = code) {
-    if (c.length < 6) return;
+    if (c.length < 6 || busy) return;
     setBusy(true); setError(null);
-    const { error: e } = await verifyEmailCode(email, c);
-    setBusy(false);
+    let e: unknown = null;
+    try { ({ error: e } = await verifyEmailCode(email, c)); } catch (x) { e = x; } finally { setBusy(false); }
     if (e) {
       setError(t('الرمز غلط أو انتهى. تأكد منه وجرّب مرة ثانية.'));
       shake.value = withSequence(withTiming(10, { duration: 50 }), withTiming(-10, { duration: 50 }), withTiming(6, { duration: 50 }), withTiming(0, { duration: 50 }));
       return;
     }
-    router.replace('/(auth)/welcome');
+    router.replace('/');  // the gate sends the user to setup or home
   }
 
   return (
@@ -45,7 +46,7 @@ export default function Verify() {
         </Animated.View>
 
         <Pressable onPress={() => input.current?.focus()}>
-          <Animated.View style={[{ flexDirection: 'row-reverse', justifyContent: 'space-between' }, shakeStyle]}>
+          <Animated.View style={[{ flexDirection: isAR ? 'row-reverse' : 'row', justifyContent: 'space-between' }, shakeStyle]}>
             {Array.from({ length: 6 }).map((_, i) => {
               const filled = i < code.length; const focused = i === code.length;
               return (
@@ -58,13 +59,19 @@ export default function Verify() {
         </Pressable>
         <TextInput keyboardAppearance={isDark ? 'dark' : 'light'}
           ref={input} value={code} autoFocus keyboardType="number-pad" textContentType="oneTimeCode" autoComplete="one-time-code"
-          maxLength={6} onChangeText={(t) => { const c = t.replace(/\D/g, ''); setCode(c); if (c.length === 6) verify(c); }}
+          maxLength={6} onChangeText={(v) => { const c = v.replace(/\D/g, ''); setCode(c); if (c.length === 6 && !busy) verify(c); }}
           style={{ position: 'absolute', opacity: 0, height: 1, width: 1 }} accessibilityLabel={t('رمز التحقق')}
         />
         {error && <T v="small" color={C.danger}>{error}</T>}
         <Button title={t('تأكيد')} loading={busy} disabled={code.length < 6} onPress={() => verify()} />
-        <Button kind="ghost" title={resent ? t('بعتنا رمز جديد') : t('ما وصلني، ابعت مرة ثانية')} disabled={resent}
-          onPress={async () => { await sendEmailCode(email); setResent(true); }} style={{ minHeight: 44 }} />
+        <Button kind="ghost" title={wait > 0 ? t('ابعت مرة ثانية بعد {0} ثانية', [wait]) : t('ما وصلني، ابعت مرة ثانية')} disabled={wait > 0}
+          onPress={async () => {
+            setWait(60); setError(null);
+            try {
+              const { error: e } = await sendEmailCode(email);
+              if (e) { setWait(0); setError(/rate|limit/i.test(e.message) ? t('وصلنا الحد المسموح من الإيميلات هلأ. جرّب بعد شوي.') : t('ما قدرنا نبعث الرسالة. تأكد من الإنترنت وجرّب مرة ثانية.')); }
+            } catch { setWait(0); setError(t('ما قدرنا نبعث الرسالة. تأكد من الإنترنت وجرّب مرة ثانية.')); }
+          }} style={{ minHeight: 44 }} />
       </KeyboardAvoidingView>
     </Screen>
   );

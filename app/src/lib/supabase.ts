@@ -22,6 +22,7 @@ AppState.addEventListener('change', (state) => {
 
 /** Public URL for a file in a public bucket, or a short-lived signed URL for a private one. */
 const signedCache = new Map<string, { url: string; exp: number }>();
+export function clearMediaCache() { signedCache.clear(); }
 export async function mediaUrl(bucket: string, path?: string | null): Promise<string | null> {
   if (!path) return null;
   if (path.startsWith('http')) return path;
@@ -31,7 +32,8 @@ export async function mediaUrl(bucket: string, path?: string | null): Promise<st
   const k = bucket + '/' + path;
   const hit = signedCache.get(k);
   if (hit && hit.exp > Date.now()) return hit.url;
-  const { data } = await supabase.storage.from(bucket).createSignedUrl(path, 3600);
+  let data: { signedUrl: string } | null = null;
+  try { ({ data } = await supabase.storage.from(bucket).createSignedUrl(path, 3600)); } catch { return null; }
   if (!data) return null;
   signedCache.set(k, { url: data.signedUrl, exp: Date.now() + 50 * 60 * 1000 });
   return data.signedUrl;

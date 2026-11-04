@@ -1,6 +1,6 @@
 import { router, useLocalSearchParams } from 'expo-router';
-import { Mic, MicOff, Phone, Video } from 'lucide-react-native';
-import { useEffect, useState } from 'react';
+import { Mic, MicOff, Phone } from 'lucide-react-native';
+import { useEffect, useRef, useState } from 'react';
 import { View } from 'react-native';
 import Animated, { Easing, useAnimatedStyle, useSharedValue, withDelay, withRepeat, withTiming } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -41,11 +41,19 @@ export default function CallScreen() {
     return () => clearInterval(t);
   }, [status]);
 
-  useEffect(() => { if (['ended', 'missed', 'declined'].includes(status)) setTimeout(() => router.back(), 900); }, [status]);
+  const left = useRef(false);
+  const leave = () => { if (left.current) return; left.current = true; if (router.canGoBack()) router.back(); };
+  useEffect(() => {
+    if (!['ended', 'missed', 'declined'].includes(status)) return;
+    const tm = setTimeout(leave, 900);
+    return () => clearTimeout(tm);
+  }, [status]);
+  // leaving the screen while it still rings marks the call as missed
+  useEffect(() => () => { supabase.from('calls').update({ status: 'missed', ended_at: new Date().toISOString() }).eq('id', id).eq('status', 'ringing').then(() => {}); }, [id]);
 
   async function hangUp() {
     await supabase.from('calls').update({ status: 'ended', ended_at: new Date().toISOString() }).eq('id', id);
-    router.back();
+    leave();
   }
 
   const label = status === 'active' ? `${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, '0')}` : status === 'missed' ? t('ما رد') : status === 'declined' ? t('رفض المكالمة') : status === 'ended' ? t('انتهت المكالمة') : kind === 'video' ? t('مكالمة فيديو... بترن') : t('مكالمة صوتية... بترن');
@@ -64,9 +72,6 @@ export default function CallScreen() {
         <View style={{ marginTop: 'auto', flexDirection: 'row', gap: 22 }}>
           <Tap onPress={() => setMuted((m) => !m)} accessibilityLabel={muted ? t('إلغاء الكتم') : t('كتم')} style={{ width: 64, height: 64, borderRadius: 32, backgroundColor: muted ? '#FFFFFF' : 'rgba(255,255,255,0.14)', alignItems: 'center', justifyContent: 'center' }}>
             {muted ? <MicOff size={26} color="#0E1430" /> : <Mic size={26} color={C.white} />}
-          </Tap>
-          <Tap accessibilityLabel={t('كاميرا')} style={{ width: 64, height: 64, borderRadius: 32, backgroundColor: 'rgba(255,255,255,0.14)', alignItems: 'center', justifyContent: 'center' }}>
-            <Video size={28} color={C.white} />
           </Tap>
           <Tap onPress={hangUp} accessibilityLabel={t('إنهاء المكالمة')} style={{ width: 64, height: 64, borderRadius: 32, backgroundColor: '#FF3B5C', alignItems: 'center', justifyContent: 'center' }}>
             <Phone size={28} color={C.white} style={{ transform: [{ rotate: '135deg' }] }} />

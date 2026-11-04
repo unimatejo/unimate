@@ -1,9 +1,10 @@
 import * as Linking from 'expo-linking';
 import * as WebBrowser from 'expo-web-browser';
 import type { Session } from '@supabase/supabase-js';
-import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react';
+import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
 
-import { supabase } from './supabase';
+import { reportError } from './errors';
+import { clearMediaCache, supabase } from './supabase';
 import type { Profile, University } from './types';
 
 WebBrowser.maybeCompleteAuthSession();
@@ -13,6 +14,8 @@ type Ctx = {
   profile: Profile | null;
   university: University | null;
   loading: boolean;
+  /** true when the profile couldn't be loaded (network); the old profile is kept */
+  profileError: boolean;
   refreshProfile: () => Promise<void>;
   signOut: () => Promise<void>;
 };
@@ -25,35 +28,53 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [university, setUniversity] = useState<University | null>(null);
   const [loading, setLoading] = useState(true);
+  const [profileError, setProfileError] = useState(false);
+  const uidRef = useRef<string | undefined>(undefined);
 
   const loadProfile = useCallback(async (uid?: string) => {
-    if (!uid) { setProfile(null); setUniversity(null); return; }
-    const { data } = await supabase
-      .from('profiles')
-      .select('*, university:universities(*), college:colleges(id, name_ar, name_en), major:majors(id, name_ar, name_en)')
-      .eq('id', uid)
-      .single();
-    setProfile((data as Profile) ?? null);
-    setUniversity((data?.university as University) ?? null);
+    uidRef.current = uid;
+    if (!uid) { setProfile(null); setUniversity(null); setProfileError(false); return; }
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*, university:universities(*), college:colleges(id, name_ar, name_en), major:majors(id, name_ar, name_en)')
+        .eq('id', uid)
+        .maybeSingle();
+      if (uidRef.current !== uid) return; // a newer sign-in started meanwhile
+      if (error) throw error;
+      setProfileError(false);
+      // a missing row means the account was removed: keep null so the gate can sign out
+      setProfile((data as Profile) ?? null);
+      setUniversity((data?.university as University) ?? null);
+    } catch (e) {
+      // keep the previous profile on network errors instead of wiping it
+      reportError(e);
+      if (uidRef.current === uid) setProfileError(true);
+    }
   }, []);
 
   useEffect(() => {
-    supabase.auth.getSession().then(async ({ data }) => {
-      setSession(data.session);
-      await loadProfile(data.session?.user.id);
-      setLoading(false);
-    });
-    const { data: sub } = supabase.auth.onAuthStateChange((_e, s) => {
+    supabase.auth.getSession()
+      .then(async ({ data }) => { setSession(data.session); await loadProfile(data.session?.user.id); })
+      .catch((e) => { reportError(e); setProfileError(true); })
+      .finally(() => setLoading(false));
+    const { data: sub } = supabase.auth.onAuthStateChange((event, s) => {
       setSession(s);
+      // a token refresh doesn't change who is signed in
+      if (event === 'TOKEN_REFRESHED' && s?.user.id === uidRef.current) return;
       loadProfile(s?.user.id);
     });
     return () => sub.subscription.unsubscribe();
   }, [loadProfile]);
 
   const value: Ctx = {
-    session, profile, university, loading,
+    session, profile, university, loading, profileError,
     refreshProfile: () => loadProfile(session?.user.id),
-    signOut: async () => { await supabase.auth.signOut(); },
+    signOut: async () => {
+      try { await supabase.auth.signOut(); } catch (e) { reportError(e); await supabase.auth.signOut({ scope: 'local' }).catch(() => {}); }
+      clearMediaCache();
+      setProfile(null); setUniversity(null); setSession(null);
+    },
   };
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
@@ -62,7 +83,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 export async function universityForEmail(email: string): Promise<University | null> {
   const dom = email.trim().toLowerCase().split('@')[1];
   if (!dom) return null;
-  const { data } = await supabase.from('universities').select('*').eq('is_active', true);
+  const { data, error } = await supabase.from('universities').select('*').eq('is_active', true);
+  if (error) throw error; // network problem, not a wrong email
   return (data ?? []).find((u: University) =>
     u.email_domains.some((d) => dom === d || dom.endsWith('.' + d))
   ) ?? null;

@@ -150,9 +150,12 @@ export default function Chat() {
     if (!profile) return;
     const body = kind === 'text' ? draft.trim() : null;
     if (kind === 'text' && !body) return;
-    setDraft('');
+    if (kind === 'text') setDraft('');
     const { data, error } = await supabase.from('messages').insert({ conversation_id: id, sender_id: (profile?.id ?? ''), kind, body, media_url: media ?? null }).select().single();
-    if (error) { Alert.alert(t('ما انبعتت'), myState === 'request' ? t('لازم تقبل الطلب أول.') : t('جرّب مرة ثانية.')); return; }
+    if (error) {
+      if (kind === 'text' && body) setDraft((d) => d || body); // give the text back
+      Alert.alert(t('ما انبعتت'), myState === 'request' ? t('لازم تقبل الطلب أول.') : t('جرّب مرة ثانية.')); return;
+    }
     setMsgs((cur) => [data as Message, ...cur.filter((x) => x.id !== data.id)]);
   }
 

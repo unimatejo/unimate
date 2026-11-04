@@ -9,6 +9,7 @@ import { GlyphTile, GRAD } from '@/components/Glyph';
 
 import { Button, Card, Empty, IconButton, Row, Screen, T, Tag, Tap } from '@/components/ui';
 import { useAuth } from '@/lib/auth';
+import { reportError } from '@/lib/errors';
 import { scheduleLectureReminders } from '@/lib/notify';
 import { placeLine, useSchedule } from '@/lib/schedule';
 import { supabase } from '@/lib/supabase';
@@ -53,7 +54,7 @@ export default function Schedule() {
       .then(({ data }) => setOff(Object.fromEntries((data ?? []).map((r) => [r.meeting_id, !r.enabled]))));
   }, [profile]);
 
-  useEffect(() => { if (meetings.length) scheduleLectureReminders(meetings, off).catch(() => {}); }, [meetings, off]);
+  useEffect(() => { if (!loading) scheduleLectureReminders(meetings, off, profile?.id).catch(reportError); }, [meetings, off, loading, profile?.id]);
 
   const list = useMemo(() => meetings.filter((m) => m.weekday === day).sort((a, b) => a.starts_at.localeCompare(b.starts_at)), [meetings, day]);
   const week = useMemo(() => {

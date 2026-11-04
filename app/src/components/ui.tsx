@@ -2,7 +2,7 @@ import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
 import { router } from 'expo-router';
-import { ChevronRight } from 'lucide-react-native';
+import { ChevronRight, CircleAlert } from 'lucide-react-native';
 import { forwardRef, useEffect, useRef, type ComponentRef, type ReactNode } from 'react';
 import {
   ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View,
@@ -270,6 +270,22 @@ export function Empty({ icon, title, body, action }: { icon?: ReactNode; title: 
       {action}
     </View>
   );
+}
+
+/**
+ * One component for list states: loading (skeleton/spinner), error with "try again", empty, or the content.
+ * Keeps "still loading", "nothing here" and "something went wrong" clearly different.
+ */
+export function StateView({ loading, error, empty, onRetry, skeleton, emptyView, children }: {
+  loading?: boolean; error?: boolean; empty?: boolean; onRetry?: () => void; skeleton?: ReactNode; emptyView?: ReactNode; children?: ReactNode;
+}) {
+  if (loading) return <>{skeleton ?? <Loading />}</>;
+  if (error) return (
+    <Empty icon={<CircleAlert size={28} color={C.red} />} title={t('ما قدرنا نحمّل')} body={t('تأكد من الإنترنت وجرّب كمان مرة.')}
+      action={onRetry ? <Button kind="soft" title={t('جرّب كمان مرة')} onPress={onRetry} style={{ marginTop: 10, paddingHorizontal: 20 }} /> : undefined} />
+  );
+  if (empty) return <>{emptyView ?? null}</>;
+  return <>{children}</>;
 }
 
 export function Loading() {

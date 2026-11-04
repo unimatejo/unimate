@@ -9,6 +9,7 @@ import { MajorPicker } from '@/components/MajorPicker';
 import { InstagramGlyph, SnapGlyph } from '@/components/SocialGlyphs';
 import { Avatar, Button, Card, Chip, Field, Row, Screen, T, Tap } from '@/components/ui';
 import { importTeamsCourses, useAuth } from '@/lib/auth';
+import { reportError } from '@/lib/errors';
 import { supabase } from '@/lib/supabase';
 import { C, F } from '@/lib/theme';
 import { handleFrom } from '@/lib/util';
@@ -78,12 +79,20 @@ export default function Welcome() {
 
   const years = useMemo(() => { const y = new Date().getFullYear(); return Array.from({ length: 8 }, (_, i) => y - i); }, []);
 
-  function next() {
+  async function next() {
     if (step === 1) {
-      if (name.trim().length < 3) { Alert.alert(t('اكتب اسمك الكامل')); return; }
+      if (name.trim().length < 2) { Alert.alert(t('اكتب اسمك الكامل')); return; }
       if (!locked && uState !== 'ok') { Alert.alert(t('اسم المستخدم'), uState === 'taken' ? t('هاد اليوزر مأخوذ، جرّب غيره.') : t('اختار يوزر من 3 لـ 24 حرف إنجليزي صغير أو أرقام أو . و _')); return; }
     }
-    if (step === 2 && !maj) { Alert.alert(t('اختار كليتك وتخصصك')); return; }
+    if (step === 2 && !maj) {
+      // universities without colleges yet, or a college without majors, must not block sign-up
+      const { count: cols } = await supabase.from('colleges').select('id', { count: 'exact', head: true }).eq('university_id', university?.id ?? '');
+      if (cols) {
+        if (!col) { Alert.alert(t('اختار كليتك وتخصصك')); return; }
+        const { count: majs } = await supabase.from('majors').select('id', { count: 'exact', head: true }).eq('college_id', col);
+        if (majs) { Alert.alert(t('اختار كليتك وتخصصك')); return; }
+      }
+    }
     if (step === 3 && !entry) { Alert.alert(t('اختار سنة دخولك للجامعة')); return; }
     if (step === 4) { finish(); return; }
     setStep(step + 1);
@@ -95,12 +104,13 @@ export default function Welcome() {
     if (igH && !/^[A-Za-z0-9._]{1,30}$/.test(igH)) { Alert.alert(t('إنستغرام'), t('اكتب اليوزر أو الصق رابط حسابك.')); return; }
     if (snH && !/^[A-Za-z0-9._-]{1,30}$/.test(snH)) { Alert.alert(t('سناب شات'), t('اكتب اليوزر أو الصق رابط حسابك.')); return; }
     setSaving(true);
+    try {
     const patch: Record<string, unknown> = {
       full_name: name.trim(), college_id: col, major_id: maj, entry_year: entry, study_year: studyYearFrom(entry),
       instagram: igH || null, snapchat: snH || null, onboarded: true,
     };
     if (!locked) patch.username = username.trim().toLowerCase();
-    const { error } = await supabase.from('profiles').update(patch).eq('id', profile.id);
+    const { error } = await supabase.from('profiles').update(patch).eq('id', profile.id).select('id').single();
     if (!error && birth) await supabase.rpc('set_birth_date', { d: birth.toISOString().slice(0, 10) });
     setSaving(false);
     if (error) {
@@ -110,6 +120,9 @@ export default function Welcome() {
     }
     await refreshProfile();
     router.replace('/(tabs)');
+    } catch (e) {
+      reportError(e); Alert.alert(t('ما انحفظ'), t('تأكد من الإنترنت وجرّب كمان مرة.'));
+    } finally { setSaving(false); }
   }
 
   const autoRows: [string, string | null | undefined][] = [

@@ -15,6 +15,7 @@ import { C, F, isDark } from '@/lib/theme';
 import type { Post } from '@/lib/types';
 import { timeAgo } from '@/lib/util';
 import { isAR, t, ta } from '@/lib/i18n';
+import { run } from '@/lib/run';
 
 type Comment = { id: string; author_id: string; parent_id: string | null; body: string; created_at: string; author: { full_name: string; avatar_url: string | null } | null };
 
@@ -37,13 +38,17 @@ export default function PostScreen() {
 
   useEffect(() => { load(); }, [load]);
 
+  const [sending, setSending] = useState(false);
   async function send() {
-    if (!profile || !draft.trim()) return;
-    const body = draft.trim(); setDraft('');
-    const { data, error } = await supabase.from('comments').insert({ post_id: id, author_id: (profile?.id ?? ''), body, parent_id: replyTo?.id ?? null })
-      .select('id, author_id, parent_id, body, created_at, author:profiles(full_name, avatar_url)').single();
-    setReplyTo(null);
-    if (!error && data) setComments((c) => [...c, data as unknown as Comment]);
+    if (!profile || !draft.trim() || sending) return;
+    const body = draft.trim();
+    setSending(true);
+    const r = await run(supabase.from('comments').insert({ post_id: id, author_id: profile.id, body, parent_id: replyTo?.id ?? null })
+      .select('id, author_id, parent_id, body, created_at, author:profiles(full_name, avatar_url)').single(), { msg: t('ما انبعت التعليق، جرّب كمان مرة.') });
+    setSending(false);
+    if (!r.ok || !r.data) return; // the text stays in the box
+    setDraft(''); setReplyTo(null);
+    setComments((c) => [...c, r.data as unknown as Comment]);
   }
 
   async function remove() {

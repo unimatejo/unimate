@@ -15,10 +15,14 @@ export function useProfilePatch() {
   const patch = useCallback(async (p: Partial<Profile>) => {
     if (!profile) return;
     setDraft((d) => ({ ...d, ...p }));
-    const { error } = await supabase.from('profiles').update(p).eq('id', (profile?.id ?? ''));
-    if (error) { setDraft({}); Alert.alert(t('ما زبط الحفظ'), t('تأكد من الإنترنت وجرب كمان مرة.')); return; }
+    const { error } = await supabase.from('profiles').update(p).eq('id', profile.id).select('id').single();
+    if (error) {
+      // undo only the keys that failed, keep other pending edits
+      setDraft((d) => { const n = { ...d }; for (const k of Object.keys(p)) delete (n as Record<string, unknown>)[k]; return n; });
+      Alert.alert(t('ما زبط الحفظ'), t('تأكد من الإنترنت وجرب كمان مرة.')); return;
+    }
     await refreshProfile();
-    setDraft({});
+    setDraft((d) => { const n = { ...d }; for (const k of Object.keys(p)) delete (n as Record<string, unknown>)[k]; return n; });
   }, [profile, refreshProfile]);
 
   return { value, patch };
@@ -36,15 +40,19 @@ const DEFAULT_PREFS: Prefs = {
 export function usePrefs() {
   const { profile } = useAuth();
   const [prefs, setPrefs] = useState<Prefs>(DEFAULT_PREFS);
+  const [loaded, setLoaded] = useState(false);
   useEffect(() => {
     if (!profile) return;
-    supabase.from('notification_prefs').select('*').eq('user_id', (profile?.id ?? '')).maybeSingle()
-      .then(({ data }) => data && setPrefs({ ...DEFAULT_PREFS, ...data }));
+    supabase.from('notification_prefs').select('*').eq('user_id', profile.id).maybeSingle()
+      .then(({ data }) => { if (data) setPrefs({ ...DEFAULT_PREFS, ...data }); setLoaded(true); }, () => setLoaded(true));
   }, [profile]);
   const set = useCallback(async (p: Partial<Prefs>) => {
-    if (!profile) return;
-    setPrefs((x) => ({ ...x, ...p }));
-    await supabase.from('notification_prefs').upsert({ user_id: (profile?.id ?? ''), ...p }, { onConflict: 'user_id' });
+    if (!profile) return false;
+    let before: Prefs = DEFAULT_PREFS;
+    setPrefs((x) => { before = x; return { ...x, ...p }; });
+    const { error } = await supabase.from('notification_prefs').upsert({ user_id: profile.id, ...p }, { onConflict: 'user_id' });
+    if (error) { setPrefs(before); Alert.alert(t('ما زبط الحفظ'), t('تأكد من الإنترنت وجرب كمان مرة.')); return false; }
+    return true;
   }, [profile]);
-  return { prefs, set };
+  return { prefs, set, loaded };
 }

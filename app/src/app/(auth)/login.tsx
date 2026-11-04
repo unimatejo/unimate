@@ -31,28 +31,39 @@ function Bubble({ children, label, color, style, delay }: { children: ReactNode;
 
 export default function Login() {
   const [email, setEmail] = useState('');
-  const [busy, setBusy] = useState(false);
+  // one busy flag per button, so the spinner shows on the button you pressed and both are locked while one works
+  const [msBusy, setMsBusy] = useState(false);
+  const [mailBusy, setMailBusy] = useState(false);
+  const busy = msBusy || mailBusy;
   const [error, setError] = useState<string | null>(null);
 
   async function microsoft() {
-    setError(null); setBusy(true);
-    const res = await signInWithMicrosoft();
-    setBusy(false);
-    if ('error' in res && res.error && res.error.message !== 'cancelled') setError(t('ما زبط الدخول بمايكروسوفت. ممكن جامعتك بتطلب موافقة، جرّب رابط على الإيميل.'));
+    if (busy) return;
+    setError(null); setMsBusy(true);
+    try {
+      const res = await signInWithMicrosoft();
+      if ('error' in res && res.error && res.error.message !== 'cancelled') setError(t('ما زبط الدخول بمايكروسوفت. ممكن جامعتك بتطلب موافقة، جرّب رابط على الإيميل.'));
+    } catch {
+      setError(t('ما قدرنا نبعث الرسالة. تأكد من الإنترنت وجرّب مرة ثانية.'));
+    } finally { setMsBusy(false); }
   }
 
   async function sendCode() {
-    setError(null);
-    const uni = await universityForEmail(email);
-    if (!uni) { setError(t('اكتب إيميلك الجامعي، مثلاً 2021xxxx@hu.edu.jo')); return; }
-    setBusy(true);
-    const { error: e } = await sendEmailCode(email);
-    setBusy(false);
-    if (e) {
-      setError(/rate|limit/i.test(e.message) ? t('وصلنا الحد المسموح من الإيميلات هلأ. جرّب بعد شوي.') : t('ما قدرنا نبعث الرسالة. تأكد من الإنترنت وجرّب مرة ثانية.'));
-      return;
-    }
-    router.push({ pathname: '/(auth)/verify', params: { email, uni: nm(uni) } });
+    if (busy || !email.includes('@')) return;
+    setError(null); setMailBusy(true);
+    try {
+      let uni;
+      try { uni = await universityForEmail(email); } catch { setError(t('تأكد من الإنترنت وجرّب كمان مرة.')); return; }
+      if (!uni) { setError(t('اكتب إيميلك الجامعي، مثلاً 2021xxxx@hu.edu.jo')); return; }
+      const { error: e } = await sendEmailCode(email);
+      if (e) {
+        setError(/rate|limit/i.test(e.message) ? t('وصلنا الحد المسموح من الإيميلات هلأ. جرّب بعد شوي.') : t('ما قدرنا نبعث الرسالة. تأكد من الإنترنت وجرّب مرة ثانية.'));
+        return;
+      }
+      router.push({ pathname: '/(auth)/verify', params: { email, uni: nm(uni) } });
+    } catch {
+      setError(t('ما قدرنا نبعث الرسالة. تأكد من الإنترنت وجرّب مرة ثانية.'));
+    } finally { setMailBusy(false); }
   }
 
   return (
@@ -85,7 +96,7 @@ export default function Login() {
             <Animated.View entering={FadeInDown.delay(200).duration(500)} style={{ gap: 10 }}>
               {MS_READY && (
                 <>
-                  <Button title={t('ادخل بحساب الجامعة (مايكروسوفت)')} loading={busy && !email} onPress={microsoft} icon={<GraduationCap size={20} color={C.white} />} />
+                  <Button title={t('ادخل بحساب الجامعة (مايكروسوفت)')} loading={msBusy} disabled={mailBusy} onPress={microsoft} icon={<GraduationCap size={20} color={C.white} />} />
                   <Row gap={10} style={{ marginVertical: 2 }}><View style={{ flex: 1, height: 1, backgroundColor: C.line }} /><T v="tiny" color={C.faint}>{t('أو')}</T><View style={{ flex: 1, height: 1, backgroundColor: C.line }} /></Row>
                 </>
               )}
@@ -94,7 +105,7 @@ export default function Login() {
                 keyboardType="email-address" autoCapitalize="none" autoComplete="email" textContentType="emailAddress"
                 style={{ textAlign: 'left', writingDirection: 'ltr' }} onSubmitEditing={sendCode} returnKeyType="send"
               />
-              <Button kind={MS_READY ? 'soft' : 'primary'} title={t('ابعتلي رابط على إيميلي')} loading={busy && !!email} onPress={sendCode} disabled={!email.includes('@')} icon={<Mail size={19} color={MS_READY ? C.ink : C.white} />} />
+              <Button kind={MS_READY ? 'soft' : 'primary'} title={t('ابعتلي رابط على إيميلي')} loading={mailBusy} onPress={sendCode} disabled={!email.includes('@') || msBusy} icon={<Mail size={19} color={MS_READY ? C.ink : C.white} />} />
               {error && <T v="small" color={C.danger} style={{ textAlign: 'center' }}>{error}</T>}
             </Animated.View>
 

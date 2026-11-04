@@ -1,4 +1,4 @@
-import { AlarmClock, BellRing, CalendarDays, Footprints, Heart, Megaphone, MessageCircle, Moon, Users } from 'lucide-react-native';
+import { AlarmClock, BellRing, CalendarDays, Heart, Megaphone, MessageCircle, Moon, Users } from 'lucide-react-native';
 import { useEffect, useState, type ReactNode } from 'react';
 import { ScrollView, View } from 'react-native';
 
@@ -11,6 +11,8 @@ import { supabase } from '@/lib/supabase';
 import { C } from '@/lib/theme';
 import { clock, WEEKDAYS } from '@/lib/util';
 import { t } from '@/lib/i18n';
+import { reportError } from '@/lib/errors';
+import { run } from '@/lib/run';
 
 const ic = (n: ReactNode) => <View style={{ width: 36, height: 36, borderRadius: 12, backgroundColor: C.bg, alignItems: 'center', justifyContent: 'center' }}>{n}</View>;
 const MINUTES = [5, 10, 15, 20, 30, 45, 60];
@@ -19,7 +21,7 @@ type Rem = { meeting_id: string; minutes: number | null; enabled: boolean };
 
 export default function Reminders() {
   const { profile } = useAuth();
-  const { prefs, set } = usePrefs();
+  const { prefs, set, loaded } = usePrefs();
   const { meetings } = useSchedule(profile?.id);
   const [rems, setRems] = useState<Record<string, Rem>>({});
   const [open, setOpen] = useState<string | null>(null);
@@ -30,17 +32,21 @@ export default function Reminders() {
       .then(({ data }) => setRems(Object.fromEntries(((data ?? []) as Rem[]).map((r) => [r.meeting_id, r]))));
   }, [profile]);
 
+  // reschedule with the values on screen (not what the server had a moment ago)
   useEffect(() => {
-    if (!meetings.length) return;
+    if (!loaded) return;
     const off = Object.fromEntries(Object.values(rems).map((r) => [r.meeting_id, !r.enabled]));
-    scheduleLectureReminders(meetings, off).catch(() => {});
-  }, [meetings, rems, prefs.lecture_minutes, prefs.lectures]);
+    const perMin = Object.fromEntries(Object.values(rems).map((r) => [r.meeting_id, r.minutes]));
+    scheduleLectureReminders(meetings, off, profile?.id, { lectures: prefs.lectures, lecture_minutes: prefs.lecture_minutes, nightly_summary: prefs.nightly_summary, perMin }).catch(reportError);
+  }, [meetings, rems, prefs.lecture_minutes, prefs.lectures, prefs.nightly_summary, loaded, profile?.id]);
 
   async function setRem(meeting_id: string, p: Partial<Rem>) {
+    if (!profile) return;
     const cur = rems[meeting_id] ?? { meeting_id, minutes: null, enabled: true };
     const next = { ...cur, ...p };
     setRems((x) => ({ ...x, [meeting_id]: next }));
-    await supabase.from('reminders').upsert({ user_id: (profile?.id ?? ''), ...next }, { onConflict: 'user_id,meeting_id' });
+    const r = await run(supabase.from('reminders').upsert({ user_id: profile.id, ...next }, { onConflict: 'user_id,meeting_id' }));
+    if (!r.ok) setRems((x) => ({ ...x, [meeting_id]: cur }));
   }
 
   return (
@@ -55,7 +61,6 @@ export default function Reminders() {
               <Row gap={8} style={{ flexWrap: 'wrap' }}>
                 {MINUTES.map((m) => <Chip key={m} label={t('{0} د', [m])} active={prefs.lecture_minutes === m} onPress={() => set({ lecture_minutes: m })} />)}
               </Row>
-              <Toggle icon={ic(<Footprints size={18} color={C.green} />)} label={t('«اطلع هلأ» الذكي')} hint={t('بنحسب المشي من مكانك للقاعة وبننبهك بالوقت الصح')} value={prefs.smart_leave} onChange={(v) => set({ smart_leave: v })} />
             </>
           )}
         </View>

@@ -15,13 +15,16 @@ export default function Callback() {
   useEffect(() => {
     (async () => {
       if (p.error_description) { setError(t('الرابط انتهى أو انستخدم قبل. اطلب رابط جديد.')); return; }
-      const r = p.code
-        ? await supabase.auth.exchangeCodeForSession(p.code)
-        : p.token_hash
-          ? await supabase.auth.verifyOtp({ token_hash: p.token_hash, type: (p.type as 'email' | 'magiclink') ?? 'email' })
-          : { error: new Error('no code') };
+      let r: { error: unknown };
+      try {
+        r = p.code
+          ? await supabase.auth.exchangeCodeForSession(p.code)
+          : p.token_hash
+            ? await supabase.auth.verifyOtp({ token_hash: p.token_hash, type: (p.type as 'email' | 'magiclink') ?? 'email' })
+            : { error: new Error('no code') };
+      } catch (e) { r = { error: e }; }
       if (r.error) { setError(t('ما زبط الدخول بهالرابط. افتح الرابط على نفس التلفون اللي طلبت منه، أو اطلب رابط جديد.')); return; }
-      router.replace('/(auth)/welcome');
+      router.replace('/');  // the gate sends the user to setup or home
     })();
   }, [p.code, p.token_hash, p.type, p.error_description]);
 

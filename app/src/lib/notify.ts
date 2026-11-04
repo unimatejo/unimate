@@ -24,15 +24,41 @@ export async function ensurePermission(): Promise<boolean> {
  * Weekly local reminders for every lecture, stored on the phone so they work offline.
  * Minutes come from the student's settings (default 10); a lecture can be switched off.
  */
-export async function scheduleLectureReminders(meetings: Meeting[], off: Record<string, boolean>) {
-  if (!(await ensurePermission())) return;
-  const { data: prefs } = await supabase.from('notification_prefs').select('lectures, lecture_minutes').maybeSingle();
-  const base = prefs?.lecture_minutes ?? 10;
-  const { data: per } = await supabase.from('reminders').select('meeting_id, minutes').not('meeting_id', 'is', null).not('minutes', 'is', null);
-  const perMin = Object.fromEntries((per ?? []).map((r) => [r.meeting_id as string, r.minutes as number]));
+let scheduling: Promise<void> = Promise.resolve();
+/** Calls are queued, so two quick changes never interleave their cancel/schedule steps. */
+type Override = { lectures?: boolean; lecture_minutes?: number; nightly_summary?: boolean; perMin?: Record<string, number | null> };
+export function scheduleLectureReminders(meetings: Meeting[], off: Record<string, boolean>, userId?: string, override?: Override) {
+  scheduling = scheduling.catch(() => {}).then(() => doSchedule(meetings, off, userId, override));
+  return scheduling;
+}
+
+async function doSchedule(meetings: Meeting[], off: Record<string, boolean>, userId?: string, override?: Override) {
+  // clear old lecture reminders first (also when the schedule became empty)
   const existing = await Notifications.getAllScheduledNotificationsAsync();
-  await Promise.all(existing.filter((n) => n.identifier.startsWith('lec-')).map((n) => Notifications.cancelScheduledNotificationAsync(n.identifier)));
-  if (prefs && prefs.lectures === false) return;
+  await Promise.all(existing.filter((n) => n.identifier.startsWith('lec-') || n.identifier.startsWith('night-')).map((n) => Notifications.cancelScheduledNotificationAsync(n.identifier)));
+  if (!meetings.length || !userId) return;
+  if (!(await ensurePermission())) return;
+  const { data: prefs, error: pe } = await supabase.from('notification_prefs').select('lectures, lecture_minutes, nightly_summary').eq('user_id', userId).maybeSingle();
+  if (pe) throw pe;
+  const lectures = override?.lectures ?? prefs?.lectures ?? true;
+  const base = override?.lecture_minutes ?? prefs?.lecture_minutes ?? 10;
+  const { data: per, error: re } = await supabase.from('reminders').select('meeting_id, minutes').eq('user_id', userId).not('meeting_id', 'is', null).not('minutes', 'is', null);
+  if (re) throw re;
+  const perMin: Record<string, number | null> = { ...Object.fromEntries((per ?? []).map((r) => [r.meeting_id as string, r.minutes as number])), ...(override?.perMin ?? {}) };
+
+  // tomorrow's summary at 9 PM: one weekly reminder per evening that lists the next day's lectures
+  if (override?.nightly_summary ?? prefs?.nightly_summary ?? true) {
+    for (let d = 0; d < 7; d++) {
+      const next = meetings.filter((m) => m.weekday === (d + 1) % 7 && !off[m.id]).sort((a, b) => a.starts_at.localeCompare(b.starts_at));
+      if (!next.length) continue;
+      await Notifications.scheduleNotificationAsync({
+        identifier: `night-${d}`,
+        content: { title: t('بكرة عندك {0}', [next.length === 1 ? t('محاضرة وحدة') : t('{0} محاضرات', [next.length])]), body: next.map((m) => `${clock(m.starts_at)} ${m.course_name}`).join('\n'), data: { kind: 'summary' } },
+        trigger: { type: Notifications.SchedulableTriggerInputTypes.WEEKLY, weekday: d + 1, hour: 21, minute: 0, channelId: 'lectures' },
+      });
+    }
+  }
+  if (!lectures) return;
 
   for (const m of meetings) {
     if (off[m.id]) continue;

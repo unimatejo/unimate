@@ -11,6 +11,7 @@ import { Avatar, Header, IconTile, Row, Screen, T, Tap } from '@/components/ui';
 import { useAuth } from '@/lib/auth';
 import { supabase } from '@/lib/supabase';
 import { inviteFriends } from '@/lib/invite';
+import { run } from '@/lib/run';
 import { C, isDark } from '@/lib/theme';
 import { flip, isAR, nm, t } from '@/lib/i18n';
 
@@ -42,16 +43,19 @@ export default function Settings() {
   function logout() {
     Alert.alert(t('تسجيل الخروج'), t('أكيد بدك تطلع من حسابك؟'), [
       { text: t('لا'), style: 'cancel' },
-      { text: t('اطلع'), style: 'destructive', onPress: async () => { await signOut(); router.replace('/(auth)/login'); } },
+      { text: t('اطلع'), style: 'destructive', onPress: async () => { try { await signOut(); } finally { router.replace('/(auth)/login'); } } },
     ]);
   }
 
   function deleteAccount() {
-    Alert.alert(t('حذف الحساب'), t('رح نبعت طلب حذف لفريق يونيميت، وبنحذف حسابك ومنشوراتك خلال 30 يوم. بتقدر تلغي الطلب لو رجعت فتحت التطبيق قبلها.'), [
+    Alert.alert(t('حذف الحساب'), t('رح ينحذف حسابك ومنشوراتك وقصصك ومتابعاتك نهائياً، وما بترجع. متأكد؟'), [
       { text: t('تراجع'), style: 'cancel' },
-      { text: t('اطلب الحذف'), style: 'destructive', onPress: async () => {
-        await supabase.from('support_tickets').insert({ user_id: (profile?.id ?? ''), subject: t('طلب حذف الحساب'), body: t('المستخدم طلب حذف حسابه من الإعدادات.') });
-        Alert.alert(t('وصل طلبك'), t('بنحذف الحساب خلال 30 يوم.'));
+      { text: t('احذف حسابي'), style: 'destructive', onPress: async () => {
+        const r = await run(supabase.rpc('delete_my_account'), { msg: t('ما زبط حذف الحساب، جرّب كمان مرة.') });
+        if (!r.ok) return;
+        await signOut();
+        router.replace('/(auth)/login');
+        Alert.alert(t('انحذف حسابك'), t('شكراً إنك جربت يونيميت.'));
       } },
     ]);
   }

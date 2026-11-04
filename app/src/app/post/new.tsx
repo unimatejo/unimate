@@ -8,6 +8,7 @@ import Animated, { FadeIn } from 'react-native-reanimated';
 
 import { Avatar, Button, Chip, Row, Screen, Segmented, T, Tap } from '@/components/ui';
 import { useAuth } from '@/lib/auth';
+import { reportError } from '@/lib/errors';
 import { supabase } from '@/lib/supabase';
 import { C, CATEGORY, F, isDark } from '@/lib/theme';
 import { pickMedia, pickPdf, pickPhotos, uploadFile, type Picked } from '@/lib/upload';
@@ -39,28 +40,36 @@ export default function NewPost() {
   }
 
   async function publish() {
-    if (!profile?.university_id) return;
+    if (busy) return;
+    if (!profile?.university_id) { Alert.alert(t('ما انتشر'), t('كمّل معلومات حسابك (الجامعة) أول.')); return; }
     setBusy(true);
     try {
       if (isPost) {
         const opts = poll?.map((o) => o.trim()).filter(Boolean) ?? null;
         if (poll && (!body.trim() || (opts?.length ?? 0) < 2)) { Alert.alert(t('الاستطلاع'), t('اكتب السؤال فوق وخيارين على الأقل.')); setBusy(false); return; }
         if (!body.trim() && !media && !photos.length && !pdf) { Alert.alert(t('اكتب إشي أو ضيف صورة أو ملف')); setBusy(false); return; }
+        // upload files first, so a failed upload never leaves an empty post behind
+        const all = [...(media ? [media] : []), ...photos];
+        const paths = await Promise.all(all.map((m) => uploadFile('posts', (profile?.id ?? ''), m)));
+        const pdfPath = pdf ? await uploadFile('posts', (profile?.id ?? ''), pdf) : null;
+        const price_jod = cat === 'market' && price ? Number(price.replace(/[٠-٩]/g, (d) => String('٠١٢٣٤٥٦٧٨٩'.indexOf(d))).replace(/[٫,]/g, '.')) : null;
+        if (price_jod != null && !Number.isFinite(price_jod)) { Alert.alert(t('السعر بالدينار'), t('اكتب السعر أرقام بس.')); setBusy(false); return; }
         const { data: post, error } = await supabase.from('posts').insert({
           author_id: (profile?.id ?? ''), university_id: profile.university_id, community_id: params.community ?? null,
           category: cat, audience: params.community ? 'community' : POST_AUD[aud][0],
           title: title.trim() || null, body: body.trim(),
-          price_jod: cat === 'market' && price ? Number(price) : null,
+          price_jod,
           lost_found: cat === 'lost_found' ? lf : null,
           poll: opts && opts.length >= 2 ? { options: opts.slice(0, 4) } : null,
         }).select('id').single();
         if (error) throw error;
-        const all = [...(media ? [media] : []), ...photos];
-        const paths = await Promise.all(all.map((m) => uploadFile('posts', (profile?.id ?? ''), m)));
-        if (paths.length) await supabase.from('post_media').insert(paths.map((url, i) => ({ post_id: post.id, kind: 'image', url, position: i + 2 })));
-        if (pdf) {
-          const path = await uploadFile('posts', (profile?.id ?? ''), pdf);
-          await supabase.from('post_media').insert({ post_id: post.id, kind: 'file', url: path, file_name: pdf.name, size_bytes: pdf.size, position: 1 });
+        const rows = [
+          ...paths.map((url, i) => ({ post_id: post.id, kind: 'image', url, position: i + 2, file_name: null as string | null, size_bytes: null as number | null })),
+          ...(pdfPath && pdf ? [{ post_id: post.id, kind: 'file', url: pdfPath, position: 1, file_name: pdf.name, size_bytes: pdf.size }] : []),
+        ];
+        if (rows.length) {
+          const { error: me } = await supabase.from('post_media').insert(rows);
+          if (me) { await supabase.from('posts').delete().eq('id', post.id); throw me; }
         }
       } else {
         if (!media) { Alert.alert(t('ضيف صورة أو فيديو للستوري')); setBusy(false); return; }
@@ -74,7 +83,8 @@ export default function NewPost() {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
       if (router.canGoBack()) router.back(); else router.replace('/community');
     } catch (e) {
-      Alert.alert(t('ما انتشر'), (e as Error).message);
+      reportError(e);
+      Alert.alert(t('ما انتشر'), (e as Error).message?.length < 120 && !/row-level|violates|JWT/i.test((e as Error).message) ? (e as Error).message : t('تأكد من الإنترنت وجرّب كمان مرة.'));
     } finally { setBusy(false); }
   }
 

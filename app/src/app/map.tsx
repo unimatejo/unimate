@@ -2,7 +2,7 @@ import * as Location from 'expo-location';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Building2, ChevronRight, Coffee, Crosshair, ExternalLink, Layers, MapPin, Maximize2, Navigation, Search, X } from 'lucide-react-native';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { FlatList, Keyboard, Linking, Platform, ScrollView, TextInput, View } from 'react-native';
+import { ActivityIndicator, Alert, FlatList, Keyboard, Linking, Platform, ScrollView, TextInput, View } from 'react-native';
 import MapView, { Marker, Polyline, PROVIDER_DEFAULT } from 'react-native-maps';
 import Animated, { FadeIn, SlideInDown } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -38,6 +38,7 @@ export default function CampusMap() {
   const params = useLocalSearchParams<{ building?: string; advertiser?: string }>();
   const map = useRef<MapView>(null);
   const [pins, setPins] = useState<Pin[]>([]);
+  const [pinsState, setPinsState] = useState<'loading' | 'ok' | 'empty' | 'error'>('loading');
   const [filter, setFilter] = useState<(typeof FILTERS)[number]['key']>('all');
   const [q, setQ] = useState('');
   const [hits, setHits] = useState<Hit[]>([]);
@@ -50,10 +51,13 @@ export default function CampusMap() {
   useEffect(() => {
     if (!university) return;
     (async () => {
-      const [{ data: b }, { data: p }] = await Promise.all([
+      setPinsState('loading');
+      const [{ data: b, error: be }, { data: p, error: pe }] = await Promise.all([
         supabase.from('buildings').select('id, name_ar, code, lat, lng').eq('university_id', university.id).not('lat', 'is', null),
         supabase.from('places').select('id, kind, name_ar, description, lat, lng, advertiser_id').eq('university_id', university.id).eq('state', 'approved'),
       ]);
+      if (be || pe) { setPinsState('error'); return; }
+      setPinsState(((b ?? []).length + (p ?? []).length) ? 'ok' : 'empty');
       setPins([
         ...(b ?? []).map((x) => ({ id: x.id, kind: 'building', name: nm(x), sub: x.code, lat: x.lat!, lng: x.lng! })),
         ...(p ?? []).map((x) => ({ id: x.id, kind: x.kind, name: nm(x), sub: x.description, lat: x.lat, lng: x.lng, advertiser_id: x.advertiser_id })),
@@ -75,14 +79,24 @@ export default function CampusMap() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [params.building, params.advertiser, pins]);
 
-  useEffect(() => {
-    (async () => {
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== 'granted') return;
-      const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
-      setMe({ lat: pos.coords.latitude, lng: pos.coords.longitude });
-    })().catch(() => {});
+  // follow the student's position while the map is open (stopped when leaving)
+  const watch = useRef<Location.LocationSubscription | null>(null);
+  const startLocation = useCallback(async (ask: boolean) => {
+    try {
+      let { status } = await Location.getForegroundPermissionsAsync();
+      if (status !== 'granted' && ask) ({ status } = await Location.requestForegroundPermissionsAsync());
+      if (status !== 'granted') {
+        if (ask) Alert.alert(t('الموقع مسكّر'), t('افتح الإعدادات واسمح ليونيميت يوصل لموقعك عشان نوريك الطريق.'), [
+          { text: t('لاحقاً'), style: 'cancel' }, { text: t('افتح الإعدادات'), onPress: () => Linking.openSettings() },
+        ]);
+        return false;
+      }
+      watch.current?.remove();
+      watch.current = await Location.watchPositionAsync({ accuracy: Location.Accuracy.Balanced, distanceInterval: 8 }, (pos) => setMe({ lat: pos.coords.latitude, lng: pos.coords.longitude }));
+      return true;
+    } catch { return false; }
   }, []);
+  useEffect(() => { startLocation(false); return () => { watch.current?.remove(); watch.current = null; }; }, [startLocation]);
 
   useEffect(() => {
     const t = setTimeout(async () => {
@@ -183,6 +197,17 @@ export default function CampusMap() {
         </View>
       )}
 
+      {!sel && pinsState !== 'ok' && (
+        <View pointerEvents="box-none" style={{ position: 'absolute', left: 16, right: 16, bottom: 40, alignItems: 'center' }}>
+          <View style={[{ backgroundColor: C.card, borderRadius: 18, paddingHorizontal: 16, paddingVertical: 12, flexDirection: 'row', alignItems: 'center', gap: 10, maxWidth: 320 }, shadow]}>
+            {pinsState === 'loading' ? <ActivityIndicator color={C.primary} /> : null}
+            <T v="small" style={{ flexShrink: 1 }} color={pinsState === 'error' ? C.red : C.ink2}>
+              {pinsState === 'loading' ? t('عم نحمّل أماكن الجامعة…') : pinsState === 'error' ? t('ما قدرنا نحمّل الخريطة، تأكد من الإنترنت.') : t('أماكن جامعتك بتنضاف قريباً.')}
+            </T>
+          </View>
+        </View>
+      )}
+
       {sel && (
         <Animated.View entering={SlideInDown.springify().damping(18)} style={[{ position: 'absolute', left: 12, right: 12, bottom: 28, backgroundColor: C.card, borderRadius: 30, padding: 18, paddingTop: 10, gap: 12 }, shadow]}>
           <View style={{ alignSelf: 'center', width: 42, height: 5, borderRadius: 3, backgroundColor: C.line }} />
@@ -197,19 +222,22 @@ export default function CampusMap() {
           {walk != null && (
             <Row gap={10}>
               <View style={{ flex: 1, alignItems: 'center', backgroundColor: C.primarySoft, borderRadius: 16, padding: 10 }}>
-                <T style={{ fontFamily: F.display, fontSize: 20 }} color={C.primary}>{walk}</T><T v="tiny" color={C.ink2}>{t('دقايق مشي')}</T>
+                <T style={{ fontFamily: F.display, fontSize: 20 }} color={C.primary}>{walk}</T><T v="tiny" color={C.ink2}>{t('دقايق مشي (تقريباً)')}</T>
               </View>
               <View style={{ flex: 1, alignItems: 'center', backgroundColor: C.bg, borderRadius: 16, padding: 10 }}>
                 <T style={{ fontFamily: F.display, fontSize: 20 }}>{meters}</T><T v="tiny" color={C.ink2}>{t('متر')}</T>
               </View>
             </Row>
           )}
+          {sel.advertiser_id && (
+            <Button kind="soft" title={t('شوف صفحة المحل')} onPress={() => router.push({ pathname: '/advertiser/[id]', params: { id: sel.advertiser_id! } })} style={{ minHeight: 46 }} />
+          )}
           <Row gap={8}>
           <View style={{ flex: 1 }}>
           <Button kind={routing ? 'dark' : 'primary'} title={routing ? t('إيقاف') : me ? t('وريني الطريق') : t('فعّل الموقع')}
             icon={<Navigation size={19} color={C.white} />}
             onPress={async () => {
-              if (!me) { await Location.requestForegroundPermissionsAsync(); return; }
+              if (!me) { await startLocation(true); return; }
               setRouting((r) => !r);
               if (!routing) map.current?.fitToCoordinates([{ latitude: me.lat, longitude: me.lng }, { latitude: sel.lat, longitude: sel.lng }], { edgePadding: { top: 160, bottom: 380, left: 60, right: 60 }, animated: true });
             }} />
