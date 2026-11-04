@@ -3,20 +3,37 @@ export function timeAgo(iso: string): string {
   const s = Math.max(0, (Date.now() - new Date(iso).getTime()) / 1000);
   if (s < 60) return t('الآن');
   const m = Math.floor(s / 60);
-  if (m < 60) return m === 1 ? t('قبل دقيقة') : m === 2 ? t('قبل دقيقتين') : t('قبل {0} دقيقة', [m]);
+  // Arabic counting: 3–10 take the plural (دقائق/ساعات), 11+ take the singular (دقيقة/ساعة)
+  if (m < 60) return m === 1 ? t('قبل دقيقة') : m === 2 ? t('قبل دقيقتين') : m <= 10 ? t('قبل {0} دقائق', [m]) : t('قبل {0} دقيقة', [m]);
   const h = Math.floor(m / 60);
-  if (h < 24) return h === 1 ? t('قبل ساعة') : h === 2 ? t('قبل ساعتين') : t('قبل {0} ساعات', [h]);
+  if (h < 24) return h === 1 ? t('قبل ساعة') : h === 2 ? t('قبل ساعتين') : h <= 10 ? t('قبل {0} ساعات', [h]) : t('قبل {0} ساعة', [h]);
   const d = Math.floor(h / 24);
   if (d === 1) return t('أمس');
+  if (d === 2) return t('قبل يومين');
   if (d < 7) return t('قبل {0} أيام', [d]);
   return new Date(iso).toLocaleDateString(LOCALE, { day: 'numeric', month: 'short' });
 }
 
-export function clock(t: string): string {
-  // "13:30:00" -> "1:30"
-  const [h, m] = t.split(':').map(Number);
+/** "13:30:00" -> "1:30 م" (or "1:30 PM" in English). Pass ampm=false for the bare time. */
+export function clock(time: string, ampm = true): string {
+  const [h, m] = time.split(':').map(Number);
   const hh = h % 12 === 0 ? 12 : h % 12;
-  return `${hh}:${String(m).padStart(2, '0')}`;
+  const base = `${hh}:${String(m).padStart(2, '0')}`;
+  return ampm ? `${base} ${h < 12 ? t('ص') : t('م')}` : base;
+}
+
+/** Arabic-insensitive search key: unify alef/yaa/taa marbuta forms, drop diacritics and tatweel, Arabic digits → Latin. */
+export function normalize(s: string | null | undefined): string {
+  return (s ?? '').toLowerCase()
+    .replace(/[\u064B-\u065F\u0670\u0640]/g, '')
+    .replace(/[أإآٱ]/g, 'ا').replace(/ى/g, 'ي').replace(/ة/g, 'ه').replace(/ؤ/g, 'و').replace(/ئ/g, 'ي')
+    .replace(/[٠-٩]/g, (d) => String('٠١٢٣٤٥٦٧٨٩'.indexOf(d)))
+    .replace(/\s+/g, ' ').trim();
+}
+
+/** Parse a number typed with Arabic or Latin digits ("١٥٫٥" → 15.5). */
+export function toNumber(s: string): number {
+  return Number(s.replace(/[٠-٩]/g, (d) => String('٠١٢٣٤٥٦٧٨٩'.indexOf(d))).replace(/[٫,]/g, '.').trim());
 }
 
 export const WEEKDAYS = [t('الأحد'), t('الاثنين'), t('الثلاثاء'), t('الأربعاء'), t('الخميس'), t('الجمعة'), t('السبت')];
@@ -35,8 +52,7 @@ export function minutesUntil(weekday: number, time: string, now = new Date()): n
 export function greeting(d = new Date()): string {
   const h = d.getHours();
   if (h < 12) return t('صباح الخير');
-  if (h < 18) return t('مسا الخير');
-  return t('مسا النور');
+  return t('مسا الخير');
 }
 
 /** Accepts "@name", "name", or any instagram.com / snapchat.com link and returns just the username. */

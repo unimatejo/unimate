@@ -10,6 +10,8 @@ import { ImageViewer } from './ImageViewer';
 import { Avatar, Row, T, Tag, Tap } from './ui';
 import { useAuth } from '@/lib/auth';
 import { toggleLike, toggleSave } from '@/lib/posts';
+import { optimistic, run } from '@/lib/run';
+import { toast } from '@/lib/toast';
 import { mediaUrl, supabase } from '@/lib/supabase';
 import { CATEGORY, C, shadow } from '@/lib/theme';
 import type { Post } from '@/lib/types';
@@ -130,14 +132,17 @@ export function PostCard({ post, onLikes, compact, detail }: { post: Post; onLik
   async function like() {
     if (!profile) return;
     heart.value = withSequence(withTiming(1.45, { duration: 120 }), withSpring(1, { damping: 6, stiffness: 300 }));
-    const next = { ...p, liked: !p.liked, like_count: p.like_count + (p.liked ? -1 : 1) };
-    setP(next);
-    await toggleLike(p, (profile?.id ?? ''));
+    const before = p;
+    await optimistic(`like:${p.id}`,
+      () => setP((x) => ({ ...x, liked: !before.liked, like_count: Math.max(0, before.like_count + (before.liked ? -1 : 1)) })),
+      () => setP((x) => ({ ...x, liked: before.liked, like_count: before.like_count })),
+      () => toggleLike(before, profile.id));
   }
   async function save() {
     if (!profile) return;
-    setP({ ...p, saved: !p.saved });
-    await toggleSave(p, (profile?.id ?? ''));
+    const before = p;
+    const ok = await optimistic(`save:${p.id}`, () => setP((x) => ({ ...x, saved: !before.saved })), () => setP((x) => ({ ...x, saved: before.saved })), () => toggleSave(before, profile.id));
+    if (ok) toast(before.saved ? t('انشال من المحفوظات') : t('انحفظ'));
   }
   const [gone, setGone] = useState(false);
   const mine = p.author_id === profile?.id;
@@ -149,7 +154,7 @@ export function PostCard({ post, onLikes, compact, detail }: { post: Post; onLik
       [t('أرسل لصديق'), () => router.push({ pathname: '/share', params: { post: p.id } })],
       [t('شوف البروفايل'), () => router.push({ pathname: '/user/[id]', params: { id: p.author_id } })],
       mine
-        ? [t('حذف المنشور'), () => Alert.alert(t('حذف المنشور؟'), t('ما بترجع.'), [{ text: t('إلغاء'), style: 'cancel' }, { text: t('حذف'), style: 'destructive', onPress: async () => { const { error } = await supabase.from('posts').delete().eq('id', p.id); if (!error) { setGone(true); if (detail) router.back(); } } }]), 'destructive']
+        ? [t('حذف المنشور'), () => Alert.alert(t('حذف المنشور؟'), t('ما بترجع.'), [{ text: t('إلغاء'), style: 'cancel' }, { text: t('حذف'), style: 'destructive', onPress: async () => { const r = await run(supabase.from('posts').delete().eq('id', p.id)); if (r.ok) { setGone(true); toast(t('انحذف المنشور')); if (detail) router.back(); } } }]), 'destructive']
         : [t('إبلاغ'), () => router.push({ pathname: '/report', params: { type: 'post', id: p.id, user: p.author_id } }), 'destructive'],
     ];
     if (Platform.OS === 'ios') {

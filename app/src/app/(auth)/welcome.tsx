@@ -189,7 +189,7 @@ export default function Welcome() {
                       : uState === 'ok' ? <><Check size={14} color={C.greenInk} /><T v="tiny" color={C.greenInk}>{t('متاح ✓ (بس انتبه: بعد ما تحفظه ما بيتغيّر)')}</T></>
                       : uState === 'taken' ? <><X size={14} color={C.danger} /><T v="tiny" color={C.danger}>{t('مأخوذ، جرّب غيره')}</T></>
                       : uState === 'bad' ? <T v="tiny" color={C.danger}>{t('من 3 لـ 24: حروف إنجليزي صغيرة، أرقام، . و _')}</T>
-                      : <T v="tiny" color={C.muted}>{t('زملاءك بيلاقوك فيه بالبحث.')}</T>}
+                      : <T v="tiny" color={C.muted}>{t('زملاؤك بيلاقوك فيه بالبحث.')}</T>}
                   </Row>
                 </View>
               </>

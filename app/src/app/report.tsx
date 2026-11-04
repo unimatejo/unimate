@@ -21,15 +21,22 @@ export default function Report() {
   const [busy, setBusy] = useState(false);
 
   async function send() {
-    if (!reason || !profile) return;
+    if (!reason || !profile || busy) return;
     setBusy(true);
-    const { error } = await supabase.from('reports').insert({
-      reporter_id: (profile?.id ?? ''), target_type: type, target_id: id, target_user: user ?? null, reason, details: details.trim() || null, also_blocked: block,
-    });
-    if (!error && block && user && user !== (profile?.id ?? '')) await supabase.from('blocks').insert({ blocker_id: (profile?.id ?? ''), blocked_id: user });
-    setBusy(false);
-    if (error) { Alert.alert(t('ما زبط'), t('جرّب كمان مرة.')); return; }
-    Alert.alert(t('وصل بلاغك'), t('فريق يونيميت رح يراجعه، وما حدا بيعرف إنك بلّغت.'), [{ text: t('تمام'), onPress: () => router.back() }]);
+    try {
+      const { error } = await supabase.from('reports').insert({
+        reporter_id: profile.id, target_type: type, target_id: id, target_user: user ?? null, reason, details: details.trim() || null, also_blocked: block,
+      });
+      // already reported this before → treat as sent
+      if (error && error.code !== '23505') { Alert.alert(t('ما زبط'), t('جرّب كمان مرة.')); return; }
+      let blockFailed = false;
+      if (block && user && user !== profile.id) {
+        const b = await supabase.from('blocks').insert({ blocker_id: profile.id, blocked_id: user });
+        blockFailed = !!b.error && b.error.code !== '23505';
+      }
+      Alert.alert(t('وصل بلاغك'), blockFailed ? t('البلاغ وصل، بس الحظر ما زبط. جرّب تحظره من بروفايله.') : t('فريق يونيميت رح يراجعه، وما حدا بيعرف إنك بلّغت.'), [{ text: t('تمام'), onPress: () => router.back() }]);
+    } catch { Alert.alert(t('ما زبط'), t('جرّب كمان مرة.')); }
+    finally { setBusy(false); }
   }
 
   return (

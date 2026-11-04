@@ -15,7 +15,7 @@ import { pickMedia, pickPdf, pickPhotos, uploadFile, type Picked } from '@/lib/u
 import { t, ta } from '@/lib/i18n';
 
 const POST_AUD = [['university', t('الجامعة')], ['college', t('كليتي')], ['major', t('تخصصي')], ['friends', t('أصدقائي')]] as const;
-const STORY_AUD = [['friends', t('أصدقائي')], ['close_friends', t('المقربين')], ['major', t('دفعتي')], ['university', t('الجامعة')]] as const;
+const STORY_AUD = [['friends', t('أصدقائي')], ['close_friends', t('المقربين')], ['major', t('تخصصي')], ['university', t('الجامعة')]] as const;
 
 export default function NewPost() {
   const { profile } = useAuth();
@@ -94,7 +94,7 @@ export default function NewPost() {
       <Row gap={8} style={{ paddingHorizontal: 12, paddingVertical: 8 }}>
         <Tap onPress={() => router.back()} accessibilityLabel={t('إلغاء')} style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}><X size={24} color={C.ink} /></Tap>
         <View style={{ flex: 1 }}><Segmented items={[t('منشور'), t('ستوري')]} value={mode} onChange={(i) => { setMode(i); setAud(0); setMedia(null); setPhotos([]); }} /></View>
-        <Button title={isPost ? t('نشر') : t('شارك')} loading={busy} onPress={publish} style={{ minHeight: 42, borderRadius: 14, paddingHorizontal: 18 }} />
+        <Button title={isPost ? t('نشر') : t('شارك')} loading={busy} disabled={busy || (isPost && !body.trim() && !media && !photos.length && !pdf)} onPress={publish} style={{ minHeight: 42, borderRadius: 14, paddingHorizontal: 18 }} />
       </Row>
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
         <ScrollView contentContainerStyle={{ padding: 18, gap: 16 }} keyboardShouldPersistTaps="handled">

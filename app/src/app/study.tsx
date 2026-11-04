@@ -6,6 +6,8 @@ import { Alert, RefreshControl, ScrollView, View } from 'react-native';
 import { Avatar, Button, Chip, Field, Header, Row, Screen, T, Tap, Toggle } from '@/components/ui';
 import { useAuth } from '@/lib/auth';
 import { supabase } from '@/lib/supabase';
+import { run } from '@/lib/run';
+import { toast } from '@/lib/toast';
 import { C } from '@/lib/theme';
 import { nm, t } from '@/lib/i18n';
 
@@ -29,6 +31,7 @@ export default function Study() {
   const load = useCallback(async () => {
     if (!profile) return;
     setLoading(true);
+    try {
     const { data: enr } = await supabase.from('enrollments').select('section:sections(course:courses(id, name_ar, name_en, code))').eq('user_id', (profile?.id ?? ''));
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const cs = ((enr ?? []) as any[]).map((e) => e.section?.course).filter(Boolean) as Course[];
@@ -38,7 +41,8 @@ export default function Study() {
     setMine(Object.fromEntries(((my ?? []) as Intent[]).map((i) => [i.course_id, i])));
     const { data: r } = await supabase.from('study_requests').select('*').or(`from_id.eq.${(profile?.id ?? '')},to_id.eq.${(profile?.id ?? '')}`);
     setReqs((r ?? []) as SR[]);
-    setLoading(false);
+    } catch { toast(t('ما قدرنا نحمّل، اسحب لتحت وجرّب كمان مرة.')); }
+    finally { setLoading(false); }
   }, [profile]);
   useEffect(() => { load(); }, [load]);
 
@@ -54,23 +58,37 @@ export default function Study() {
   async function saveIntent(p: Partial<Intent>) {
     if (!course) return;
     const next = { user_id: (profile?.id ?? ''), course_id: course, place_pref: null, time_pref: null, note: null, active: true, ...my, ...p };
+    const prev = my;
     setMine((m) => ({ ...m, [course]: next }));
-    await supabase.from('study_intents').upsert({ ...next, updated_at: new Date().toISOString() }, { onConflict: 'user_id,course_id' });
+    const r = await run(supabase.from('study_intents').upsert({ ...next, updated_at: new Date().toISOString() }, { onConflict: 'user_id,course_id' }));
+    if (!r.ok) setMine((m) => { const n = { ...m }; if (prev) n[course] = prev; else delete n[course]; return n; });
   }
 
+  const [busy, setBusy] = useState<string | null>(null);
   async function ask(to: string) {
-    const { error } = await supabase.from('study_requests').insert({ from_id: (profile?.id ?? ''), to_id: to, course_id: course });
-    if (error) { Alert.alert(t('بعتله قبل')); return; }
-    load();
+    if (!profile || busy) return;
+    setBusy(to);
+    try {
+      const { error } = await supabase.from('study_requests').insert({ from_id: profile.id, to_id: to, course_id: course });
+      if (error) { Alert.alert(error.code === '23505' ? t('بعتله قبل') : t('ما زبط'), error.code === '23505' ? undefined : t('جرّب كمان مرة.')); return; }
+      toast(t('انبعت الطلب'));
+      await load();
+    } finally { setBusy(null); }
   }
   async function answer(r: SR, accept: boolean) {
-    await supabase.from('study_requests').update({ status: accept ? 'accepted' : 'declined' }).eq('id', r.id);
-    if (accept) talk(r.from_id); else load();
+    if (busy) return;
+    setBusy(r.id);
+    try {
+      const res = await run(supabase.from('study_requests').update({ status: accept ? 'accepted' : 'declined' }).eq('id', r.id));
+      if (!res.ok) return;
+      if (accept) await talk(r.from_id); else await load();
+    } finally { setBusy(null); }
   }
   async function talk(other: string) {
-    const name = courses.find((c) => c.id === course)?.name_ar ?? '';
-    const { data } = await supabase.rpc('start_direct', { target: other, context: t('ندرس سوا · {0}', [name]) });
-    if (data) router.push({ pathname: '/messages/[id]', params: { id: data as string } });
+    const c = courses.find((x) => x.id === course);
+    const { data, error } = await supabase.rpc('start_direct', { target: other, context: t('ندرس سوا · {0}', [c ? nm(c) ?? '' : '']) });
+    if (error || !data) { Alert.alert(t('ما بتقدر تراسله'), t('جرّب بعدين.')); return; }
+    router.push({ pathname: '/messages/[id]', params: { id: data as string } });
   }
 
   const incoming = reqs.filter((r) => r.to_id === profile?.id && r.status === 'pending');
@@ -84,8 +102,8 @@ export default function Study() {
           <Row key={r.id} gap={10} style={{ backgroundColor: C.violetSoft, borderRadius: 20, padding: 12 }}>
             <UserPlus size={20} color={C.violet} />
             <T v="small" style={{ flex: 1 }}>{t('في حدا بدّه يدرس معك')} {courses.find((c) => c.id === r.course_id)?.name_ar ?? ''}</T>
-            <Button title={t('يلا')} onPress={() => answer(r, true)} style={{ minHeight: 36, paddingHorizontal: 14, borderRadius: 12 }} />
-            <Button kind="soft" title={t('لا')} onPress={() => answer(r, false)} style={{ minHeight: 36, paddingHorizontal: 12, borderRadius: 12 }} />
+            <Button title={t('يلا')} onPress={() => answer(r, true)} loading={busy === r.id} disabled={!!busy} style={{ minHeight: 36, paddingHorizontal: 14, borderRadius: 12 }} />
+            <Button kind="soft" title={t('لا')} onPress={() => answer(r, false)} disabled={!!busy} style={{ minHeight: 36, paddingHorizontal: 12, borderRadius: 12 }} />
           </Row>
         ))}
 
@@ -123,7 +141,7 @@ export default function Study() {
               </View>
               {s?.status === 'accepted' ? <Button kind="green" title={t('راسل')} icon={<MessageCircle size={16} color={C.white} />} onPress={() => talk(p.user_id)} style={{ minHeight: 38, paddingHorizontal: 12, borderRadius: 12 }} />
                 : s ? <Row gap={4}><Check size={16} color={C.muted} /><T v="tiny" color={C.muted}>{t('انبعت')}</T></Row>
-                : <Button title={t('ندرس سوا؟')} onPress={() => ask(p.user_id)} style={{ minHeight: 38, paddingHorizontal: 12, borderRadius: 12 }} />}
+                : <Button title={t('ندرس سوا؟')} onPress={() => ask(p.user_id)} loading={busy === p.user_id} disabled={!!busy} style={{ minHeight: 38, paddingHorizontal: 12, borderRadius: 12 }} />}
             </View>
           );
         })}

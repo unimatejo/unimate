@@ -2,7 +2,8 @@ import { Camera, Eye, EyeOff, Heart, Lock, MapPin, MessageCircle, Timer, Users }
 import type { ReactNode } from 'react';
 import { ScrollView, View } from 'react-native';
 
-import { Chip, Header, Row, Screen, T, Toggle } from '@/components/ui';
+import { Chip, Header, Row, Screen, T, Tap, Toggle } from '@/components/ui';
+import { router } from 'expo-router';
 import { useProfilePatch } from '@/lib/settings';
 import { C } from '@/lib/theme';
 import type { Profile, VanishMode } from '@/lib/types';
@@ -65,12 +66,15 @@ export default function Privacy() {
             {t('منشوراتك بأقسام الجامعة (ملخصات، مفقودات، سوق...) بتضل ظاهرة لطلاب جامعتك حتى لو حسابك خاص، عشان هيك هي معمولة.')}
           </T>
         </View>
-        <View style={{ flexDirection: 'row', gap: 10, backgroundColor: C.card, borderRadius: 18, padding: 14 }}>
+        <Tap scale={0.98} onPress={() => router.push('/settings/legal')} accessibilityRole="link" style={{ flexDirection: 'row', gap: 10, backgroundColor: C.card, borderRadius: 18, padding: 14 }}>
           <MessageCircle size={18} color={C.muted} />
-          <T v="small" color={C.muted} style={{ flex: 1 }}>
-            {t('إدارة يونيميت بتقدر تفتح أي محادثة لما يوصلها بلاغ أو للحماية والأمان، وكل فتح بينسجل. التفاصيل بسياسة الخصوصية.')}
-          </T>
-        </View>
+          <View style={{ flex: 1, gap: 6 }}>
+            <T v="small" color={C.muted}>
+              {t('إدارة يونيميت بتقدر تفتح أي محادثة لما يوصلها بلاغ أو للحماية والأمان، وكل فتح بينسجل. التفاصيل بسياسة الخصوصية.')}
+            </T>
+            <T v="small" color={C.primary}>{t('اقرأ سياسة الخصوصية')}</T>
+          </View>
+        </Tap>
       </ScrollView>
     </Screen>
   );

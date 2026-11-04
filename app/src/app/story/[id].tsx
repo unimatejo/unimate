@@ -163,8 +163,8 @@ export default function StoryViewer() {
       {!uri && <View style={{ position: 'absolute', top: 0, bottom: 0, left: 0, right: 0, alignItems: 'center', justifyContent: 'center' }}><ActivityIndicator color={C.white} size="large" /></View>}
       {uri && s?.kind === 'video' ? <StoryVideo key={s.id} uri={uri} onEnd={next} onReady={() => setReady(true)} />
         : uri ? <Image key={uri} source={{ uri }} style={{ position: 'absolute', top: 0, bottom: 0, left: 0, right: 0 }} contentFit="cover" transition={150} onLoad={() => setReady(true)} onError={() => setReady(true)} /> : null}
-      <Pressable style={{ position: 'absolute', top: 110, bottom: 130, left: 0, width: '40%' }} onPress={next} onLongPress={pause} onPressOut={resume} delayLongPress={200} accessibilityLabel={t('التالي')} />
-      <Pressable style={{ position: 'absolute', top: 110, bottom: 130, right: 0, width: '40%' }} onPress={() => setI((x) => Math.max(0, x - 1))} onLongPress={pause} onPressOut={resume} delayLongPress={200} accessibilityLabel={t('السابق')} />
+      <Pressable style={{ position: 'absolute', top: 110, bottom: 130, end: 0, width: '40%' }} onPress={next} onLongPress={pause} onPressOut={resume} delayLongPress={200} accessibilityLabel={t('التالي')} />
+      <Pressable style={{ position: 'absolute', top: 110, bottom: 130, start: 0, width: '40%' }} onPress={() => setI((x) => Math.max(0, x - 1))} onLongPress={pause} onPressOut={resume} delayLongPress={200} accessibilityLabel={t('السابق')} />
       <SafeAreaView edges={['top']} style={{ paddingHorizontal: 12, gap: 12, paddingBottom: 12 }}>
         <Row gap={4} style={{ marginTop: 6 }}>
           {(items ?? []).map((it, k) => (

@@ -1,7 +1,7 @@
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { router, useFocusEffect } from 'expo-router';
+import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { BookOpen, CheckCircle2, Clock, Plus, Sparkles, Trash2, Users } from 'lucide-react-native';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, Modal, Platform, Pressable, ScrollView, View } from 'react-native';
 import Animated, { FadeInDown, SlideInDown } from 'react-native-reanimated';
 
@@ -23,6 +23,7 @@ const at = (h: number, m = 0) => { const d = new Date(); d.setHours(h, m, 0, 0);
 /** My courses: brought in from Microsoft Teams, or added once by anyone in the section. Times added once fill in for all classmates. */
 export default function Courses() {
   const { profile } = useAuth();
+  const { add } = useLocalSearchParams<{ add?: string }>();
   const [rows, setRows] = useState<Sec[] | null>(null);
   const [importing, setImporting] = useState(false);
   const [adding, setAdding] = useState(false);
@@ -33,6 +34,8 @@ export default function Courses() {
   const [kind, setKind] = useState<(typeof KINDS)[number][0]>('lecture');
   const [room, setRoom] = useState('');
   const [busy, setBusy] = useState(false);
+  // opened from search on a course: start adding it straight away
+  useEffect(() => { if (add) { setName(add); setAdding(true); } }, [add]);
 
   const load = useCallback(async () => {
     if (!profile) return;
@@ -54,7 +57,7 @@ export default function Courses() {
     const r = await importTeamsCourses();
     setImporting(false);
     if ('error' in r) {
-      if (r.error !== 'cancelled') Alert.alert(t('ما قدرنا نجيب موادك من Teams'), r.error === 'consent' ? t('جامعتك ممكن تكون مانعة هالصلاحية. ضيف موادك بإيدك مرة وحدة، وزملاءك بشعبتك بتنضافلهم لحالها.') : t('تأكد من الإنترنت وجرّب كمان مرة.'));
+      if (r.error !== 'cancelled') Alert.alert(t('ما قدرنا نجيب موادك من Teams'), r.error === 'consent' ? t('جامعتك ممكن تكون مانعة هالصلاحية. ضيف موادك بإيدك مرة وحدة، وزملاؤك بشعبتك بتنضافلهم لحالها.') : t('تأكد من الإنترنت وجرّب كمان مرة.'));
       return;
     }
     Alert.alert(r.count ? t('انضافت {0} مواد ✓', [r.count]) : t('ما لقينا مواد بحسابك على Teams'), r.count ? t('وانضميت لجروب كل مادة.') : t('ضيف موادك بإيدك.'));
@@ -63,8 +66,9 @@ export default function Courses() {
 
   async function addCourse() {
     if (name.trim().length < 2) { Alert.alert(t('اكتب اسم المادة')); return; }
+    if (busy) return;
     setBusy(true);
-    const { error } = await supabase.rpc('add_course', { course_name: name.trim(), section_no: secNo.trim() || '1' });
+    const { error } = await supabase.rpc('add_course', { course_name: name.trim(), section_no: secNo.trim() || '1' }).then((r) => r, () => ({ error: true }));
     setBusy(false);
     if (error) { Alert.alert(t('ما انضافت'), t('جرّب كمان مرة.')); return; }
     setAdding(false); setName(''); setSecNo(''); load();
@@ -107,7 +111,7 @@ export default function Courses() {
         </Tap>
 
         {rows === null ? <ActivityIndicator color={C.primary} style={{ marginTop: 30 }} /> : rows.length === 0 ? (
-          <Empty icon={<BookOpen size={30} color={C.primary} />} title={t('ما في مواد لهلأ')} body={t('جيبهم من Teams، أو ضيف كل مادة مرة وحدة. زملاءك بنفس الشعبة بياخذوا المادة ووقتها جاهزة.')} />
+          <Empty icon={<BookOpen size={30} color={C.primary} />} title={t('ما في مواد لهلأ')} body={t('جيبهم من Teams، أو ضيف كل مادة مرة وحدة. زملاؤك بنفس الشعبة بياخذوا المادة ووقتها جاهزة.')} />
         ) : rows.map((s, i) => (
           <Animated.View key={s.id} entering={FadeInDown.delay(i * 50)} style={{ backgroundColor: C.card, borderRadius: 24, padding: 14, gap: 10 }}>
             <Row gap={12}>
@@ -147,7 +151,7 @@ export default function Courses() {
         <Animated.View entering={SlideInDown.springify().damping(18)} style={{ backgroundColor: C.bg, borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: 18, gap: 12, paddingBottom: 40, maxHeight: '88%' }}>
           <ScrollView contentContainerStyle={{ gap: 12 }}>
             <T v="h3">{t('وقت')} {nm(timeFor?.course)}</T>
-            <T v="tiny" color={C.muted}>{t('بيطلع لكل زملاءك بالشعبة. لما يأكده 3 منكم بيصير مؤكد.')}</T>
+            <T v="tiny" color={C.muted}>{t('بيطلع لكل زملائك بالشعبة. لما يأكده 3 منكم بيصير مؤكد.')}</T>
             <Row gap={6} style={{ flexWrap: 'wrap' }}>
               {[0, 1, 2, 3, 4, 5].map((d) => <Chip key={d} label={WEEKDAYS_SHORT[d]} active={days.includes(d)} onPress={() => setDays((x) => (x.includes(d) ? x.filter((y) => y !== d) : [...x, d]))} />)}
             </Row>

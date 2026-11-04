@@ -3,7 +3,7 @@ import * as ScreenCapture from 'expo-screen-capture';
 import { Image } from 'expo-image';
 import { Bookmark, Camera, ChevronRight, EyeOff, Flame, Image as ImageIcon, MoreHorizontal, Phone, Send, ShieldCheck, Timer, Users, Video } from 'lucide-react-native';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ActionSheetIOS, Alert, FlatList, KeyboardAvoidingView, Modal, Platform, Pressable, TextInput, View } from 'react-native';
+import { ActionSheetIOS, ActivityIndicator, Alert, FlatList, KeyboardAvoidingView, Modal, Platform, Pressable, TextInput, View } from 'react-native';
 import Animated, { FadeIn, FadeInUp, SlideInDown, useAnimatedStyle, useSharedValue, withDelay, withRepeat, withSequence, withTiming } from 'react-native-reanimated';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -15,6 +15,7 @@ import type { Conversation, Message, VanishMode } from '@/lib/types';
 import { pickMedia, uploadFile } from '@/lib/upload';
 import { timeAgo } from '@/lib/util';
 import { flip, isAR, t, ta } from '@/lib/i18n';
+import { optimistic, run } from '@/lib/run';
 
 const VANISH: { key: VanishMode; label: string; hint: string }[] = [
   { key: 'after_view', label: t('بعد المشاهدة'), hint: t('زي السناب') },
@@ -138,8 +139,18 @@ export default function Chat() {
   useEffect(() => {
     const ch = supabase.channel(`conv-${id}`)
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: `conversation_id=eq.${id}` }, (p) => {
-        setMsgs((cur) => cur.some((x) => x.id === (p.new as Message).id) ? cur : [p.new as Message, ...cur]);
-        supabase.rpc('mark_read', { conv: id });
+        const m = p.new as Message;
+        setMsgs((cur) => cur.some((x) => x.id === m.id) ? cur : [m, ...cur]);
+        if (m.sender_id !== profile?.id) supabase.rpc('mark_read', { conv: id });
+      })
+      // saved / unsent / viewed-once / vanished messages change live too
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'messages', filter: `conversation_id=eq.${id}` }, (p) => {
+        const m = p.new as Message;
+        setMsgs((cur) => cur.map((x) => (x.id === m.id ? { ...x, ...m } : x)));
+      })
+      .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'messages', filter: `conversation_id=eq.${id}` }, (p) => {
+        const old = p.old as { id?: string };
+        if (old?.id) setMsgs((cur) => cur.filter((x) => x.id !== old.id));
       })
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'conversations', filter: `id=eq.${id}` }, (p) => setConv(p.new as Conversation))
       .subscribe();
@@ -159,13 +170,40 @@ export default function Chat() {
     setMsgs((cur) => [data as Message, ...cur.filter((x) => x.id !== data.id)]);
   }
 
+  const [uploading, setUploading] = useState(false);
   async function sendPhoto(viewOnce: boolean, camera = false) {
+    if (uploading) return;
     try {
       const f = await pickMedia({ camera });
       if (!f) return;
+      setUploading(true);
       const path = await uploadFile('chat', id, f);
       await send(viewOnce ? 'view_once' : 'image', path);
     } catch (e) { Alert.alert(t('ما انبعتت الصورة'), (e as Error).message); }
+    finally { setUploading(false); }
+  }
+
+  // older messages when you scroll up
+  const [more, setMore] = useState(true);
+  const loadingOlder = useRef(false);
+  async function loadOlder() {
+    if (!more || loadingOlder.current || msgs.length < 60) return;
+    loadingOlder.current = true;
+    const oldest = msgs[msgs.length - 1]?.created_at;
+    const { data } = await supabase.from('messages').select('*').eq('conversation_id', id).lt('created_at', oldest).order('created_at', { ascending: false }).limit(60);
+    loadingOlder.current = false;
+    if (!data?.length) { setMore(false); return; }
+    setMsgs((cur) => [...cur, ...(data as Message[]).filter((m) => !cur.some((x) => x.id === m.id))]);
+  }
+
+  const [answering, setAnswering] = useState(false);
+  async function answerHere(accept: boolean) {
+    if (answering) return;
+    setAnswering(true);
+    const r = await run(supabase.rpc('answer_request', { conv: id, accept }));
+    setAnswering(false);
+    if (!r.ok) return;
+    if (accept) setMyState('active'); else if (router.canGoBack()) router.back();
   }
 
   async function openOnce(m: Message) {
@@ -179,9 +217,9 @@ export default function Chat() {
   }
 
   async function setVanish(v: VanishMode) {
-    setConv((c) => c ? { ...c, vanish: v } : c);
-    await supabase.from('conversations').update({ vanish: v }).eq('id', id);
-    await supabase.from('messages').insert({ conversation_id: id, sender_id: (profile?.id ?? ''), kind: 'text', body: t('غيّرت مدة اختفاء الرسائل: {0}', [VANISH.find((x) => x.key === v)?.label]) });
+    const before = conv?.vanish;
+    await optimistic(`vanish-${id}`, () => setConv((c) => (c ? { ...c, vanish: v } : c)), () => setConv((c) => (c && before ? { ...c, vanish: before } : c)),
+      () => supabase.rpc('set_conversation_vanish', { conv: id, mode: v }));
   }
 
   async function setShield(v: boolean) {
@@ -195,7 +233,10 @@ export default function Chat() {
     router.push({ pathname: '/call/[id]', params: { id: data.id, name: other?.full_name ?? conv?.title ?? '', kind } });
   }
 
-  const visible = useMemo(() => msgs.filter((m) => !m.deleted_at && (m.is_saved || !m.vanishes_at || new Date(m.vanishes_at) > new Date())), [msgs]);
+  // re-check every 20s so vanished messages leave the screen on time
+  const [now, setNow] = useState(Date.now());
+  useEffect(() => { const tm = setInterval(() => setNow(Date.now()), 20000); return () => clearInterval(tm); }, []);
+  const visible = useMemo(() => msgs.filter((m) => !m.deleted_at && (m.is_saved || !m.vanishes_at || new Date(m.vanishes_at).getTime() > now)), [msgs, now]);
   const title = conv?.kind === 'direct' ? other?.full_name ?? '' : conv?.title ?? '';
   const vanishLabel = VANISH.find((v) => v.key === conv?.vanish)?.label ?? '';
 
@@ -229,6 +270,8 @@ export default function Chat() {
         <FlatList
           ref={list}
           inverted
+          onEndReached={loadOlder}
+          onEndReachedThreshold={0.3}
           ListHeaderComponent={typing !== null ? (
             <Animated.View entering={FadeIn} style={{ alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: C.card, borderRadius: 18, paddingHorizontal: 14, paddingVertical: 9, marginTop: 6 }}>
               <TypingDots />
@@ -288,17 +331,17 @@ export default function Chat() {
           <View style={{ backgroundColor: C.card, padding: 14, paddingBottom: insets.bottom + 10, gap: 8 }}>
             <T v="small" color={C.muted} style={{ textAlign: 'center' }}>{t('هاد طلب مراسلة. اقبله عشان تقدر ترد.')}</T>
             <Row gap={8}>
-              <Tap onPress={async () => { await supabase.rpc('answer_request', { conv: id, accept: true }); setMyState('active'); }} style={{ flex: 1, minHeight: 46, borderRadius: 15, backgroundColor: C.primary, alignItems: 'center', justifyContent: 'center' }}><T v="bold" color={C.white}>{t('قبول')}</T></Tap>
-              <Tap onPress={async () => { await supabase.rpc('answer_request', { conv: id, accept: false }); router.back(); }} style={{ flex: 1, minHeight: 46, borderRadius: 15, backgroundColor: C.bg, alignItems: 'center', justifyContent: 'center' }}><T v="bold">{t('تجاهل')}</T></Tap>
+              <Tap onPress={() => answerHere(true)} disabled={answering} style={{ flex: 1, minHeight: 46, borderRadius: 15, backgroundColor: C.primary, alignItems: 'center', justifyContent: 'center' }}><T v="bold" color={C.white}>{t('قبول')}</T></Tap>
+              <Tap onPress={() => answerHere(false)} disabled={answering} style={{ flex: 1, minHeight: 46, borderRadius: 15, backgroundColor: C.bg, alignItems: 'center', justifyContent: 'center' }}><T v="bold">{t('تجاهل')}</T></Tap>
             </Row>
           </View>
         ) : (
           <Row gap={6} style={{ backgroundColor: C.glass, paddingHorizontal: 10, paddingTop: 10, paddingBottom: insets.bottom + 10, borderTopWidth: 1, borderTopColor: C.line }}>
-            <Tap onPress={() => sendPhoto(true, true)} accessibilityLabel={t('صورة بتنشاف مرة')} style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: C.primary, alignItems: 'center', justifyContent: 'center' }}><Camera size={21} color={C.white} /></Tap>
+            <Tap onPress={() => sendPhoto(true, true)} disabled={uploading} accessibilityLabel={t('صورة بتنشاف مرة')} style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: C.primary, alignItems: 'center', justifyContent: 'center', opacity: uploading ? 0.6 : 1 }}>{uploading ? <ActivityIndicator color={C.white} /> : <Camera size={21} color={C.white} />}</Tap>
             <Row gap={0} style={{ flex: 1, minHeight: 44, borderRadius: 22, backgroundColor: C.field, paddingHorizontal: 6 }}>
               <TextInput keyboardAppearance={isDark ? 'dark' : 'light'} value={draft} onChangeText={onDraft} placeholder={t('رسالة...')} placeholderTextColor={C.faint} multiline
                 style={{ flex: 1, fontFamily: F.body, fontSize: 15, color: C.ink, textAlign: ta, paddingHorizontal: 10, maxHeight: 110, paddingVertical: 10 }} accessibilityLabel={t('اكتب رسالة')} />
-              <Tap onPress={() => sendPhoto(false)} accessibilityLabel={t('صورة من الاستوديو')} style={{ width: 36, height: 36, alignItems: 'center', justifyContent: 'center' }}><ImageIcon size={21} color={C.ink2} /></Tap>
+              <Tap onPress={() => sendPhoto(false)} disabled={uploading} accessibilityLabel={t('صورة من الاستوديو')} style={{ width: 36, height: 36, alignItems: 'center', justifyContent: 'center' }}><ImageIcon size={21} color={C.ink2} /></Tap>
             </Row>
             {draft.trim() ? (
               <Animated.View entering={FadeIn}>

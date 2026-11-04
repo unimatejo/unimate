@@ -17,12 +17,14 @@ export async function withMine(posts: Post[], uid?: string): Promise<Post[]> {
 
 export type FeedFilter = { tab: 'university' | 'college' | 'following'; category?: string | null; communityId?: string | null };
 
-export async function loadFeed(uid: string, f: FeedFilter, before?: string): Promise<Post[]> {
+export async function loadFeed(uid: string, f: FeedFilter, before?: string, scope?: { universityId?: string | null; collegeId?: string | null }): Promise<Post[]> {
   let q = supabase.from('posts').select(POST_SELECT).order('is_pinned', { ascending: false }).order('created_at', { ascending: false }).limit(20);
-  if (before) q = q.lt('created_at', before);
+  // pinned posts only come on the first page, so paging by date never repeats them
+  if (before) q = q.lt('created_at', before).eq('is_pinned', false);
   if (f.category) q = q.eq('category', f.category);
   if (f.communityId) q = q.eq('community_id', f.communityId);
   else q = q.is('community_id', null);
+  if (f.tab === 'university' && scope?.universityId) q = q.eq('university_id', scope.universityId);
   if (f.tab === 'following') {
     const { data } = await supabase.from('follows').select('followee_id').eq('follower_id', uid).eq('status', 'accepted');
     const ids = (data ?? []).map((x) => x.followee_id);
@@ -30,21 +32,23 @@ export async function loadFeed(uid: string, f: FeedFilter, before?: string): Pro
     q = q.in('author_id', ids);
   }
   if (f.tab === 'college') {
-    const { data: me } = await supabase.from('profiles').select('college_id').eq('id', uid).single();
-    if (!me?.college_id) return [];
-    const { data: mates } = await supabase.from('profiles').select('id').eq('college_id', me.college_id).limit(1000);
-    q = q.in('author_id', (mates ?? []).map((m) => m.id));
+    let college = scope?.collegeId;
+    if (college === undefined) college = (await supabase.from('profiles').select('college_id').eq('id', uid).maybeSingle()).data?.college_id ?? null;
+    if (!college) return [];
+    q = q.eq('college_id', college);
   }
-  const { data } = await q;
+  const { data, error } = await q;
+  if (error) throw error;
   return withMine((data ?? []) as unknown as Post[], uid);
 }
 
-export async function toggleLike(p: Post, uid: string) {
-  if (p.liked) await supabase.from('post_likes').delete().eq('post_id', p.id).eq('user_id', uid);
-  else await supabase.from('post_likes').insert({ post_id: p.id, user_id: uid });
+/** Returns the request so callers can roll back on failure. A duplicate like/save counts as success. */
+export function toggleLike(p: Post, uid: string) {
+  const q = p.liked ? supabase.from('post_likes').delete().eq('post_id', p.id).eq('user_id', uid) : supabase.from('post_likes').insert({ post_id: p.id, user_id: uid });
+  return q.then((r) => (r.error?.code === '23505' ? { ...r, error: null } : r));
 }
 
-export async function toggleSave(p: Post, uid: string) {
-  if (p.saved) await supabase.from('post_saves').delete().eq('post_id', p.id).eq('user_id', uid);
-  else await supabase.from('post_saves').insert({ post_id: p.id, user_id: uid });
+export function toggleSave(p: Post, uid: string) {
+  const q = p.saved ? supabase.from('post_saves').delete().eq('post_id', p.id).eq('user_id', uid) : supabase.from('post_saves').insert({ post_id: p.id, user_id: uid });
+  return q.then((r) => (r.error?.code === '23505' ? { ...r, error: null } : r));
 }

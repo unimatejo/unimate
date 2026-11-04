@@ -1,5 +1,5 @@
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { CalendarDays, Clock } from 'lucide-react-native';
 import { useEffect, useState } from 'react';
 import { Alert, Platform, ScrollView, View } from 'react-native';
@@ -18,6 +18,7 @@ type Sec = { id: string; course: { name_ar: string } };
 
 export default function NewEvent() {
   const { profile } = useAuth();
+  const { id: editId } = useLocalSearchParams<{ id?: string }>();
   const [kind, setKind] = useState('exam_first');
   const [secs, setSecs] = useState<Sec[]>([]);
   const [section, setSection] = useState<string | null>(null);
@@ -32,26 +33,53 @@ export default function NewEvent() {
     if (!profile) return;
     supabase.from('enrollments').select('section:sections(id, course:courses(name_ar, name_en))').eq('user_id', (profile?.id ?? ''))
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      .then(({ data }) => { const s = ((data ?? []) as any[]).map((e) => e.section).filter(Boolean) as Sec[]; setSecs(s); setSection(s[0]?.id ?? null); });
-  }, [profile]);
+      .then(({ data }) => { const s = ((data ?? []) as any[]).map((e) => e.section).filter(Boolean) as Sec[]; setSecs(s); if (!editId) setSection(s[0]?.id ?? null); });
+  }, [profile, editId]);
+
+  // editing an existing event: fill the form from it
+  useEffect(() => {
+    if (!editId) return;
+    supabase.from('academic_events').select('kind, title, starts_at, location, section_id, owner_id').eq('id', editId).maybeSingle().then(({ data }) => {
+      if (!data) { Alert.alert(t('الموعد مش موجود')); router.back(); return; }
+      setKind(data.kind); setTitle(data.title); setDate(new Date(data.starts_at)); setLocation(data.location ?? '');
+      setSection(data.section_id); setShare(!data.owner_id);
+    });
+  }, [editId]);
 
   const label = KINDS.find((k) => k[0] === kind)?.[1] ?? '';
   const courseName = secs.find((s) => s.id === section)?.course.name_ar;
 
   async function save() {
-    if (!profile) return;
+    if (!profile || busy) return;
     const ttl = title.trim() || [label, courseName].filter(Boolean).join(' · ');
     if (!ttl) { Alert.alert(t('اكتب عنوان')); return; }
     const shared = share && !!section && kind !== 'custom';
+    const row = { kind, title: ttl, starts_at: date.toISOString(), location: location.trim() || null, section_id: section, owner_id: shared ? null : profile.id };
     setBusy(true);
-    const { data, error } = await supabase.from('academic_events').insert({
-      kind, title: ttl, starts_at: date.toISOString(), location: location.trim() || null, created_by: (profile?.id ?? ''),
-      section_id: section, owner_id: shared ? null : (profile?.id ?? ''),
-    }).select('id').single();
-    if (!error && data) await supabase.from('reminders').upsert({ user_id: (profile?.id ?? ''), event_id: data.id, minutes: kind.startsWith('exam') ? 1440 : 120, enabled: true }, { onConflict: 'user_id,event_id' });
-    setBusy(false);
-    if (error) { Alert.alert(t('ما زبط'), t('جرّب كمان مرة.')); return; }
-    router.back();
+    try {
+      if (editId) {
+        const { error } = await supabase.from('academic_events').update(row).eq('id', editId);
+        if (error) { Alert.alert(t('ما زبط'), t('بتقدر تعدّل بس المواعيد اللي إنت ضفتها.')); return; }
+      } else {
+        const { data, error } = await supabase.from('academic_events').insert({ ...row, created_by: profile.id }).select('id').single();
+        if (error || !data) { Alert.alert(t('ما زبط'), t('جرّب كمان مرة.')); return; }
+        await supabase.from('reminders').upsert({ user_id: profile.id, event_id: data.id, minutes: kind.startsWith('exam') ? 1440 : 120, enabled: true }, { onConflict: 'user_id,event_id' });
+      }
+      router.back();
+    } catch { Alert.alert(t('ما زبط'), t('تأكد من الإنترنت وجرّب كمان مرة.')); }
+    finally { setBusy(false); }
+  }
+
+  function remove() {
+    if (!editId) return;
+    Alert.alert(t('تحذف الموعد؟'), share ? t('رح ينحذف من جدول كل طلاب الشعبة.') : undefined, [
+      { text: t('إلغاء'), style: 'cancel' },
+      { text: t('حذف'), style: 'destructive', onPress: async () => {
+        const { error, count } = await supabase.from('academic_events').delete({ count: 'exact' }).eq('id', editId);
+        if (error || !count) { Alert.alert(t('ما زبط'), t('بتقدر تحذف بس المواعيد اللي إنت ضفتها.')); return; }
+        router.back();
+      } },
+    ]);
   }
 
   const fmtDate = date.toLocaleDateString(LOCALE, { weekday: 'long', day: 'numeric', month: 'long' });
@@ -59,7 +87,7 @@ export default function NewEvent() {
 
   return (
     <Screen>
-      <Header title={t('أضف موعد')} />
+      <Header title={editId ? t('تعديل الموعد') : t('أضف موعد')} />
       <ScrollView contentContainerStyle={{ padding: 18, paddingTop: 4, gap: 14, paddingBottom: 60 }} keyboardShouldPersistTaps="handled">
         <View style={{ gap: 10 }}>
           <T v="bold" style={{ fontSize: 14 }}>{t('شو نوعه؟')}</T>
@@ -81,7 +109,7 @@ export default function NewEvent() {
           </Tap>
         </Row>
         {show && (
-          <DateTimePicker value={date} mode={show} display={Platform.OS === 'ios' ? 'spinner' : 'default'} minimumDate={new Date()} locale="ar-JO"
+          <DateTimePicker value={date} mode={show} display={Platform.OS === 'ios' ? 'spinner' : 'default'} minimumDate={new Date()} locale={LOCALE}
             onChange={(_, d) => { if (Platform.OS !== 'ios') setShow(null); if (d) setDate(d); }} />
         )}
         {show && Platform.OS === 'ios' && <Button kind="soft" title={t('تم')} onPress={() => setShow(null)} />}
@@ -91,7 +119,8 @@ export default function NewEvent() {
             <Toggle label={t('شاركه مع طلاب الشعبة')} hint={t('بيطلع بجدولهم، وكل ما أكّده حدا بيصير موثوق أكتر')} value={share} onChange={setShare} />
           </View>
         )}
-        <Button title={t('احفظ')} onPress={save} loading={busy} />
+        <Button title={t('احفظ')} onPress={save} loading={busy} disabled={busy} />
+        {editId && <Button kind="ghost" title={t('حذف الموعد')} onPress={remove} />}
       </ScrollView>
     </Screen>
   );

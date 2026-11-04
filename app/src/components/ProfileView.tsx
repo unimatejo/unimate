@@ -1,5 +1,5 @@
 import { router, useFocusEffect } from 'expo-router';
-import { BadgeCheck, BarChart3, BookOpen, FileText, Flag, Grid3x3, Lock, MessageCircle, Rows3, Settings, Star } from 'lucide-react-native';
+import { BadgeCheck, BarChart3, BookOpen, FileText, Flag, Grid3x3, Lock, MessageCircle, Rows3, Settings, Star, UserX, WifiOff } from 'lucide-react-native';
 import { useCallback, useEffect, useState } from 'react';
 import { Alert, Linking, RefreshControl, ScrollView, View } from 'react-native';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
@@ -18,12 +18,16 @@ import { C, F } from '@/lib/theme';
 import type { Post, Profile } from '@/lib/types';
 import { nm, t, ta } from '@/lib/i18n';
 import { Bone } from './Skeleton';
+import { run } from '@/lib/run';
 
 type Rel = 'none' | 'pending' | 'accepted';
 
 /** Open the Instagram / Snapchat app on that profile, or the website if the app isn't installed. */
 export function openSocial(site: 'instagram' | 'snapchat', handle: string) {
-  const h = encodeURIComponent(handle);
+  // people paste "@name", full links or spaces — keep only the handle
+  const clean = handle.trim().replace(/^https?:\/\/(www\.)?(instagram\.com|snapchat\.com\/add)\//i, '').replace(/^@/, '').split(/[/?#\s]/)[0];
+  if (!clean) return;
+  const h = encodeURIComponent(clean);
   const app = site === 'instagram' ? `instagram://user?username=${h}` : `snapchat://add/${h}`;
   const web = site === 'instagram' ? `https://www.instagram.com/${h}/` : `https://www.snapchat.com/add/${h}`;
   Linking.openURL(app).catch(() => Linking.openURL(web).catch(() => Alert.alert(t('ما قدرنا نفتح الرابط'))));
@@ -68,7 +72,7 @@ export function GridTile({ post, i }: { post: Post; i: number }) {
   );
 }
 
-export function ProfileView({ userId }: { userId: string }) {
+export function ProfileView({ userId, onTitle }: { userId: string; onTitle?: (title: string) => void }) {
   const { profile: me } = useAuth();
   const mine = me?.id === userId;
   const [p, setP] = useState<Profile | null>(null);
@@ -81,12 +85,19 @@ export function ProfileView({ userId }: { userId: string }) {
   const [loading, setLoading] = useState(true);
   const [hasStory, setHasStory] = useState(false);
   const [hls, setHls] = useState<{ id: string; title: string; cover_url: string | null }[]>([]);
+  const [failed, setFailed] = useState<'none' | 'error' | 'missing'>('none');
+  const [busy, setBusy] = useState(false);
 
   const load = useCallback(async () => {
     if (!me) return;
     setLoading(true);
-    const { data } = await supabase.from('profiles').select('*, major:majors(name_ar, name_en), college:colleges(name_ar, name_en), university:universities(name_ar, name_en)').eq('id', userId).single();
+    try {
+    const { data, error } = await supabase.from('profiles').select('*, major:majors(name_ar, name_en), college:colleges(name_ar, name_en), university:universities(name_ar, name_en)').eq('id', userId).maybeSingle();
+    if (error) { setFailed('error'); return; }
+    if (!data) { setFailed('missing'); return; }
+    setFailed('none');
     setP(data as Profile);
+    onTitle?.((data as Profile).username ? `\u200E@${(data as Profile).username}` : (data as Profile).full_name ?? '');
     if (!mine) {
       const [{ data: f }, { data: back }, { data: cf }] = await Promise.all([
         supabase.from('follows').select('status').eq('follower_id', me.id).eq('followee_id', userId).maybeSingle(),
@@ -100,22 +111,42 @@ export function ProfileView({ userId }: { userId: string }) {
     supabase.from('highlights').select('id, title, cover_url').eq('owner_id', userId).order('position').then(({ data }) => setHls(data ?? []));
     const { data: ps } = await supabase.from('posts').select(POST_SELECT).eq('author_id', userId).order('created_at', { ascending: false }).limit(30);
     setPosts(await withMine((ps ?? []) as unknown as Post[], me.id));
-    setLoading(false);
+    } catch { setFailed((f) => (f === 'none' && !p ? 'error' : f)); }
+    finally { setLoading(false); }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [me, userId, mine]);
 
   useEffect(() => { load(); }, [load]);
   // refresh when coming back from edit profile / privacy
   useFocusEffect(useCallback(() => { load(); }, [load]));
 
-  async function follow() {
-    if (!me) return;
-    if (rel === 'none') {
-      const { error } = await supabase.from('follows').insert({ follower_id: me.id, followee_id: userId });
-      if (!error) setRel(p?.is_private ? 'pending' : 'accepted');
-    } else {
-      await supabase.from('follows').delete().eq('follower_id', me.id).eq('followee_id', userId);
-      setRel('none');
-    }
+  const bump = (d: number) => setP((x) => (x ? { ...x, follower_count: Math.max(0, (x.follower_count ?? 0) + d) } : x));
+
+  async function doFollow() {
+    if (!me || busy) return;
+    setBusy(true);
+    try {
+      if (rel === 'none') {
+        const next: Rel = p?.is_private ? 'pending' : 'accepted';
+        setRel(next); if (next === 'accepted') bump(1);
+        const r = await run(supabase.from('follows').insert({ follower_id: me.id, followee_id: userId }));
+        if (!r.ok) { setRel('none'); if (next === 'accepted') bump(-1); }
+      } else {
+        const prev = rel;
+        setRel('none'); if (prev === 'accepted') bump(-1);
+        const r = await run(supabase.from('follows').delete().eq('follower_id', me.id).eq('followee_id', userId));
+        if (!r.ok) { setRel(prev); if (prev === 'accepted') bump(1); }
+      }
+    } finally { setBusy(false); }
+  }
+
+  function follow() {
+    if (rel === 'none') return doFollow();
+    const title = rel === 'pending' ? t('تلغي طلب المتابعة؟') : t('تلغي متابعة {0}؟', [p?.full_name ?? '']);
+    Alert.alert(title, p?.is_private && rel === 'accepted' ? t('حسابه خاص، رح تحتاج تبعث طلب جديد لتشوف منشوراته.') : undefined, [
+      { text: t('إلغاء'), style: 'cancel' },
+      { text: rel === 'pending' ? t('إلغاء الطلب') : t('إلغاء المتابعة'), style: 'destructive', onPress: doFollow },
+    ]);
   }
 
   async function message() {
@@ -124,6 +155,13 @@ export function ProfileView({ userId }: { userId: string }) {
     router.push({ pathname: '/messages/[id]', params: { id: data as string } });
   }
 
+  if (!p && failed !== 'none') return (
+    <View style={{ flex: 1, padding: 24, paddingTop: 60 }}>
+      <Empty icon={failed === 'missing' ? <UserX size={28} color={C.muted} /> : <WifiOff size={28} color={C.muted} />} title={failed === 'missing' ? t('هالحساب مش موجود') : t('ما قدرنا نفتح البروفايل')}
+        body={failed === 'missing' ? t('يمكن انحذف أو الرابط غلط.') : t('تأكد من الإنترنت وجرّب كمان مرة.')}
+        action={failed === 'error' ? <Button kind="soft" title={t('جرّب مرة ثانية')} onPress={load} style={{ paddingHorizontal: 28 }} /> : undefined} />
+    </View>
+  );
   if (!p) return (
     <View style={{ flex: 1, padding: 18, gap: 16 }}>
       <Row gap={16}><Bone w={86} h={86} r={43} /><View style={{ flex: 1, gap: 10 }}><Bone h={18} w="70%" /><Bone h={12} w="50%" /></View></Row>
@@ -191,9 +229,8 @@ export function ProfileView({ userId }: { userId: string }) {
             </Row>
           ) : (
             <Row gap={8}>
-              <Button kind={rel === 'none' ? 'primary' : 'soft'} title={rel === 'none' ? t('متابعة') : rel === 'pending' ? t('تم إرسال الطلب') : friends ? t('أصدقاء') : t('تتابعه')} onPress={follow} style={{ flex: 1.4, minHeight: 46 }} />
+              <Button kind={rel === 'none' ? 'primary' : 'soft'} title={rel === 'none' ? t('متابعة') : rel === 'pending' ? t('تم إرسال الطلب') : friends ? t('أصدقاء') : t('تتابعه')} onPress={follow} loading={busy} disabled={busy} style={{ flex: 1.4, minHeight: 46 }} />
               <Button kind="white" title={t('رسالة')} icon={<MessageCircle size={18} color={C.ink} />} onPress={message} style={{ flex: 1, minHeight: 46 }} />
-              <IconButton label={t('ادرسوا سوا')} onPress={() => router.push('/study')}><BookOpen size={20} color={C.ink} /></IconButton>
             </Row>
           )}
 

@@ -173,7 +173,7 @@ export default function CampusMap() {
           </Animated.View>
         ) : (
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
-            {FILTERS.map((f) => <Chip key={f.key} label={f.label} active={filter === f.key} onPress={() => setFilter(f.key)} style={shadow} />)}
+            {FILTERS.filter((f) => f.key === 'all' || pins.some((p) => (f.key === 'building' ? p.kind === 'building' : f.key === 'food' ? FOOD.includes(p.kind) : SERVICE.includes(p.kind)))).map((f) => <Chip key={f.key} label={f.label} active={filter === f.key} onPress={() => setFilter(f.key)} style={shadow} />)}
           </ScrollView>
         )}
       </SafeAreaView>

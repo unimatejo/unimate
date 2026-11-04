@@ -1,10 +1,11 @@
 import { Ban } from 'lucide-react-native';
 import { useEffect, useState } from 'react';
-import { FlatList, View } from 'react-native';
+import { Alert, FlatList, View } from 'react-native';
 
 import { Avatar, Button, Empty, Header, Screen, T } from '@/components/ui';
 import { useAuth } from '@/lib/auth';
 import { supabase } from '@/lib/supabase';
+import { run } from '@/lib/run';
 import { C } from '@/lib/theme';
 import { timeAgo } from '@/lib/util';
 import { t } from '@/lib/i18n';
@@ -21,9 +22,17 @@ export default function Blocked() {
       .then(({ data }) => setRows((data ?? []) as unknown as B[]));
   }, [profile]);
 
-  async function unblock(id: string) {
-    setRows((r) => r.filter((x) => x.blocked_id !== id));
-    await supabase.from('blocks').delete().eq('blocker_id', (profile?.id ?? '')).eq('blocked_id', id);
+  function unblock(id: string) {
+    const who = rows.find((x) => x.blocked_id === id)?.p?.full_name ?? '';
+    Alert.alert(t('تلغي حظر {0}؟', [who]), t('رح يقدر يشوف حسابك ويراسلك مرة ثانية.'), [
+      { text: t('إلغاء'), style: 'cancel' },
+      { text: t('إلغاء الحظر'), style: 'destructive', onPress: async () => {
+        const prev = rows;
+        setRows((r) => r.filter((x) => x.blocked_id !== id));
+        const r = await run(supabase.from('blocks').delete().eq('blocker_id', profile?.id ?? '').eq('blocked_id', id));
+        if (!r.ok) setRows(prev);
+      } },
+    ]);
   }
 
   return (

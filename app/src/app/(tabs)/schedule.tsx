@@ -2,7 +2,7 @@ import { router } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Bell, BellOff, BookOpen, CalendarPlus, Clock, FlaskConical, MapPin, MessagesSquare, Video } from 'lucide-react-native';
 import { useEffect, useMemo, useState } from 'react';
-import { Linking, RefreshControl, ScrollView, View } from 'react-native';
+import { Alert, Linking, RefreshControl, ScrollView, View } from 'react-native';
 import Animated, { FadeInDown, LinearTransition, useAnimatedStyle, useSharedValue, withRepeat, withTiming } from 'react-native-reanimated';
 
 import { GlyphTile, GRAD } from '@/components/Glyph';
@@ -10,6 +10,8 @@ import { GlyphTile, GRAD } from '@/components/Glyph';
 import { Button, Card, Empty, IconButton, Row, Screen, T, Tag, Tap } from '@/components/ui';
 import { useAuth } from '@/lib/auth';
 import { reportError } from '@/lib/errors';
+import { run } from '@/lib/run';
+import { ListSkeleton } from '@/components/Skeleton';
 import { scheduleLectureReminders } from '@/lib/notify';
 import { placeLine, useSchedule } from '@/lib/schedule';
 import { supabase } from '@/lib/supabase';
@@ -44,8 +46,10 @@ function LiveDot() {
 
 export default function Schedule() {
   const { profile } = useAuth();
-  const { meetings, events, loading, reload } = useSchedule(profile?.id);
-  const [day, setDay] = useState(Math.min(new Date().getDay(), 4));
+  const { meetings, events, loading, error, reload, now } = useSchedule(profile?.id);
+  // Friday / Saturday: show the coming Sunday
+  const [day, setDay] = useState(() => { const d = new Date().getDay(); return d > 4 ? 0 : d; });
+  const [flipping, setFlipping] = useState<string | null>(null);
   const [off, setOff] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
@@ -57,19 +61,33 @@ export default function Schedule() {
   useEffect(() => { if (!loading) scheduleLectureReminders(meetings, off, profile?.id).catch(reportError); }, [meetings, off, loading, profile?.id]);
 
   const list = useMemo(() => meetings.filter((m) => m.weekday === day).sort((a, b) => a.starts_at.localeCompare(b.starts_at)), [meetings, day]);
+  const dow = now.getDay();
   const week = useMemo(() => {
-    const now = new Date(); const sun = new Date(now); sun.setDate(now.getDate() - now.getDay());
+    const sun = new Date(now); sun.setDate(now.getDate() - dow + (dow > 4 ? 7 : 0));
     return [0, 1, 2, 3, 4].map((d) => { const x = new Date(sun); x.setDate(sun.getDate() + d); return x; });
-  }, []);
-  const nowMin = new Date().getHours() * 60 + new Date().getMinutes();
-  const isToday = day === new Date().getDay();
-  const todayCount = meetings.filter((m) => m.weekday === new Date().getDay()).length;
+  }, [now, dow]);
+  const nowMin = now.getHours() * 60 + now.getMinutes();
+  const isToday = day === dow;
+  const todayCount = meetings.filter((m) => m.weekday === dow).length;
   const nextExam = events.find((e) => e.kind.startsWith('exam') || e.kind === 'quiz');
   const daysLeft = nextExam ? Math.max(0, Math.ceil((new Date(nextExam.starts_at).getTime() - Date.now()) / 86400000)) : 0;
 
   async function flip(id: string, enabled: boolean) {
+    if (!profile || flipping) return;
+    setFlipping(id);
     setOff((o) => ({ ...o, [id]: !enabled }));
-    await supabase.from('reminders').upsert({ user_id: (profile?.id ?? ''), meeting_id: id, enabled }, { onConflict: 'user_id,meeting_id' });
+    const r = await run(supabase.from('reminders').upsert({ user_id: profile.id, meeting_id: id, enabled }, { onConflict: 'user_id,meeting_id' }), { msg: t('ما قدرنا نغيّر التنبيه، جرّب كمان مرة.') });
+    if (!r.ok) setOff((o) => ({ ...o, [id]: enabled }));
+    setFlipping(null);
+  }
+
+  function openLink(url: string) { Linking.openURL(url).catch(() => Alert.alert(t('ما قدرنا نفتح الرابط'))); }
+
+  function eventMenu(e: (typeof events)[number]) {
+    Alert.alert(e.title, new Date(e.starts_at).toLocaleString(LOCALE, { weekday: 'long', day: 'numeric', month: 'long', hour: 'numeric', minute: '2-digit' }) + (e.location ? `\n${e.location}` : ''), [
+      { text: t('تعديل'), onPress: () => router.push({ pathname: '/event/new', params: { id: e.id } }) },
+      { text: t('إغلاق'), style: 'cancel' },
+    ]);
   }
 
   return (
@@ -114,7 +132,7 @@ export default function Schedule() {
 
         <View style={{ flexDirection: 'row', gap: 6 }}>
           {week.map((date, d) => {
-            const on = d === day; const has = meetings.some((m) => m.weekday === d); const today = d === new Date().getDay();
+            const on = d === day; const has = meetings.some((m) => m.weekday === d); const today = d === dow;
             return (
               <Tap key={d} onPress={() => setDay(d)} scale={0.92} accessibilityRole="tab" accessibilityState={{ selected: on }}
                 style={[{ flex: 1, minHeight: 76, borderRadius: 20, alignItems: 'center', justifyContent: 'center', gap: 2, backgroundColor: on ? C.inverse : C.card, borderWidth: today && !on ? 1.5 : 0, borderColor: C.primary }, on ? { shadowColor: C.ink, shadowOpacity: 0.3, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 6 } : shadow]}>
@@ -126,7 +144,9 @@ export default function Schedule() {
           })}
         </View>
 
-        {list.length === 0 ? (
+        {loading && meetings.length === 0 ? <ListSkeleton n={3} />
+        : error && meetings.length === 0 ? <Empty icon={<Clock size={28} color={C.red} />} title={t('ما قدرنا نحمّل الجدول')} body={t('تأكد من الإنترنت وجرّب كمان مرة.')} action={<Button kind="soft" title={t('جرّب مرة ثانية')} onPress={reload} style={{ paddingHorizontal: 24 }} />} />
+        : list.length === 0 ? (
           <Empty icon={<Clock size={28} color={C.primary} />} title={t('ما عندك محاضرات هاليوم')}
             body={meetings.length === 0 ? t('جيب موادك من Teams بكبسة، أو ضيفها مرة وحدة. وقت المحاضرة اللي بيضيفه أي زميل بشعبتك بيطلع للكل.') : t('استمتع بيومك.')}
             action={meetings.length === 0 ? <Button title={t('ضيف موادي')} icon={<BookOpen size={18} color={C.white} />} onPress={() => router.push('/courses')} style={{ marginTop: 8, paddingHorizontal: 22 }} /> : undefined} />
@@ -143,7 +163,8 @@ export default function Schedule() {
             <Animated.View key={m.id} entering={FadeInDown.delay(i * 60).springify().damping(16)} layout={LinearTransition} style={{ opacity: done ? 0.55 : 1 }}>
               <Row gap={10} center={false}>
                 <View style={{ width: 50, alignItems: 'center', paddingTop: 6 }}>
-                  <T v="bold" style={{ fontSize: 15 }}>{clock(m.starts_at)}</T>
+                  <T v="bold" style={{ fontSize: 15 }}>{clock(m.starts_at, false)}</T>
+                  <T v="tiny" color={C.muted} style={{ fontSize: 10, marginTop: -2 }}>{Number(m.starts_at.slice(0, 2)) < 12 ? t('ص') : t('م')}</T>
                   <View style={{ width: 2, flex: 1, minHeight: 30, backgroundColor: live ? g[1] : C.line, marginVertical: 4, borderRadius: 1 }} />
                   <T v="tiny" color={C.muted}>{clock(m.ends_at)}</T>
                 </View>
@@ -168,7 +189,7 @@ export default function Schedule() {
                   )}
                   <Row gap={8}>
                     {m.kind === 'online' && m.online_url ? (
-                      <Tap onPress={() => Linking.openURL(m.online_url!)} style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 38, paddingHorizontal: 12, borderRadius: 12, backgroundColor: C.violetSoft }}>
+                      <Tap onPress={() => openLink(m.online_url!)} style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 38, paddingHorizontal: 12, borderRadius: 12, backgroundColor: C.violetSoft }}>
                         <Video size={15} color={C.violet} /><T v="small" color={C.violet}>{t('ادخل المحاضرة')}</T>
                       </Tap>
                     ) : (
@@ -176,7 +197,7 @@ export default function Schedule() {
                         <MapPin size={15} color={C.primary} /><T v="small" color={C.primary} numberOfLines={1} style={{ flexShrink: 1 }}>{placeLine(m)}</T>
                       </Tap>
                     )}
-                    <Tap onPress={() => flip(m.id, !enabled)} accessibilityLabel={enabled ? t('وقّف التنبيه') : t('شغّل التنبيه')} accessibilityState={{ checked: enabled }}
+                    <Tap onPress={() => flip(m.id, !enabled)} disabled={flipping === m.id} accessibilityLabel={enabled ? t('وقّف التنبيه') : t('شغّل التنبيه')} accessibilityState={{ checked: enabled }}
                       style={{ width: 38, height: 38, borderRadius: 12, backgroundColor: enabled ? C.orangeSoft : C.soft, alignItems: 'center', justifyContent: 'center' }}>
                       {enabled ? <Bell size={17} color={C.orange} fill={C.orange} /> : <BellOff size={17} color={C.muted} />}
                     </Tap>
@@ -191,11 +212,11 @@ export default function Schedule() {
           <Card>
             <T v="h3" style={{ marginBottom: 6 }}>{t('امتحانات ومواعيد')}</T>
             {events.slice(0, 6).map((e) => (
-              <Row key={e.id} gap={10} style={{ minHeight: 48 }}>
+              <Tap key={e.id} haptic={false} scale={0.98} onPress={() => eventMenu(e)} accessibilityLabel={e.title} style={{ flexDirection: 'row', alignItems: 'center', gap: 10, minHeight: 48 }}>
                 <Tag label={EVENT[e.kind] ?? t('موعد')} bg={C.orangeSoft} fg={C.orangeInk} />
                 <T v="small" style={{ flex: 1 }}>{e.course_name ?? e.title}</T>
                 <T v="tiny" color={C.muted}>{new Date(e.starts_at).toLocaleDateString(LOCALE, { day: 'numeric', month: 'short' })}</T>
-              </Row>
+              </Tap>
             ))}
           </Card>
         )}

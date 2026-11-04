@@ -8,6 +8,7 @@ import { Empty, Header, Screen } from '@/components/ui';
 import { useAuth } from '@/lib/auth';
 import { POST_SELECT, withMine } from '@/lib/posts';
 import { supabase } from '@/lib/supabase';
+import { useFocusEffect } from 'expo-router';
 import { C } from '@/lib/theme';
 import type { Post } from '@/lib/types';
 import { t } from '@/lib/i18n';
@@ -22,6 +23,7 @@ export default function Saved() {
   const load = useCallback(async () => {
     if (!profile) return;
     setLoading(true);
+    try {
     const { data: s } = await supabase.from('post_saves').select('post_id, created_at').eq('user_id', (profile?.id ?? '')).order('created_at', { ascending: false }).limit(100);
     const ids = (s ?? []).map((x) => x.post_id);
     if (ids.length) {
@@ -29,9 +31,11 @@ export default function Saved() {
       const byId = new Map(((data ?? []) as unknown as Post[]).map((p) => [p.id, p]));
       setPosts(await withMine(ids.map((i) => byId.get(i)).filter(Boolean) as Post[], (profile?.id ?? '')));
     } else setPosts([]);
-    setLoading(false);
+    } catch { /* keep the old list; pull down to retry */ }
+    finally { setLoading(false); }
   }, [profile]);
-  useEffect(() => { load(); }, [load]);
+  // unsaving a post on its page should drop it here when you come back
+  useFocusEffect(useCallback(() => { load(); }, [load]));
 
   return (
     <Screen>

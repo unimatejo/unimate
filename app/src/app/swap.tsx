@@ -7,6 +7,8 @@ import Animated, { FadeInDown } from 'react-native-reanimated';
 import { Button, Chip, Empty, Header, Row, Screen, T, Tap } from '@/components/ui';
 import { useAuth } from '@/lib/auth';
 import { supabase } from '@/lib/supabase';
+import { run } from '@/lib/run';
+import { toast } from '@/lib/toast';
 import { C } from '@/lib/theme';
 import { clock, WEEKDAYS_SHORT } from '@/lib/util';
 import { nm, t } from '@/lib/i18n';
@@ -29,6 +31,7 @@ export default function Swap() {
   const load = useCallback(async () => {
     if (!profile) return;
     setLoading(true);
+    try {
     const { data: enr } = await supabase.from('enrollments')
       .select('section:sections(id, section_no, instructor, meetings:section_meetings(weekday, starts_at), course:courses(id, name_ar, name_en, code))').eq('user_id', (profile?.id ?? ''));
     const m = ((enr ?? []) as unknown as Mine[]).filter((x) => x.section);
@@ -49,22 +52,35 @@ export default function Swap() {
       const { data: p } = await supabase.from('swap_requests').select('id, user_id').in('id', matchedIds);
       setPartners(Object.fromEntries((p ?? []).map((x) => [x.id, x.user_id])));
     }
-    setLoading(false);
+    } catch { toast(t('ما قدرنا نحمّل، اسحب لتحت وجرّب كمان مرة.')); }
+    finally { setLoading(false); }
   }, [profile]);
   useEffect(() => { load(); }, [load]);
 
+  const [busy, setBusy] = useState(false);
   async function request(mm: Mine) {
     const to = pick[mm.section.id];
-    if (!to) return;
-    const { error } = await supabase.from('swap_requests').insert({ user_id: (profile?.id ?? ''), course_id: mm.section.course.id, from_section_id: mm.section.id, to_section_id: to });
-    if (error) { Alert.alert(t('ما زبط'), t('يمكن عندك طلب لنفس الشعبة.')); return; }
-    setPick((p) => ({ ...p, [mm.section.id]: '' }));
-    load();
+    if (!to || !profile || busy) return;
+    setBusy(true);
+    try {
+      const { error } = await supabase.from('swap_requests').insert({ user_id: profile.id, course_id: mm.section.course.id, from_section_id: mm.section.id, to_section_id: to });
+      if (error) { Alert.alert(t('ما زبط'), error.code === '23505' ? t('عندك طلب لنفس الشعبة.') : t('جرّب كمان مرة.')); return; }
+      setPick((p) => ({ ...p, [mm.section.id]: '' }));
+      toast(t('انبعت الطلب'));
+      await load();
+    } finally { setBusy(false); }
   }
 
-  async function close(id: string) {
-    await supabase.from('swap_requests').update({ status: 'closed' }).eq('id', id);
-    load();
+  function close(id: string) {
+    Alert.alert(t('تسكّر الطلب؟'), t('ما رح نلاقيلك تبديل لهالشعبة بعدها.'), [
+      { text: t('إلغاء'), style: 'cancel' },
+      { text: t('سكّر'), style: 'destructive', onPress: async () => {
+        const prev = reqs;
+        setReqs((r) => r.filter((x) => x.id !== id));
+        const r = await run(supabase.from('swap_requests').update({ status: 'closed' }).eq('id', id));
+        if (!r.ok) setReqs(prev);
+      } },
+    ]);
   }
 
   async function talk(partner: string, course: string) {
@@ -118,7 +134,7 @@ export default function Swap() {
                   {pick[mm.section.id] ? (
                     <>
                       <T v="tiny" color={C.ink2}>{when(alts.find((s) => s.id === pick[mm.section.id]))}</T>
-                      <Button title={t('اطلب التبديل')} onPress={() => request(mm)} />
+                      <Button title={t('اطلب التبديل')} onPress={() => request(mm)} loading={busy} disabled={busy} />
                     </>
                   ) : null}
                 </>

@@ -1,7 +1,7 @@
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Bell, BookOpen, CalendarDays, GraduationCap, MapPin, Navigation, PartyPopper, Repeat, Search, SearchCheck, ShoppingBag, Sparkles, Users } from 'lucide-react-native';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { RefreshControl, ScrollView, View } from 'react-native';
 import Animated, { Easing, FadeInDown, useAnimatedStyle, useSharedValue, withRepeat, withTiming } from 'react-native-reanimated';
 
@@ -47,16 +47,17 @@ const QUICK = [
 
 export default function Home() {
   const { profile, university } = useAuth();
-  const { meetings, next, reload, loading } = useSchedule(profile?.id);
+  const { meetings, next, reload, loading, now } = useSchedule(profile?.id);
   const [unread, setUnread] = useState(0);
-  const today = new Date().getDay();
+  const today = now.getDay();
   const todays = meetings.filter((m) => m.weekday === today);
 
-  useEffect(() => {
+  // badge refreshes every time Home comes back into view (e.g. after reading notifications)
+  useFocusEffect(useCallback(() => {
     if (!profile) return;
-    supabase.from('notifications').select('id', { count: 'exact', head: true }).eq('user_id', (profile?.id ?? '')).is('read_at', null)
-      .then(({ count }) => setUnread(count ?? 0));
-  }, [profile]);
+    supabase.from('notifications').select('id', { count: 'exact', head: true }).eq('user_id', profile.id).is('read_at', null)
+      .then(({ count }) => setUnread(count ?? 0), () => {});
+  }, [profile]));
 
   const nxt = next?.m;
   const mins = next?.mins ?? 0;
@@ -74,7 +75,7 @@ export default function Home() {
           </View>
           <View style={{ flex: 1 }}>
             <T v="tiny" color={university?.brand_color ?? C.primary}>{nm(university)}</T>
-            <T v="h2" style={{ fontFamily: F.display, fontSize: 22 }}>{greeting()}{t('،')} {profile?.full_name?.split(' ')[0]}</T>
+            <T v="h2" style={{ fontFamily: F.display, fontSize: 22 }}>{greeting(now)}{t('،')} {profile?.full_name?.split(' ')[0]}</T>
           </View>
           <IconButton label={t('بحث')} onPress={() => router.push('/search')}><Search size={21} color={C.ink} /></IconButton>
           <IconButton label={t('الإشعارات')} badge={unread} onPress={() => router.push('/notifications')}><Wiggle trigger={unread}><Bell size={21} color={C.ink} /></Wiggle></IconButton>

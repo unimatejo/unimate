@@ -1,11 +1,11 @@
 import { Image } from 'expo-image';
 import { router, useLocalSearchParams } from 'expo-router';
-import { Clock, MapPin, Phone } from 'lucide-react-native';
+import { CircleAlert, Clock, MapPin, Phone } from 'lucide-react-native';
 import { useEffect, useState } from 'react';
-import { Linking, ScrollView, View } from 'react-native';
+import { Alert, Linking, ScrollView, View } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
 
-import { Button, Header, Loading, Row, Screen, T, Tag } from '@/components/ui';
+import { Button, Empty, Header, Loading, Row, Screen, T, Tag } from '@/components/ui';
 import { supabase } from '@/lib/supabase';
 import { C } from '@/lib/theme';
 import { t } from '@/lib/i18n';
@@ -19,18 +19,33 @@ const CAT: Record<string, string> = { restaurant: t('مطعم'), cafe: t('كاف
 export default function Advertiser() {
   const { id, campaign } = useLocalSearchParams<{ id: string; campaign?: string }>();
   const [a, setA] = useState<Adv | null>(null);
+  const [state, setState] = useState<'loading' | 'ok' | 'missing' | 'error'>('loading');
 
-  useEffect(() => {
-    supabase.rpc('advertiser_page', { adv: id }).then(({ data }) => setA(((data ?? []) as Adv[])[0] ?? null));
-  }, [id]);
+  const load = () => {
+    setState('loading');
+    supabase.rpc('advertiser_page', { adv: id }).then(({ data, error }) => {
+      if (error) { setState('error'); return; }
+      const row = ((data ?? []) as Adv[])[0] ?? null;
+      if (!row) { setState('missing'); return; }
+      setA({ ...row, photos: row.photos ?? [], menu: row.menu ?? [] }); setState('ok');
+    }, () => setState('error'));
+  };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(load, [id]);
 
   function call() {
     if (!a?.phone) return;
     if (campaign) supabase.rpc('track_ad', { campaign, what: 'call' });
-    Linking.openURL(`tel:${a.phone}`);
+    Linking.openURL(`tel:${a.phone.replace(/[^\d+]/g, '')}`).catch(() => Alert.alert(t('ما قدرنا نفتح الرابط')));
   }
 
-  if (!a) return <Screen><Header title="" /><Loading /></Screen>;
+  if (state !== 'ok' || !a) return (
+    <Screen><Header title="" />
+      {state === 'loading' ? <Loading /> : <Empty icon={<CircleAlert size={28} color={C.muted} />} title={state === 'missing' ? t('هالصفحة مش متوفرة') : t('ما قدرنا نحمّل')}
+        body={state === 'missing' ? t('يمكن الإعلان خلص.') : t('تأكد من الإنترنت وجرّب كمان مرة.')}
+        action={state === 'error' ? <Button kind="soft" title={t('جرّب مرة ثانية')} onPress={load} style={{ paddingHorizontal: 24 }} /> : undefined} />}
+    </Screen>
+  );
   const cover = a.photos[0];
 
   return (

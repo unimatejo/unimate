@@ -1,7 +1,7 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, useFocusEffect } from 'expo-router';
-import { Briefcase, BookOpen, Bus, Gift, GraduationCap, Image as ImageIcon, LayoutGrid, MessageSquare, NotebookPen, PartyPopper, Plus, Map as MapIcon, Search, SearchCheck, ShoppingBag } from 'lucide-react-native';
-import { useCallback, useEffect, useState } from 'react';
+import { Briefcase, BookOpen, CircleAlert, Bus, Gift, GraduationCap, Image as ImageIcon, LayoutGrid, MessageSquare, NotebookPen, PartyPopper, Plus, Map as MapIcon, Search, SearchCheck, ShoppingBag } from 'lucide-react-native';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { FlatList, RefreshControl, ScrollView, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 
@@ -11,7 +11,7 @@ import { PostCard } from '@/components/PostCard';
 import { GlyphTile, GRAD } from '@/components/Glyph';
 import { StoriesRow } from '@/components/StoriesRow';
 import { SuggestedPeople } from '@/components/SuggestedPeople';
-import { Avatar, Empty, IconButton, Row, Screen, Segmented, T, Tap } from '@/components/ui';
+import { Avatar, Button, Empty, IconButton, Row, Screen, Segmented, T, Tap } from '@/components/ui';
 import { useAuth } from '@/lib/auth';
 import { loadFeed, type FeedFilter } from '@/lib/posts';
 import { supabase } from '@/lib/supabase';
@@ -35,21 +35,41 @@ export default function Community() {
   const [loading, setLoading] = useState(true);
   const [likesOf, setLikesOf] = useState<Post | null>(null);
 
+  const [failed, setFailed] = useState(false);
+  const reqKey = useRef(0);          // ignore answers from a tab/category we already left
+  const paging = useRef(false);
+  const hasMore = useRef(true);
+  const scope = { universityId: profile?.university_id ?? null, collegeId: profile?.college_id ?? null };
+
   const load = useCallback(async () => {
     if (!profile) return;
+    const key = ++reqKey.current;
     setLoading(true);
-    setPosts(await loadFeed((profile?.id ?? ''), { tab: TABS[tab], category: cat }));
-    setLoading(false);
-  }, [profile, tab, cat]);
+    try {
+      const rows = await loadFeed(profile.id, { tab: TABS[tab], category: cat }, undefined, scope);
+      if (key !== reqKey.current) return;
+      setPosts(rows); setFailed(false); hasMore.current = rows.length >= 20;
+    } catch { if (key === reqKey.current) setFailed(true); }
+    finally { if (key === reqKey.current) setLoading(false); }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [profile?.id, profile?.university_id, profile?.college_id, tab, cat]);
 
   useEffect(() => { load(); }, [load]);
   // new posts show up as soon as you come back from posting
   useFocusEffect(useCallback(() => { load(); }, [load]));
 
   async function more() {
-    if (!profile || posts.length < 20) return;
-    const older = await loadFeed((profile?.id ?? ''), { tab: TABS[tab], category: cat }, posts[posts.length - 1].created_at);
-    setPosts((p) => [...p, ...older.filter((o) => !p.some((x) => x.id === o.id))]);
+    if (!profile || loading || paging.current || !hasMore.current || posts.length === 0) return;
+    const key = reqKey.current;
+    const last = [...posts].reverse().find((x) => !x.is_pinned) ?? posts[posts.length - 1];
+    paging.current = true;
+    try {
+      const older = await loadFeed(profile.id, { tab: TABS[tab], category: cat }, last.created_at, scope);
+      if (key !== reqKey.current) return;
+      hasMore.current = older.length >= 20;
+      setPosts((p) => [...p, ...older.filter((o) => !p.some((x) => x.id === o.id))]);
+    } catch { /* keep what we have; pulling down retries */ }
+    finally { paging.current = false; }
   }
 
   return (
@@ -106,10 +126,13 @@ export default function Community() {
           </Animated.View>
         )}
         ListFooterComponent={!loading && posts.length < 2 ? <View style={{ marginTop: 10 }}><SuggestedPeople /></View> : undefined}
-        ListEmptyComponent={loading ? <View style={{ paddingHorizontal: 18 }}><ListSkeleton n={3} kind="post" /></View> : (
-          <Empty icon={<Plus size={28} color={C.primary} />} title={tab === 2 ? t('تابع زملاءك عشان تشوف منشوراتهم') : t('كون أول واحد بينشر')}
-            body={t('اسأل سؤال، شارك ملخص، أو بلّغ عن غرض ضايع.')} />
-        )}
+        ListEmptyComponent={loading ? <View style={{ paddingHorizontal: 18 }}><ListSkeleton n={3} kind="post" /></View>
+          : failed ? <Empty icon={<CircleAlert size={28} color={C.red} />} title={t('ما قدرنا نحمّل')} body={t('تأكد من الإنترنت وجرّب كمان مرة.')}
+              action={<Button kind="soft" title={t('جرّب مرة ثانية')} onPress={load} style={{ paddingHorizontal: 24 }} />} />
+          : tab === 1 && !profile?.college_id ? <Empty icon={<GraduationCap size={28} color={C.primary} />} title={t('اختار كليتك أول')} body={t('عشان نوريك منشورات كليتك.')}
+              action={<Button kind="soft" title={t('تعديل البروفايل')} onPress={() => router.push('/settings/edit-profile')} style={{ paddingHorizontal: 24 }} />} />
+          : <Empty icon={<Plus size={28} color={C.primary} />} title={tab === 2 ? t('تابع زملاءك عشان تشوف منشوراتهم') : t('كون أول واحد بينشر')}
+            body={t('اسأل سؤال، شارك ملخص، أو بلّغ عن غرض ضايع.')} />}
       />
       <Tap onPress={() => router.push('/post/new')} accessibilityLabel={t('منشور جديد')}
         scale={0.88} style={{ position: 'absolute', left: 18, bottom: 104, width: 60, height: 60, borderRadius: 22, shadowColor: '#E0306B', shadowOpacity: 0.45, shadowRadius: 16, shadowOffset: { width: 0, height: 10 }, elevation: 8 }}>

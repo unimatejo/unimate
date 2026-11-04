@@ -5,6 +5,8 @@ import { FlatList, TextInput, View } from 'react-native';
 import { Avatar, Empty, Header, Row, Screen, T, Tap } from '@/components/ui';
 import { useAuth } from '@/lib/auth';
 import { supabase } from '@/lib/supabase';
+import { optimistic } from '@/lib/run';
+import { normalize } from '@/lib/util';
 import { C, F, isDark } from '@/lib/theme';
 import { nm, t, ta } from '@/lib/i18n';
 
@@ -28,14 +30,15 @@ export default function CloseFriends() {
 
   async function toggle(id: string) {
     const on = picked.has(id);
-    setPicked((s) => { const n = new Set(s); if (on) n.delete(id); else n.add(id); return n; });
-    if (on) await supabase.from('close_friends').delete().eq('owner_id', (profile?.id ?? '')).eq('friend_id', id);
-    else await supabase.from('close_friends').insert({ owner_id: (profile?.id ?? ''), friend_id: id });
+    const set = (v: boolean) => setPicked((s) => { const n = new Set(s); if (v) n.add(id); else n.delete(id); return n; });
+    await optimistic(`cf:${id}`, () => set(!on), () => set(on), () => (on
+      ? supabase.from('close_friends').delete().eq('owner_id', profile?.id ?? '').eq('friend_id', id)
+      : supabase.from('close_friends').insert({ owner_id: profile?.id ?? '', friend_id: id }).then((r) => (r.error?.code === '23505' ? { ...r, error: null } : r))));
   }
 
   const shown = useMemo(() => {
-    const s = q.trim();
-    const list = s ? people.filter((p) => p.full_name.includes(s)) : people;
+    const s = normalize(q);
+    const list = s ? people.filter((p) => normalize(p.full_name).includes(s)) : people;
     return [...list].sort((a, b) => Number(picked.has(b.id)) - Number(picked.has(a.id)));
   }, [people, q, picked]);
 

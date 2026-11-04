@@ -2,7 +2,7 @@ import { CheckCircle2, Clock, LifeBuoy } from 'lucide-react-native';
 import { useCallback, useEffect, useState } from 'react';
 import { Alert, KeyboardAvoidingView, Platform, ScrollView, View } from 'react-native';
 
-import { Button, Chip, Field, Header, Row, Screen, T } from '@/components/ui';
+import { Button, Chip, Field, Header, Row, Screen, T, Tag } from '@/components/ui';
 import { useAuth } from '@/lib/auth';
 import { supabase } from '@/lib/supabase';
 import { C } from '@/lib/theme';
@@ -10,7 +10,8 @@ import { timeAgo } from '@/lib/util';
 import { t } from '@/lib/i18n';
 
 type Ticket = { id: string; subject: string; body: string; status: string; reply: string | null; created_at: string };
-const TOPICS = [t('مشكلة بالجدول'), t('مشكلة بالدخول'), t('بلاغ عن شخص'), t('اقتراح'), t('إعلان لمحلي'), t('إشي تاني')];
+const TOPICS = [t('مشكلة بالجدول'), t('مشكلة بالدخول'), t('بلاغ عن شخص'), t('اقتراح'), t('إعلان لمحلي'), t('طلب نسخة من بياناتي'), t('إشي تاني')];
+const STATUS: Record<string, [string, string, string]> = { open: [t('مفتوح'), C.orangeSoft, C.orangeInk], answered: [t('انرد عليه'), C.greenSoft, C.greenInk], closed: [t('مسكّر'), C.soft, C.muted] };
 
 export default function Support() {
   const { profile } = useAuth();
@@ -27,10 +28,13 @@ export default function Support() {
   useEffect(() => { load(); }, [load]);
 
   async function send() {
+    if (busy || !profile) return;
     if (body.trim().length < 5) { Alert.alert(t('اكتب تفاصيل أكتر شوي')); return; }
     setBusy(true);
-    const { error } = await supabase.from('support_tickets').insert({ user_id: (profile?.id ?? ''), subject: topic, body: body.trim() });
-    setBusy(false);
+    let error: unknown = null;
+    try { ({ error } = await supabase.from('support_tickets').insert({ user_id: profile.id, subject: topic, body: body.trim() })); }
+    catch (e) { error = e; }
+    finally { setBusy(false); }
     if (error) { Alert.alert(t('ما زبط'), t('جرّب كمان مرة.')); return; }
     setBody(''); load();
     Alert.alert(t('وصلتنا ✓'), t('بنرد عليك هون بأسرع وقت.'));
@@ -54,6 +58,7 @@ export default function Support() {
               <Row gap={8}>
                 {tk.status === 'open' ? <Clock size={16} color={C.orange} /> : <CheckCircle2 size={16} color={C.green} />}
                 <T v="bold" style={{ flex: 1 }}>{tk.subject}</T>
+                <Tag label={(STATUS[tk.status] ?? STATUS.open)[0]} bg={(STATUS[tk.status] ?? STATUS.open)[1]} fg={(STATUS[tk.status] ?? STATUS.open)[2]} />
                 <T v="tiny" color={C.muted}>{timeAgo(tk.created_at)}</T>
               </Row>
               <T v="small" color={C.ink2}>{tk.body}</T>

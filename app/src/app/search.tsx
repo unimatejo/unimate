@@ -1,7 +1,7 @@
 import { router } from 'expo-router';
 import { BookOpen, Building2, Link as LinkIcon, MapPin, Search as SearchIcon } from 'lucide-react-native';
-import { useEffect, useState } from 'react';
-import { FlatList, Linking, TextInput, View } from 'react-native';
+import { useEffect, useRef, useState } from 'react';
+import { ActivityIndicator, Alert, FlatList, Linking, TextInput, View } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
 
 import { Avatar, Chip, Empty, Header, Row, Screen, T, Tap } from '@/components/ui';
@@ -24,41 +24,64 @@ export default function Search() {
   const [links, setLinks] = useState<{ id: string; title: string; url: string }[]>([]);
 
   const [explore, setExplore] = useState<Post[]>([]);
+  const [searching, setSearching] = useState(false);
+  const [blocked, setBlocked] = useState<Set<string>>(new Set());
   useEffect(() => {
+    if (!profile) return;
+    supabase.from('blocks').select('blocker_id, blocked_id').or(`blocker_id.eq.${profile.id},blocked_id.eq.${profile.id}`)
+      .then(({ data }) => setBlocked(new Set((data ?? []).map((b) => (b.blocker_id === profile.id ? b.blocked_id : b.blocker_id)))), () => {});
+  }, [profile]);
+
+  useEffect(() => {
+    if (!profile?.university_id) return;
     // most liked recent posts at your university
-    supabase.from('posts').select(POST_SELECT).gte('created_at', new Date(Date.now() - 30 * 86400000).toISOString())
+    supabase.from('posts').select(POST_SELECT).eq('university_id', profile.university_id).is('community_id', null).gte('created_at', new Date(Date.now() - 30 * 86400000).toISOString())
       .order('like_count', { ascending: false }).order('created_at', { ascending: false }).limit(21)
-      .then(({ data }) => setExplore((data ?? []) as unknown as Post[]));
-  }, []);
+      .then(({ data }) => setExplore((data ?? []) as unknown as Post[]), () => {});
+  }, [profile?.university_id]);
 
   useEffect(() => {
     if (!university) return;
     supabase.from('university_links').select('id, title, url').eq('university_id', university.id).order('position').then(({ data }) => setLinks(data ?? []));
   }, [university]);
 
+  const seq = useRef(0);
   useEffect(() => {
-    const t = setTimeout(async () => {
-      const s = q.trim().replace(/^@/, '');
-      if (s.length < 2) { setRows([]); return; }
+    const s = q.trim().replace(/^@+/, '');
+    if (s.length < 2) { setRows([]); setSearching(false); return; }
+    setSearching(true);
+    const my = ++seq.current;
+    const timer = setTimeout(async () => {
       const out: R[] = [];
-      if (kind !== 'campus') {
-        const { data } = await supabase.from('profiles').select('id, full_name, username, is_verified, avatar_url, major:majors(name_ar, name_en)').or(`full_name.ilike.%${s.replace(/[,()]/g, ' ')}%,username.ilike.%${s.replace(/^@/, '').replace(/[,()]/g, ' ').toLowerCase()}%`).neq('id', profile?.id ?? '').limit(15);
+      try {
+        // escape LIKE wildcards and PostgREST separators so "%", "_" or "," search literally
+        const like = s.replace(/[\\%_]/g, (c) => '\\' + c).replace(/[,()"]/g, ' ');
+        const [people, campus] = await Promise.all([
+          kind !== 'campus'
+            ? supabase.from('profiles').select('id, full_name, username, is_verified, avatar_url, major:majors(name_ar, name_en)')
+              .or(`full_name.ilike.%${like}%,username.ilike.%${like.toLowerCase()}%`).neq('id', profile?.id ?? '').limit(15)
+            : Promise.resolve({ data: [] }),
+          kind !== 'people' ? supabase.rpc('campus_search', { q: s, lim: 20 }) : Promise.resolve({ data: [] }),
+        ]);
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        out.push(...((data ?? []) as any[]).map((p) => ({ kind: 'person', id: p.id, title: p.full_name, subtitle: [p.username ? '@' + p.username : null, nm(p.major)].filter(Boolean).join(' · '), avatar: p.avatar_url })));
-      }
-      if (kind !== 'people') {
-        const { data } = await supabase.rpc('campus_search', { q: s, lim: 20 });
-        out.push(...((data ?? []) as R[]));
-      }
-      setRows(out);
+        out.push(...((people.data ?? []) as any[]).filter((p) => !blocked.has(p.id)).map((p) => ({ kind: 'person', id: p.id, title: p.full_name, subtitle: [p.username ? '@' + p.username : null, nm(p.major)].filter(Boolean).join(' · '), avatar: p.avatar_url })));
+        out.push(...((campus.data ?? []) as R[]));
+      } catch { /* keep the empty list; the message below explains */ }
+      if (my !== seq.current) return; // a newer search already started
+      setRows(out); setSearching(false);
     }, 250);
-    return () => clearTimeout(t);
-  }, [q, kind, profile]);
+    return () => clearTimeout(timer);
+  }, [q, kind, profile, blocked]);
+
+  function openLink(url: string) {
+    if (!/^https?:\/\//i.test(url)) { Alert.alert(t('الرابط مش صالح')); return; }
+    Linking.openURL(url).catch(() => Alert.alert(t('ما قدرنا نفتح الرابط')));
+  }
 
   function open(r: R) {
     if (r.kind === 'person') router.push({ pathname: '/user/[id]', params: { id: r.id } });
-    else if (r.kind === 'link') Linking.openURL(r.subtitle);
-    else if (r.kind === 'course') router.push('/swap');
+    else if (r.kind === 'link') openLink(r.subtitle);
+    else if (r.kind === 'course') router.push({ pathname: '/courses', params: { add: r.title } });
     else router.push({ pathname: '/map', params: { building: r.id } });
   }
 
@@ -96,7 +119,7 @@ export default function Search() {
             </Tap>
           </Animated.View>
         )}
-        ListEmptyComponent={q.trim().length >= 2 ? <Empty title={t('ما لقينا إشي')} body={t('جرّب اسم المادة أو المبنى أو لقب المكان.')} /> : (
+        ListEmptyComponent={q.trim().length >= 2 ? searching ? <ActivityIndicator color={C.primary} style={{ marginTop: 24 }} /> : <Empty title={t('ما لقينا إشي')} body={t('جرّب اسم المادة أو المبنى أو لقب المكان.')} /> : (
           <View style={{ gap: 10 }}>
             <View style={{ marginHorizontal: -18, marginBottom: 8 }}><SuggestedPeople /></View>
             {explore.length > 0 && (
@@ -109,7 +132,7 @@ export default function Search() {
             )}
             <T v="h3">{t('روابط جامعتك')}</T>
             {links.length === 0 ? <T v="small" color={C.muted}>{t('بتنضاف قريباً.')}</T> : links.map((l) => (
-              <Tap key={l.id} onPress={() => Linking.openURL(l.url)} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 56, backgroundColor: C.card, borderRadius: 18, paddingHorizontal: 14 }}>
+              <Tap key={l.id} onPress={() => openLink(l.url)} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 56, backgroundColor: C.card, borderRadius: 18, paddingHorizontal: 14 }}>
                 <LinkIcon size={19} color={C.violet} /><T v="bodyMd">{l.title}</T>
               </Tap>
             ))}

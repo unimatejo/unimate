@@ -1,11 +1,12 @@
 import { router } from 'expo-router';
 import { Heart, Lock } from 'lucide-react-native';
 import { useEffect, useState } from 'react';
-import { FlatList, Modal, Pressable, View } from 'react-native';
+import { ActivityIndicator, FlatList, Modal, Pressable, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Avatar, Button, Row, T, Tap } from './ui';
 import { useAuth } from '@/lib/auth';
+import { run } from '@/lib/run';
 import { supabase } from '@/lib/supabase';
 import { C } from '@/lib/theme';
 import type { Post } from '@/lib/types';
@@ -17,26 +18,33 @@ export function LikesSheet({ post, onClose }: { post: Post | null; onClose: () =
   const { profile } = useAuth();
   const insets = useSafeAreaInsets();
   const [rows, setRows] = useState<Liker[]>([]);
-  const [following, setFollowing] = useState<Set<string>>(new Set());
+  const [following, setFollowing] = useState<Map<string, string>>(new Map());
+  const [busy, setBusy] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!post || !profile) return;
+    setRows([]); setLoading(true);
     supabase.from('post_likes').select('user_id, profile:profiles(id, full_name, avatar_url, major:majors(name_ar, name_en))').eq('post_id', post.id).order('created_at', { ascending: false }).limit(200)
-      .then(({ data }) => setRows((data ?? []) as unknown as Liker[]));
-    supabase.from('follows').select('followee_id').eq('follower_id', (profile?.id ?? ''))
-      .then(({ data }) => setFollowing(new Set((data ?? []).map((x) => x.followee_id))));
+      .then(({ data }) => { setRows((data ?? []) as unknown as Liker[]); setLoading(false); }, () => setLoading(false));
+    supabase.from('follows').select('followee_id, status').eq('follower_id', profile.id)
+      .then(({ data }) => setFollowing(new Map((data ?? []).map((x) => [x.followee_id as string, x.status as string]))));
   }, [post, profile]);
 
   async function follow(uid: string) {
-    if (!profile) return;
-    if (following.has(uid)) {
-      await supabase.from('follows').delete().eq('follower_id', (profile?.id ?? '')).eq('followee_id', uid);
-      setFollowing((s) => { const n = new Set(s); n.delete(uid); return n; });
-    } else {
-      await supabase.from('follows').insert({ follower_id: (profile?.id ?? ''), followee_id: uid });
-      setFollowing((s) => new Set(s).add(uid));
-    }
+    if (!profile || busy) return;
+    setBusy(uid);
+    try {
+      if (following.has(uid)) {
+        const r = await run(supabase.from('follows').delete().eq('follower_id', profile.id).eq('followee_id', uid));
+        if (r.ok) setFollowing((s) => { const n = new Map(s); n.delete(uid); return n; });
+      } else {
+        const r = await run(supabase.from('follows').insert({ follower_id: profile.id, followee_id: uid }).select('status').single());
+        if (r.ok) setFollowing((s) => new Map(s).set(uid, (r.data as { status: string } | null)?.status ?? 'accepted'));
+      }
+    } finally { setBusy(null); }
   }
+  const label = (uid: string) => { const st = following.get(uid); return !st ? t('متابعة') : st === 'pending' ? t('تم الطلب') : t('تتابعه'); };
 
   return (
     <Modal visible={!!post} transparent animationType="slide" onRequestClose={onClose}>
@@ -60,12 +68,12 @@ export function LikesSheet({ post, onClose }: { post: Post | null; onClose: () =
                 </View>
               </Tap>
               {item.user_id !== profile?.id && (
-                <Button kind={following.has(item.user_id) ? 'soft' : 'primary'} title={following.has(item.user_id) ? t('تتابعه') : t('متابعة')}
-                  onPress={() => follow(item.user_id)} style={{ minHeight: 38, paddingHorizontal: 14, borderRadius: 12 }} />
+                <Button kind={following.has(item.user_id) ? 'soft' : 'primary'} title={label(item.user_id)}
+                  loading={busy === item.user_id} disabled={!!busy} onPress={() => follow(item.user_id)} style={{ minHeight: 38, paddingHorizontal: 14, borderRadius: 12 }} />
               )}
             </Row>
           )}
-          ListEmptyComponent={<T v="small" color={C.muted}>{t('ما في إعجابات لهلأ.')}</T>}
+          ListEmptyComponent={loading ? <ActivityIndicator color={C.primary} style={{ marginVertical: 24 }} /> : <T v="small" color={C.muted}>{t('ما في إعجابات لهلأ.')}</T>}
         />
         <Row gap={6} style={{ marginTop: 10 }}>
           <Lock size={14} color={C.muted} />

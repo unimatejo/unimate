@@ -5,7 +5,7 @@ import { router } from 'expo-router';
 import { ChevronRight, CircleAlert } from 'lucide-react-native';
 import { forwardRef, useEffect, useRef, type ComponentRef, type ReactNode } from 'react';
 import {
-  ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View,
+  ActivityIndicator, I18nManager, Pressable, StyleSheet, Text, TextInput, View,
   type PressableProps, type StyleProp, type TextInputProps, type TextProps, type TextStyle, type ViewStyle,
 } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withRepeat, withSequence, withSpring, withTiming } from 'react-native-reanimated';
@@ -59,7 +59,7 @@ export function Tap({ children, style, onPress, haptic = true, scale = 0.96, thr
         const now = Date.now();
         if (throttle && now - last.current < throttle) return;
         last.current = now;
-        if (haptic) Haptics.selectionAsync().catch(() => {});
+        if (haptic && onPress && !p.disabled) Haptics.selectionAsync().catch(() => {});
         onPress?.(e);
       }}
       style={[style, a]}
@@ -132,15 +132,18 @@ export function Segmented({ items, value, onChange, dark }: { items: string[]; v
   const w = useSharedValue(0);
   const x = useSharedValue(0);
   const pill = useAnimatedStyle(() => ({ width: w.value, transform: [{ translateX: x.value }] }));
+  // the first tab sits at the "start" edge: right in Arabic, left in English
+  const dir = I18nManager.isRTL ? -1 : 1;
+  useEffect(() => { if (w.value) x.value = withSpring(dir * value * w.value, { damping: 18, stiffness: 220 }); }, [value, dir, w, x]);
   return (
     <View
-      onLayout={(e) => { const cw = (e.nativeEvent.layout.width - 8) / items.length; w.value = cw; x.value = -value * cw; }}
+      onLayout={(e) => { const cw = (e.nativeEvent.layout.width - 8) / items.length; w.value = cw; x.value = dir * value * cw; }}
       style={{ flexDirection: 'row', backgroundColor: dark ? 'rgba(255,255,255,0.16)' : C.soft, borderRadius: 14, padding: 4 }}
     >
-      <Animated.View style={[{ position: 'absolute', top: 4, bottom: 4, right: 4, borderRadius: 11, backgroundColor: C.card }, shadow, pill]} />
+      <Animated.View style={[{ position: 'absolute', top: 4, bottom: 4, start: 4, borderRadius: 11, backgroundColor: C.card }, shadow, pill]} />
       {items.map((it, i) => (
         <Pressable key={it} accessibilityRole="tab" accessibilityState={{ selected: i === value }}
-          onPress={() => { Haptics.selectionAsync(); onChange(i); x.value = withSpring(-i * w.value, { damping: 18, stiffness: 220 }); }}
+          onPress={() => { if (i === value) return; Haptics.selectionAsync().catch(() => {}); onChange(i); }}
           style={{ flex: 1, minHeight: 38, alignItems: 'center', justifyContent: 'center' }}>
           <Text style={{ fontFamily: i === value ? F.bodyBold : F.body, fontSize: 13, color: i === value ? (dark ? C.ink : C.ink) : (dark ? C.white : C.muted) }}>{it}</Text>
         </Pressable>
@@ -202,9 +205,11 @@ export const Field = forwardRef<ComponentRef<typeof TextInput>, TextInputProps &
 });
 
 export function Toggle({ value, onChange, label, hint, icon }: { value: boolean; onChange: (v: boolean) => void; label: string; hint?: string; icon?: ReactNode }) {
-  const x = useAnimatedStyle(() => ({ transform: [{ translateX: withSpring(value ? 0 : -20, { damping: 16, stiffness: 240 }) }] }), [value]);
+  // knob starts at the "start" edge when off and slides to the end when on, mirrored like iOS in Arabic
+  const end = I18nManager.isRTL ? -20 : 20;
+  const x = useAnimatedStyle(() => ({ transform: [{ translateX: withSpring(value ? end : 0, { damping: 16, stiffness: 240 }) }] }), [value, end]);
   return (
-    <Pressable onPress={() => { Haptics.selectionAsync(); onChange(!value); }} accessibilityRole="switch" accessibilityState={{ checked: value }}
+    <Pressable onPress={() => { Haptics.selectionAsync().catch(() => {}); onChange(!value); }} accessibilityRole="switch" accessibilityLabel={label} accessibilityHint={hint} accessibilityState={{ checked: value }}
       style={{ flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 62 }}>
       {icon}
       <View style={{ flex: 1 }}>

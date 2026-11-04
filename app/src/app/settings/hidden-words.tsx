@@ -5,6 +5,7 @@ import { ScrollView, TextInput, View } from 'react-native';
 import { Header, Row, Screen, T, Tap } from '@/components/ui';
 import { useAuth } from '@/lib/auth';
 import { supabase } from '@/lib/supabase';
+import { run } from '@/lib/run';
 import { C, F, isDark } from '@/lib/theme';
 import { t, ta } from '@/lib/i18n';
 
@@ -19,14 +20,16 @@ export default function HiddenWords() {
   }, [profile]);
 
   async function add() {
-    const v = w.trim();
+    const v = w.trim().toLowerCase().slice(0, 40);
     if (!v || words.includes(v)) { setW(''); return; }
     setWords((x) => [v, ...x]); setW('');
-    await supabase.from('hidden_words').insert({ user_id: (profile?.id ?? ''), word: v });
+    const r = await run(supabase.from('hidden_words').insert({ user_id: profile?.id ?? '', word: v }));
+    if (!r.ok && r.error?.code !== '23505') { setWords((x) => x.filter((y) => y !== v)); setW(v); }
   }
   async function remove(v: string) {
     setWords((x) => x.filter((y) => y !== v));
-    await supabase.from('hidden_words').delete().eq('user_id', (profile?.id ?? '')).eq('word', v);
+    const r = await run(supabase.from('hidden_words').delete().eq('user_id', profile?.id ?? '').eq('word', v));
+    if (!r.ok) setWords((x) => [v, ...x]);
   }
 
   return (
@@ -38,7 +41,7 @@ export default function HiddenWords() {
           <T v="small" color={C.ink2} style={{ flex: 1 }}>{t('أي تعليق أو طلب رسالة فيه هاي الكلمات بيتخبّى عنك تلقائياً.')}</T>
         </Row>
         <Row gap={8}>
-          <TextInput keyboardAppearance={isDark ? 'dark' : 'light'} value={w} onChangeText={setW} onSubmitEditing={add} placeholder={t('أضف كلمة أو جملة')} placeholderTextColor={C.faint} returnKeyType="done"
+          <TextInput keyboardAppearance={isDark ? 'dark' : 'light'} value={w} onChangeText={setW} onSubmitEditing={add} placeholder={t('أضف كلمة أو جملة')} placeholderTextColor={C.faint} returnKeyType="done" maxLength={40}
             style={{ flex: 1, minHeight: 50, borderRadius: 16, backgroundColor: C.card, paddingHorizontal: 14, fontFamily: F.body, fontSize: 15, color: C.ink, textAlign: ta }} />
           <Tap onPress={add} accessibilityLabel={t('أضف')} style={{ width: 50, height: 50, borderRadius: 16, backgroundColor: C.inverse, alignItems: 'center', justifyContent: 'center' }}><Plus size={22} color={C.onInverse} /></Tap>
         </Row>

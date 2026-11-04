@@ -6,6 +6,8 @@ import { Alert, FlatList, TextInput, View } from 'react-native';
 import { Avatar, Button, Header, Row, Screen, T, Tap } from '@/components/ui';
 import { useAuth } from '@/lib/auth';
 import { supabase } from '@/lib/supabase';
+import { toast } from '@/lib/toast';
+import { normalize } from '@/lib/util';
 import { C, F, isDark } from '@/lib/theme';
 import { t, ta } from '@/lib/i18n';
 
@@ -27,23 +29,35 @@ export default function Share() {
       .then(({ data }) => setPeople(((data ?? []) as any[]).map((x) => x.p).filter(Boolean)));
   }, [profile]);
 
-  const shown = useMemo(() => (q.trim() ? people.filter((p) => p.full_name.includes(q.trim())) : people), [people, q]);
+  const shown = useMemo(() => { const k = normalize(q); return k ? people.filter((p) => normalize(p.full_name).includes(k)) : people; }, [people, q]);
 
   function toggle(id: string) {
     setPicked((s) => { const n = new Set(s); if (n.has(id)) n.delete(id); else n.add(id); return n; });
   }
 
   async function send() {
+    if (!profile || busy || picked.size === 0) return;
     setBusy(true);
     let ok = 0;
-    for (const id of picked) {
-      const { data: conv } = await supabase.rpc('start_direct', { target: id, context: t('مشاركة منشور') });
-      if (!conv) continue;
-      const { error } = await supabase.from('messages').insert({ conversation_id: conv, sender_id: (profile?.id ?? ''), kind: 'post_share', ref_id: post, body: note.trim() || null });
-      if (!error) ok++;
-    }
-    setBusy(false);
+    const sent: string[] = [];
+    try {
+      for (const id of picked) {
+        try {
+          const { data: conv } = await supabase.rpc('start_direct', { target: id, context: t('مشاركة منشور') });
+          if (!conv) continue;
+          const { error } = await supabase.from('messages').insert({ conversation_id: conv, sender_id: profile.id, kind: 'post_share', ref_id: post, body: note.trim() || null });
+          if (!error) { ok++; sent.push(id); }
+        } catch { /* try the next person */ }
+      }
+    } finally { setBusy(false); }
     if (!ok) { Alert.alert(t('ما زبط'), t('جرّب كمان مرة.')); return; }
+    if (ok < picked.size) {
+      // keep only the ones that failed selected, so a second tap retries them
+      setPicked((s) => { const n = new Set(s); sent.forEach((x) => n.delete(x)); return n; });
+      Alert.alert(t('انبعت لـ {0} من {1}. الباقي ما زبط.', [ok, ok + picked.size - sent.length]));
+      return;
+    }
+    toast(t('انبعت'));
     router.back();
   }
 
@@ -70,7 +84,7 @@ export default function Share() {
                 <Avatar id={item.id} name={item.full_name} url={item.avatar_url} size={62} />
                 {on && <View style={{ position: 'absolute', bottom: -2, left: -2, width: 24, height: 24, borderRadius: 12, backgroundColor: C.primary, borderWidth: 2.5, borderColor: C.bg, alignItems: 'center', justifyContent: 'center' }}><Check size={13} color={C.white} strokeWidth={3} /></View>}
               </View>
-              <T v="tiny" numberOfLines={1} style={{ textAlign: 'center' }}>{item.full_name.split(' ')[0]}</T>
+              <T v="tiny" numberOfLines={1} style={{ textAlign: 'center' }}>{(item.full_name ?? '').split(' ')[0]}</T>
             </Tap>
           );
         }}
