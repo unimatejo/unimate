@@ -128,6 +128,8 @@ export default function Notifications() {
   function open(n: N) {
     const d = n.data ?? {};
     if (n.kind === 'swap_match') return router.push('/swap');
+    // app broke / content waiting for review: straight to the right admin screen
+    if (n.kind === 'admin_alert') return router.push((typeof d.url === 'string' && d.url.startsWith('/admin') ? d.url : '/admin/errors') as never);
     if (['exam', 'lecture', 'assignment', 'event', 'summary'].includes(n.kind)) return router.push('/(tabs)/schedule');
     if ((n.kind === 'message' || n.kind === 'call') && d.conversation_id) return router.push({ pathname: '/messages/[id]', params: { id: d.conversation_id } });
     if (n.kind === 'message_request') return router.push('/messages/requests');

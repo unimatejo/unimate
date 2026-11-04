@@ -1,6 +1,6 @@
 import { useFocusEffect } from 'expo-router';
 import {
-  BadgePercent, BarChart3, Bug, Flag, LifeBuoy, Map, Megaphone, MessagesSquare, ScrollText, Send, ShieldCheck, SquareStack, Users, GraduationCap, type LucideIcon } from 'lucide-react-native';
+  BadgePercent, BarChart3, Bug, Flag, LifeBuoy, Map, Megaphone, MessagesSquare, ScrollText, Send, ShieldCheck, SquareStack, Users, GraduationCap, ShieldAlert, type LucideIcon } from 'lucide-react-native';
 import { useCallback, useState } from 'react';
 import { View } from 'react-native';
 
@@ -12,13 +12,14 @@ import { t } from '@/lib/i18n';
 
 type Stats = {
   users: number; users_7d: number; active_today: number; posts: number; posts_7d: number; messages_7d: number;
-  reports_open: number; tickets_open: number; titles_pending?: number; aliases_pending: number; places_pending: number; ads_live: number;
+  reports_open: number; tickets_open: number; titles_pending?: number; mod_pending?: number; aliases_pending: number; places_pending: number; ads_live: number;
   per_university: { id: string; slug: string; name_ar: string; data_status: string; users: number; posts_7d: number }[];
 };
 
 type Sec = { key: string; label: string; icon: LucideIcon; color: string; badge?: (s: Stats) => number; owner?: boolean };
 const SECTIONS: Sec[] = [
   { key: 'reports', label: t('البلاغات'), icon: Flag, color: C.red, badge: (s) => s.reports_open },
+  { key: 'moderation', label: t('فحص المحتوى'), icon: ShieldAlert, color: C.orange, badge: (s) => s.mod_pending ?? 0 },
   { key: 'users', label: t('المستخدمين'), icon: Users, color: C.blue },
   { key: 'titles', label: t('توثيق الأساتذة'), icon: GraduationCap, color: '#3D6BFF', badge: (s) => s.titles_pending ?? 0 },
   { key: 'chats', label: t('المحادثات'), icon: MessagesSquare, color: C.violet },
@@ -51,7 +52,8 @@ export default function AdminHome() {
     Promise.all([
       supabase.rpc('admin_stats'),
       supabase.from('title_requests').select('id', { count: 'exact', head: true }).eq('status', 'pending'),
-    ]).then(([st, tr]) => { if (st.data) setS({ ...(st.data as Stats), titles_pending: tr.count ?? 0 }); }, () => {});
+      supabase.from('moderation_queue').select('id', { count: 'exact', head: true }).eq('status', 'pending'),
+    ]).then(([st, tr, mq]) => { if (st.data) setS({ ...(st.data as Stats), titles_pending: tr.count ?? 0, mod_pending: mq.count ?? 0 }); }, () => {});
   }, [role]));
 
   return (
