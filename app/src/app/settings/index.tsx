@@ -2,9 +2,8 @@ import Constants from 'expo-constants';
 import { router } from 'expo-router';
 import {
   BadgeCheck, Ban, Bell, KeyRound, Palette, Search, Bookmark, ChevronLeft, CircleHelp, EyeOff, FileText, Lock, LogOut, MessageCircle, Shield, Star, Trash2, UserPen, UserPlus, Users, Info, ShieldCheck } from 'lucide-react-native';
-import * as WebBrowser from 'expo-web-browser';
 import { useEffect, useState, type ReactNode } from 'react';
-import { Alert, Platform, ScrollView, TextInput, View } from 'react-native';
+import { Alert, ScrollView, TextInput, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 
 import { Avatar, Header, IconTile, Row, Screen, T, Tap } from '@/components/ui';
@@ -45,13 +44,7 @@ export default function Settings() {
   // the owner / moderators get the admin panel right here, signed in already
   const [admin, setAdmin] = useState(false);
   useEffect(() => { supabase.rpc('is_admin').then(({ data }) => setAdmin(data === true), () => {}); }, []);
-  async function openAdmin() {
-    const r = await run(supabase.rpc('admin_handoff_code'), { msg: t('ما زبط فتح لوحة الإدارة، جرّب كمان مرة.') });
-    if (!r.ok || typeof r.data !== 'string') return;
-    const url = `https://admin.unimate.my/?h=${r.data}`;
-    if (Platform.OS === 'web') window.location.assign(url);
-    else WebBrowser.openBrowserAsync(url, { presentationStyle: WebBrowser.WebBrowserPresentationStyle.FULL_SCREEN }).catch(() => {});
-  }
+  const openAdmin = () => router.push('/admin');
 
   function logout() {
     Alert.alert(t('تسجيل الخروج'), t('أكيد بدك تطلع من حسابك؟'), [
