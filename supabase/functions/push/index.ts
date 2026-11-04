@@ -28,18 +28,20 @@ async function forMessage(id: string): Promise<Push[]> {
   if (!c || !['direct', 'group'].includes(c.kind)) return [];
   const to = (mem ?? []).filter((x) => x.user_id !== m.sender_id && x.state !== 'left' && !x.muted).map((x) => x.user_id);
   if (!to.length) return [];
-  const { data: prefs } = await db.from('notification_prefs').select('user_id, messages').in('user_id', to);
+  const { data: prefs } = await db.from('notification_prefs').select('user_id, messages, preview').in('user_id', to);
   const off = new Set((prefs ?? []).filter((p) => p.messages === false).map((p) => p.user_id));
+  // "show message text" off: the lock screen only says there's a new message
+  const hidden = new Set((prefs ?? []).filter((p) => p.preview === false).map((p) => p.user_id));
   const name = who?.full_name || 'حدا';
   const text = c.vanish ? 'رسالة جديدة' : (m.kind === 'text' ? (m.body ?? '') : PREVIEW[m.kind] ?? 'رسالة جديدة').slice(0, 140);
   const group = c.kind === 'group';
   return to.filter((u) => !off.has(u)).map((u) => ({
     user_id: u,
-    title: group ? (c.title || 'مجموعة') : name,
-    body: group ? `${name}: ${text}` : text,
+    title: group ? (c.title || 'مجموعة') : (hidden.has(u) ? 'يونيميت' : name),
+    body: hidden.has(u) ? 'رسالة جديدة' : group ? `${name}: ${text}` : text,
     url: `/messages/${m.conversation_id}`,
     tag: `c-${m.conversation_id}`,
-    icon: who?.avatar_url ?? undefined,
+    icon: hidden.has(u) ? undefined : who?.avatar_url ?? undefined,
   }));
 }
 

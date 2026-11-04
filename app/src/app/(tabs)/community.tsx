@@ -19,6 +19,7 @@ import { CATEGORY, C } from '@/lib/theme';
 import type { Post } from '@/lib/types';
 import { nm, t } from '@/lib/i18n';
 import { ListSkeleton } from '@/components/Skeleton';
+import { useScreenTimer } from '@/lib/perf';
 
 const TABS: FeedFilter['tab'][] = ['university', 'college', 'following'];
 const CAT_ICON = {
@@ -33,6 +34,7 @@ export default function Community() {
   const [cat, setCat] = useState<string | null>(null);
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
+  useScreenTimer('feed', !loading);
   const [likesOf, setLikesOf] = useState<Post | null>(null);
 
   const [failed, setFailed] = useState(false);

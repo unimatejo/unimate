@@ -1,4 +1,4 @@
-import { AlarmClock, Mail, BellRing, CalendarDays, Heart, Megaphone, MessageCircle, Moon, Users } from 'lucide-react-native';
+import { AlarmClock, EyeOff, Mail, BellRing, CalendarDays, Heart, Megaphone, MessageCircle, Moon, Users } from 'lucide-react-native';
 import { useEffect, useState, type ReactNode } from 'react';
 import { Alert, Linking, ScrollView, View } from 'react-native';
 
@@ -79,6 +79,7 @@ export default function Reminders() {
           <Toggle icon={ic(<Moon size={18} color={C.violet} />)} label={t('ملخص بكرة كل ليلة')} hint={t('محاضراتك وتسليماتك لبكرة الساعة 9 بالليل')} value={prefs.nightly_summary} onChange={async (v) => { if (v && !(await askNotif())) return; set({ nightly_summary: v }); }} />
           <Toggle icon={ic(<CalendarDays size={18} color={C.orange} />)} label={t('الامتحانات والتسليمات')} value={prefs.exams} onChange={(v) => set({ exams: v })} />
           <Toggle icon={ic(<MessageCircle size={18} color={C.pink} />)} label={t('الرسائل')} value={prefs.messages} onChange={(v) => set({ messages: v })} />
+          <Toggle icon={ic(<EyeOff size={18} color={C.violet} />)} label={t('اعرض نص الرسالة بالإشعار')} hint={t('إذا سكّرتها، الإشعار بيقول «رسالة جديدة» بس، بدون الكلام، عشان ما حدا يقرأه على شاشة القفل.')} value={prefs.preview} onChange={(v) => set({ preview: v })} />
           <Toggle icon={ic(<Heart size={18} color={C.red} />)} label={t('لايكات وتعليقات ومتابعات')} value={prefs.social} onChange={(v) => set({ social: v })} />
           <Toggle icon={ic(<Users size={18} color={C.primary} />)} label={t('مجتمعات موادي وكليتي')} value={prefs.community} onChange={(v) => set({ community: v })} />
           <Toggle icon={ic(<Megaphone size={18} color={C.ink2} />)} label={t('عروض المطاعم والمحلات')} value={prefs.ads} onChange={(v) => set({ ads: v })} />

@@ -50,6 +50,7 @@ export function scheduleLectureReminders(meetings: Meeting[], off: Record<string
 }
 
 async function doSchedule(meetings: Meeting[], off: Record<string, boolean>, userId?: string, override?: Override) {
+  if (Platform.OS === 'web') return; // the browser has no scheduled local notifications (web push covers messages)
   // clear old lecture reminders first (also when the schedule became empty)
   const existing = await Notifications.getAllScheduledNotificationsAsync();
   await Promise.all(existing.filter((n) => n.identifier.startsWith('lec-') || n.identifier.startsWith('night-')).map((n) => Notifications.cancelScheduledNotificationAsync(n.identifier)));

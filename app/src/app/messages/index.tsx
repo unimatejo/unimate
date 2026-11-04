@@ -8,6 +8,8 @@ import Animated, { FadeInDown, FadeOutLeft, LinearTransition } from 'react-nativ
 import { TitleBadge } from '@/components/TitleBadge';
 import { GlyphTile } from '@/components/Glyph';
 import { PushNudge } from '@/components/PushNudge';
+import { OnlineDot } from '@/components/OnlineDot';
+import { useInboxTyping } from '@/lib/presence';
 import { Avatar, Button, Empty, Header, IconButton, Row, Screen, StateView, T, Tap } from '@/components/ui';
 import { useAuth } from '@/lib/auth';
 import { reportError } from '@/lib/errors';
@@ -18,6 +20,7 @@ import { C, F, R, isDark } from '@/lib/theme';
 import { timeAgo } from '@/lib/util';
 import { t, ta } from '@/lib/i18n';
 import { ListSkeleton } from '@/components/Skeleton';
+import { useScreenTimer } from '@/lib/perf';
 
 type Person = { id: string; full_name: string; avatar_url: string | null; is_verified?: boolean; academic_title?: string | null; title_verified?: boolean };
 type Item = {
@@ -41,11 +44,13 @@ export default function Messages() { return <Inbox />; }
 
 export function Inbox({ inTab }: { inTab?: boolean }) {
   const { profile } = useAuth();
+  const isTyping = useInboxTyping(profile?.id);
   const [tab, setTab] = useState(0);
   const [items, setItems] = useState<Item[]>([]);
   const [friends, setFriends] = useState<Person[]>([]);
   const [q, setQ] = useState('');
   const [loading, setLoading] = useState(true);
+  useScreenTimer('inbox', !loading);
   const [notes, setNotes] = useState<Record<string, string>>({});
   const [noteOpen, setNoteOpen] = useState(false);
   const [noteText, setNoteText] = useState('');
@@ -200,7 +205,7 @@ export function Inbox({ inTab }: { inTab?: boolean }) {
           <Animated.View entering={FadeInDown.delay(Math.min(index, 8) * 35)} exiting={FadeOutLeft} layout={LinearTransition}>
             <Tap scale={0.985} haptic={false} onPress={() => router.push({ pathname: '/messages/[id]', params: { id: item.id } })}
               style={{ flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 72, paddingVertical: 8 }}>
-              {item.kind === 'direct' ? <Avatar id={item.other?.id} name={item.title} url={item.other?.avatar_url} size={54} />
+              {item.kind === 'direct' ? <View><Avatar id={item.other?.id} name={item.title} url={item.other?.avatar_url} size={54} /><OnlineDot id={item.other?.id} /></View>
                 : <GlyphTile icon={item.course ? BookOpen : item.kind === 'community' ? Users : UsersRound} colors={item.course ? ['#FF9A7E', '#FF7A59'] : item.kind === 'community' ? ['#34D399', '#059669'] : ['#A78BFA', '#7C3AED']} size={54} />}
               <View style={{ flex: 1, minWidth: 0, gap: 3 }}>
                 <Row gap={5}>
@@ -210,7 +215,8 @@ export function Inbox({ inTab }: { inTab?: boolean }) {
                   {item.streak > 1 && <T v="tiny" color="#E8590C">🔥{item.streak}</T>}
                 </Row>
                 <Row gap={4}>
-                  <T v="small" numberOfLines={1} style={{ flexShrink: 1 }} color={item.unread ? C.ink : C.muted}>{item.last ?? (item.kind === 'community' ? t('جروب تلقائي') : '')}</T>
+                  {isTyping(item.id) ? <T v="small" numberOfLines={1} color={C.primary}>{t('عم يكتب…')}</T>
+                    : <T v="small" numberOfLines={1} style={{ flexShrink: 1 }} color={item.unread ? C.ink : C.muted}>{item.last ?? (item.kind === 'community' ? t('جروب تلقائي') : '')}</T>}
                   {item.last_at ? <T v="small" color={C.faint}>{(item.last ?? (item.kind === 'community' ? 'x' : '')) ? '· ' : ''}{timeAgo(item.last_at)}</T> : null}
                 </Row>
                 {item.state === 'request' && (

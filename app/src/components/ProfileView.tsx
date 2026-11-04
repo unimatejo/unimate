@@ -24,6 +24,7 @@ import type { Post, Profile } from '@/lib/types';
 import { flip, nm, t, ta, LOCALE } from '@/lib/i18n';
 import { Bone } from './Skeleton';
 import { run } from '@/lib/run';
+import { useScreenTimer } from '@/lib/perf';
 
 type Rel = 'none' | 'pending' | 'accepted';
 
@@ -184,6 +185,7 @@ export function ProfileView({ userId, onTitle, back }: { userId: string; onTitle
   const [tab, setTab] = useState(0);
   const [likesOf, setLikesOf] = useState<Post | null>(null);
   const [loading, setLoading] = useState(true);
+  useScreenTimer('profile', !loading);
   const [hasStory, setHasStory] = useState(false);
   const [hls, setHls] = useState<{ id: string; title: string; cover_url: string | null }[]>([]);
   const [failed, setFailed] = useState<'none' | 'error' | 'missing'>('none');

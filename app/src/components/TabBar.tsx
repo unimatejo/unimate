@@ -11,6 +11,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '@/lib/auth';
 import { C, F, isDark } from '@/lib/theme';
 import { useUnreadMessages } from '@/lib/unread';
+import { usePresenceTracker } from '@/lib/presence';
 import { t } from '@/lib/i18n';
 
 const ICONS: Record<string, typeof House> = { index: House, schedule: CalendarDays, community: Users, inbox: MessageCircle, profile: User };
@@ -51,6 +52,7 @@ export function TabBar({ state, emitter, navigateToTab, navigation }: any) {
   const insets = useSafeAreaInsets();
   const { profile } = useAuth();
   const unread = useUnreadMessages(profile?.id);
+  usePresenceTracker(profile?.id, profile?.show_activity !== false);
   // get out of the way while typing (search, comments, chat)
   const [kb, setKb] = useState(false);
   useEffect(() => {

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { AppState } from 'react-native';
 
+import { timed } from './perf';
 import { supabase } from './supabase';
 import { minutesUntil } from './util';
 import { t } from './i18n';
@@ -44,13 +45,13 @@ export function useSchedule(userId?: string) {
     if (!userId) return;
     setLoading(true);
     try {
-    const { data: enr, error: enrErr } = await supabase
+    const { data: enr, error: enrErr } = await timed('schedule.enrollments', supabase
       .from('enrollments')
       .select(`section:sections(id, section_no, instructor,
         course:courses(name_ar, name_en, code),
         meetings:section_meetings(id, kind, weekday, starts_at, ends_at, online_url, room_text, source, confirmations,
           room:rooms(code, floor, directions, building:buildings(id, name_ar, lat, lng))))`)
-      .eq('user_id', userId);
+      .eq('user_id', userId));
     if (enrErr) throw enrErr;
 
     const ms: Meeting[] = [];

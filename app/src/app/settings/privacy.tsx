@@ -1,4 +1,4 @@
-import { Camera, Eye, EyeOff, Heart, Lock, MapPin, MessageCircle, Timer, Users } from 'lucide-react-native';
+import { Activity, Camera, Eye, EyeOff, Heart, Lock, MapPin, MessageCircle, Timer, Users } from 'lucide-react-native';
 import type { ReactNode } from 'react';
 import { ScrollView, View } from 'react-native';
 
@@ -37,6 +37,7 @@ export default function Privacy() {
           <Toggle icon={ic(<Users size={18} color={C.primary} />)} label={t('خبّي قائمة المتابِعين')} hint={t('الرقم بيضل ظاهر، الأسماء لا')} value={p.hide_followers} onChange={(v) => patch({ hide_followers: v })} />
           <Toggle icon={ic(<Users size={18} color={C.green} />)} label={t('خبّي قائمة اللي بتتابعهم')} value={p.hide_following} onChange={(v) => patch({ hide_following: v })} />
           <Toggle icon={ic(<Heart size={18} color={C.pink} />)} label={t('خبّي عدد اللايكات')} hint={t('على منشوراتك، إنت بس بتشوفه')} value={p.hide_like_counts} onChange={(v) => patch({ hide_like_counts: v })} />
+          <Toggle icon={ic(<Activity size={18} color={C.green} />)} label={t('إظهار حالة النشاط')} hint={t('صحابك بيشوفوا إذا إنت نشط هلأ أو آخر مرة كنت فيها. إذا سكّرتها، ما بتشوف حالة حدا كمان.')} value={p.show_activity !== false} onChange={(v) => patch({ show_activity: v })} />
         </Box>
 
         <Box title={t('مين بيقدر يراسلني')} hint={t('اللي مش متابعينك بتوصلك رسالتهم كطلب، وإنت بتقرر')}>

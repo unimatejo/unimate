@@ -8,6 +8,7 @@ import { SheetModal } from './ChatExtras';
 import { Bone } from './Skeleton';
 import { Avatar, T, Tap } from './ui';
 import { useAuth } from '@/lib/auth';
+import { friendly, isRateLimited } from '@/lib/run';
 import { supabase } from '@/lib/supabase';
 import { C, F, isDark } from '@/lib/theme';
 import { t, ta } from '@/lib/i18n';
@@ -49,7 +50,7 @@ export function ShareToChat({ place, onClose }: { place: { lat: number; lng: num
     const body = `${place.lat.toFixed(6)},${place.lng.toFixed(6)},${place.name.replace(/\s+/g, ' ').trim()}`;
     const { error } = await supabase.from('messages').insert({ conversation_id: c.id, sender_id: profile.id, kind: 'location', body });
     setBusy(null);
-    if (error) { Alert.alert(t('ما انبعت'), t('جرّب كمان مرة.')); return; }
+    if (error) { Alert.alert(t('ما انبعت'), isRateLimited(error) ? friendly(error) : t('جرّب كمان مرة.')); return; }
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
     onClose();
     router.push({ pathname: '/messages/[id]', params: { id: c.id } });

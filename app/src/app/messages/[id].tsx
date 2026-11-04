@@ -8,6 +8,8 @@ import { ActivityIndicator, Alert, FlatList, KeyboardAvoidingView, Modal, Platfo
 import Animated, { FadeIn, FadeInUp, useAnimatedStyle, useSharedValue, withDelay, withRepeat, withSequence, withTiming } from 'react-native-reanimated';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { OnlineDot } from '@/components/OnlineDot';
+import { pingInboxTyping, useActivityLine } from '@/lib/presence';
 import { TitleBadge } from '@/components/TitleBadge';
 import { AttachSheet, ContactBubble, FileBubble, LocationBubble, PollBubble, StickerBubble, StickerPanel, saveSticker, type Outgoing } from '@/components/ChatAttach';
 import { bubble, DateSep, HeartBurst, inkOn, MessageMenu, ReactionChips, ReactionsSheet, SeenBy, SheetModal, subOn, type Reaction } from '@/components/ChatExtras';
@@ -21,7 +23,8 @@ import type { Conversation, Message, VanishMode } from '@/lib/types';
 import { pickMedia, uploadFile } from '@/lib/upload';
 import { timeAgo } from '@/lib/util';
 import { flip, isAR, nm, t, ta } from '@/lib/i18n';
-import { optimistic, run } from '@/lib/run';
+import { friendly, isRateLimited, optimistic, run } from '@/lib/run';
+import { useScreenTimer } from '@/lib/perf';
 
 const VANISH: { key: VanishMode; label: string; hint: string }[] = [
   { key: 'after_view', label: t('بعد المشاهدة'), hint: t('زي السناب') },
@@ -88,6 +91,7 @@ export default function Chat() {
   const [reactSheet, setReactSheet] = useState<string | null>(null);
   const lastTap = useRef<{ id: string; at: number } | null>(null);
   const [loaded, setLoaded] = useState(false);
+  useScreenTimer('chat', loaded);
   const [heart, setHeart] = useState<string | null>(null);
   const list = useRef<FlatList<Message>>(null);
   const [typing, setTyping] = useState<string | null>(null);
@@ -191,6 +195,9 @@ export default function Chat() {
     if (v && now - lastTyped.current > 2000 && typingCh.current) {
       lastTyped.current = now;
       typingCh.current.send({ type: 'broadcast', event: 'typing', payload: { user: profile?.id, name: profile?.full_name?.split(' ')[0] } });
+      // and the other members' inbox rows show "typing…" too (direct chats and small groups)
+      const others = Object.keys(people).filter((u) => u !== profile?.id);
+      if (others.length && others.length <= 20) pingInboxTyping(id, others);
     }
   }
 
@@ -263,7 +270,7 @@ export default function Chat() {
   async function sendOut(o: Outgoing) {
     if (!profile) return;
     const { data, error } = await supabase.from('messages').insert({ conversation_id: id, sender_id: profile.id, kind: o.kind, body: o.body ?? null, media_url: o.media ?? null, ref_id: o.ref ?? null }).select().single();
-    if (error) { Alert.alert(t('ما انبعتت'), myState === 'request' ? t('لازم تقبل الطلب أول.') : t('جرّب مرة ثانية.')); return; }
+    if (error) { Alert.alert(t('ما انبعتت'), myState === 'request' ? t('لازم تقبل الطلب أول.') : isRateLimited(error) ? friendly(error) : t('جرّب مرة ثانية.')); return; }
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
     setMsgs((cur) => [data as Message, ...cur.filter((x) => x.id !== data.id)]);
   }
@@ -276,7 +283,7 @@ export default function Chat() {
     const { data, error } = await supabase.from('messages').insert({ conversation_id: id, sender_id: (profile?.id ?? ''), kind, body, media_url: media ?? null }).select().single();
     if (error) {
       if (kind === 'text' && body) setDraft((d) => d || body); // give the text back
-      Alert.alert(t('ما انبعتت'), myState === 'request' ? t('لازم تقبل الطلب أول.') : t('جرّب مرة ثانية.')); return;
+      Alert.alert(t('ما انبعتت'), myState === 'request' ? t('لازم تقبل الطلب أول.') : isRateLimited(error) ? friendly(error) : t('جرّب مرة ثانية.')); return;
     }
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
     setMsgs((cur) => [data as Message, ...cur.filter((x) => x.id !== data.id)]);
@@ -357,6 +364,7 @@ export default function Chat() {
   useEffect(() => { const tm = setInterval(() => setNow(Date.now()), 20000); return () => clearInterval(tm); }, []);
   const visible = useMemo(() => msgs.filter((m) => !m.deleted_at && (m.is_saved || !m.vanishes_at || new Date(m.vanishes_at).getTime() > now)), [msgs, now]);
   const title = conv?.kind === 'direct' ? other?.full_name ?? '' : conv?.title ?? '';
+  const activity = useActivityLine(conv?.kind === 'direct' ? other?.id : null);
   const vanishLabel = VANISH.find((v) => v.key === conv?.vanish)?.label ?? '';
 
   return (
@@ -365,7 +373,7 @@ export default function Chat() {
         <Row gap={6} style={{ height: 64, paddingHorizontal: 6 }}>
           <Tap onPress={() => (router.canGoBack() ? router.back() : router.replace('/messages'))} accessibilityLabel={t('رجوع')} style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}><ChevronRight size={24} color={C.ink} strokeWidth={2.2} style={flip} /></Tap>
           <Tap onPress={() => other && conv?.kind === 'direct' && router.push({ pathname: '/user/[id]', params: { id: other.id } })} haptic={false} scale={0.98} style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 10, minHeight: 44 }}>
-            {conv?.kind === 'direct' ? <Avatar id={other?.id} name={title} url={other?.avatar_url} size={40} /> :
+            {conv?.kind === 'direct' ? <View><Avatar id={other?.id} name={title} url={other?.avatar_url} size={40} /><OnlineDot id={other?.id} size={12} /></View> :
               <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: C.soft, alignItems: 'center', justifyContent: 'center' }}><Users size={19} color={C.ink} /></View>}
             <View style={{ flex: 1 }}>
               <Row gap={5}>
@@ -375,7 +383,7 @@ export default function Chat() {
                 {(conv?.streak_days ?? 0) > 1 && <Row gap={2}><Flame size={14} color="#E8590C" fill="#FF8A00" /><T v="tiny" color="#FF9A1F">{conv?.streak_days}</T></Row>}
               </Row>
               {typing !== null ? <T v="tiny" color={C.primary} numberOfLines={1}>{conv?.kind === 'direct' ? t('عم يكتب…') : t('{0} عم يكتب…', [typing])}</T>
-                : conv?.kind === 'direct' ? <T v="tiny" color={C.muted} numberOfLines={1}>{other?.major ? nm(other.major) : other?.username ? `@${other.username}` : ''}</T>
+                : conv?.kind === 'direct' ? <T v="tiny" color={activity === t('نشط الآن') ? C.green : C.muted} numberOfLines={1}>{activity ?? (other?.major ? nm(other.major) : other?.username ? `@${other.username}` : '')}</T>
                 : <T v="tiny" color={C.muted} numberOfLines={1}>{conv?.context_label || t('{0} أعضاء', [String(Object.keys(people).length)])}</T>}
             </View>
           </Tap>

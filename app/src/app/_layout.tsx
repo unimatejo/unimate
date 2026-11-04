@@ -23,7 +23,14 @@ installGlobalErrorHandler();
 
 /** Shown instead of closing the app when a screen fails to draw. */
 export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
-  useEffect(() => { reportError(error, true); }, [error]);
+  // a new version went live while this page was open: its old code files are gone, so load the new version once
+  const stale = typeof window !== 'undefined' && /Loading module|Failed to fetch dynamically imported module|ChunkLoadError/i.test(error.message);
+  useEffect(() => {
+    if (stale) {
+      try { if (sessionStorage.getItem('chunk_reload') !== '1') { sessionStorage.setItem('chunk_reload', '1'); window.location.reload(); return; } } catch { /* no storage */ }
+    }
+    reportError(error, true);
+  }, [error, stale]);
   return (
     <View style={{ flex: 1, backgroundColor: C.bg, padding: 24, paddingTop: 90, gap: 14 }}>
       <Text style={{ fontSize: 22, fontWeight: '700', color: C.ink, textAlign: ta }}>{t('صار خطأ بهالصفحة')}</Text>
@@ -108,6 +115,8 @@ function Gate() {
 
 export default function RootLayout() {
   useOtaUpdates();
+  // loaded fine: a later stale-code error may reload again
+  useEffect(() => { try { if (typeof sessionStorage !== 'undefined') setTimeout(() => sessionStorage.removeItem('chunk_reload'), 10000); } catch { /* no storage */ } }, []);
   const [fontsLoaded, fontError] = useFonts({
     IBMPlexSansArabic_400Regular, IBMPlexSansArabic_500Medium, IBMPlexSansArabic_600SemiBold, IBMPlexSansArabic_700Bold,
   });

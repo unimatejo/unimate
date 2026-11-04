@@ -14,7 +14,7 @@ export type Profile = {
   instagram: string | null; snapchat: string | null;
   block_screenshots: boolean; default_vanish: VanishMode; nearby_enabled: boolean;
   is_verified?: boolean; entry_year?: number | null; onboarded?: boolean;
-  account_type?: 'student' | 'faculty' | 'staff'; academic_title?: string | null; title_verified?: boolean; department?: string | null;
+  show_activity?: boolean; account_type?: 'student' | 'faculty' | 'staff'; academic_title?: string | null; title_verified?: boolean; department?: string | null;
   points: number; follower_count: number; following_count: number; post_count: number;
   university?: University | null;
   college?: { id: string; name_ar: string } | null;

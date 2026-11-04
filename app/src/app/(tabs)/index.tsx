@@ -14,6 +14,7 @@ import { supabase } from '@/lib/supabase';
 import { C, F } from '@/lib/theme';
 import { clock, greeting } from '@/lib/util';
 import { nm, t } from '@/lib/i18n';
+import { useScreenTimer } from '@/lib/perf';
 
 function Glow({ color, size, style, dur }: { color: string; size: number; style: object; dur: number }) {
   const t = useSharedValue(0);
@@ -48,6 +49,7 @@ const QUICK = [
 export default function Home() {
   const { profile, university } = useAuth();
   const { meetings, next, reload, loading, now } = useSchedule(profile?.id);
+  useScreenTimer('home', !loading);
   const [unread, setUnread] = useState(0);
   const today = now.getDay();
   const todays = meetings.filter((m) => m.weekday === today);

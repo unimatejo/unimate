@@ -18,6 +18,7 @@ import { supabase } from '@/lib/supabase';
 import { C, F, shadow } from '@/lib/theme';
 import { WEEKDAYS_SHORT, clock } from '@/lib/util';
 import { LOCALE, t } from '@/lib/i18n';
+import { useScreenTimer } from '@/lib/perf';
 
 const KIND: Record<string, [string, string, string]> = {
   lecture: [t('محاضرة'), C.primarySoft, C.primary],
@@ -47,6 +48,7 @@ function LiveDot() {
 export default function Schedule() {
   const { profile } = useAuth();
   const { meetings, events, loading, error, reload, now } = useSchedule(profile?.id);
+  useScreenTimer('schedule', !loading);
   // Friday / Saturday: show the coming Sunday
   const [day, setDay] = useState(() => { const d = new Date().getDay(); return d > 4 ? 0 : d; });
   const [flipping, setFlipping] = useState<string | null>(null);
