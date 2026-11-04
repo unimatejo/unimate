@@ -68,13 +68,13 @@ export default function Home() {
     <Screen>
       <ScrollView contentContainerStyle={{ padding: 18, gap: 18, paddingBottom: 130 }} refreshControl={<RefreshControl refreshing={loading} onRefresh={reload} />}>
         <Row gap={12}>
-          <View accessibilityLabel={t('شعار {0}', [nm(university) ?? t('الجامعة')])} style={{ width: 48, height: 48, borderRadius: 24, padding: 3, backgroundColor: university?.brand_color ?? C.primary }}>
+          <View accessibilityLabel={t('شعار {0}', [nm(university) ?? t('الجامعة')])} style={{ width: 48, height: 48, borderRadius: 24, padding: 3, backgroundColor: university?.brand_color ?? C.blue }}>
             <View style={{ flex: 1, borderRadius: 21, backgroundColor: C.card, alignItems: 'center', justifyContent: 'center' }}>
-              <T v="tiny" color={university?.brand_color ?? C.primary} style={{ textAlign: 'center', fontFamily: F.title }}>{nm(university)?.replace(t('الجامعة '), '').replace(t('جامعة '), '').slice(0, 6)}</T>
+              <T v="tiny" color={university?.brand_color ?? C.blue} style={{ textAlign: 'center', fontFamily: F.title }}>{nm(university)?.replace(t('الجامعة '), '').replace(t('جامعة '), '').slice(0, 6)}</T>
             </View>
           </View>
           <View style={{ flex: 1 }}>
-            <T v="tiny" color={university?.brand_color ?? C.primary}>{nm(university)}</T>
+            <T v="tiny" color={university?.brand_color ?? C.blue}>{nm(university)}</T>
             <T v="h2" style={{ fontFamily: F.display, fontSize: 22 }}>{greeting(now)}{t('،')} {profile?.full_name?.split(' ')[0]}</T>
           </View>
           <IconButton label={t('بحث')} onPress={() => router.push('/search')}><Search size={21} color={C.ink} /></IconButton>
@@ -83,7 +83,7 @@ export default function Home() {
 
         <Animated.View entering={FadeInDown.duration(500)}>
           <View style={{ borderRadius: 30, backgroundColor: '#101633', padding: 20, overflow: 'hidden', gap: 14 }}>
-            <Glow color={C.primary} size={260} style={{ top: -120, left: -90 }} dur={8000} />
+            <Glow color={C.blue} size={260} style={{ top: -120, left: -90 }} dur={8000} />
             <Glow color={C.pink} size={200} style={{ bottom: -100, left: 40 }} dur={10000} />
             {nxt ? (
               <>
@@ -134,11 +134,11 @@ export default function Home() {
           <Card>
             <Row style={{ justifyContent: 'space-between', marginBottom: 6 }}>
               <T v="h3">{t('اليوم')}</T>
-              <Tap onPress={() => router.push('/(tabs)/schedule')}><T v="small" color={C.primary}>{t('الجدول كامل')}</T></Tap>
+              <Tap onPress={() => router.push('/(tabs)/schedule')}><T v="small" color={C.blue}>{t('الجدول كامل')}</T></Tap>
             </Row>
             {todays.length === 0 ? <T v="small" color={C.muted}>{t('ما عندك محاضرات اليوم.')}</T> : todays.map((m) => (
               <Row key={m.id} gap={12} style={{ minHeight: 54 }}>
-                <View style={{ width: 4, height: 34, borderRadius: 2, backgroundColor: m.kind === 'lab' ? C.green : m.kind === 'online' ? C.violet : C.primary }} />
+                <View style={{ width: 4, height: 34, borderRadius: 2, backgroundColor: m.kind === 'lab' ? C.green : m.kind === 'online' ? C.violet : C.blue }} />
                 <View style={{ flex: 1 }}>
                   <T v="bold">{m.course_name}</T>
                   <T v="tiny" color={C.muted}>{placeLine(m)}</T>
