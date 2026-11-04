@@ -1,6 +1,6 @@
 import { router } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Bell, BellOff, BookOpen, CalendarPlus, ScanLine, Clock, FlaskConical, MapPin, MessagesSquare, Video } from 'lucide-react-native';
+import { Bell, BellOff, BookOpen, CalendarPlus, ScanLine, Clock, FlaskConical, MapPin, MessagesSquare, Video, EyeOff } from 'lucide-react-native';
 import { useEffect, useMemo, useState } from 'react';
 import { Alert, Linking, RefreshControl, ScrollView, View } from 'react-native';
 import Animated, { FadeInDown, LinearTransition, useAnimatedStyle, useSharedValue, withRepeat, withTiming } from 'react-native-reanimated';
@@ -13,7 +13,7 @@ import { reportError } from '@/lib/errors';
 import { run } from '@/lib/run';
 import { ListSkeleton } from '@/components/Skeleton';
 import { scheduleLectureReminders } from '@/lib/notify';
-import { placeLine, useSchedule } from '@/lib/schedule';
+import { placeLine, useSchedule, type Meeting } from '@/lib/schedule';
 import { supabase } from '@/lib/supabase';
 import { C, F, shadow } from '@/lib/theme';
 import { WEEKDAYS_SHORT, clock } from '@/lib/util';
@@ -71,6 +71,17 @@ export default function Schedule() {
   const todayCount = meetings.filter((m) => m.weekday === dow).length;
   const nextExam = events.find((e) => e.kind.startsWith('exam') || e.kind === 'quiz');
   const daysLeft = nextExam ? Math.max(0, Math.ceil((new Date(nextExam.starts_at).getTime() - Date.now()) / 86400000)) : 0;
+
+  // a classmate's time that isn't mine (another section in the same Teams group): gone from my schedule in one tap
+  function notMine(m: Meeting) {
+    Alert.alert(t('مش محاضرتك؟'), t('بنشيلها من جدولك إنت بس، وما بتتغيّر عند زملائك.'), [
+      { text: t('لا'), style: 'cancel' },
+      { text: t('شيلها'), style: 'destructive', onPress: async () => {
+        const { error } = await supabase.from('personal_meetings').insert({ user_id: profile?.id, section_id: m.section_id, replaces: m.id, hidden: true });
+        if (error) Alert.alert(t('ما زبط'), t('جرّب كمان مرة.')); else reload();
+      } },
+    ]);
+  }
 
   async function flip(id: string, enabled: boolean) {
     if (!profile || flipping) return;
@@ -208,6 +219,12 @@ export default function Schedule() {
                     ) : (
                       <Tap onPress={() => router.push({ pathname: '/map', params: { building: m.building_id ?? '' } })} style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 38, paddingHorizontal: 12, borderRadius: 12, backgroundColor: C.primarySoft }}>
                         <MapPin size={15} color={C.primary} /><T v="small" color={C.primary} numberOfLines={1} style={{ flexShrink: 1 }}>{placeLine(m)}</T>
+                      </Tap>
+                    )}
+                    {m.source !== 'personal' && m.source !== 'change' && (
+                      <Tap onPress={() => notMine(m)} accessibilityLabel={t('مش محاضرتي')}
+                        style={{ height: 38, paddingHorizontal: 10, borderRadius: 12, backgroundColor: C.soft, flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+                        <EyeOff size={15} color={C.muted} /><T v="tiny" color={C.muted}>{t('مش إلي')}</T>
                       </Tap>
                     )}
                     <Tap onPress={() => flip(m.id, !enabled)} disabled={flipping === m.id} accessibilityLabel={enabled ? t('وقّف التنبيه') : t('شغّل التنبيه')} accessibilityState={{ checked: enabled }}

@@ -70,6 +70,18 @@ export function useSchedule(userId?: string) {
         });
       }
     }
+    // a Teams group can hold several real sections, so classmates' times pile up on one "section".
+    // If I told the app my own times (photo of my timetable, or added them), I only see those for that section.
+    const { data: mine } = await supabase.from('meeting_reports').select('section_id, weekday, starts_at').eq('user_id', userId);
+    const myTimes = new Map<string, Set<string>>();
+    for (const r of (mine ?? []) as { section_id: string; weekday: number; starts_at: string }[]) {
+      if (!myTimes.has(r.section_id)) myTimes.set(r.section_id, new Set());
+      myTimes.get(r.section_id)!.add(`${r.weekday}-${r.starts_at.slice(0, 5)}`);
+    }
+    for (let i = ms.length - 1; i >= 0; i--) {
+      const own = myTimes.get(ms[i].section_id);
+      if (own && !own.has(`${ms[i].weekday}-${ms[i].starts_at.slice(0, 5)}`)) ms.splice(i, 1);
+    }
     // my own changes (internal transfer, a moved lecture just for me): hide or replace section times, add my own
     const { data: pm } = await supabase.from('personal_meetings').select('*').eq('user_id', userId);
     const personal = (pm ?? []) as { id: string; section_id: string; replaces: string | null; hidden: boolean; kind: Meeting['kind']; weekday: number | null; starts_at: string | null; ends_at: string | null; room_text: string | null }[];
