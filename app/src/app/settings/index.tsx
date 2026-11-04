@@ -1,10 +1,10 @@
 import Constants from 'expo-constants';
 import { router } from 'expo-router';
 import {
-  Ban, Bell, Palette, Bookmark, ChevronLeft, CircleHelp, EyeOff, FileText, Lock, LogOut, MessageCircle, Shield, Star, Trash2, UserPen, UserPlus, Users,
+  BadgeCheck, Ban, Bell, KeyRound, Palette, Search, Bookmark, ChevronLeft, CircleHelp, EyeOff, FileText, Lock, LogOut, MessageCircle, Shield, Star, Trash2, UserPen, UserPlus, Users,
 } from 'lucide-react-native';
-import type { ReactNode } from 'react';
-import { Alert, ScrollView, View } from 'react-native';
+import { useState, type ReactNode } from 'react';
+import { Alert, ScrollView, TextInput, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 
 import { Avatar, Header, IconTile, Row, Screen, T, Tap } from '@/components/ui';
@@ -12,14 +12,16 @@ import { useAuth } from '@/lib/auth';
 import { supabase } from '@/lib/supabase';
 import { inviteFriends } from '@/lib/invite';
 import { run } from '@/lib/run';
-import { C, isDark } from '@/lib/theme';
-import { flip, isAR, nm, t } from '@/lib/i18n';
+import { C, F, isDark, shadow } from '@/lib/theme';
+import { normalize } from '@/lib/util';
+import { flip, isAR, nm, t, ta } from '@/lib/i18n';
 
 function Group({ title, children, delay = 0 }: { title: string; children: ReactNode; delay?: number }) {
   return (
     <Animated.View entering={FadeInDown.delay(delay)} style={{ gap: 8 }}>
       <T v="small" color={C.muted} style={{ paddingHorizontal: 6 }}>{title}</T>
-      <View style={{ backgroundColor: C.card, borderRadius: 22, overflow: 'hidden' }}>{children}</View>
+      {/* shadow on the outer box, clipping on the inner one (iOS drops shadows on clipped views) */}
+      <View style={[{ borderRadius: 22, backgroundColor: C.card }, shadow]}><View style={{ borderRadius: 22, overflow: 'hidden' }}>{children}</View></View>
     </Animated.View>
   );
 }
@@ -39,6 +41,7 @@ const ic = { size: 19, color: C.white };
 
 export default function Settings() {
   const { profile, university, signOut } = useAuth();
+  const [q, setQ] = useState('');
 
   function logout() {
     Alert.alert(t('تسجيل الخروج'), t('أكيد بدك تطلع من حسابك؟'), [
@@ -60,54 +63,70 @@ export default function Settings() {
     ]);
   }
 
+  type It = { icon: ReactNode; color: string; label: string; value?: string; onPress: () => void; danger?: boolean };
+  const groups: { title: string; items: It[] }[] = [
+    { title: t('الحساب'), items: [
+      { icon: <UserPen {...ic} />, color: C.primary, label: t('تعديل البروفايل'), onPress: () => router.push('/settings/edit-profile') },
+      { icon: <Lock {...ic} />, color: C.violet, label: t('الخصوصية'), value: profile?.is_private ? t('خاص') : t('عام'), onPress: () => router.push('/settings/privacy') },
+      { icon: <Users {...ic} />, color: C.green, label: t('الأصدقاء المقربين'), onPress: () => router.push('/settings/close-friends') },
+      { icon: <Bookmark {...ic} />, color: '#56627F', label: t('المحفوظات'), onPress: () => router.push('/settings/saved') },
+    ] },
+    { title: t('التنبيهات والرسائل'), items: [
+      { icon: <Bell {...ic} />, color: C.orange, label: t('التنبيهات والمنبّهات'), onPress: () => router.push('/settings/reminders') },
+      { icon: <MessageCircle {...ic} />, color: C.pink, label: t('الرسائل والاختفاء'), onPress: () => router.push('/settings/privacy') },
+    ] },
+    { title: t('الجهاز'), items: [
+      { icon: <KeyRound {...ic} />, color: C.primary, label: t('الصلاحيات'), value: t('كاميرا، صور، مايك…'), onPress: () => router.push('/settings/permissions') },
+      { icon: <Palette {...ic} />, color: C.violet, label: t('المظهر واللغة'), value: [isDark ? t('غامق') : t('فاتح'), isAR ? 'العربية' : 'English'].join(' · '), onPress: () => router.push('/settings/appearance') },
+      { icon: <UserPlus {...ic} />, color: C.green, label: t('ادعي زملاءك'), onPress: () => inviteFriends(nm(university)) },
+    ] },
+    { title: t('الأمان'), items: [
+      { icon: <Ban {...ic} />, color: C.red, label: t('المحظورين'), onPress: () => router.push('/settings/blocked') },
+      { icon: <EyeOff {...ic} />, color: '#56627F', label: t('الكلمات المخفية'), onPress: () => router.push('/settings/hidden-words') },
+    ] },
+    { title: t('المساعدة'), items: [
+      { icon: <CircleHelp {...ic} />, color: C.primary, label: t('الدعم والمساعدة'), onPress: () => router.push('/settings/support') },
+      { icon: <Shield {...ic} />, color: C.green, label: t('سياسة الخصوصية'), onPress: () => router.push({ pathname: '/settings/legal', params: { doc: 'privacy' } }) },
+      { icon: <FileText {...ic} />, color: C.violet, label: t('شروط الاستخدام'), onPress: () => router.push({ pathname: '/settings/legal', params: { doc: 'terms' } }) },
+    ] },
+    { title: '', items: [
+      { icon: <LogOut {...ic} />, color: '#56627F', label: t('تسجيل الخروج'), onPress: logout },
+      { icon: <Trash2 {...ic} />, color: C.red, label: t('حذف الحساب'), danger: true, onPress: deleteAccount },
+    ] },
+  ];
+  const k = normalize(q);
+  const shownGroups = k ? [{ title: t('نتائج البحث'), items: groups.flatMap((g) => g.items).filter((it) => normalize(it.label + ' ' + (it.value ?? '')).includes(k)) }] : groups;
+
   return (
     <Screen>
       <Header title={t('الإعدادات')} />
-      <ScrollView contentContainerStyle={{ padding: 18, paddingTop: 4, gap: 20, paddingBottom: 60 }}>
-        <Tap scale={0.98} onPress={() => router.push('/settings/edit-profile')}
-          style={{ flexDirection: 'row', alignItems: 'center', gap: 14, backgroundColor: C.card, borderRadius: 24, padding: 14 }}>
-          <Avatar id={profile?.id} name={profile?.full_name} url={profile?.avatar_url} size={60} ring />
-          <View style={{ flex: 1 }}>
-            <T v="h3">{profile?.full_name}</T>
-            <T v="small" color={C.muted}>{[nm(profile?.major), nm(university)].filter(Boolean).join(' · ')}</T>
-          </View>
-          <Row gap={4} style={{ backgroundColor: C.orangeSoft, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 12 }}>
-            <Star size={15} color={C.orange} fill={C.orange} /><T v="bold" color={C.orange} style={{ fontSize: 13 }}>{profile?.points ?? 0}</T>
-          </Row>
-        </Tap>
+      <ScrollView contentContainerStyle={{ padding: 18, paddingTop: 4, gap: 20, paddingBottom: 60 }} keyboardShouldPersistTaps="handled">
+        <Row gap={8} style={[{ minHeight: 46, borderRadius: 15, backgroundColor: C.card, paddingHorizontal: 14 }, shadow]}>
+          <Search size={18} color={C.muted} />
+          <TextInput value={q} onChangeText={setQ} placeholder={t('ابحث بالإعدادات')} placeholderTextColor={C.faint} keyboardAppearance={isDark ? 'dark' : 'light'}
+            style={{ flex: 1, fontFamily: F.body, fontSize: 15, color: C.ink, textAlign: ta }} accessibilityLabel={t('ابحث بالإعدادات')} />
+        </Row>
 
-        <Group title={t('الحساب')} delay={40}>
-          <Item icon={<UserPen {...ic} />} color={C.primary} label={t('تعديل البروفايل')} onPress={() => router.push('/settings/edit-profile')} />
-          <Item icon={<Lock {...ic} />} color={C.violet} label={t('الخصوصية')} value={profile?.is_private ? t('خاص') : t('عام')} onPress={() => router.push('/settings/privacy')} />
-          <Item icon={<Users {...ic} />} color={C.green} label={t('الأصدقاء المقربين')} onPress={() => router.push('/settings/close-friends')} />
-          <Item icon={<Bookmark {...ic} />} color="#56627F" label={t('المحفوظات')} onPress={() => router.push('/settings/saved')} />
-        </Group>
+        {!k && (
+          <Tap scale={0.98} onPress={() => router.push('/profile')}
+            style={[{ flexDirection: 'row', alignItems: 'center', gap: 14, backgroundColor: C.card, borderRadius: 24, padding: 14 }, shadow]}>
+            <Avatar id={profile?.id} name={profile?.full_name} url={profile?.avatar_url} size={60} ring />
+            <View style={{ flex: 1, gap: 1 }}>
+              <Row gap={5}><T v="h3" numberOfLines={1} style={{ flexShrink: 1 }}>{profile?.full_name}</T>{profile?.is_verified && <BadgeCheck size={16} color={C.white} fill={C.primary} />}</Row>
+              {profile?.username ? <T v="small" color={C.muted} style={{ writingDirection: 'ltr', textAlign: ta }}>@{profile.username}</T> : null}
+              <T v="tiny" color={C.muted} numberOfLines={1}>{[nm(profile?.major), nm(university)].filter(Boolean).join(' · ')}</T>
+            </View>
+            <Row gap={4} style={{ backgroundColor: C.orangeSoft, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 12 }}>
+              <Star size={15} color={C.orange} fill={C.orange} /><T v="bold" color={C.orange} style={{ fontSize: 13 }}>{profile?.points ?? 0}</T>
+            </Row>
+          </Tap>
+        )}
 
-        <Group title={t('التطبيق')} delay={60}>
-          <Item icon={<UserPlus {...ic} />} color={C.green} label={t('ادعي زملاءك')} onPress={() => inviteFriends(nm(university))} />
-          <Item icon={<Palette {...ic} />} color={C.violet} label={t('المظهر واللغة')} value={[isDark ? t('غامق') : t('فاتح'), isAR ? 'العربية' : 'English'].join(' · ')} onPress={() => router.push('/settings/appearance')} />
-        </Group>
-
-        <Group title={t('التنبيهات والرسائل')} delay={80}>
-          <Item icon={<Bell {...ic} />} color={C.orange} label={t('التنبيهات والمنبّهات')} onPress={() => router.push('/settings/reminders')} />
-          <Item icon={<MessageCircle {...ic} />} color={C.pink} label={t('الرسائل والاختفاء')} onPress={() => router.push('/settings/privacy')} />
-        </Group>
-
-        <Group title={t('الأمان')} delay={120}>
-          <Item icon={<Ban {...ic} />} color={C.red} label={t('المحظورين')} onPress={() => router.push('/settings/blocked')} />
-          <Item icon={<EyeOff {...ic} />} color="#56627F" label={t('الكلمات المخفية')} onPress={() => router.push('/settings/hidden-words')} />
-        </Group>
-
-        <Group title={t('المساعدة')} delay={160}>
-          <Item icon={<CircleHelp {...ic} />} color={C.primary} label={t('الدعم والمساعدة')} onPress={() => router.push('/settings/support')} />
-          <Item icon={<Shield {...ic} />} color={C.green} label={t('سياسة الخصوصية')} onPress={() => router.push({ pathname: '/settings/legal', params: { doc: 'privacy' } })} />
-          <Item icon={<FileText {...ic} />} color={C.violet} label={t('شروط الاستخدام')} onPress={() => router.push({ pathname: '/settings/legal', params: { doc: 'terms' } })} />
-        </Group>
-
-        <Group title="" delay={200}>
-          <Item icon={<LogOut {...ic} />} color="#56627F" label={t('تسجيل الخروج')} onPress={logout} />
-          <Item icon={<Trash2 {...ic} />} color={C.red} label={t('حذف الحساب')} danger onPress={deleteAccount} />
-        </Group>
+        {shownGroups.map((g, gi) => g.items.length ? (
+          <Group key={g.title + gi} title={g.title} delay={gi * 30}>
+            {g.items.map((it) => <Item key={it.label} {...it} />)}
+          </Group>
+        ) : <T key="none" v="small" color={C.muted} style={{ textAlign: 'center' }}>{t('ما لقينا إعداد بهالاسم')}</T>)}
 
         <T v="tiny" color={C.faint} style={{ textAlign: 'center' }}>{t('يونيميت · الإصدار {0}', [Constants.expoConfig?.version ?? ''])}</T>
       </ScrollView>

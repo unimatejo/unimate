@@ -1,7 +1,7 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import * as ScreenCapture from 'expo-screen-capture';
 import { Image } from 'expo-image';
-import { Bookmark, Camera, ChevronRight, EyeOff, Flame, Image as ImageIcon, MoreHorizontal, Phone, Send, ShieldCheck, Timer, Users, Video } from 'lucide-react-native';
+import { BadgeCheck, Bookmark, Camera, ChevronRight, EyeOff, Flame, Image as ImageIcon, MoreHorizontal, Phone, Send, ShieldCheck, Timer, Users, Video } from 'lucide-react-native';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ActionSheetIOS, ActivityIndicator, Alert, FlatList, KeyboardAvoidingView, Modal, Platform, Pressable, TextInput, View } from 'react-native';
 import Animated, { FadeIn, FadeInUp, SlideInDown, useAnimatedStyle, useSharedValue, withDelay, withRepeat, withSequence, withTiming } from 'react-native-reanimated';
@@ -15,7 +15,7 @@ import { C, F, isDark, shadow } from '@/lib/theme';
 import type { Conversation, Message, VanishMode } from '@/lib/types';
 import { pickMedia, uploadFile } from '@/lib/upload';
 import { timeAgo } from '@/lib/util';
-import { flip, isAR, t, ta } from '@/lib/i18n';
+import { flip, isAR, nm, t, ta } from '@/lib/i18n';
 import { optimistic, run } from '@/lib/run';
 
 const VANISH: { key: VanishMode; label: string; hint: string }[] = [
@@ -72,7 +72,7 @@ export default function Chat() {
   const { profile } = useAuth();
   const insets = useSafeAreaInsets();
   const [conv, setConv] = useState<Conversation | null>(null);
-  const [other, setOther] = useState<{ id: string; full_name: string; avatar_url: string | null } | null>(null);
+  const [other, setOther] = useState<{ id: string; full_name: string; avatar_url: string | null; username?: string | null; is_verified?: boolean; major?: { name_ar: string; name_en?: string | null } | null } | null>(null);
   const [msgs, setMsgs] = useState<Message[]>([]);
   const [draft, setDraft] = useState('');
   const [sheet, setSheet] = useState(false);
@@ -100,7 +100,7 @@ export default function Chat() {
     if (!profile) return;
     const { data: c } = await supabase.from('conversations').select('*').eq('id', id).single();
     setConv(c as Conversation);
-    const { data: mem } = await supabase.from('conversation_members').select('user_id, state, last_read_at, profile:profiles(id, full_name, avatar_url)').eq('conversation_id', id);
+    const { data: mem } = await supabase.from('conversation_members').select('user_id, state, last_read_at, profile:profiles(id, full_name, avatar_url, username, is_verified, major:majors(name_ar, name_en))').eq('conversation_id', id);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const rows = (mem ?? []) as any[];
     setPeople(Object.fromEntries(rows.filter((r) => r.profile).map((r) => [r.user_id, r.profile])));
@@ -285,10 +285,12 @@ export default function Chat() {
               <View style={{ width: 40, height: 40, borderRadius: 14, backgroundColor: C.greenSoft, alignItems: 'center', justifyContent: 'center' }}><Users size={20} color={C.greenInk} /></View>}
             <View style={{ flex: 1 }}>
               <Row gap={5}>
-                <T v="h3" numberOfLines={1}>{title}</T>
+                <T v="h3" numberOfLines={1} style={{ flexShrink: 1 }}>{title}</T>
+                {other?.is_verified && conv?.kind === 'direct' && <BadgeCheck size={15} color={C.white} fill={C.primary} />}
                 {(conv?.streak_days ?? 0) > 1 && <Row gap={2}><Flame size={15} color="#E8590C" fill="#FF8A00" /><T v="tiny" color="#E8590C">{conv?.streak_days}</T></Row>}
               </Row>
-              {conv?.context_label ? <T v="tiny" color={C.muted} numberOfLines={1}>{conv.context_label}</T> : null}
+              {conv?.kind === 'direct' && other?.username ? <T v="tiny" color={C.muted} numberOfLines={1} style={{ writingDirection: 'ltr', textAlign: ta }}>@{other.username}</T>
+                : conv?.context_label ? <T v="tiny" color={C.muted} numberOfLines={1}>{conv.context_label}</T> : null}
             </View>
           </Tap>
           {conv?.kind === 'direct' && <>
@@ -318,6 +320,21 @@ export default function Chat() {
           contentContainerStyle={{ padding: 14, gap: 8 }}
           ListFooterComponent={
             <View style={{ alignItems: 'center', gap: 6, marginBottom: 10 }}>
+              {/* like Instagram: who you're talking to, at the top of the chat */}
+              {conv?.kind === 'direct' && other && (!more || visible.length < 60) && (
+                <Animated.View entering={FadeIn} style={{ alignItems: 'center', gap: 4, paddingVertical: 18 }}>
+                  <Avatar id={other.id} name={other.full_name} url={other.avatar_url} size={92} ring />
+                  <Row gap={5} style={{ marginTop: 8 }}>
+                    <T v="h2">{other.full_name}</T>
+                    {other.is_verified && <BadgeCheck size={18} color={C.white} fill={C.primary} />}
+                  </Row>
+                  {other.username ? <T v="small" color={C.muted} style={{ writingDirection: 'ltr' }}>@{other.username}</T> : null}
+                  {other.major ? <T v="tiny" color={C.muted}>{nm(other.major)}</T> : null}
+                  <Tap onPress={() => router.push({ pathname: '/user/[id]', params: { id: other.id } })} style={[{ marginTop: 10, minHeight: 36, paddingHorizontal: 18, borderRadius: 12, alignItems: 'center', justifyContent: 'center', backgroundColor: C.card }, shadow]}>
+                    <T v="bold" style={{ fontSize: 14 }}>{t('شوف البروفايل')}</T>
+                  </Tap>
+                </Animated.View>
+              )}
               <Tap onPress={() => setSheet(true)} style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: C.card, paddingHorizontal: 12, paddingVertical: 7, borderRadius: 999 }}>
                 <Timer size={14} color={C.ink2} /><T v="tiny" color={C.ink2}>{conv?.vanish === 'never' ? t('الرسائل ما بتختفي') : t('الرسائل بتختفي {0}', [isAR ? vanishLabel : vanishLabel.toLowerCase()])} {t('· بدون أرقام')}</T>
               </Tap>

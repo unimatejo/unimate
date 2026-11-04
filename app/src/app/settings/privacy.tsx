@@ -5,13 +5,13 @@ import { ScrollView, View } from 'react-native';
 import { Chip, Header, Row, Screen, T, Tap, Toggle } from '@/components/ui';
 import { router } from 'expo-router';
 import { useProfilePatch } from '@/lib/settings';
-import { C } from '@/lib/theme';
+import { C, shadow } from '@/lib/theme';
 import type { Profile, VanishMode } from '@/lib/types';
 import { t } from '@/lib/i18n';
 
 function Box({ title, hint, children }: { title: string; hint?: string; children: ReactNode }) {
   return (
-    <View style={{ gap: 10, backgroundColor: C.card, borderRadius: 22, padding: 14 }}>
+    <View style={[{ gap: 10, backgroundColor: C.card, borderRadius: 22, padding: 14 }, shadow]}>
       <T v="h3">{title}</T>
       {hint ? <T v="tiny" color={C.muted} style={{ marginTop: -6 }}>{hint}</T> : null}
       {children}
@@ -56,9 +56,7 @@ export default function Privacy() {
           <Toggle icon={ic(<Camera size={18} color={C.red} />)} label={t('امنع لقطة الشاشة')} hint={t('شاشة المحادثة بتطلع فاضية بالسكرين شوت، وبنخبرك لو حدا حاول')} value={p.block_screenshots} onChange={(v) => patch({ block_screenshots: v })} />
         </Box>
 
-        <Box title={t('الأصحاب القريبين')}>
-          <Toggle icon={ic(<MapPin size={18} color={C.orange} />)} label={t('خبّرني لما صاحب قريب مني')} hint={t('بس للأصحاب المتبادلين اللي مفعلينها كمان، وبنبيّن المبنى مش موقعك الدقيق')} value={p.nearby_enabled} onChange={(v) => patch({ nearby_enabled: v })} />
-        </Box>
+        {/* "nearby friends" is hidden until it really works */}
 
         <View style={{ flexDirection: 'row', gap: 10, backgroundColor: C.primarySoft, borderRadius: 18, padding: 14 }}>
           {p.is_private ? <EyeOff size={18} color={C.primary} /> : <Eye size={18} color={C.primary} />}

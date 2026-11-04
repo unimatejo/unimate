@@ -110,7 +110,7 @@ export function Inbox({ inTab }: { inTab?: boolean }) {
         data={shown}
         keyExtractor={(i) => i.id}
         refreshControl={<RefreshControl refreshing={loading} onRefresh={load} />}
-        contentContainerStyle={{ paddingHorizontal: 18, paddingBottom: 120, gap: 6 }}
+        contentContainerStyle={{ paddingHorizontal: 18, paddingBottom: 120, gap: 2 }}
         ListHeaderComponent={
           <View style={{ gap: 14, marginBottom: 6 }}>
             <Row gap={8} style={{ minHeight: 46, borderRadius: 15, backgroundColor: C.soft, paddingHorizontal: 14 }}>
@@ -118,11 +118,11 @@ export function Inbox({ inTab }: { inTab?: boolean }) {
               <TextInput keyboardAppearance={isDark ? 'dark' : 'light'} value={q} onChangeText={setQ} placeholder={t('ابحث بالمحادثات')} placeholderTextColor={C.faint} style={{ flex: 1, fontFamily: F.body, fontSize: 15, textAlign: ta, color: C.ink }} />
             </Row>
             {tab === 0 && friends.length > 0 && (
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 14 }}>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 14, paddingVertical: 4 }}>
                 {friends.map((p) => (
                   <Tap key={p.id} onPress={() => openWith(p)} style={{ alignItems: 'center', gap: 5, width: 64 }} accessibilityLabel={t('راسل {0}', [p.full_name])}>
-                    <Avatar id={p.id} name={p.full_name} url={p.avatar_url} size={58} />
-                    <T v="tiny" numberOfLines={1}>{p.full_name.split(' ')[0]}</T>
+                    <View style={[{ padding: 2.5, borderRadius: 34, backgroundColor: C.card }, shadow]}><Avatar id={p.id} name={p.full_name} url={p.avatar_url} size={60} /></View>
+                    <T v="tiny" numberOfLines={1}>{(p.full_name ?? '').split(' ')[0]}</T>
                   </Tap>
                 ))}
               </ScrollView>
@@ -142,21 +142,19 @@ export function Inbox({ inTab }: { inTab?: boolean }) {
         }
         renderItem={({ item, index }) => (
           <Animated.View entering={FadeInDown.delay(Math.min(index, 8) * 35)} exiting={FadeOutLeft} layout={LinearTransition}>
-            <Tap scale={0.98} onPress={() => router.push({ pathname: '/messages/[id]', params: { id: item.id } })}
-              style={[{ flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 74, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 20, backgroundColor: C.card }, item.unread && shadow]}>
-              {item.kind === 'direct' ? <Avatar id={item.other?.id} name={item.title} url={item.other?.avatar_url} size={54} />
-                : <GlyphTile icon={item.kind === 'community' ? Users : UsersRound} colors={item.kind === 'community' ? ['#34D399', '#059669'] : ['#A78BFA', '#7C3AED']} size={54} />}
-              <View style={{ flex: 1, minWidth: 0, gap: 2 }}>
+            <Tap scale={0.985} haptic={false} onPress={() => router.push({ pathname: '/messages/[id]', params: { id: item.id } })}
+              style={{ flexDirection: 'row', alignItems: 'center', gap: 13, minHeight: 72, paddingVertical: 8, borderRadius: 18 }}>
+              {item.kind === 'direct' ? <Avatar id={item.other?.id} name={item.title} url={item.other?.avatar_url} size={56} />
+                : <GlyphTile icon={item.kind === 'community' ? Users : UsersRound} colors={item.kind === 'community' ? ['#34D399', '#059669'] : ['#A78BFA', '#7C3AED']} size={56} />}
+              <View style={{ flex: 1, minWidth: 0, gap: 3 }}>
                 <Row gap={5}>
-                  <T v={item.unread ? 'bold' : 'bodyMd'} numberOfLines={1} style={{ flexShrink: 1 }}>{item.title}</T>
+                  <T v={item.unread ? 'bold' : 'bodyMd'} numberOfLines={1} style={{ flexShrink: 1, fontSize: 15 }}>{item.title}</T>
                   {item.other?.is_verified && <BadgeCheck size={14} color={C.white} fill={C.primary} />}
-                  <View style={{ flex: 1 }} />
-                  {item.streak > 1 && <T v="tiny" color="#E8590C">🔥 {item.streak}</T>}
-                  <T v="tiny" color={item.unread ? C.primary : C.muted}>{timeAgo(item.last_at)}</T>
+                  {item.streak > 1 && <T v="tiny" color="#E8590C">🔥{item.streak}</T>}
                 </Row>
-                <Row gap={6}>
-                  <T v="small" numberOfLines={1} style={{ flex: 1 }} color={item.unread ? C.ink : C.muted}>{item.last ?? (item.kind === 'community' ? t('جروب تلقائي') : '')}</T>
-                  {item.unread && <View style={{ width: 9, height: 9, borderRadius: 5, backgroundColor: C.primary }} />}
+                <Row gap={4}>
+                  <T v="small" numberOfLines={1} style={{ flexShrink: 1 }} color={item.unread ? C.ink : C.muted}>{item.last ?? (item.kind === 'community' ? t('جروب تلقائي') : '')}</T>
+                  {item.last_at ? <T v="small" color={C.faint}>{(item.last ?? (item.kind === 'community' ? 'x' : '')) ? '· ' : ''}{timeAgo(item.last_at)}</T> : null}
                 </Row>
                 {item.state === 'request' && (
                   <Row gap={8} style={{ marginTop: 6 }}>
@@ -165,7 +163,8 @@ export function Inbox({ inTab }: { inTab?: boolean }) {
                   </Row>
                 )}
               </View>
-              {item.kind === 'direct' && item.state === 'active' && <Camera size={21} color={C.faint} />}
+              {item.unread ? <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: C.primary }} />
+                : item.kind === 'direct' && item.state === 'active' ? <Camera size={22} color={C.faint} strokeWidth={1.8} /> : null}
             </Tap>
           </Animated.View>
         )}

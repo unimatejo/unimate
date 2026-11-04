@@ -1,7 +1,7 @@
 import { router, useFocusEffect } from 'expo-router';
-import { BadgeCheck, BarChart3, BookOpen, FileText, Flag, Grid3x3, Lock, MessageCircle, Rows3, Settings, Star, UserX, WifiOff } from 'lucide-react-native';
+import { BadgeCheck, BarChart3, BookOpen, FileText, Flag, Grid3x3, Lock, Menu, MessageCircle, MoreHorizontal, PlusSquare, Rows3, Star, UserX, WifiOff } from 'lucide-react-native';
 import { useCallback, useEffect, useState } from 'react';
-import { Alert, Linking, RefreshControl, ScrollView, View } from 'react-native';
+import { Alert, Linking, RefreshControl, ScrollView, Share, View } from 'react-native';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 
 import { Image } from 'expo-image';
@@ -149,6 +149,20 @@ export function ProfileView({ userId, onTitle }: { userId: string; onTitle?: (ti
     ]);
   }
 
+  function shareProfile() {
+    if (!p) return;
+    const url = `https://app.unimate.my/user/${p.id}`;
+    Share.share({ message: `${p.full_name}${p.username ? ` (@${p.username})` : ''} على يونيميت\n${url}`, url }).catch(() => {});
+  }
+
+  function moreMenu() {
+    Alert.alert(p?.full_name ?? '', undefined, [
+      { text: t('شارك البروفايل'), onPress: shareProfile },
+      { text: t('إبلاغ'), style: 'destructive', onPress: () => router.push({ pathname: '/report', params: { type: 'user', id: userId, user: userId } }) },
+      { text: t('إلغاء'), style: 'cancel' },
+    ]);
+  }
+
   async function message() {
     const { data, error } = await supabase.rpc('start_direct', { target: userId, context: null });
     if (error) { Alert.alert(t('ما بتقدر تراسله'), error.message.includes('not accepting') ? t('هاد الطالب مسكّر الرسائل من ناس خارج دفعته.') : t('جرّب بعدين.')); return; }
@@ -178,15 +192,20 @@ export function ProfileView({ userId, onTitle }: { userId: string; onTitle?: (ti
     <>
       <ScrollView contentContainerStyle={{ paddingBottom: 130 }} refreshControl={<RefreshControl refreshing={loading} onRefresh={load} />}>
         <View style={{ padding: 18, gap: 14 }}>
+          {/* top bar like Instagram: @username, then create + menu (mine) or more (others) */}
           <Row gap={8}>
-            <Row gap={6} style={{ flex: 1 }}>
-              {p.is_private && <Lock size={15} color={C.muted} />}
-              <T v="small" color={C.muted}>{p.is_private ? t('حساب خاص') : t('حساب عام')}</T>
+            <Row gap={5} style={{ flex: 1 }}>
+              {p.is_private && <Lock size={16} color={C.ink} />}
+              {mine && <T v="h2" numberOfLines={1} style={{ writingDirection: 'ltr', flexShrink: 1 }}>{p.username ? p.username : p.full_name}</T>}
+              {mine && p.is_verified && <BadgeCheck size={18} color={C.white} fill={C.primary} />}
             </Row>
             {mine ? (
-              <IconButton label={t('الإعدادات')} onPress={() => router.push('/settings')}><Settings size={21} color={C.ink} /></IconButton>
+              <>
+                <IconButton label={t('منشور جديد')} onPress={() => router.push('/post/new')}><PlusSquare size={21} color={C.ink} /></IconButton>
+                <IconButton label={t('الإعدادات')} onPress={() => router.push('/settings')}><Menu size={21} color={C.ink} /></IconButton>
+              </>
             ) : (
-              <IconButton label={t('إبلاغ')} onPress={() => router.push({ pathname: '/report', params: { type: 'user', id: userId, user: userId } })}><Flag size={19} color={C.ink} /></IconButton>
+              <IconButton label={t('خيارات')} onPress={moreMenu}><MoreHorizontal size={21} color={C.ink} /></IconButton>
             )}
           </Row>
 
@@ -216,7 +235,7 @@ export function ProfileView({ userId, onTitle }: { userId: string; onTitle?: (ti
               {p.is_verified && <BadgeCheck size={18} color={C.white} fill={C.primary} accessibilityLabel={t('طالب موثّق بحساب الجامعة')} />}
               {friends && <Animated.View entering={FadeIn}><View style={{ backgroundColor: C.greenSoft, borderRadius: 999, paddingHorizontal: 8, paddingVertical: 2 }}><T v="tiny" color={C.greenInk}>{t('أصدقاء')}</T></View></Animated.View>}
             </Row>
-            {p.username ? <T v="small" color={C.muted} style={{ writingDirection: 'ltr', textAlign: ta }}>@{p.username}</T> : null}
+            {/* the @username is already at the top (or in the screen header), like Instagram */}
             <T v="small" color={C.ink2}>{[nm(p.major), p.study_year ? t('سنة {0}', [p.study_year]) : null].filter(Boolean).join(t('، '))}</T>
             {p.bio ? <T v="body">{p.bio}</T> : null}
             {p.points > 0 && <Row gap={5}><Star size={14} color="#F59E0B" fill="#F59E0B" /><T v="tiny" color={C.muted}>{p.points} {t('نقطة مساعدة')}</T></Row>}
@@ -225,7 +244,7 @@ export function ProfileView({ userId, onTitle }: { userId: string; onTitle?: (ti
           {mine ? (
             <Row gap={8}>
               <Button kind="soft" title={t('تعديل البروفايل')} onPress={() => router.push('/settings/edit-profile')} style={{ flex: 1, minHeight: 46 }} />
-              <Button kind="soft" title={t('الخصوصية')} onPress={() => router.push('/settings/privacy')} style={{ flex: 1, minHeight: 46 }} />
+              <Button kind="soft" title={t('شارك البروفايل')} onPress={shareProfile} style={{ flex: 1, minHeight: 46 }} />
             </Row>
           ) : (
             <Row gap={8}>
