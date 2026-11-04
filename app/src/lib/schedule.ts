@@ -39,9 +39,11 @@ export function useSchedule(userId?: string) {
     if (enrErr) throw enrErr;
 
     const ms: Meeting[] = [];
+    const secs = new Map<string, { course_name: string; course_code: string; section_no: string; instructor: string | null }>();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     for (const e of (enr ?? []) as any[]) {
       const s = e.section; if (!s) continue;
+      secs.set(s.id, { course_name: s.course?.name_ar ?? '', course_code: s.course?.code ?? '', section_no: s.section_no, instructor: s.instructor });
       for (const m of s.meetings ?? []) {
         ms.push({
           id: m.id, section_id: s.id, kind: m.kind, weekday: m.weekday, starts_at: m.starts_at, ends_at: m.ends_at,
@@ -53,8 +55,19 @@ export function useSchedule(userId?: string) {
         });
       }
     }
-    ms.sort((a, b) => a.weekday - b.weekday || a.starts_at.localeCompare(b.starts_at));
-    setMeetings(ms);
+    // my own changes (internal transfer, a moved lecture just for me): hide or replace section times, add my own
+    const { data: pm } = await supabase.from('personal_meetings').select('*').eq('user_id', userId);
+    const personal = (pm ?? []) as { id: string; section_id: string; replaces: string | null; hidden: boolean; kind: Meeting['kind']; weekday: number | null; starts_at: string | null; ends_at: string | null; room_text: string | null }[];
+    const replaced = new Set(personal.filter((p) => p.replaces).map((p) => p.replaces));
+    const out = ms.filter((m) => !replaced.has(m.id));
+    for (const p of personal) {
+      if (p.hidden || p.weekday == null || !p.starts_at || !p.ends_at) continue;
+      const sec = secs.get(p.section_id);
+      if (!sec) continue;
+      out.push({ ...sec, section_id: p.section_id, id: p.id, kind: p.kind, weekday: p.weekday, starts_at: p.starts_at, ends_at: p.ends_at, room_text: p.room_text, room_code: null, room_floor: null, room_directions: null, building_name: null, building_id: null, lat: null, lng: null, source: 'personal', confirmations: 0, online_url: null });
+    }
+    out.sort((a, b) => a.weekday - b.weekday || a.starts_at.localeCompare(b.starts_at));
+    setMeetings(out);
 
     const { data: ev } = await supabase
       .from('academic_events')

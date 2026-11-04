@@ -3,6 +3,7 @@ import { Alert, Platform, Pressable, View, type AlertButton } from 'react-native
 
 import { T } from './ui';
 import { C } from '@/lib/theme';
+import { t } from '@/lib/i18n';
 
 type Item = { title: string; message?: string; buttons: AlertButton[] };
 let show: ((i: Item | null) => void) | null = null;
@@ -10,7 +11,7 @@ let show: ((i: Item | null) => void) | null = null;
 /** On the web, React Native's Alert does nothing; route it to an in-app dialog instead. */
 if (Platform.OS === 'web') {
   Alert.alert = (title: string, message?: string, buttons?: AlertButton[]) => {
-    show?.({ title, message, buttons: buttons?.length ? buttons : [{ text: 'OK' }] });
+    show?.({ title, message, buttons: buttons?.length ? buttons : [{ text: t('تمام') }] });
   };
 }
 

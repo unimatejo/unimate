@@ -1,11 +1,11 @@
-import DateTimePicker from '@react-native-community/datetimepicker';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
-import { BookOpen, CheckCircle2, Clock, Plus, Sparkles, Trash2, Users } from 'lucide-react-native';
+import { ArrowLeftRight, BookOpen, CheckCircle2, Clock, Plus, Sparkles, Trash2, User, Users } from 'lucide-react-native';
 import { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, Modal, Platform, Pressable, ScrollView, View } from 'react-native';
+import { ActivityIndicator, Alert, Modal, Pressable, ScrollView, View } from 'react-native';
 import Animated, { FadeInDown, SlideInDown } from 'react-native-reanimated';
 
 import { GlyphTile, GRAD } from '@/components/Glyph';
+import { TimeField } from '@/components/TimeField';
 import { Button, Chip, Empty, Field, Header, Row, Screen, T, Tap } from '@/components/ui';
 import { importTeamsCourses, useAuth } from '@/lib/auth';
 import { supabase } from '@/lib/supabase';
@@ -13,7 +13,10 @@ import { C } from '@/lib/theme';
 import { WEEKDAYS_SHORT, clock } from '@/lib/util';
 import { nm, t } from '@/lib/i18n';
 
-type Mt = { id: string; weekday: number; starts_at: string; ends_at: string; kind: string; room_text: string | null; source: string; confirmations: number };
+type Mt = { id: string; weekday: number; starts_at: string; ends_at: string; kind: string; room_text: string | null; source: string; confirmations: number; mine?: boolean; replaces?: string | null };
+type Personal = { id: string; section_id: string; replaces: string | null; hidden: boolean; kind: string; weekday: number | null; starts_at: string | null; ends_at: string | null; room_text: string | null };
+/** add: new time for the section · all: the class really moved (changes it for everyone) · me: only my schedule changes */
+type Edit = { sec: Sec; mode: 'add' | 'all' | 'me'; meeting?: Mt; personalId?: string };
 type Sec = { id: string; section_no: string; instructor: string | null; course: { name_ar: string; code: string } | null; meetings: Mt[]; source: string; mates: number };
 
 const KINDS = [['lecture', t('محاضرة')], ['lab', t('مختبر')], ['online', t('أونلاين')], ['tutorial', t('مناقشة')]] as const;
@@ -28,7 +31,9 @@ export default function Courses() {
   const [importing, setImporting] = useState(false);
   const [adding, setAdding] = useState(false);
   const [name, setName] = useState(''); const [secNo, setSecNo] = useState('');
-  const [timeFor, setTimeFor] = useState<Sec | null>(null);
+  const [edit, setEdit] = useState<Edit | null>(null);
+  const [moveFor, setMoveFor] = useState<Sec | null>(null);
+  const [newSec, setNewSec] = useState('');
   const [days, setDays] = useState<number[]>([]);
   const [st, setSt] = useState(at(8)); const [en, setEn] = useState(at(9, 30));
   const [kind, setKind] = useState<(typeof KINDS)[number][0]>('lecture');
@@ -52,6 +57,17 @@ export default function Courses() {
       .eq('user_id', profile.id);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const list = ((data ?? []) as any[]).filter((e) => e.section).map((e) => ({ ...e.section, source: e.source, mates: 0 })) as Sec[];
+    // my own changes: hide or move a section time just for me, or add my own
+    const { data: pm } = await supabase.from('personal_meetings').select('*').eq('user_id', profile.id);
+    for (const sec of list) {
+      const mine = ((pm ?? []) as Personal[]).filter((p) => p.section_id === sec.id);
+      const replaced = new Set(mine.filter((p) => p.replaces).map((p) => p.replaces));
+      sec.meetings = [
+        ...sec.meetings.filter((m) => !replaced.has(m.id)),
+        ...mine.filter((p) => !p.hidden && p.weekday != null).map((p) => ({ id: p.id, weekday: p.weekday!, starts_at: p.starts_at!, ends_at: p.ends_at!, kind: p.kind, room_text: p.room_text, source: 'personal', confirmations: 0, mine: true, replaces: p.replaces })),
+      ].sort((a, b) => a.weekday - b.weekday || a.starts_at.localeCompare(b.starts_at));
+      (sec as Sec & { hiddenCount?: number }).hiddenCount = mine.filter((p) => p.hidden).length;
+    }
     if (list.length) {
       const { data: cnt } = await supabase.from('enrollments').select('section_id').in('section_id', list.map((x) => x.id));
       for (const s of list) s.mates = (cnt ?? []).filter((c) => c.section_id === s.id).length;
@@ -82,17 +98,90 @@ export default function Courses() {
     setAdding(false); setName(''); setSecNo(''); load();
   }
 
+  function openTime(e: Edit) {
+    setEdit(e);
+    const m = e.meeting;
+    if (m) {
+      const [sh, sm] = m.starts_at.split(':').map(Number), [eh, em] = m.ends_at.split(':').map(Number);
+      setDays([m.weekday]); setSt(at(sh, sm)); setEn(at(eh, em)); setKind(m.kind as (typeof KINDS)[number][0]); setRoom(m.room_text ?? '');
+    } else { setDays([]); setRoom(''); }
+  }
+
   async function saveTime() {
-    if (!timeFor) return;
+    if (!edit || busy) return;
     if (days.length === 0) { Alert.alert(t('اختار يوم أو أكثر')); return; }
     if (hhmm(en) <= hhmm(st)) { Alert.alert(t('وقت النهاية لازم يكون بعد البداية')); return; }
     setBusy(true);
-    for (const d of days) {
-      const { error } = await supabase.rpc('report_meeting', { sec: timeFor.id, wd: d, st: hhmm(st), en: hhmm(en), k: kind, room: room.trim() });
-      if (error) { setBusy(false); Alert.alert(t('ما انحفظ الوقت'), t('جرّب كمان مرة.')); return; }
-    }
-    setBusy(false); setTimeFor(null); setDays([]); setRoom(''); load();
+    try {
+      const { sec, mode, meeting } = edit;
+      if (mode === 'all' && meeting && !meeting.mine) {
+        const { error } = await supabase.rpc('edit_meeting', { m: meeting.id, wd: days[0], st: hhmm(st), en: hhmm(en), k: kind, room: room.trim() });
+        if (error) throw error;
+        for (const d of days.slice(1)) await supabase.rpc('report_meeting', { sec: sec.id, wd: d, st: hhmm(st), en: hhmm(en), k: kind, room: room.trim() });
+      } else if (mode === 'me') {
+        const rows = days.map((d, i) => ({ user_id: profile?.id, section_id: sec.id, replaces: i === 0 ? (meeting?.mine ? meeting.replaces ?? null : meeting?.id ?? null) : null, hidden: false, kind, weekday: d, starts_at: hhmm(st), ends_at: hhmm(en), room_text: room.trim() || null }));
+        if (meeting?.mine) {
+          const { error } = await supabase.from('personal_meetings').update(rows[0]).eq('id', meeting.id);
+          if (error) throw error;
+          if (rows.length > 1) { const { error: e2 } = await supabase.from('personal_meetings').insert(rows.slice(1)); if (e2) throw e2; }
+        } else {
+          if (rows[0].replaces) await supabase.from('personal_meetings').delete().eq('user_id', profile?.id ?? '').eq('replaces', rows[0].replaces);
+          const { error } = await supabase.from('personal_meetings').insert(rows);
+          if (error) throw error;
+        }
+      } else {
+        for (const d of days) {
+          const { error } = await supabase.rpc('report_meeting', { sec: sec.id, wd: d, st: hhmm(st), en: hhmm(en), k: kind, room: room.trim() });
+          if (error) throw error;
+        }
+      }
+      setEdit(null); setDays([]); setRoom(''); await load();
+      scheduleRefresh();
+    } catch { Alert.alert(t('ما انحفظ الوقت'), t('جرّب كمان مرة.')); }
+    finally { setBusy(false); }
   }
+
+  /** Tap a time: change it for everyone, only for me, hide it for me, or delete my own. */
+  function meetingMenu(m: Mt, s: Sec) {
+    const opts: { text: string; style?: 'destructive' | 'cancel'; onPress?: () => void }[] = [];
+    if (m.mine) {
+      opts.push({ text: t('عدّل وقتي'), onPress: () => openTime({ sec: s, mode: 'me', meeting: m }) });
+      opts.push({ text: m.replaces ? t('رجّع وقت الشعبة') : t('احذف وقتي'), style: 'destructive', onPress: async () => {
+        const { error } = await supabase.from('personal_meetings').delete().eq('id', m.id);
+        if (error) Alert.alert(t('ما زبط'), t('جرّب كمان مرة.')); else { await load(); scheduleRefresh(); }
+      } });
+    } else {
+      opts.push({ text: t('تغيّر لكل الشعبة'), onPress: () => openTime({ sec: s, mode: 'all', meeting: m }) });
+      opts.push({ text: t('غيّره إلي بس'), onPress: () => openTime({ sec: s, mode: 'me', meeting: m }) });
+      opts.push({ text: t('خبّيه من جدولي'), onPress: async () => {
+        const { error } = await supabase.from('personal_meetings').insert({ user_id: profile?.id, section_id: s.id, replaces: m.id, hidden: true });
+        if (error) Alert.alert(t('ما زبط'), t('جرّب كمان مرة.')); else { await load(); scheduleRefresh(); }
+      } });
+      if (m.source === 'crowd' && m.confirmations <= 1) opts.push({ text: t('احذف الوقت'), style: 'destructive', onPress: async () => {
+        const { error } = await supabase.rpc('remove_meeting', { m: m.id });
+        if (error) Alert.alert(t('ما بتقدر تحذفه'), t('بتقدر تحذف بس الوقت اللي إنت ضفته وما حدا أكّده. جرّب «غيّره إلي بس».')); else { await load(); scheduleRefresh(); }
+      } });
+    }
+    opts.push({ text: t('إلغاء'), style: 'cancel' });
+    Alert.alert(`${WEEKDAYS_SHORT[m.weekday]} ${clock(m.starts_at)} - ${clock(m.ends_at)}`, m.mine ? t('هاد الوقت إلك إنت بس.') : t('هاد وقت الشعبة، بيطلع لكل زملائك.'), opts);
+  }
+
+  async function moveSection() {
+    if (!moveFor || busy) return;
+    const no = newSec.trim();
+    if (!/^[0-9٠-٩A-Za-z]{1,6}$/.test(no)) { Alert.alert(t('اكتب رقم الشعبة')); return; }
+    setBusy(true);
+    try {
+      const { error } = await supabase.rpc('change_section', { sec: moveFor.id, new_no: no });
+      if (error) throw error;
+      setMoveFor(null); setNewSec(''); await load(); scheduleRefresh();
+      Alert.alert(t('انتقلت للشعبة {0} ✓', [no]), t('أوقاتها وجروبها صاروا عندك. إذا ما في أوقات لهلأ، ضيفها مرة وحدة.'));
+    } catch { Alert.alert(t('ما زبط النقل'), t('جرّب كمان مرة.')); }
+    finally { setBusy(false); }
+  }
+
+  // lecture reminders follow the schedule
+  const scheduleRefresh = () => { /* the schedule screen reloads and re-schedules reminders when you open it */ };
 
   function leave(s: Sec) {
     Alert.alert(t('شيل المادة'), t('{0}\nبتطلع من جروبها كمان.', [nm(s.course)]), [{ text: t('لا'), style: 'cancel' }, {
@@ -131,14 +220,20 @@ export default function Courses() {
               <Tap onPress={() => leave(s)} accessibilityLabel={t('شيل المادة')} style={{ width: 38, height: 38, alignItems: 'center', justifyContent: 'center' }}><Trash2 size={18} color={C.faint} /></Tap>
             </Row>
             {s.meetings.map((m) => (
-              <Row key={m.id} gap={8} style={{ backgroundColor: C.soft, borderRadius: 14, padding: 10 }}>
-                <Clock size={15} color={C.primary} />
+              <Tap key={m.id} haptic={false} scale={0.99} onPress={() => meetingMenu(m, s)} accessibilityLabel={t('عدّل الوقت')}
+                style={{ flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: m.mine ? C.violetSoft : C.soft, borderRadius: 14, padding: 10 }}>
+                {m.mine ? <User size={15} color={C.violet} /> : <Clock size={15} color={C.primary} />}
                 <T v="small" style={{ flex: 1 }}>{WEEKDAYS_SHORT[m.weekday]} {clock(m.starts_at)} - {clock(m.ends_at)}{m.room_text ? ` · ${m.room_text}` : ''}</T>
-                {m.confirmations >= 3 ? <Row gap={3}><CheckCircle2 size={14} color={C.greenInk} /><T v="tiny" color={C.greenInk}>{t('مؤكد')}</T></Row>
+                {m.mine ? <T v="tiny" color={C.violet}>{t('إلك بس')}</T>
+                  : m.confirmations >= 3 ? <Row gap={3}><CheckCircle2 size={14} color={C.greenInk} /><T v="tiny" color={C.greenInk}>{t('مؤكد')}</T></Row>
                   : <Tap onPress={() => confirm(m, s)} style={{ paddingHorizontal: 8, minHeight: 30, justifyContent: 'center' }}><T v="tiny" color={C.primary}>{t('صح؟ أكّد')}</T></Tap>}
-              </Row>
+              </Tap>
             ))}
-            <Button kind="soft" title={s.meetings.length ? t('ضيف وقت ثاني') : t('ضيف وقت المحاضرة')} icon={<Clock size={16} color={C.primary} />} onPress={() => { setTimeFor(s); setDays([]); }} style={{ minHeight: 42 }} />
+            {(s as Sec & { hiddenCount?: number }).hiddenCount ? <T v="tiny" color={C.muted}>{t('مخبّي {0} من أوقات الشعبة من جدولك.', [(s as Sec & { hiddenCount?: number }).hiddenCount])}</T> : null}
+            <Row gap={8}>
+              <Button kind="soft" title={s.meetings.length ? t('ضيف وقت ثاني') : t('ضيف وقت المحاضرة')} icon={<Clock size={16} color={C.primary} />} onPress={() => openTime({ sec: s, mode: 'add' })} style={{ minHeight: 42, flex: 1 }} />
+              <Button kind="white" title={t('نقل شعبة')} icon={<ArrowLeftRight size={16} color={C.ink} />} onPress={() => { setMoveFor(s); setNewSec(''); }} style={{ minHeight: 42 }} />
+            </Row>
           </Animated.View>
         ))}
         {rows && rows.length > 0 && <Button kind="ghost" title={t('شوف الجدول')} onPress={() => router.push('/(tabs)/schedule')} />}
@@ -154,12 +249,24 @@ export default function Courses() {
         </Animated.View>
       </Modal>
 
-      <Modal visible={!!timeFor} transparent animationType="fade" onRequestClose={() => setTimeFor(null)}>
-        <Pressable style={{ flex: 1, backgroundColor: 'rgba(14,20,48,0.45)' }} onPress={() => setTimeFor(null)} />
+      <Modal visible={!!moveFor} transparent animationType="fade" onRequestClose={() => setMoveFor(null)}>
+        <Pressable style={{ flex: 1, backgroundColor: 'rgba(14,20,48,0.45)' }} onPress={() => setMoveFor(null)} />
+        <Animated.View entering={SlideInDown.springify().damping(18)} style={{ backgroundColor: C.bg, borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: 18, gap: 12, paddingBottom: 40 }}>
+          <T v="h3">{t('نقل لشعبة ثانية')}</T>
+          <T v="small" color={C.muted}>{t('{0} · إنت هلأ بشعبة {1}. لما تنتقل بتاخد أوقات الشعبة الجديدة وجروبها.', [nm(moveFor?.course), moveFor?.section_no ?? ''])}</T>
+          <Field label={t('رقم الشعبة الجديدة')} value={newSec} onChangeText={setNewSec} keyboardType="number-pad" placeholder="2" maxLength={6} autoFocus />
+          <Button title={t('انقلني')} loading={busy} disabled={busy || !newSec.trim()} onPress={moveSection} />
+        </Animated.View>
+      </Modal>
+
+      <Modal visible={!!edit} transparent animationType="fade" onRequestClose={() => setEdit(null)}>
+        <Pressable style={{ flex: 1, backgroundColor: 'rgba(14,20,48,0.45)' }} onPress={() => setEdit(null)} />
         <Animated.View entering={SlideInDown.springify().damping(18)} style={{ backgroundColor: C.bg, borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: 18, gap: 12, paddingBottom: 40, maxHeight: '88%' }}>
           <ScrollView contentContainerStyle={{ gap: 12 }}>
-            <T v="h3">{t('وقت')} {nm(timeFor?.course)}</T>
-            <T v="tiny" color={C.muted}>{t('بيطلع لكل زملائك بالشعبة. لما يأكده 3 منكم بيصير مؤكد.')}</T>
+            <T v="h3">{edit?.mode === 'me' ? t('وقتي أنا') : edit?.mode === 'all' ? t('تغيير وقت الشعبة') : t('وقت')} · {nm(edit?.sec.course)}</T>
+            <T v="tiny" color={edit?.mode === 'me' ? C.violet : C.muted}>{edit?.mode === 'me' ? t('بيتغيّر بجدولك إنت بس (مثلاً نقل داخلي لمحاضرة)، وزملاؤك ما بيتأثروا.')
+              : edit?.mode === 'all' ? t('استخدمها إذا الدكتور غيّر وقت المحاضرة للشعبة كلها. بيتغيّر عند كل زملائك.')
+              : t('بيطلع لكل زملائك بالشعبة. لما يأكده 3 منكم بيصير مؤكد.')}</T>
             <Row gap={6} style={{ flexWrap: 'wrap' }}>
               {[0, 1, 2, 3, 4, 5].map((d) => <Chip key={d} label={WEEKDAYS_SHORT[d]} active={days.includes(d)} onPress={() => setDays((x) => (x.includes(d) ? x.filter((y) => y !== d) : [...x, d]))} />)}
             </Row>
@@ -167,13 +274,11 @@ export default function Courses() {
               {KINDS.map(([k, l]) => <Chip key={k} label={l} active={kind === k} onPress={() => setKind(k)} />)}
             </Row>
             <Row gap={10}>
-              <View style={{ flex: 1, alignItems: 'center' }}><T v="small" color={C.muted}>{t('من')}</T>
-                <DateTimePicker value={st} mode="time" minuteInterval={5} display={Platform.OS === 'ios' ? 'compact' : 'default'} onChange={(_, d) => d && setSt(d)} /></View>
-              <View style={{ flex: 1, alignItems: 'center' }}><T v="small" color={C.muted}>{t('لـ')}</T>
-                <DateTimePicker value={en} mode="time" minuteInterval={5} display={Platform.OS === 'ios' ? 'compact' : 'default'} onChange={(_, d) => d && setEn(d)} /></View>
+              <TimeField label={t('من')} value={st} onChange={setSt} />
+              <TimeField label={t('لـ')} value={en} onChange={setEn} />
             </Row>
             {kind !== 'online' && <Field label={t('القاعة والمبنى')} value={room} onChangeText={setRoom} placeholder={t('مثلاً قاعة 205، مبنى الآداب')} maxLength={80} />}
-            <Button title={t('احفظ الوقت')} loading={busy} onPress={saveTime} />
+            <Button title={t('احفظ الوقت')} loading={busy} disabled={busy} onPress={saveTime} />
           </ScrollView>
         </Animated.View>
       </Modal>
