@@ -2,6 +2,8 @@
 with s as (
   select distinct on (st.osm) st.*, u.id as university_id
   from osm_stage st join universities u on u.slug = st.uni
+  -- keep to the campus and the streets right around it
+  where sqrt(power((st.lat - u.center_lat) * 111000, 2) + power((st.lng - u.center_lng) * 94000, 2)) < case when u.slug in ('yu','ju') then 1000 else 1400 end
   order by st.osm, st.id desc
 ), m as (
   select s.*,
