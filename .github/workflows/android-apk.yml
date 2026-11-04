@@ -1,5 +1,6 @@
 # Builds an installable UniMate .apk for Android (signed with the standard debug key, so it installs directly).
 # The .apk and the build log are pushed to the "builds-android" branch.
+# (public repository: GitHub Actions minutes are free)
 name: Android APK
 on:
   workflow_dispatch:

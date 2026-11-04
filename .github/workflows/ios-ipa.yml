@@ -1,5 +1,6 @@
 # Builds an unsigned UniMate .ipa for sideloading with your own certificate (Esign, Sideloadly, Scarlet...).
 # Runs on every push to main that touches the app. The .ipa and the build log are pushed to the "builds" branch.
+# (public repository: GitHub Actions minutes are free)
 name: iOS IPA
 on:
   workflow_dispatch:
