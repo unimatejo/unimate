@@ -1009,4 +1009,5 @@ export const EN: Record<string, string> = {
   "امشي لهون من مكانك": "Walk here from where you are",
   "امشي لهون": "Walk here",
   "صور 360°": "360° photos",
+  "الأماكن من OpenStreetMap وWikimapia": "Places from OpenStreetMap and Wikimapia",
 };

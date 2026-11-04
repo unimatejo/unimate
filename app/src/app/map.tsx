@@ -115,9 +115,12 @@ export default function CampusMap() {
   }, [university]);
 
   const fitAll = useCallback(() => {
-    if (pins.length < 2) return;
-    map.current?.fitToCoordinates(pins.map((p) => ({ latitude: p.lat, longitude: p.lng })), { edgePadding: { top: 170, bottom: 80, left: 40, right: 40 }, animated: true });
-  }, [pins]);
+    // the main campus only: colleges in other cities (Al-Balqa has many) would zoom the map out to all of Jordan
+    const c = university?.center_lat ? { lat: university.center_lat, lng: university.center_lng! } : null;
+    const near = c ? pins.filter((p) => distM(c, p) < 3000) : pins;
+    if (near.length < 2) return;
+    map.current?.fitToCoordinates(near.map((p) => ({ latitude: p.lat, longitude: p.lng })), { edgePadding: { top: 170, bottom: 80, left: 40, right: 40 }, animated: true });
+  }, [pins, university]);
   useEffect(() => { if (pins.length && !params.building && !params.advertiser) setTimeout(fitAll, 400); }, [pins, fitAll, params.building, params.advertiser]);
 
   useEffect(() => {
@@ -190,7 +193,8 @@ export default function CampusMap() {
   }, []);
 
   const startTour = useCallback(() => {
-    const pool = pins.filter((p) => TOUR_KINDS.includes(p.kind));
+    const c = university?.center_lat ? { lat: university.center_lat, lng: university.center_lng! } : null;
+    const pool = pins.filter((p) => TOUR_KINDS.includes(p.kind) && (!c || distM(c, p) < 3000));
     if (pool.length < 2) { Alert.alert(t('ما في أماكن كفاية'), t('لسا ما عنا أماكن كفاية بهاي الجامعة لجولة.')); return; }
     // start at a gate (or the southern-most place) and always go to the closest place not seen yet
     const left = [...pool];
@@ -207,7 +211,7 @@ export default function CampusMap() {
     setSel(null); setRouting(false); setSat(true); setAuto(true);
     setTour({ stops: order, i: 0 });
     walkTo(order, 0, order[0]);
-  }, [pins, walkTo]);
+  }, [pins, walkTo, university]);
 
   const walkHere = useCallback((dest: Pin) => {
     const gate = pins.find((p) => p.kind === 'gate');
@@ -238,7 +242,7 @@ export default function CampusMap() {
 
   const meters = sel && me ? Math.round(distM(me, sel) * 1.25) : null; // paths are ~25% longer than a straight line
   const walk = meters != null ? Math.max(1, Math.round(meters / 75)) : null;
-  const center = university?.center_lat ? { latitude: university.center_lat, longitude: university.center_lng! } : { latitude: 32.1, longitude: 36.18 };
+  const center = university?.center_lat ? { latitude: university.center_lat, longitude: university.center_lng! } : { latitude: 31.95, longitude: 35.91 }; // Amman, until the university has a campus point
 
   return (
     <View style={{ flex: 1, backgroundColor: C.bg }}>
@@ -313,6 +317,12 @@ export default function CampusMap() {
           </ScrollView>
         )}
       </SafeAreaView>
+
+      {!sel && !tour && (
+        <View pointerEvents="none" style={{ position: 'absolute', left: 0, right: 0, bottom: 12, alignItems: 'center' }}>
+          <T v="tiny" color={C.muted} style={{ fontSize: 10, backgroundColor: C.glass, paddingHorizontal: 8, borderRadius: 6, overflow: 'hidden' }}>{t('الأماكن من OpenStreetMap وWikimapia')}</T>
+        </View>
+      )}
 
       {!sel && !tour && pinsState === 'ok' && pins.filter((p) => TOUR_KINDS.includes(p.kind)).length > 1 && (
         <View pointerEvents="box-none" style={{ position: 'absolute', right: 16, bottom: 40 }}>

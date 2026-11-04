@@ -1,0 +1,100 @@
+{
+  "ju": {
+    "add": [
+      {"ar": "كلية الدراسات العليا", "en": "School of Graduate Studies"}
+    ],
+    "rename": [
+      {"from": "كلية العلوم الأساسية والبحرية - فرع العقبة", "to": "كلية العلوم الأساسية والبحرية والتمريض - فرع العقبة"}
+    ],
+    "remove": ["كلية التمريض - فرع العقبة"],
+    "email_extra": [],
+    "notes": "ju.edu.jo itself blocks the fetch proxy (WAF 'Request Rejected'). I used the Board of Trustees 2026/27 deans list instead (jo24.net/article/577336, 15 Sep 2026). Amman faculties all match ours, including الكلية التقنية, كلية علوم الرياضة and the political-science name of the Prince Hussein school. Aqaba now has one combined faculty, 'العلوم الأساسية والبحرية والتمريض', so the separate Aqaba nursing entry looks merged into it. The other Aqaba faculties (business, languages, law, tourism and hospitality, IT systems) match ours. Graduate Studies is optional: add it only if the app covers postgraduate students. Email: ju.edu.jo is fine. I found no std.* subdomain."
+  },
+  "yu": {
+    "add": [
+      {"ar": "الكلية التقنية", "en": "Technical College"}
+    ],
+    "rename": [],
+    "remove": [],
+    "email_extra": [],
+    "notes": "Source: the Yarmouk Board of Trustees deans list (ammonnews.net/article/1036426, 13 Oct 2026), which names 16 colleges including the new الكلية التقنية. Our كلية تكنولوجيا المعلومات وعلوم الحاسوب is not in that list, probably because its dean was not changed. It is a long-standing faculty, so keep it. Email: yu.edu.jo/studentemail says students get '<university ID>@ses.yu.edu.jo'. We already have that."
+  },
+  "just": {
+    "add": [],
+    "rename": [],
+    "remove": [],
+    "email_extra": [],
+    "notes": "just.edu.jo blocks the fetch proxy. Source: the 2026/27 deans list (jo24.net/article/577247, 13 Sep 2026), which names all 11 of our faculties. That article calls the IT faculty just 'كلية تكنولوجيا المعلومات' and English sources say 'Faculty of Computer and Information Technology'. I could not confirm the exact Arabic word order on the official site, so ours (كلية تكنولوجيا الحاسوب والمعلومات) is left as is. Graduate Studies is a deanship at JUST, not a faculty. Email: just.edu.jo. I found no student subdomain."
+  },
+  "hu": {
+    "add": [],
+    "rename": [],
+    "remove": [],
+    "email_extra": ["std.hu.edu.jo"],
+    "notes": "Source: the Board of Trustees academic appointments (jo24.net/article/579232, 8 Oct 2026), which names exactly our 16 faculties. Email: an exact-match search for \"std.hu.edu.jo\" returns many Google Scholar profiles of HU students and graduates, which means verified emails at std.hu.edu.jo. hu.edu.jo/eStudy links to guides for activating student Microsoft email but does not show the domain. dns.ninja shows that hu.edu.jo MX records point to Google. I could not run a DNS check from here. Confidence is medium-high: add std.hu.edu.jo alongside hu.edu.jo."
+  },
+  "mutah": {
+    "add": [],
+    "rename": [],
+    "remove": [],
+    "email_extra": [],
+    "notes": "Source: the 2026 deans list (alqalahnews.net/article/461582, 17 Sep 2026), which names exactly our 16 civil-wing faculties plus كلية الدراسات العليا (optional to add). The official 'دليل التخصصات الجامعية' PDF (mutah.edu.jo, undated, garbled text) also lists military-wing faculties that we do not have: كلية العلوم العسكرية, كلية العلوم الشرطية, a Princess ... nursing college, and كلية الأمير الحسن للعلوم الإسلامية. It also lists the postgraduate Royal colleges for national defence and for command and staff. I could not confirm their current names, so they are not in 'add'. Add them only if the app should serve cadets. Email: mutah.edu.jo. I found no student subdomain."
+  },
+  "bau": {
+    "add": [
+      {"ar": "كلية السلط التقنية", "en": "Salt Technical College"}
+    ],
+    "rename": [
+      {"from": "كلية السلط للعلوم الإنسانية", "to": "كلية السلط للعلوم التربوية والإنسانية"}
+    ],
+    "remove": [],
+    "email_extra": [],
+    "notes": "Sources: the 2026/27 academic appointments (royanews.com, 21 Sep 2026) and the official bau.edu.jo Specializations.pdf, which tags faculties with '/Salt'. Salt-centre faculties in the source: Science, Salt Educational & Human Sciences, Medicine, Business, Law, Prince Abdullah bin Ghazi ICT, Media, Technological Agriculture, Allied Medical Sciences, Nursing, AI, Engineering, Salt Technical College, and Graduate Studies (optional to add). Engineering Technology (كلية الهندسة التكنولوجية) is a BAU faculty in Amman (Marka), not an affiliated college, so keep it. Some entries in our list are affiliated colleges in other cities or not faculties, and I did not audit them as you asked: Irbid, Princess Rahma, Princess Alia, Husn, Zarqa, Shoubak, Aqaba, Ajloun, Amman University Colleges, and the Prince Hussein Civil Protection Academy. FYI, the official list also includes Jerash, Ma'an and Karak University Colleges, and Amman's full name is 'كلية عمان الجامعية للعلوم المالية والإدارية'. Email: bau.edu.jo. I found no student subdomain."
+  },
+  "aabu": {
+    "add": [
+      {"ar": "كلية التربية البدنية وعلوم الرياضة", "en": "Faculty of Physical Education and Sport Sciences"},
+      {"ar": "كلية الدراسات العليا", "en": "Faculty of Graduate Studies"}
+    ],
+    "rename": [
+      {"from": "كلية الاقتصاد والعلوم الادارية", "to": "كلية الأعمال"},
+      {"from": "كلية القانون", "to": "كلية الحقوق"},
+      {"from": "كليه الاميره سلمى للتمريض", "to": "كلية الأميرة سلمى بنت عبدالله للتمريض"},
+      {"from": "معهد علوم الارض و البيئة", "to": "كلية علوم الأرض والبيئة"},
+      {"from": "كلية الامير الحسين بن عبدالله الثاني لتكنولوجيا المعلومات", "to": "كلية الأمير الحسين بن عبدالله لتكنولوجيا المعلومات"}
+    ],
+    "remove": ["كلية علوم الطيران"],
+    "email_extra": [],
+    "notes": "Source: the official aabu.edu.jo home page 'الكليات' menu, fetched today (17 entries), and the official 2025 new-programs brochure, which uses كلية الأعمال, كلية الحقوق, كلية علوم الأرض والبيئة and the PE faculty. Aviation Sciences is on old Wikipedia but not in the official current menu, so I marked it for removal (medium confidence). The official menu also lists معهد الفلك وعلوم الفضاء, a postgraduate institute that I left out. Graduate Studies is optional. Email: the site links an Outlook OWA and student.aabu.edu.jo (the registration portal, not an email domain). Keep aabu.edu.jo."
+  },
+  "ahu": {
+    "add": [],
+    "rename": [],
+    "remove": [],
+    "email_extra": [],
+    "notes": "ahu.edu.jo blocks robots, so I could not read its colleges menu. The 21 Sep 2026 deans news (jo24.net/article/577813) confirms Science, Educational Sciences, Petra Tourism & Archaeology, Arts, Engineering, Law and IT. Official ahu.edu.jo page titles (from search) confirm 'كلية الأميرة عائشة بنت الحسين للتمريض'. A third-party site calls it '...للتمريض والعلوم الصحية', which is unverified, so no change. Business is 'كلية إدارة الأعمال والاقتصاد'. Ours has extra spaces ('ادارة الاعمال و الاقتصاد'), so consider normalising it. 'كلية العلوم الطبية المساندة' appears in an ahu.edu.jo document from search, so keep it (low confidence). Email: ahu.edu.jo. I found no student subdomain."
+  },
+  "ttu": {
+    "add": [],
+    "rename": [],
+    "remove": [],
+    "email_extra": [],
+    "notes": "Source: the official ttu.edu.jo 'Colleges & Deanships' menu (ICT, Science, Engineering, Educational Sciences, Arts, Business, Intermediate Technical College). That is exactly our 7. Email: I could not independently confirm stu.ttu.edu.jo, because search shows only ttu.edu.jo pages and they do not show the domain. Keep the current ttu.edu.jo and stu.ttu.edu.jo."
+  },
+  "gju": {
+    "add": [],
+    "rename": [],
+    "remove": [],
+    "email_extra": [],
+    "notes": "Source: the official gju.edu.jo/ar navigation, 'الأكاديمي > الكليات', which lists exactly our 8 schools with the same spellings. Email: the site links 'GJU Email' to outlook.office.com/owa/gju.edu.jo. I found no std.gju.edu.jo. Keep gju.edu.jo."
+  },
+  "wise": {
+    "add": [
+      {"ar": "كلية الدراسات العليا", "en": "Faculty of Graduate Studies"}
+    ],
+    "rename": [],
+    "remove": [],
+    "email_extra": [],
+    "notes": "Source: the official wise.edu.jo navigation, which lists 12 colleges: our 11 plus كلية الدراسات العليا (optional to add). Email: no student email domain appears on the site. I found no std.wise.edu.jo or stu.wise.edu.jo. Keep wise.edu.jo."
+  }
+}

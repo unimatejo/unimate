@@ -1,0 +1,176 @@
+[
+  {
+    "slug": "inu",
+    "name_ar": "جامعة إربد الأهلية",
+    "name_en": "Irbid National University",
+    "city": "إربد",
+    "type": "private",
+    "email_domains": ["inu.edu.jo"],
+    "center_lat": 32.40625,
+    "center_lng": 35.95060,
+    "colleges": [
+      {"ar": "كلية القانون", "en": "Faculty of Law"},
+      {"ar": "كلية الآداب والفنون", "en": "Faculty of Arts and Humanities"},
+      {"ar": "كلية العلوم الإدارية والمالية", "en": "Faculty of Administrative and Financial Sciences"},
+      {"ar": "كلية العلوم وتكنولوجيا المعلومات", "en": "Faculty of Science and Information Technology"},
+      {"ar": "كلية التمريض", "en": "Faculty of Nursing"},
+      {"ar": "كلية العلوم التربوية", "en": "Faculty of Educational Sciences"},
+      {"ar": "كلية العلوم الطبية التطبيقية", "en": "Faculty of Applied Medical Sciences"},
+      {"ar": "كلية الزراعة", "en": "College of Agriculture"},
+      {"ar": "الكلية التقنية", "en": "Technical College"}
+    ],
+    "notes": "Source: inu.edu.jo/en/colleges (lists 9 colleges though heading says 8). Official site shows كلية التقنية; English 'Technical College' taken from the fees table. Only inu@inu.edu.jo seen; no student email subdomain found. Coordinates from OSM hint."
+  },
+  {
+    "slug": "jadara",
+    "name_ar": "جامعة جدارا",
+    "name_en": "Jadara University",
+    "city": "إربد",
+    "type": "private",
+    "email_domains": ["jadara.edu.jo"],
+    "center_lat": 32.42209,
+    "center_lng": 35.94670,
+    "colleges": [
+      {"ar": "كلية الصيدلة", "en": "Faculty of Pharmacy"},
+      {"ar": "كلية العلوم الطبية المساندة", "en": "Faculty of Allied Medical Sciences"},
+      {"ar": "كلية الهندسة", "en": "Faculty of Engineering"},
+      {"ar": "كلية تكنولوجيا المعلومات", "en": "Faculty of Information Technology"},
+      {"ar": "كلية العلوم", "en": "Faculty of Science"},
+      {"ar": "كلية الأعمال", "en": "Faculty of Business"},
+      {"ar": "كلية الآداب واللغات", "en": "Faculty of Arts and Languages"},
+      {"ar": "كلية العلوم التربوية", "en": "Faculty of Educational Sciences"},
+      {"ar": "كلية القانون", "en": "Faculty of Law"},
+      {"ar": "كلية الفنون والتصميم", "en": "Faculty of Arts and Design"},
+      {"ar": "كلية الإعلام", "en": "Faculty of Media"},
+      {"ar": "كلية التربية الرياضية", "en": "Faculty of Physical Education"},
+      {"ar": "كلية علوم الطيران", "en": "Faculty of Aviation Sciences"},
+      {"ar": "الكلية التقنية", "en": "Technical College"},
+      {"ar": "كلية الدراسات العليا", "en": "Faculty of Graduate Studies"}
+    ],
+    "notes": "Arabic list from the official site's faculties menu (jadara.edu.jo). English site (jadara.edu.jo/eng) was unreachable, so English names are translations. Sports faculty appears in the menu as 'كلية علوم الرياضية' but official 2025 news calls it 'كلية التربية الرياضية'. 'كلية علوم الطيران' appeared in one menu capture but not another (likely new) - verify. Main campus: Nuaimeh, Irbid-Amman international road. Coordinates from OSM hint."
+  },
+  {
+    "slug": "jpu",
+    "name_ar": "جامعة جرش",
+    "name_en": "Jerash University",
+    "city": "جرش",
+    "type": "private",
+    "email_domains": ["jpu.edu.jo"],
+    "center_lat": 32.23734,
+    "center_lng": 35.89547,
+    "colleges": [
+      {"ar": "كلية الآداب", "en": "Faculty of Arts"},
+      {"ar": "كلية الأعمال", "en": "Faculty of Business"},
+      {"ar": "كلية العلوم", "en": "Faculty of Science"},
+      {"ar": "كلية الشريعة", "en": "Faculty of Sharia"},
+      {"ar": "كلية الحقوق", "en": "Faculty of Law"},
+      {"ar": "كلية الزراعة", "en": "Faculty of Agriculture"},
+      {"ar": "كلية الصيدلة", "en": "Faculty of Pharmacy"},
+      {"ar": "كلية العلوم التربوية", "en": "Faculty of Educational Sciences"},
+      {"ar": "كلية التمريض", "en": "Faculty of Nursing"},
+      {"ar": "كلية الهندسة", "en": "Faculty of Engineering"},
+      {"ar": "كلية تكنولوجيا المعلومات", "en": "Faculty of Information Technology"},
+      {"ar": "كلية العلوم الطبية التطبيقية", "en": "Faculty of Applied Medical Sciences"},
+      {"ar": "الكلية التقنية", "en": "Technical College"}
+    ],
+    "notes": "Formerly Jerash Private University (جامعة جرش الخاصة). Arabic list from official site menu (jpu.edu.jo/jpu); site shows no English names, so English taken from Wikipedia + translation for Technical College. Uses Microsoft 365; no student subdomain found. Coordinates from uniRank map (on Jerash-Amman road ~5 km south of Jerash) - verify."
+  },
+  {
+    "slug": "anu",
+    "name_ar": "جامعة عجلون الوطنية",
+    "name_en": "Ajloun National University",
+    "city": "عجلون",
+    "type": "private",
+    "email_domains": ["anu.edu.jo"],
+    "center_lat": 32.39670,
+    "center_lng": 35.82204,
+    "colleges": [
+      {"ar": "كلية الآداب", "en": "Faculty of Arts"},
+      {"ar": "كلية الحقوق", "en": "Faculty of Law"},
+      {"ar": "كلية تكنولوجيا المعلومات", "en": "Faculty of Information Technology"},
+      {"ar": "كلية الأعمال", "en": "Faculty of Business"},
+      {"ar": "كلية الهندسة", "en": "Faculty of Engineering"},
+      {"ar": "كلية العلوم", "en": "Faculty of Sciences"},
+      {"ar": "كلية العلوم التربوية", "en": "Faculty of Educational Sciences"},
+      {"ar": "كلية الزراعة", "en": "Faculty of Agriculture"}
+    ],
+    "notes": "English list from official site menu (anu.edu.jo/?lang=en). Arabic faculty names are standard translations (Arabic menu not captured; law could be 'كلية القانون' rather than 'كلية الحقوق'). Wikipedia title: Ajloun National Private University. Coordinates from uniRank map (Ajloun-Irbid road) - verify."
+  },
+  {
+    "slug": "meu",
+    "name_ar": "جامعة الشرق الأوسط",
+    "name_en": "Middle East University",
+    "city": "عمّان",
+    "type": "private",
+    "email_domains": ["meu.edu.jo"],
+    "center_lat": 31.80760,
+    "center_lng": 35.91950,
+    "colleges": [
+      {"ar": "كلية الآداب والعلوم التربوية", "en": "Faculty of Arts and Educational Sciences"},
+      {"ar": "كلية الأعمال", "en": "Faculty of Business"},
+      {"ar": "كلية الحقوق", "en": "Faculty of Law"},
+      {"ar": "كلية العلوم الطبية المساندة", "en": "Faculty of Allied Medical Sciences"},
+      {"ar": "كلية الصيدلة", "en": "Faculty of Pharmacy"},
+      {"ar": "كلية الإعلام", "en": "Faculty of Media"},
+      {"ar": "كلية الهندسة والتصميم", "en": "Faculty of Engineering and Design"},
+      {"ar": "كلية التمريض", "en": "Faculty of Nursing"},
+      {"ar": "كلية تكنولوجيا المعلومات", "en": "Faculty of Information Technology"},
+      {"ar": "الكلية التقنية", "en": "Technical College"}
+    ],
+    "notes": "Faculties from official site menus (Arabic and English). A Sept 2024 news item mentions a 'Faculty of Architecture and Design', but the current menu still shows كلية الهندسة والتصميم. Email: staff use @meu.edu.jo on Microsoft 365; no student subdomain confirmed. COORDINATES UNVERIFIED: no source found (uniRank gives generic Amman center 31.93762,35.94455); value is an approximate Airport Road estimate - must be checked on a map."
+  },
+  {
+    "slug": "psut",
+    "name_ar": "جامعة الأميرة سمية للتكنولوجيا",
+    "name_en": "Princess Sumaya University for Technology",
+    "city": "عمّان",
+    "type": "private",
+    "email_domains": ["psut.edu.jo", "std.psut.edu.jo"],
+    "center_lat": 32.02308,
+    "center_lng": 35.87689,
+    "colleges": [
+      {"ar": "كلية الملك الحسين لعلوم الحوسبة", "en": "King Hussein School of Computing Sciences"},
+      {"ar": "كلية الملك عبدالله الثاني للهندسة", "en": "King Abdullah II School of Engineering"},
+      {"ar": "كلية الملك طلال لتكنولوجيا الأعمال", "en": "King Talal School of Business Technology"},
+      {"ar": "كلية الملك عبدالله الأول للدراسات العليا والبحث العلمي", "en": "King Abdullah I School of Graduate Studies & Scientific Research"}
+    ],
+    "notes": "Private non-profit (owned by the Royal Scientific Society). English school names from psut.edu.jo menu; Arabic from PSUT New Student Guide 2022-23 PDF. std.psut.edu.jo is inferred from an address in that guide (rendered reversed as 'jo.edu.psut.std@') - moderately confident; student mail is Google Workspace (Gmail). Wikipedia coords 32.02306,35.87639 agree with OSM hint (Al-Jubeiha / Khalil Al-Saket St)."
+  },
+  {
+    "slug": "aum",
+    "name_ar": "الجامعة الأميركية في مادبا",
+    "name_en": "American University of Madaba",
+    "city": "مادبا",
+    "type": "private",
+    "email_domains": ["aum.edu.jo"],
+    "center_lat": 31.66111,
+    "center_lng": 35.80000,
+    "colleges": [
+      {"ar": "كلية الهندسة", "en": "Faculty of Engineering"},
+      {"ar": "كلية العلوم", "en": "Faculty of Science"},
+      {"ar": "كلية العلوم الصحية", "en": "Faculty of Health Sciences"},
+      {"ar": "كلية تكنولوجيا المعلومات", "en": "Faculty of Information Technology"},
+      {"ar": "كلية الأعمال", "en": "Faculty of Business"},
+      {"ar": "كليّة العمارة والتصميم", "en": "Faculty of Architecture and Design"},
+      {"ar": "كليّة اللغات والاتّصال", "en": "Faculty of Languages and Communication"}
+    ],
+    "notes": "Private non-profit, affiliated with the Latin Patriarchate. English list from aum.edu.jo menu; Arabic for Architecture & Design and Languages & Communication from pro.aum.edu.jo, the rest are translations. Coordinates from Wikipedia (31°39′40″N 35°48′00″E - low precision, longitude looks rounded) - verify. No student email subdomain found."
+  },
+  {
+    "slug": "htu",
+    "name_ar": "جامعة الحسين التقنية",
+    "name_en": "Al Hussein Technical University",
+    "city": "عمّان",
+    "type": "private",
+    "email_domains": ["htu.edu.jo"],
+    "center_lat": 31.97246,
+    "center_lng": 35.83258,
+    "colleges": [
+      {"ar": "كلية الهندسة التكنولوجية", "en": "School of Engineering Technology"},
+      {"ar": "كلية الحاسوب والمعلوماتية", "en": "School of Computing and Informatics"},
+      {"ar": "كلية هندسة البيئة المبنية", "en": "School of Built Environment Engineering"},
+      {"ar": "كلية العلوم الاجتماعية والأساسية", "en": "School of Social and Basic Sciences"}
+    ],
+    "notes": "Status: licensed private university, non-profit, founded by the Crown Prince Foundation (not a public university). English school names from htu.edu.jo homepage; Arabic school names from dirasaabroad.com (official Arabic page not captured) - verify. Campus at King Hussein Business Park, Dabouq. Only info@htu.edu.jo seen; no student subdomain found."
+  }
+]

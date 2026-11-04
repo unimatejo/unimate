@@ -1,0 +1,623 @@
+{
+ "institutions": [
+  {
+   "slug": "aut",
+   "name_ar": "جامعة العقبة للتكنولوجيا",
+   "name_en": "Aqaba University of Technology",
+   "city": "العقبة",
+   "type": "private",
+   "email_domains": [
+    "aut.edu.jo"
+   ],
+   "center_lat": 29.43706,
+   "center_lng": 35.01218,
+   "coord_source": "OSM hint 29.43697,35.01223 agrees with Google Maps embed on eyeofriyadh listing (29.437162,35.012139); averaged",
+   "colleges": [
+    {
+     "ar": "كلية العلوم الإدارية والمالية",
+     "en": "Faculty of Administrative and Financial Sciences"
+    },
+    {
+     "ar": "كلية الآداب والعلوم",
+     "en": "Faculty of Arts and Sciences"
+    },
+    {
+     "ar": "كلية منيب وأنجيلا المصري للهندسة",
+     "en": "Munib and Angela Masri Faculty of Engineering"
+    },
+    {
+     "ar": "كلية تكنولوجيا المعلومات",
+     "en": "Faculty of Information Technology"
+    },
+    {
+     "ar": "كلية ميشيل الصايغ للصيدلة",
+     "en": "Michel Sayegh Faculty of Pharmacy"
+    }
+   ],
+   "notes": "Five faculties confirmed by WHED, Edarabia and dirasaabroad. studyshoot lists 8 (adds Tourism & Hospitality, Allied Medical Sciences, Law) - unverified. Domain aut.edu.jo is from the website and info@aut.edu.jo; student mailbox format not verified."
+  },
+  {
+   "slug": "amsu",
+   "name_ar": "جامعة العقبة للعلوم الطبية",
+   "name_en": "Aqaba Medical Sciences University",
+   "city": "العقبة",
+   "type": "private",
+   "email_domains": [
+    "amsu.edu.jo"
+   ],
+   "center_lat": 29.43325,
+   "center_lng": 35.01172,
+   "coord_source": "OSM hint only (not independently cross-checked)",
+   "colleges": [
+    {
+     "ar": "كلية الطب البشري",
+     "en": "Faculty of Medicine"
+    },
+    {
+     "ar": "كلية طب الأسنان",
+     "en": "Faculty of Dentistry"
+    },
+    {
+     "ar": "كلية التمريض",
+     "en": "Faculty of Nursing"
+    },
+    {
+     "ar": "كلية العلوم الطبية التطبيقية",
+     "en": "Faculty of Applied Medical Sciences"
+    }
+   ],
+   "notes": "Faculties from amsu.edu.jo homepage. Email domain inferred from website domain (portal edugate.amsu.edu.jo); student mailbox format unverified."
+  },
+  {
+   "slug": "aou-jo",
+   "name_ar": "الجامعة العربية المفتوحة - فرع الأردن",
+   "name_en": "Arab Open University - Jordan Branch",
+   "city": "عمان",
+   "type": "private",
+   "email_domains": [
+    "aou.edu.jo"
+   ],
+   "center_lat": 32.00796,
+   "center_lng": 35.93187,
+   "coord_source": "OSM hint only (Wikipedia gives no branch coordinates)",
+   "colleges": [
+    {
+     "ar": "كلية الدراسات التجارية",
+     "en": "Faculty of Business Studies"
+    },
+    {
+     "ar": "كلية دراسات الحاسوب",
+     "en": "Faculty of Computer Studies"
+    },
+    {
+     "ar": "كلية دراسات اللغة",
+     "en": "Faculty of Language Studies"
+    },
+    {
+     "ar": "كلية التربية",
+     "en": "Faculty of Education"
+    },
+    {
+     "ar": "كلية الإعلام",
+     "en": "Faculty of Media"
+    }
+   ],
+   "notes": "Regional (non-profit, HQ Kuwait) university; MoHE lists it under 'regional universities' - typed private here. Faculties confirmed by English Wikipedia and dirasaabroad. Students may also use arabou.edu.kw accounts - unverified."
+  },
+  {
+   "slug": "ltuc",
+   "name_ar": "كلية لومينوس الجامعية التقنية",
+   "name_en": "Luminus Technical University College",
+   "city": "عمان",
+   "type": "private",
+   "email_domains": [
+    "ltuc.com",
+    "luminus.edu.jo"
+   ],
+   "center_lat": 31.8979,
+   "center_lng": 35.86857,
+   "coord_source": "Google Maps embed on eyeofriyadh listing (31.897897,35.868566); consistent with Devex address 'Airport Road, Amman'. Not cross-checked against OSM",
+   "colleges": [
+    {
+     "ar": "قسم العلوم الطبية التطبيقية",
+     "en": "Applied Medical Sciences"
+    },
+    {
+     "ar": "قسم العلوم المالية والإدارية",
+     "en": "Financial and Administrative Sciences"
+    },
+    {
+     "ar": "قسم الفندقة والسياحة",
+     "en": "Hospitality and Tourism"
+    },
+    {
+     "ar": "قسم الفنون التطبيقية",
+     "en": "Applied Arts"
+    },
+    {
+     "ar": "قسم تكنولوجيا السيارات",
+     "en": "Automotive Technology"
+    },
+    {
+     "ar": "قسم وسائل الإعلام الإبداعية (SAE)",
+     "en": "Creative Media (SAE Institute)"
+    },
+    {
+     "ar": "قسم عبدالعزيز الغرير للحوسبة المتقدمة (ASAC)",
+     "en": "Abdulaziz Al Ghurair School of Advanced Computing (ASAC)"
+    },
+    {
+     "ar": "قسم الهندسة المدنية والإنشاءات",
+     "en": "Civil Engineering and Construction"
+    },
+    {
+     "ar": "قسم الهندسة الميكانيكية والكهربائية",
+     "en": "Mechanical and Electrical Engineering"
+    },
+    {
+     "ar": "قسم فنون وعلوم التجميل (لافال)",
+     "en": "Cosmetic Arts and Sciences (Laval)"
+    }
+   ],
+   "notes": "Formerly Al-Quds College. Has Amman and Irbid campuses; coordinates are for Amman. Departments come from tumoohi and mawdoo3 because the official site was not reachable. Email domain is uncertain: the website was ltuc.com, a newer one may be luminus.edu.jo or ltuc.edu.jo, and info@luminuseducation.com is used by the parent group."
+  },
+  {
+   "slug": "aauc",
+   "name_ar": "كلية عمون الجامعية التطبيقية",
+   "name_en": "Ammon Applied University College (Jordan Applied University College of Hospitality and Tourism Education)",
+   "city": "عمان",
+   "type": "private",
+   "email_domains": [
+    "aauc.edu.jo"
+   ],
+   "center_lat": 31.95897,
+   "center_lng": 35.88664,
+   "coord_source": "Google Maps embed on eyeofriyadh listing (31.958970,35.886638); matches address 'Jabal Amman, Tunis St, between 4th and 5th circles'. Not cross-checked against OSM",
+   "colleges": [
+    {
+     "ar": "إدارة الفنادق",
+     "en": "Hotel Management"
+    },
+    {
+     "ar": "إدارة الفعاليات",
+     "en": "Event Management"
+    },
+    {
+     "ar": "فنون الطهي",
+     "en": "Culinary Arts"
+    },
+    {
+     "ar": "الإرشاد السياحي",
+     "en": "Tourist Guiding"
+    }
+   ],
+   "notes": "SAME INSTITUTION as 'Jordan Applied University College of Hospitality and Tourism Education' (JAU). Queen Rania site 2007: JAU 'previously known as the Ammon College'. free-apply lists both names together. Merged into one record; do not add a duplicate. Listed items are programs/tracks (no separate faculties found)."
+  },
+  {
+   "slug": "ju-aqaba",
+   "name_ar": "الجامعة الأردنية - فرع العقبة",
+   "name_en": "The University of Jordan - Aqaba Branch",
+   "city": "العقبة",
+   "type": "public",
+   "email_domains": [
+    "ju.edu.jo"
+   ],
+   "center_lat": 29.58293,
+   "center_lng": 35.0243,
+   "coord_source": "OSM hint only (aqaba.ju.edu.jo blocked our fetch)",
+   "colleges": [
+    {
+     "ar": "كلية الأعمال",
+     "en": "School of Business"
+    },
+    {
+     "ar": "كلية التمريض",
+     "en": "School of Nursing"
+    },
+    {
+     "ar": "كلية السياحة والفندقة",
+     "en": "School of Tourism and Hospitality"
+    },
+    {
+     "ar": "كلية العلوم الأساسية والبحرية",
+     "en": "School of Basic and Marine Sciences"
+    },
+    {
+     "ar": "كلية اللغات",
+     "en": "School of Foreign Languages"
+    },
+    {
+     "ar": "كلية نظم وتكنولوجيا المعلومات",
+     "en": "School of Information Technology and Systems"
+    }
+   ],
+   "notes": "Faculties from mawdoo3; Tourism and Marine schools confirmed by tourism.ju.edu.jo and marine.ju.edu.jo. The English names follow JU's 'School of' convention but were not all confirmed. Students use the main UJ email (ju.edu.jo) - assumed, not verified for Aqaba."
+  },
+  {
+   "slug": "isums",
+   "name_ar": "جامعة ابن سينا للعلوم الطبية",
+   "name_en": "Ibn Sina University for Medical Sciences",
+   "city": "عمان",
+   "type": "private",
+   "email_domains": [
+    "isums.edu.jo"
+   ],
+   "center_lat": 31.745,
+   "center_lng": 35.96,
+   "coord_source": "APPROXIMATE ONLY: placed in the Al-Qastal area about 2 km north of Queen Alia Airport, per its address. Needs OSM verification",
+   "colleges": [
+    {
+     "ar": "كلية الطب البشري",
+     "en": "Faculty of Medicine"
+    },
+    {
+     "ar": "كلية طب الأسنان",
+     "en": "Faculty of Dentistry"
+    },
+    {
+     "ar": "كلية العلوم الطبية التطبيقية",
+     "en": "Faculty of Applied Medical Sciences"
+    }
+   ],
+   "notes": "MISSING from given list. Private university, Al-Qastal (Amman governorate). Website isums.edu.jo (per dirasaabroad); domain unverified."
+  },
+  {
+   "slug": "khawarizmi",
+   "name_ar": "كلية الخوارزمي الجامعية التقنية",
+   "name_en": "Al-Khawarizmi University Technical College",
+   "city": "عمان",
+   "type": "private",
+   "email_domains": [
+    "khawarizmi.edu.jo"
+   ],
+   "center_lat": 31.99308,
+   "center_lng": 35.85951,
+   "coord_source": "Google Maps embed on eyeofriyadh listing (31.9930789,35.8595051); not cross-checked",
+   "colleges": [
+    {
+     "ar": "قسم الهندسة",
+     "en": "Engineering"
+    },
+    {
+     "ar": "قسم الفنون الرقمية والتصميم",
+     "en": "Digital Arts and Design"
+    },
+    {
+     "ar": "قسم الإعلام",
+     "en": "Media (Radio and TV)"
+    },
+    {
+     "ar": "قسم الأمن السيبراني",
+     "en": "Cybersecurity"
+    },
+    {
+     "ar": "قسم المهن الطبية المساندة",
+     "en": "Allied Medical Professions"
+    },
+    {
+     "ar": "قسم الفندقة والسياحة",
+     "en": "Hotel and Tourism"
+    },
+    {
+     "ar": "قسم الأعمال الإلكترونية والمحاسبة التقنية",
+     "en": "E-Business and Technical Accounting"
+    },
+    {
+     "ar": "قسم اللغات",
+     "en": "Languages"
+    }
+   ],
+   "notes": "MISSING from given list (MoHE university-college category). Email kutc@khawarizmi.edu.jo confirms the domain. Departments come from dirasaabroad."
+  },
+  {
+   "slug": "auct",
+   "name_ar": "الكلية الجامعية العربية للتكنولوجيا",
+   "name_en": "Arab University College of Technology",
+   "city": "عمان",
+   "type": "private",
+   "email_domains": [
+    "auct.edu.jo",
+    "arabcommunitycollege.edu.jo"
+   ],
+   "center_lat": 32.00639,
+   "center_lng": 35.87008,
+   "coord_source": "Google Maps embed on eyeofriyadh 'Arab Community College' listing (32.006392,35.870080); matches address 'University St, opposite University Hospital'",
+   "colleges": [
+    {
+     "ar": "قسم الفندقة والسياحة",
+     "en": "Hotel and Tourism"
+    },
+    {
+     "ar": "قسم العلوم الإدارية والمالية",
+     "en": "Administrative and Financial Sciences"
+    },
+    {
+     "ar": "قسم المهن الطبية المساندة",
+     "en": "Allied Medical Professions"
+    },
+    {
+     "ar": "قسم الهندسة والفنون التطبيقية",
+     "en": "Engineering and Applied Arts"
+    }
+   ],
+   "notes": "MISSING from given list. Formerly Arab Community College (كلية المجتمع العربي). Bachelor's programs: automotive engineering (autotronics), civil engineering. Contact email Info@arabcommunitycollege.edu.jo; website auct.edu.jo."
+  },
+  {
+   "slug": "taguci",
+   "name_ar": "كلية طلال أبوغزاله الجامعية للابتكار",
+   "name_en": "Talal Abu-Ghazaleh University College for Innovation",
+   "city": "عمان",
+   "type": "private",
+   "email_domains": [
+    "taguci.edu.jo"
+   ],
+   "center_lat": null,
+   "center_lng": null,
+   "coord_source": "NOT FOUND. dirasaabroad says Makkah Street, Amman. No reliable coordinates",
+   "colleges": [
+    {
+     "ar": "ماجستير إدارة الأعمال",
+     "en": "MBA"
+    },
+    {
+     "ar": "ماجستير إدارة الأعمال في التسويق الرقمي",
+     "en": "MBA in Digital Marketing"
+    },
+    {
+     "ar": "ماجستير إدارة سلاسل التوريد العالمية",
+     "en": "Master of Global Supply Chain Management"
+    },
+    {
+     "ar": "ماجستير إدارة الابتكار والريادة",
+     "en": "Master of Innovation and Entrepreneurship Management"
+    },
+    {
+     "ar": "ماجستير المحاسبة والتمويل",
+     "en": "Master of Accounting and Finance"
+    }
+   ],
+   "notes": "MISSING from given list. Graduate-only (master's programs, no faculties); items are programs."
+  },
+  {
+   "slug": "nuct",
+   "name_ar": "الكلية الجامعية الوطنية للتكنولوجيا",
+   "name_en": "National University College of Technology",
+   "city": "عمان",
+   "type": "private",
+   "email_domains": [
+    "nuct.edu.jo"
+   ],
+   "center_lat": null,
+   "center_lng": null,
+   "coord_source": "NOT FOUND. Wikipedia says Abu Alanda, east Amman",
+   "colleges": [
+    {
+     "ar": "الهندسة الميكانيكية (توليد الطاقة، المركبات الكهربائية والهجينة، الطاقة المتجددة)",
+     "en": "Mechanical Engineering (Power Generation / Electric & Hybrid Vehicles / Renewable Energy)"
+    },
+    {
+     "ar": "تكنولوجيا الطاقة المتجددة",
+     "en": "Renewable Energy Technology"
+    },
+    {
+     "ar": "هندسة القوى الكهربائية",
+     "en": "Electrical Power Engineering"
+    },
+    {
+     "ar": "تكنولوجيا الصخر الزيتي",
+     "en": "Oil Shale Technology"
+    }
+   ],
+   "notes": "MISSING from given list. Founded 2020. Items are programs (from Wikipedia)."
+  },
+  {
+   "slug": "raca",
+   "name_ar": "الأكاديمية الملكية لفنون الطهي",
+   "name_en": "Royal Academy of Culinary Arts",
+   "city": "عمان",
+   "type": "private",
+   "email_domains": [
+    "raca.edu.jo"
+   ],
+   "center_lat": null,
+   "center_lng": null,
+   "coord_source": "NOT FOUND. Address: King Abdullah II Street, Building 188, Amman",
+   "colleges": [
+    {
+     "ar": "إدارة الأغذية والمشروبات",
+     "en": "Food and Beverage Management"
+    },
+    {
+     "ar": "فنون الطهي",
+     "en": "Culinary Arts"
+    }
+   ],
+   "notes": "MISSING from given list (MoHE university-college category). Non-profit, founded 2008, taught in English."
+  },
+  {
+   "slug": "fesa",
+   "name_ar": "كلية العلوم التربوية والآداب - الأونروا",
+   "name_en": "Faculty of Educational Sciences and Arts (UNRWA)",
+   "city": "عمان",
+   "type": "private",
+   "email_domains": [
+    "unrwa.org"
+   ],
+   "center_lat": null,
+   "center_lng": null,
+   "coord_source": "NOT FOUND. Located in Al-Muqabalain, south-west Amman",
+   "colleges": [
+    {
+     "ar": "اللغة الإنجليزية وآدابها",
+     "en": "English Language and Literature"
+    },
+    {
+     "ar": "اللغة العربية",
+     "en": "Arabic Language"
+    },
+    {
+     "ar": "معلم صف",
+     "en": "Class Teacher"
+    },
+    {
+     "ar": "الجغرافيا",
+     "en": "Geography"
+    }
+   ],
+   "notes": "MISSING from given list. Run by UNRWA (UN agency). It is neither public nor private in Jordanian terms, so 'private' is a placeholder. Student email domain unknown (unrwa.org is a guess, low confidence)."
+  },
+  {
+   "slug": "rjaf-aviation",
+   "name_ar": "كلية سلاح الجو الملكي لعلوم الطيران",
+   "name_en": "RJAF Technical University College for Aviation Sciences",
+   "city": "المفرق",
+   "type": "public",
+   "email_domains": [],
+   "center_lat": null,
+   "center_lng": null,
+   "coord_source": "NOT FOUND. On the premises of King Hussein Air College (King Hussein Air Base, Mafraq) per Royal Hashemite Court news",
+   "colleges": [
+    {
+     "ar": "الطيران",
+     "en": "Aviation (Pilot)"
+    },
+    {
+     "ar": "المراقبة الجوية والملاحة",
+     "en": "Air Traffic Control and Navigation"
+    }
+   ],
+   "notes": "MISSING from given list. Military college under the Royal Jordanian Air Force, mostly for cadets. Including it in a general student app is questionable. Planned programs: aircraft maintenance, aviation safety, aviation management. Email domain unknown."
+  }
+ ],
+ "bau_colleges": [
+  {
+   "name_ar": "كلية الحصن الجامعية",
+   "name_en": "Al-Huson University College",
+   "city": "الحصن",
+   "lat": 32.48656,
+   "lng": 35.89015,
+   "coord_source": "hint (OSM)"
+  },
+  {
+   "name_ar": "كلية الهندسة التكنولوجية",
+   "name_en": "Faculty of Engineering Technology (Marka)",
+   "city": "عمان",
+   "lat": 31.99253,
+   "lng": 36.01744,
+   "coord_source": "hint (OSM); located in Al-Zahra, Marka"
+  },
+  {
+   "name_ar": "كلية إربد الجامعية",
+   "name_en": "Irbid University College",
+   "city": "إربد",
+   "lat": null,
+   "lng": null,
+   "coord_source": "not found; Irbid city (historically women's college)"
+  },
+  {
+   "name_ar": "كلية عجلون الجامعية",
+   "name_en": "Ajloun University College",
+   "city": "عجلون",
+   "lat": null,
+   "lng": null,
+   "coord_source": "not found"
+  },
+  {
+   "name_ar": "كلية الكرك الجامعية",
+   "name_en": "Karak University College",
+   "city": "الكرك",
+   "lat": null,
+   "lng": null,
+   "coord_source": "not found"
+  },
+  {
+   "name_ar": "كلية العقبة الجامعية",
+   "name_en": "Aqaba University College",
+   "city": "العقبة",
+   "lat": null,
+   "lng": null,
+   "coord_source": "not found"
+  },
+  {
+   "name_ar": "كلية الأميرة عالية الجامعية",
+   "name_en": "Princess Alia University College",
+   "city": "عمان",
+   "lat": null,
+   "lng": null,
+   "coord_source": "not found; Shmeisani, Amman (women only)"
+  },
+  {
+   "name_ar": "كلية الزرقاء الجامعية",
+   "name_en": "Zarqa University College",
+   "city": "الزرقاء",
+   "lat": null,
+   "lng": null,
+   "coord_source": "not found"
+  },
+  {
+   "name_ar": "كلية معان الجامعية",
+   "name_en": "Ma'an University College",
+   "city": "معان",
+   "lat": null,
+   "lng": null,
+   "coord_source": "not found"
+  },
+  {
+   "name_ar": "كلية الأميرة رحمة الجامعية",
+   "name_en": "Princess Rahma University College",
+   "city": "علان - السلط",
+   "lat": null,
+   "lng": null,
+   "coord_source": "not found; Allan, about 12 km north of Salt (salt.gov.jo)"
+  },
+  {
+   "name_ar": "كلية عمان الجامعية للعلوم المالية والإدارية",
+   "name_en": "Amman University College for Financial and Managerial Sciences",
+   "city": "عمان",
+   "lat": null,
+   "lng": null,
+   "coord_source": "not found; Shafa Badran, Amman (tumoohi)"
+  },
+  {
+   "name_ar": "كلية الشوبك الجامعية",
+   "name_en": "Shoubak University College",
+   "city": "الشوبك",
+   "lat": null,
+   "lng": null,
+   "coord_source": "not found"
+  },
+  {
+   "name_ar": "كلية السلط للعلوم الإنسانية",
+   "name_en": "Salt College of Human Sciences",
+   "city": "السلط",
+   "lat": null,
+   "lng": null,
+   "coord_source": "not found; Salt (in-city college, not off-campus)"
+  },
+  {
+   "name_ar": "كلية السلط التقنية",
+   "name_en": "Salt Technical College",
+   "city": "السلط",
+   "lat": null,
+   "lng": null,
+   "coord_source": "not found; Salt"
+  },
+  {
+   "name_ar": "أكاديمية الأمير الحسين بن عبدالله الثاني للحماية المدنية",
+   "name_en": "Prince Al-Hussein bin Abdullah II Academy for Civil Protection",
+   "city": "الموقر",
+   "lat": null,
+   "lng": null,
+   "coord_source": "not found; location Al-Muwaqqar per one secondary source, unverified"
+  }
+ ],
+ "meta": {
+  "generated": "2026-11-04",
+  "coords_note": "null lat/lng means no reliable coordinate was found online. OSM, Nominatim and Wikidata were not reachable from this environment. Fill these from OSM before shipping.",
+  "possible_additional": [
+   "Jordan Academy of Music (jam.edu.jo) - awards bachelor's in music, listed by uniRank; not in the MoHE university/university-college list used here",
+   "Jordan Media Institute, Institute of Banking Studies, Jordan Academy for Maritime Studies, Queen Noor Civil Aviation Technical College - listed on Wikipedia but not MoHE-licensed universities or university colleges",
+   "About 44 community colleges are excluded"
+  ]
+ }
+}
