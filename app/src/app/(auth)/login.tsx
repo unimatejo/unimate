@@ -9,6 +9,7 @@ import Animated, { Easing, FadeInDown, useAnimatedStyle, useSharedValue, withDel
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Button, Field, Row, T } from '@/components/ui';
+import { supabase } from '@/lib/supabase';
 import { sendEmailCode, signInWithMicrosoftAndCourses, universityForEmail } from '@/lib/auth';
 import { C, F } from '@/lib/theme';
 import { nm, t } from '@/lib/i18n';
@@ -54,13 +55,15 @@ export default function Login() {
     try {
       let uni;
       try { uni = await universityForEmail(email); } catch { setError(t('تأكد من الإنترنت وجرّب كمان مرة.')); return; }
-      if (!uni) { setError(t('اكتب إيميلك الجامعي، مثلاً 2021xxxx@hu.edu.jo')); return; }
+      // the team's own (non-university) emails, e.g. the owner's admin account
+      const staff = !uni && (await supabase.rpc('is_staff_email', { p_email: email })).data === true;
+      if (!uni && !staff) { setError(t('اكتب إيميلك الجامعي، مثلاً 2021xxxx@hu.edu.jo')); return; }
       const { error: e } = await sendEmailCode(email);
       if (e) {
         setError(/rate|limit/i.test(e.message) ? t('وصلنا الحد المسموح من الإيميلات هلأ. جرّب بعد شوي.') : t('ما قدرنا نبعث الرسالة. تأكد من الإنترنت وجرّب مرة ثانية.'));
         return;
       }
-      router.push({ pathname: '/(auth)/verify', params: { email, uni: nm(uni) } });
+      router.push({ pathname: '/(auth)/verify', params: { email, uni: uni ? nm(uni) : t('حساب الإدارة') } });
     } catch {
       setError(t('ما قدرنا نبعث الرسالة. تأكد من الإنترنت وجرّب مرة ثانية.'));
     } finally { setMailBusy(false); }
