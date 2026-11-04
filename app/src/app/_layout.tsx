@@ -1,11 +1,10 @@
-import { Alexandria_500Medium, Alexandria_700Bold, Alexandria_800ExtraBold } from '@expo-google-fonts/alexandria';
-import { Rubik_400Regular, Rubik_500Medium, Rubik_600SemiBold } from '@expo-google-fonts/rubik';
+import { IBMPlexSansArabic_400Regular, IBMPlexSansArabic_500Medium, IBMPlexSansArabic_600SemiBold, IBMPlexSansArabic_700Bold } from '@expo-google-fonts/ibm-plex-sans-arabic';
 import { useFonts } from 'expo-font';
 import { Stack, router, useSegments, type ErrorBoundaryProps } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Appearance, Pressable, ScrollView, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
@@ -16,8 +15,8 @@ import { useWebPush } from '@/lib/webpush';
 import { AuthProvider, useAuth } from '@/lib/auth';
 import { installGlobalErrorHandler, reportError, setScreen } from '@/lib/errors';
 import { runQaLaunchArgs } from '@/lib/qa';
-import { isAR, reloadApp, syncDirection, t, ta } from '@/lib/i18n';
-import { C, isDark, themePref } from '@/lib/theme';
+import { isAR, syncDirection, t, ta } from '@/lib/i18n';
+import { C, F, isDark } from '@/lib/theme';
 
 SplashScreen.preventAutoHideAsync();
 installGlobalErrorHandler();
@@ -32,7 +31,7 @@ export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
       <ScrollView style={{ maxHeight: 260, backgroundColor: C.card, borderRadius: 14, padding: 12 }}>
         <Text selectable style={{ fontSize: 12, color: C.ink2, textAlign: 'left' }}>{error.message}</Text>
       </ScrollView>
-      <Text onPress={retry} style={{ fontSize: 16, fontWeight: '700', color: C.white, backgroundColor: C.primary, textAlign: 'center', paddingVertical: 14, borderRadius: 16, overflow: 'hidden' }}>{t('جرّب كمان مرة')}</Text>
+      <Text onPress={retry} style={{ fontSize: 16, fontWeight: '700', color: C.onPrimary, backgroundColor: C.primary, textAlign: 'center', paddingVertical: 14, borderRadius: 16, overflow: 'hidden' }}>{t('جرّب كمان مرة')}</Text>
       <Text onPress={() => { retry(); router.replace('/(tabs)'); }} style={{ fontSize: 15, color: C.primary, textAlign: 'center', paddingVertical: 10 }}>{t('ارجع للرئيسية')}</Text>
     </View>
   );
@@ -92,13 +91,13 @@ function Gate() {
       <View style={{ position: 'absolute', top: 0, bottom: 0, left: 0, right: 0, backgroundColor: C.bg, alignItems: 'center', justifyContent: 'center', padding: 28, gap: 14 }}>
         {profileError ? (
           <>
-            <Text style={{ fontFamily: 'Alexandria_700Bold', fontSize: 20, color: C.ink, textAlign: 'center' }}>{t('ما قدرنا نحمّل حسابك')}</Text>
-            <Text style={{ fontFamily: 'Rubik_400Regular', fontSize: 15, color: C.muted, textAlign: 'center' }}>{t('تأكد من الإنترنت وجرّب كمان مرة.')}</Text>
+            <Text style={{ fontFamily: F.title, fontSize: 20, color: C.ink, textAlign: 'center' }}>{t('ما قدرنا نحمّل حسابك')}</Text>
+            <Text style={{ fontFamily: F.body, fontSize: 15, color: C.muted, textAlign: 'center' }}>{t('تأكد من الإنترنت وجرّب كمان مرة.')}</Text>
             <Pressable onPress={async () => { setRetrying(true); await refreshProfile(); setRetrying(false); }} disabled={retrying}
               style={{ minHeight: 50, paddingHorizontal: 28, borderRadius: 16, backgroundColor: C.primary, alignItems: 'center', justifyContent: 'center' }}>
-              {retrying ? <ActivityIndicator color="#fff" /> : <Text style={{ fontFamily: 'Rubik_600SemiBold', fontSize: 16, color: '#fff' }}>{t('جرّب كمان مرة')}</Text>}
+              {retrying ? <ActivityIndicator color={C.onPrimary} /> : <Text style={{ fontFamily: F.bodyBold, fontSize: 16, color: C.onPrimary }}>{t('جرّب كمان مرة')}</Text>}
             </Pressable>
-            <Pressable onPress={signOut} style={{ minHeight: 44, justifyContent: 'center' }}><Text style={{ fontFamily: 'Rubik_500Medium', color: C.primary }}>{t('تسجيل الخروج')}</Text></Pressable>
+            <Pressable onPress={signOut} style={{ minHeight: 44, justifyContent: 'center' }}><Text style={{ fontFamily: F.bodyMd, color: C.primary }}>{t('تسجيل الخروج')}</Text></Pressable>
           </>
         ) : <ActivityIndicator color={C.primary} size="large" />}
       </View>
@@ -110,17 +109,9 @@ function Gate() {
 export default function RootLayout() {
   useOtaUpdates();
   const [fontsLoaded, fontError] = useFonts({
-    Alexandria_500Medium, Alexandria_700Bold, Alexandria_800ExtraBold,
-    Rubik_400Regular, Rubik_500Medium, Rubik_600SemiBold,
+    IBMPlexSansArabic_400Regular, IBMPlexSansArabic_500Medium, IBMPlexSansArabic_600SemiBold, IBMPlexSansArabic_700Bold,
   });
 
-  // following the phone's light/dark setting: reload so every screen picks up the new palette
-  useEffect(() => {
-    const sub = Appearance.addChangeListener(({ colorScheme }) => {
-      if (themePref() === 'system' && (colorScheme === 'dark') !== isDark) reloadApp();
-    });
-    return () => sub.remove();
-  }, []);
   // a font that fails to load must not keep the app on the splash forever
   const loaded = fontsLoaded || !!fontError;
   useEffect(() => { if (loaded) runQaLaunchArgs().catch(() => {}); }, [loaded]);

@@ -288,7 +288,7 @@ export default function CampusMap() {
         {walker && (
           <Marker key="walker" coordinate={{ latitude: walker.lat, longitude: walker.lng }} anchor={{ x: 0.5, y: 0.5 }} tracksViewChanges={false} zIndex={999}>
             <View style={[{ width: 34, height: 34, borderRadius: 17, backgroundColor: C.primary, borderWidth: 3, borderColor: '#FFFFFF', alignItems: 'center', justifyContent: 'center' }, shadow]}>
-              <Footprints size={17} color="#FFFFFF" />
+              <Footprints size={17} color={C.onPrimary} />
             </View>
           </Marker>
         )}
@@ -381,8 +381,8 @@ export default function CampusMap() {
         <View pointerEvents="box-none" style={{ position: 'absolute', right: 16, bottom: 40 }}>
           <Tap onPress={startTour} accessibilityLabel={t('تمشّى بالجامعة')}
             style={[{ flexDirection: 'row', alignItems: 'center', gap: 8, height: 52, paddingHorizontal: 18, borderRadius: 26, backgroundColor: C.primary }, shadow]}>
-            <Footprints size={20} color={C.white} />
-            <T v="bold" color={C.white}>{t('تمشّى بالجامعة')}</T>
+            <Footprints size={20} color={C.onPrimary} />
+            <T v="bold" color={C.onPrimary}>{t('تمشّى بالجامعة')}</T>
           </Tap>
         </View>
       )}
@@ -449,7 +449,7 @@ export default function CampusMap() {
                     <SkipBack size={20} color={C.ink} style={flip} />
                   </Tap>
                   <Tap onPress={() => { if (!auto && tour.i >= tour.stops.length - 1) { setAuto(true); go(0); } else setAuto((x) => !x); }} accessibilityLabel={auto ? t('وقّف') : t('كمّل')} style={[btn, { width: 62, height: 62, borderRadius: 31, backgroundColor: C.primary }]}>
-                    {auto ? <Pause size={24} color={C.white} fill={C.white} /> : <Play size={24} color={C.white} fill={C.white} />}
+                    {auto ? <Pause size={24} color={C.onPrimary} fill={C.white} /> : <Play size={24} color={C.onPrimary} fill={C.white} />}
                   </Tap>
                   <Tap onPress={() => { setAuto(false); go(tour.i + 1); }} disabled={tour.i >= tour.stops.length - 1} accessibilityLabel={t('اللي بعد')} style={[btn, { backgroundColor: C.soft, opacity: tour.i >= tour.stops.length - 1 ? 0.4 : 1 }]}>
                     <SkipForward size={20} color={C.ink} style={flip} />

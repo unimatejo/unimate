@@ -82,7 +82,7 @@ export default function Share() {
             <Tap onPress={() => toggle(item.id)} style={{ width: '23.5%', alignItems: 'center', gap: 6 }}>
               <View>
                 <Avatar id={item.id} name={item.full_name} url={item.avatar_url} size={62} />
-                {on && <View style={{ position: 'absolute', bottom: -2, left: -2, width: 24, height: 24, borderRadius: 12, backgroundColor: C.primary, borderWidth: 2.5, borderColor: C.bg, alignItems: 'center', justifyContent: 'center' }}><Check size={13} color={C.white} strokeWidth={3} /></View>}
+                {on && <View style={{ position: 'absolute', bottom: -2, left: -2, width: 24, height: 24, borderRadius: 12, backgroundColor: C.primary, borderWidth: 2.5, borderColor: C.bg, alignItems: 'center', justifyContent: 'center' }}><Check size={13} color={C.onPrimary} strokeWidth={3} /></View>}
               </View>
               <T v="tiny" numberOfLines={1} style={{ textAlign: 'center' }}>{(item.full_name ?? '').split(' ')[0]}</T>
             </Tap>

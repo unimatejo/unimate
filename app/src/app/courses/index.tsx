@@ -255,7 +255,7 @@ export default function Courses() {
 
   return (
     <Screen>
-      <Header title={t('موادي')} right={<Tap onPress={() => setAdding(true)} accessibilityLabel={t('ضيف مادة')} style={{ width: 42, height: 42, borderRadius: 14, backgroundColor: C.primary, alignItems: 'center', justifyContent: 'center' }}><Plus size={22} color={C.white} /></Tap>} />
+      <Header title={t('موادي')} right={<Tap onPress={() => setAdding(true)} accessibilityLabel={t('ضيف مادة')} style={{ width: 42, height: 42, borderRadius: 14, backgroundColor: C.primary, alignItems: 'center', justifyContent: 'center' }}><Plus size={22} color={C.onPrimary} /></Tap>} />
       <ScrollView contentContainerStyle={{ padding: 18, gap: 14, paddingBottom: 80 }}>
         <Tap onPress={fromTeams} disabled={importing} scale={0.98} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: C.card, borderRadius: 22, padding: 14 }}>
           <GlyphTile icon={Sparkles} colors={GRAD.indigo} size={48} live />

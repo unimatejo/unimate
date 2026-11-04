@@ -23,7 +23,7 @@ export function PushNudge() {
 
   return (
     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: C.primarySoft, borderRadius: 18, padding: 12 }}>
-      <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: C.primary, alignItems: 'center', justifyContent: 'center' }}><Bell size={20} color="#fff" /></View>
+      <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: C.primary, alignItems: 'center', justifyContent: 'center' }}><Bell size={20} color={C.onPrimary} /></View>
       <View style={{ flex: 1, gap: 2 }}>
         <T v="bodyMd">{st === 'install' ? t('بدك توصلك إشعارات الرسائل؟') : t('فعّل إشعارات الرسائل')}</T>
         <T v="tiny" color={C.ink2}>{st === 'install'
@@ -32,7 +32,7 @@ export function PushNudge() {
       </View>
       {st === 'ask' && (
         <Tap onPress={on} disabled={busy} accessibilityLabel={t('فعّل')} style={{ backgroundColor: C.primary, borderRadius: 999, paddingHorizontal: 14, height: 36, alignItems: 'center', justifyContent: 'center' }}>
-          {busy ? <ActivityIndicator color="#fff" /> : <T v="bold" color="#fff">{t('فعّل')}</T>}
+          {busy ? <ActivityIndicator color={C.onPrimary} /> : <T v="bold" color={C.onPrimary}>{t('فعّل')}</T>}
         </Tap>
       )}
       <Tap onPress={hide} accessibilityLabel={t('إخفاء')} hitSlop={10}><X size={18} color={C.muted} /></Tap>

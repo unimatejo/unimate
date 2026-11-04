@@ -469,7 +469,7 @@ export default function Chat() {
           <View style={{ backgroundColor: C.card, padding: 14, paddingBottom: insets.bottom + 10, gap: 8 }}>
             <T v="small" color={C.muted} style={{ textAlign: 'center' }}>{t('هاد طلب مراسلة. اقبله عشان تقدر ترد.')}</T>
             <Row gap={8}>
-              <Tap onPress={() => answerHere(true)} disabled={answering} style={{ flex: 1, minHeight: 46, borderRadius: 15, backgroundColor: C.primary, alignItems: 'center', justifyContent: 'center' }}><T v="bold" color={C.white}>{t('قبول')}</T></Tap>
+              <Tap onPress={() => answerHere(true)} disabled={answering} style={{ flex: 1, minHeight: 46, borderRadius: 15, backgroundColor: C.primary, alignItems: 'center', justifyContent: 'center' }}><T v="bold" color={C.onPrimary}>{t('قبول')}</T></Tap>
               <Tap onPress={() => answerHere(false)} disabled={answering} style={{ flex: 1, minHeight: 46, borderRadius: 15, backgroundColor: C.bg, alignItems: 'center', justifyContent: 'center' }}><T v="bold">{t('تجاهل')}</T></Tap>
             </Row>
           </View>
@@ -477,7 +477,7 @@ export default function Chat() {
           <Row gap={6} style={{ backgroundColor: C.glass, paddingHorizontal: 10, paddingTop: 10, paddingBottom: insets.bottom + 10, borderTopWidth: 1, borderTopColor: C.line }}>
             {!recording && <>
             <Tap onPress={() => setAttach(true)} accessibilityLabel={t('إرفاق')} style={{ width: 36, height: 44, alignItems: 'center', justifyContent: 'center' }}><Plus size={26} color={C.ink} /></Tap>
-            <Tap onPress={() => sendPhoto(true, true)} disabled={uploading} accessibilityLabel={t('صورة بتنشاف مرة')} style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: C.primary, alignItems: 'center', justifyContent: 'center', opacity: uploading ? 0.6 : 1 }}>{uploading ? <ActivityIndicator color={C.white} /> : <Camera size={21} color={C.white} />}</Tap>
+            <Tap onPress={() => sendPhoto(true, true)} disabled={uploading} accessibilityLabel={t('صورة بتنشاف مرة')} style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: C.primary, alignItems: 'center', justifyContent: 'center', opacity: uploading ? 0.6 : 1 }}>{uploading ? <ActivityIndicator color={C.onPrimary} /> : <Camera size={21} color={C.onPrimary} />}</Tap>
             <Row gap={0} style={{ flex: 1, minHeight: 44, borderRadius: 22, backgroundColor: C.field, paddingHorizontal: 6 }}>
               <TextInput keyboardAppearance={isDark ? 'dark' : 'light'} value={draft} onChangeText={onDraft} placeholder={t('رسالة...')} placeholderTextColor={C.faint} multiline
                 style={{ flex: 1, fontFamily: F.body, fontSize: 15, color: C.ink, textAlign: ta, paddingHorizontal: 10, maxHeight: 110, paddingVertical: 10 }} accessibilityLabel={t('اكتب رسالة')} />
@@ -487,7 +487,7 @@ export default function Chat() {
             </>}
             {draft.trim() && !recording ? (
               <Animated.View entering={FadeIn}>
-                <Tap onPress={() => send()} accessibilityLabel={t('إرسال')} style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: C.primary, alignItems: 'center', justifyContent: 'center' }}><Send size={19} color={C.white} style={isAR ? { transform: [{ scaleX: -1 }] } : undefined} /></Tap>
+                <Tap onPress={() => send()} accessibilityLabel={t('إرسال')} style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: C.primary, alignItems: 'center', justifyContent: 'center' }}><Send size={19} color={C.onPrimary} style={isAR ? { transform: [{ scaleX: -1 }] } : undefined} /></Tap>
               </Animated.View>
             ) : <VoiceRecorder onRecorded={sendVoice} onRecording={setRecording} disabled={uploading} />}
           </Row>

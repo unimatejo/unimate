@@ -1169,4 +1169,6 @@ export const EN: Record<string, string> = {
   "فعّل": "Turn on",
   "فعّل إشعارات الرسائل": "Turn on message notifications",
   "من سفاري اكبس زر المشاركة، بعدين «إضافة إلى الشاشة الرئيسية»، وافتح يونيميت من الأيقونة.": "In Safari tap Share, then “Add to Home Screen”, and open UniMate from the icon.",
+  "أسود": "Black",
+  "كحلي": "Navy",
 };

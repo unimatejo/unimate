@@ -172,7 +172,7 @@ export function Inbox({ inTab }: { inTab?: boolean }) {
               </View>
               {item.unread && (item.count ?? 0) > 1 ? (
                 <View style={{ minWidth: 22, height: 22, borderRadius: 11, paddingHorizontal: 6, backgroundColor: C.primary, alignItems: 'center', justifyContent: 'center' }}>
-                  <T v="tiny" color={C.white} style={{ fontSize: 11 }}>{(item.count ?? 0) >= 99 ? '99+' : item.count}</T>
+                  <T v="tiny" color={C.onPrimary} style={{ fontSize: 11 }}>{(item.count ?? 0) >= 99 ? '99+' : item.count}</T>
                 </View>
               ) : item.unread ? <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: C.primary }} />
                 : item.kind === 'direct' && item.state === 'active' ? <Camera size={22} color={C.faint} strokeWidth={1.8} /> : null}

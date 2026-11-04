@@ -114,7 +114,7 @@ export function MajorPicker({ universityId, collegeId, majorId, onChange }: {
             <TextInput keyboardAppearance={isDark ? 'dark' : 'light'} value={newMajor} onChangeText={setNewMajor} autoFocus placeholder={t('اسم تخصصك')} placeholderTextColor={C.faint} maxLength={90}
               style={{ flex: 1, minHeight: 42, borderRadius: 12, backgroundColor: C.field, paddingHorizontal: 12, fontFamily: F.body, fontSize: 14, color: C.ink, textAlign: ta }} />
             <Tap onPress={addMajor} disabled={saving} style={{ minHeight: 42, paddingHorizontal: 14, borderRadius: 12, backgroundColor: C.primary, alignItems: 'center', justifyContent: 'center' }}>
-              {saving ? <ActivityIndicator color={C.white} /> : <T v="bold" color={C.white} style={{ fontSize: 14 }}>{t('ضيف')}</T>}
+              {saving ? <ActivityIndicator color={C.onPrimary} /> : <T v="bold" color={C.onPrimary} style={{ fontSize: 14 }}>{t('ضيف')}</T>}
             </Tap>
           </Row>
         ) : (

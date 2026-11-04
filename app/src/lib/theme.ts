@@ -1,26 +1,87 @@
-import { Appearance } from 'react-native';
-
 import { getPref } from './prefs';
 import { t } from './i18n';
 
-// Design tokens. Two palettes; the active one is copied into `C` at startup (and the app reloads when it changes).
-const LIGHT = {
-  bg: '#F5F6FA',
+// Design tokens. Three palettes (navy is the default; black and light from Settings › Appearance).
+// The active one is copied into `C` at startup (the app reloads when it changes).
+// The accent is the logo's coral dot; text on it is navy. Selected tabs / filters use `inverse`.
+const MIDNIGHT = {
+  bg: '#0E1430',
+  card: '#17204A',      // surface
+  soft: '#1F2A5C',      // surface 2 (chips, bubbles, inner boxes)
+  ink: '#FFFFFF',
+  ink2: '#D9DEEE',
+  muted: '#A5AECB',
+  faint: '#7A84A8',
+  line: '#2C3772',
+  field: '#17204A',
+  inverse: '#FFFFFF',   // selected tab / filter
+  onInverse: '#0E1430',
+  overlay: 'rgba(5,8,24,0.62)',
+  glass: 'rgba(23,32,74,0.82)',
+  primary: '#FF7A59',   // accent
+  onPrimary: '#0E1430',
+  primaryDark: '#FFA88F',
+  primarySoft: '#3A2A44',
+  blue: '#5B7CFF',
+  green: '#34D399',
+  greenSoft: '#0F3333',
+  greenInk: '#6EE7B7',
+  pink: '#FF5470',
+  pinkSoft: '#3D1B3A',
+  pinkInk: '#FF9BB4',
+  orange: '#FF9A1F',
+  orangeSoft: '#3A2C2A',
+  orangeInk: '#FFC27A',
+  violet: '#8E66FF',
+  violetSoft: '#2A2463',
+  violetInk: '#C9B8FF',
+  sky: '#22B3F2',
+  skySoft: '#123A5C',
+  skyInk: '#8AD8FF',
+  danger: '#FF5A72',
+  red: '#FF5A72',
+  redSoft: '#3D1B34',
+  white: '#FFFFFF',
+};
+
+const BLACK: typeof MIDNIGHT = {
+  ...MIDNIGHT,
+  bg: '#05070F',
+  card: '#0D1124',
+  soft: '#151A33',
+  ink: '#F5F6FA',
+  ink2: '#D2D6E0',
+  muted: '#9CA2B4',
+  faint: '#6F7588',
+  line: '#232A4A',
+  field: '#0D1124',
+  inverse: '#F5F6FA',
+  onInverse: '#05070F',
+  overlay: 'rgba(0,0,0,0.66)',
+  glass: 'rgba(13,17,36,0.82)',
+  primarySoft: '#2E1C22',
+  greenSoft: '#0B2620', pinkSoft: '#33141F', orangeSoft: '#2E2015', violetSoft: '#1E1A40', skySoft: '#0B2533', redSoft: '#33121D',
+};
+
+const LIGHT: typeof MIDNIGHT = {
+  bg: '#F4F5F8',
   card: '#FFFFFF',
-  soft: '#F1F3F8',      // secondary surface (chips, inner boxes)
+  soft: '#E9ECF5',
   ink: '#0E1430',
   ink2: '#3A4563',
   muted: '#5D6886',
   faint: '#8A93AE',
-  line: '#ECEFF6',
-  field: '#F1F3F9',
-  inverse: '#0E1430',   // high-contrast filled surface (dark buttons, selected day)
+  line: '#DDE1EC',
+  field: '#FFFFFF',
+  inverse: '#17204A',
   onInverse: '#FFFFFF',
   overlay: 'rgba(14,20,48,0.45)',
-  glass: 'rgba(255,255,255,0.72)',
-  primary: '#2E5BFF',
-  primaryDark: '#1E3FD9',
-  primarySoft: '#EEF1FF',
+  glass: 'rgba(255,255,255,0.8)',
+  primary: '#FF6B4A',
+  onPrimary: '#0E1430',
+  primaryDark: '#C2412A',
+  primarySoft: '#FFE9E3',
+  blue: '#2E5BFF',
   green: '#12B886',
   greenSoft: '#E3F8F1',
   greenInk: '#0A6B4E',
@@ -42,80 +103,48 @@ const LIGHT = {
   white: '#FFFFFF',
 };
 
-const DARK: typeof LIGHT = {
-  bg: '#000000',
-  card: '#121318',
-  soft: '#1B1D24',
-  ink: '#F4F5F8',
-  ink2: '#D2D6E0',
-  muted: '#9CA2B4',
-  faint: '#6F7588',
-  line: '#24262E',
-  field: '#1B1D24',
-  inverse: '#F4F5F8',
-  onInverse: '#0E1430',
-  overlay: 'rgba(0,0,0,0.6)',
-  glass: 'rgba(18,19,24,0.78)',
-  primary: '#4D74FF',
-  primaryDark: '#8FA8FF',
-  primarySoft: '#17204A',
-  green: '#1FCB95',
-  greenSoft: '#0D2A21',
-  greenInk: '#5EE3A1',
-  pink: '#FF5E7A',
-  pinkSoft: '#3A1620',
-  pinkInk: '#FF9BB4',
-  orange: '#FF9A1F',
-  orangeSoft: '#33230C',
-  orangeInk: '#FFC27A',
-  violet: '#8E66FF',
-  violetSoft: '#241A45',
-  violetInk: '#C9B8FF',
-  sky: '#22B3F2',
-  skySoft: '#0B2533',
-  skyInk: '#8AD8FF',
-  danger: '#FF4D6D',
-  red: '#FF4D6D',
-  redSoft: '#3A1220',
-  white: '#FFFFFF',
+export type ThemePref = 'midnight' | 'black' | 'light';
+export const themePref = (): ThemePref => {
+  const v = getPref('theme');
+  if (v === 'light' || v === 'black' || v === 'midnight') return v;
+  return v === 'dark' ? 'black' : 'midnight'; // older choices: dark → black, system → the new default
 };
-
-export type ThemePref = 'system' | 'light' | 'dark';
-export const themePref = (): ThemePref => (getPref('theme') as ThemePref) || 'system';
-export const scheme: 'light' | 'dark' = (() => {
-  const p = themePref();
-  return p === 'system' ? (Appearance.getColorScheme() === 'dark' ? 'dark' : 'light') : p;
-})();
+export const scheme: 'light' | 'dark' = themePref() === 'light' ? 'light' : 'dark';
 export const isDark = scheme === 'dark';
-export const C = { ...(isDark ? DARK : LIGHT) };
+export const C = { ...({ midnight: MIDNIGHT, black: BLACK, light: LIGHT }[themePref()]) };
+/** The three looks, for the picker in Settings. */
+export const THEMES = { midnight: MIDNIGHT, black: BLACK, light: LIGHT };
+
+/** Soft spring for everything that moves (≈300ms, no bounce-back wobble). */
+export const SPRING = { damping: 22, stiffness: 260, mass: 0.9 };
 
 export const F = {
-  display: 'Alexandria_800ExtraBold',
-  title: 'Alexandria_700Bold',
-  titleMd: 'Alexandria_500Medium',
-  body: 'Rubik_400Regular',
-  bodyMd: 'Rubik_500Medium',
-  bodyBold: 'Rubik_600SemiBold',
+  display: 'IBMPlexSansArabic_700Bold',
+  title: 'IBMPlexSansArabic_700Bold',
+  titleMd: 'IBMPlexSansArabic_600SemiBold',
+  body: 'IBMPlexSansArabic_400Regular',
+  bodyMd: 'IBMPlexSansArabic_500Medium',
+  bodyBold: 'IBMPlexSansArabic_600SemiBold',
 };
 
-export const R = { sm: 12, md: 16, lg: 22, xl: 28, pill: 999 };
+export const R = { sm: 16, md: 18, lg: 22, xl: 28, pill: 999 };
 
 /** Everything floats a little: a soft lift plus a hairline edge that catches the light. */
 export const shadow = {
   shadowColor: isDark ? '#000000' : '#1B2250',
-  shadowOpacity: isDark ? 0.55 : 0.11,
+  shadowOpacity: isDark ? 0.35 : 0.08,
   shadowRadius: 22,
   shadowOffset: { width: 0, height: 10 },
   elevation: 5,
   borderWidth: 1,
-  borderColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.9)',
+  borderColor: isDark ? C.line : 'rgba(255,255,255,0.9)',
 };
 
 /** Frosted glass for buttons that sit on top of content. */
 export const glassStyle = {
-  backgroundColor: isDark ? 'rgba(28,30,38,0.72)' : 'rgba(255,255,255,0.78)',
+  backgroundColor: C.glass,
   borderWidth: 1,
-  borderColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.95)',
+  borderColor: isDark ? C.line : 'rgba(255,255,255,0.95)',
   shadowColor: isDark ? '#000000' : '#1B2250',
   shadowOpacity: isDark ? 0.5 : 0.14,
   shadowRadius: 18,
@@ -126,8 +155,8 @@ export const glassStyle = {
 
 // avatar palette: deterministic per user
 const AV = isDark ? [
-  ['#1A2350', '#8FA8FF'], ['#3A1620', '#FF9BB4'], ['#0D2A21', '#5EE3A1'], ['#33200F', '#FFB27A'],
-  ['#241A45', '#C9B8FF'], ['#0B2533', '#8AD8FF'], ['#33230C', '#FFC27A'],
+  ['#2E5BFF', '#FFFFFF'], ['#6A3BE0', '#FFFFFF'], ['#0D9488', '#FFFFFF'], ['#C0264A', '#FFFFFF'],
+  ['#B45309', '#FFFFFF'], ['#3A4563', '#FFFFFF'], ['#0369A1', '#FFFFFF'],
 ] : [
   ['#DCE3FF', '#2E5BFF'], ['#FFE3EA', '#C0264A'], ['#E3F8F1', '#0A6B4E'], ['#FFE6D5', '#C2410C'],
   ['#F1E8FF', '#6A3BE0'], ['#E3F2FC', '#0369A1'], ['#FFF3E0', '#B45309'],

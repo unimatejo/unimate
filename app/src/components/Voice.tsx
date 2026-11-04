@@ -72,7 +72,7 @@ export function VoiceRecorder({ onRecorded, onRecording, disabled }: {
     finally { setSending(false); setOn(false); stopping.current = false; }
   }
 
-  if (sending) return <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: C.primary, alignItems: 'center', justifyContent: 'center' }}><ActivityIndicator color={C.white} /></View>;
+  if (sending) return <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: C.primary, alignItems: 'center', justifyContent: 'center' }}><ActivityIndicator color={C.onPrimary} /></View>;
   if (!on) {
     return (
       <Tap onPress={start} disabled={disabled} accessibilityLabel={t('سجّل رسالة صوتية')} scale={0.9}
@@ -90,7 +90,7 @@ export function VoiceRecorder({ onRecorded, onRecording, disabled }: {
         <T v="tiny" color={C.muted} style={{ flex: 1 }} numberOfLines={1}>{t('عم يسجّل… اكبس إرسال لما تخلص')}</T>
       </View>
       <Tap onPress={() => finish(true)} accessibilityLabel={t('إرسال')} style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: C.primary, alignItems: 'center', justifyContent: 'center' }}>
-        <Send size={19} color={C.white} style={isAR ? { transform: [{ scaleX: -1 }] } : undefined} />
+        <Send size={19} color={C.onPrimary} style={isAR ? { transform: [{ scaleX: -1 }] } : undefined} />
       </Tap>
     </Animated.View>
   );

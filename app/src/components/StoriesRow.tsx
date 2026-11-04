@@ -64,7 +64,7 @@ export function StoriesRow() {
           </Tap>
           <Tap onPress={() => router.push({ pathname: '/post/new', params: { mode: 'story' } })} accessibilityLabel={t('ضيف قصة')}
             style={{ position: 'absolute', top: 44, left: 0, width: 24, height: 24, borderRadius: 12, backgroundColor: C.primary, borderWidth: 2, borderColor: C.bg, alignItems: 'center', justifyContent: 'center' }}>
-            <Plus size={14} color={C.white} strokeWidth={3} />
+            <Plus size={14} color={C.onPrimary} strokeWidth={3} />
           </Tap>
           <T v="tiny">{t('قصتك')}</T>
         </View>

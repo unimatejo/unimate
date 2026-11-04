@@ -142,7 +142,7 @@ export default function EditProfile() {
       <AvatarCropper src={cropSrc} onCancel={() => setCropSrc(null)} onDone={cropped} />
       <Header title={t('تعديل البروفايل')} right={
         <Tap onPress={save} disabled={saving || uploading} accessibilityLabel={t('احفظ')} style={{ minHeight: 40, paddingHorizontal: 14, borderRadius: 12, backgroundColor: C.primary, alignItems: 'center', justifyContent: 'center', opacity: saving || uploading ? 0.5 : 1 }}>
-          {saving ? <ActivityIndicator color={C.white} /> : <T v="bold" color={C.white}>{t('احفظ')}</T>}
+          {saving ? <ActivityIndicator color={C.onPrimary} /> : <T v="bold" color={C.onPrimary}>{t('احفظ')}</T>}
         </Tap>
       } />
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
@@ -153,7 +153,7 @@ export default function EditProfile() {
                 : <Avatar id={profile?.id} name={name || profile?.full_name} url={null} size={108} ring />}
               {uploading && <View style={{ position: 'absolute', inset: 0, borderRadius: 54, backgroundColor: 'rgba(14,20,48,0.45)', alignItems: 'center', justifyContent: 'center' }}><ActivityIndicator color={C.white} /></View>}
               <View style={{ position: 'absolute', bottom: 2, left: 2, width: 34, height: 34, borderRadius: 17, backgroundColor: C.primary, alignItems: 'center', justifyContent: 'center', borderWidth: 3, borderColor: C.bg }}>
-                <Camera size={16} color={C.white} />
+                <Camera size={16} color={C.onPrimary} />
               </View>
             </View>
             <T v="bold" color={C.primary}>{uploading ? t('عم نرفع الصورة…') : shown ? t('غيّر الصورة') : t('حط صورة')}</T>

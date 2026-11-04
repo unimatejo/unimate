@@ -11,6 +11,7 @@ import {
 import Animated, { useAnimatedStyle, useSharedValue, withRepeat, withSequence, withSpring, withTiming } from 'react-native-reanimated';
 import { SafeAreaView, type Edge } from 'react-native-safe-area-context';
 
+import { ListSkeleton } from './Skeleton';
 import { C, F, R, avatarColors, isDark, shadow, glassStyle } from '@/lib/theme';
 import { flip, isAR, t, ta, rtlLayout } from '@/lib/i18n';
 
@@ -75,7 +76,7 @@ export function Button({ title, onPress, kind = 'primary', loading, disabled, ic
   loading?: boolean; disabled?: boolean; icon?: ReactNode; iconEnd?: boolean; style?: StyleProp<ViewStyle>;
 }) {
   const bg = { primary: C.primary, dark: C.inverse, soft: C.primarySoft, ghost: 'transparent', danger: C.danger, green: C.green, white: C.card }[kind];
-  const fg = { primary: C.white, dark: C.onInverse, soft: C.primary, ghost: C.primary, danger: C.white, green: C.white, white: C.ink }[kind];
+  const fg = { primary: C.onPrimary, dark: C.onInverse, soft: isDark ? C.primaryDark : C.primaryDark, ghost: C.primary, danger: C.white, green: C.white, white: C.ink }[kind];
   // every button floats: colored ones glow in their own color, light ones get a soft lift
   const tint = { primary: C.primary, dark: '#000000', danger: C.danger, green: C.green }[kind as 'primary'];
   const glow = kind === 'ghost' ? null : tint
@@ -86,7 +87,7 @@ export function Button({ title, onPress, kind = 'primary', loading, disabled, ic
       onPress={disabled || loading ? undefined : onPress}
       accessibilityRole="button"
       accessibilityState={{ disabled: !!disabled }}
-      style={[{ minHeight: 54, borderRadius: 18, backgroundColor: disabled ? C.line : bg, paddingHorizontal: 18, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 }, !disabled && glow, style]}
+      style={[{ minHeight: 52, borderRadius: 26, backgroundColor: disabled ? C.line : bg, paddingHorizontal: 18, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 }, !disabled && glow, style]}
     >
       {loading ? <ActivityIndicator color={fg} /> : (
         <>
@@ -298,6 +299,7 @@ export function StateView({ loading, error, empty, onRetry, skeleton, emptyView,
   return <>{children}</>;
 }
 
+/** While a screen loads: pulsing rows in the shape of the content (no spinner). */
 export function Loading() {
-  return <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 40 }}><ActivityIndicator color={C.primary} /></View>;
+  return <View style={{ flex: 1, paddingTop: 8 }}><ListSkeleton n={6} /></View>;
 }
