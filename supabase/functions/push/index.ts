@@ -74,6 +74,7 @@ async function fcmAuth(sa: { client_email: string; private_key: string }) {
   return fcm.token;
 }
 
+const why: string[] = [];
 async function send(t: Tok, p: Push): Promise<'ok' | 'gone' | 'fail'> {
   try {
     if (t.platform === 'web' && t.keys) {
@@ -87,11 +88,13 @@ async function send(t: Tok, p: Push): Promise<'ok' | 'gone' | 'fail'> {
         body: JSON.stringify({ message: { token: t.token, notification: { title: p.title, body: p.body }, data: { url: p.url }, android: { priority: 'high', notification: { tag: p.tag, channel_id: 'messages', sound: 'default' } } } }),
       });
       if (r.status === 404 || r.status === 400) return 'gone';
+      if (!r.ok) why.push(`fcm ${r.status} ${(await r.text()).slice(0, 160)}`);
       return r.ok ? 'ok' : 'fail';
     }
     return 'fail';
   } catch (e) {
     const s = (e as { statusCode?: number }).statusCode;
+    why.push(`${t.platform} ${s ?? ''} ${String((e as Error).message ?? e).slice(0, 120)}`);
     return s === 404 || s === 410 ? 'gone' : 'fail';
   }
 }
@@ -109,5 +112,5 @@ Deno.serve(async (req) => {
     if (r === 'ok') sent++; else if (r === 'gone') gone.push(t.token);
   })));
   if (gone.length) await db.from('push_tokens').delete().in('token', gone); // the browser / phone unsubscribed
-  return Response.json({ sent, gone: gone.length });
+  return Response.json({ sent, gone: gone.length, why: why.splice(0) });
 });
