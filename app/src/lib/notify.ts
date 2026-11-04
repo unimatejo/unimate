@@ -1,5 +1,7 @@
 import * as Notifications from 'expo-notifications';
-import { Platform } from 'react-native';
+import { Alert, Platform } from 'react-native';
+
+import { getPref, setPref } from './prefs';
 
 import type { Meeting } from './schedule';
 import { supabase } from './supabase';
@@ -10,9 +12,24 @@ Notifications.setNotificationHandler({
   handleNotification: async () => ({ shouldShowBanner: true, shouldShowList: true, shouldPlaySound: true, shouldSetBadge: false }),
 });
 
-export async function ensurePermission(): Promise<boolean> {
+/** Explain why before the one-time iOS prompt, so people say yes for the right reason. Asked once only. */
+function explain(): Promise<boolean> {
+  return new Promise((resolve) => {
+    Alert.alert(t('نذكّرك بمحاضراتك؟'), t('بنبعتلك تنبيه قبل كل محاضرة وامتحان، وملخص يومك بالليل. ما بنبعت إعلانات.'), [
+      { text: t('مش هلأ'), style: 'cancel', onPress: () => resolve(false) },
+      { text: t('يلا'), onPress: () => resolve(true) },
+    ], { cancelable: false });
+  });
+}
+
+export async function ensurePermission(force = false): Promise<boolean> {
   const cur = await Notifications.getPermissionsAsync();
   if (cur.granted) return true;
+  if (!cur.canAskAgain) return false;
+  if (!force && getPref('notif_explained') === '1') return false; // they said "not now"; settings › reminders can ask again
+  const yes = await explain();
+  setPref('notif_explained', '1');
+  if (!yes) return false;
   const req = await Notifications.requestPermissionsAsync();
   if (Platform.OS === 'android') {
     await Notifications.setNotificationChannelAsync('lectures', { name: t('المحاضرات'), importance: Notifications.AndroidImportance.HIGH });

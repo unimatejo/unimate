@@ -31,7 +31,8 @@
         "UISupportedInterfaceOrientations": [
           "UIInterfaceOrientationPortrait"
         ],
-        "UIRequiresFullScreen": true
+        "UIRequiresFullScreen": true,
+        "ITSAppUsesNonExemptEncryption": false
       },
       "privacyManifests": {
         "NSPrivacyTracking": false,
@@ -120,6 +121,10 @@
             ]
           }
         ]
+      },
+      "buildNumber": "2",
+      "config": {
+        "usesNonExemptEncryption": false
       }
     },
     "android": {
@@ -134,7 +139,8 @@
         "CAMERA",
         "ACCESS_FINE_LOCATION"
       ],
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "versionCode": 2
     },
     "web": {
       "output": "single",

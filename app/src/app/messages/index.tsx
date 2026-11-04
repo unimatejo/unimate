@@ -54,10 +54,10 @@ export function Inbox({ inTab }: { inTab?: boolean }) {
     const ids = rows.map((r) => r.conversation.id);
     const [{ data: members }, { data: lasts }] = ids.length ? await Promise.all([
       supabase.from('conversation_members').select('conversation_id, user_id, profile:profiles(id, full_name, avatar_url, is_verified)').in('conversation_id', ids).neq('user_id', profile.id),
-      supabase.from('messages').select('conversation_id, sender_id, body, kind, created_at').in('conversation_id', ids).is('deleted_at', null).neq('kind', 'system').order('created_at', { ascending: false }).limit(400),
+      supabase.rpc('inbox_last_messages', { conv_ids: ids }),
     ]) : [{ data: [] }, { data: [] }];
     const lastBy = new Map<string, { kind: string; body: string | null; sender_id: string | null }>();
-    for (const m of lasts ?? []) if (!lastBy.has(m.conversation_id)) lastBy.set(m.conversation_id, m);
+    for (const m of (lasts ?? []) as { conversation_id: string; kind: string; body: string | null; sender_id: string | null }[]) if (!lastBy.has(m.conversation_id)) lastBy.set(m.conversation_id, m);
     const out: Item[] = rows.map((r) => {
       const c = r.conversation;
       // eslint-disable-next-line @typescript-eslint/no-explicit-any

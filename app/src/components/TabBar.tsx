@@ -3,8 +3,8 @@ import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { CalendarDays, House, MessageCircle, User, Users } from 'lucide-react-native';
-import { useEffect } from 'react';
-import { Platform, Pressable, View } from 'react-native';
+import { useEffect, useState } from 'react';
+import { Keyboard, Platform, Pressable, View } from 'react-native';
 import Animated, { interpolate, useAnimatedStyle, useSharedValue, withSequence, withSpring, withTiming } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -53,6 +53,14 @@ export function TabBar({ state, emitter, navigateToTab, navigation }: any) {
   const insets = useSafeAreaInsets();
   const { profile } = useAuth();
   const unread = useUnreadMessages(profile?.id);
+  // get out of the way while typing (search, comments, chat)
+  const [kb, setKb] = useState(false);
+  useEffect(() => {
+    const show = Keyboard.addListener(Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow', () => setKb(true));
+    const hide = Keyboard.addListener(Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide', () => setKb(false));
+    return () => { show.remove(); hide.remove(); };
+  }, []);
+  if (kb) return null;
   return (
     <View pointerEvents="box-none" style={{ position: 'absolute', left: 0, right: 0, bottom: 0, paddingHorizontal: 14, paddingBottom: Math.max(insets.bottom - 6, 10) }}>
       <View style={{ borderRadius: 26, overflow: 'hidden', borderWidth: 1, borderColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.7)', shadowColor: isDark ? '#000' : '#1B2250', shadowOpacity: isDark ? 0.6 : 0.16, shadowRadius: 22, shadowOffset: { width: 0, height: 10 }, elevation: 12, backgroundColor: Platform.OS === 'android' ? C.glass : 'transparent' }}>

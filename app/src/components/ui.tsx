@@ -204,16 +204,16 @@ export const Field = forwardRef<ComponentRef<typeof TextInput>, TextInputProps &
   );
 });
 
-export function Toggle({ value, onChange, label, hint, icon }: { value: boolean; onChange: (v: boolean) => void; label: string; hint?: string; icon?: ReactNode }) {
+export function Toggle({ value, onChange, label, hint, icon, a11yLabel }: { value: boolean; onChange: (v: boolean) => void; label: string; hint?: string; icon?: ReactNode; a11yLabel?: string }) {
   // knob starts at the "start" edge when off and slides to the end when on, mirrored like iOS in Arabic
   const end = I18nManager.isRTL ? -20 : 20;
   const x = useAnimatedStyle(() => ({ transform: [{ translateX: withSpring(value ? end : 0, { damping: 16, stiffness: 240 }) }] }), [value, end]);
   return (
-    <Pressable onPress={() => { Haptics.selectionAsync().catch(() => {}); onChange(!value); }} accessibilityRole="switch" accessibilityLabel={label} accessibilityHint={hint} accessibilityState={{ checked: value }}
+    <Pressable onPress={() => { Haptics.selectionAsync().catch(() => {}); onChange(!value); }} accessibilityRole="switch" accessibilityLabel={a11yLabel ?? label} accessibilityHint={hint} accessibilityState={{ checked: value }}
       style={{ flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 62 }}>
       {icon}
-      <View style={{ flex: 1 }}>
-        <T v="bodyMd">{label}</T>
+      <View style={{ flex: label ? 1 : 0 }}>
+        {label ? <T v="bodyMd">{label}</T> : null}
         {hint && <T v="small" color={C.muted}>{hint}</T>}
       </View>
       <View style={{ width: 50, height: 30, borderRadius: 15, backgroundColor: value ? C.primary : isDark ? '#3A3D48' : '#DDE1EC', justifyContent: 'center', paddingHorizontal: 3, alignItems: 'flex-start' }}>

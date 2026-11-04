@@ -1,10 +1,10 @@
 import { AlarmClock, BellRing, CalendarDays, Heart, Megaphone, MessageCircle, Moon, Users } from 'lucide-react-native';
 import { useEffect, useState, type ReactNode } from 'react';
-import { ScrollView, View } from 'react-native';
+import { Alert, Linking, ScrollView, View } from 'react-native';
 
 import { Chip, Header, Row, Screen, T, Tap, Toggle } from '@/components/ui';
 import { useAuth } from '@/lib/auth';
-import { scheduleLectureReminders } from '@/lib/notify';
+import { ensurePermission, scheduleLectureReminders } from '@/lib/notify';
 import { useSchedule } from '@/lib/schedule';
 import { usePrefs } from '@/lib/settings';
 import { supabase } from '@/lib/supabase';
@@ -40,6 +40,16 @@ export default function Reminders() {
     scheduleLectureReminders(meetings, off, profile?.id, { lectures: prefs.lectures, lecture_minutes: prefs.lecture_minutes, nightly_summary: prefs.nightly_summary, perMin }).catch(reportError);
   }, [meetings, rems, prefs.lecture_minutes, prefs.lectures, prefs.nightly_summary, loaded, profile?.id]);
 
+  /** Turning a reminder on needs notification permission; if iOS won't ask again, point to Settings. */
+  async function askNotif() {
+    if (await ensurePermission(true)) return true;
+    Alert.alert(t('التنبيهات مسكّرة'), t('فعّلها من إعدادات الجهاز عشان توصلك التذكيرات.'), [
+      { text: t('إلغاء'), style: 'cancel' },
+      { text: t('افتح الإعدادات'), onPress: () => Linking.openSettings().catch(() => {}) },
+    ]);
+    return false;
+  }
+
   async function setRem(meeting_id: string, p: Partial<Rem>) {
     if (!profile) return;
     const cur = rems[meeting_id] ?? { meeting_id, minutes: null, enabled: true };
@@ -54,7 +64,7 @@ export default function Reminders() {
       <Header title={t('التنبيهات والمنبّهات')} />
       <ScrollView contentContainerStyle={{ padding: 18, paddingTop: 4, gap: 14, paddingBottom: 60 }}>
         <View style={{ gap: 12, backgroundColor: C.card, borderRadius: 22, padding: 14 }}>
-          <Toggle icon={ic(<BellRing size={18} color={C.primary} />)} label={t('نبّهني قبل المحاضرات')} value={prefs.lectures} onChange={(v) => set({ lectures: v })} />
+          <Toggle icon={ic(<BellRing size={18} color={C.primary} />)} label={t('نبّهني قبل المحاضرات')} value={prefs.lectures} onChange={async (v) => { if (v && !(await askNotif())) return; set({ lectures: v }); }} />
           {prefs.lectures && (
             <>
               <T v="small" color={C.muted}>{t('قديش قبل؟')}</T>
@@ -66,7 +76,7 @@ export default function Reminders() {
         </View>
 
         <View style={{ gap: 12, backgroundColor: C.card, borderRadius: 22, padding: 14 }}>
-          <Toggle icon={ic(<Moon size={18} color={C.violet} />)} label={t('ملخص بكرة كل ليلة')} hint={t('محاضراتك وتسليماتك لبكرة الساعة 9 بالليل')} value={prefs.nightly_summary} onChange={(v) => set({ nightly_summary: v })} />
+          <Toggle icon={ic(<Moon size={18} color={C.violet} />)} label={t('ملخص بكرة كل ليلة')} hint={t('محاضراتك وتسليماتك لبكرة الساعة 9 بالليل')} value={prefs.nightly_summary} onChange={async (v) => { if (v && !(await askNotif())) return; set({ nightly_summary: v }); }} />
           <Toggle icon={ic(<CalendarDays size={18} color={C.orange} />)} label={t('الامتحانات والتسليمات')} value={prefs.exams} onChange={(v) => set({ exams: v })} />
           <Toggle icon={ic(<MessageCircle size={18} color={C.pink} />)} label={t('الرسائل')} value={prefs.messages} onChange={(v) => set({ messages: v })} />
           <Toggle icon={ic(<Heart size={18} color={C.red} />)} label={t('لايكات وتعليقات ومتابعات')} value={prefs.social} onChange={(v) => set({ social: v })} />
@@ -89,7 +99,7 @@ export default function Reminders() {
                     <T v="bodyMd">{m.course_name}</T>
                     <T v="tiny" color={C.muted}>{WEEKDAYS[m.weekday]} · {clock(m.starts_at)} · {r?.minutes ? t('قبل {0} د', [r.minutes]) : t('قبل {0} د', [prefs.lecture_minutes])}</T>
                   </Tap>
-                  <Toggle label="" value={on} onChange={(v) => setRem(m.id, { enabled: v })} />
+                  <Toggle label="" a11yLabel={t('تنبيه {0}', [m.course_name])} value={on} onChange={(v) => setRem(m.id, { enabled: v })} />
                 </Row>
                 {open === m.id && on && (
                   <Row gap={6} style={{ flexWrap: 'wrap' }}>

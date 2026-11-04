@@ -875,4 +875,10 @@ export const EN: Record<string, string> = {
   "ما في تخصصات مضافة لهالكلية لهلأ.": "No majors added for this college yet.",
   "ما قدرنا نحمّل الكليات. اكبس لتجرب كمان مرة.": "Could not load colleges. Tap to try again.",
   "ما لقينا إشي بهالاسم": "Nothing matches that name",
+  "التنبيهات مسكّرة": "Notifications are off",
+  "بنبعتلك تنبيه قبل كل محاضرة وامتحان، وملخص يومك بالليل. ما بنبعت إعلانات.": "We'll remind you before each lecture and exam, and send a summary of tomorrow each night. No ads.",
+  "تنبيه {0}": "Reminder for {0}",
+  "فعّلها من إعدادات الجهاز عشان توصلك التذكيرات.": "Turn them on in your phone settings to get reminders.",
+  "مش هلأ": "Not now",
+  "نذكّرك بمحاضراتك؟": "Remind you about lectures?",
 };
