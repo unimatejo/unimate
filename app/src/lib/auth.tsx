@@ -1,4 +1,4 @@
-import { Platform } from 'react-native';
+import { Platform, Alert } from 'react-native';
 import * as Linking from 'expo-linking';
 import * as WebBrowser from 'expo-web-browser';
 import type { Session } from '@supabase/supabase-js';
@@ -48,6 +48,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (error) throw error;
       setProfileError(false);
       // a missing row means the account was removed: keep null so the gate can sign out
+      // signed back in within 30 days of asking to delete: keep the account
+      if (data?.deletion_requested_at) {
+        supabase.rpc('cancel_account_deletion').then(({ data: back }) => {
+          if (back) Alert.alert(t('رجع حسابك ✓'), t('كنت طالب حذف حسابك، وبما إنك رجعت سجلت دخول، لغينا الحذف وكل إشي إلك زي ما هو.'));
+        });
+        data.deletion_requested_at = null;
+      }
       setProfile((data as Profile) ?? null);
       setUniversity((data?.university as University) ?? null);
     } catch (e) {

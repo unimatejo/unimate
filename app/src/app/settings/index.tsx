@@ -49,15 +49,23 @@ export default function Settings() {
     ]);
   }
 
+  // two steps on purpose: "log out" sits right above this, and a slip used to wipe the account
   function deleteAccount() {
-    Alert.alert(t('حذف الحساب'), t('رح ينحذف حسابك ومنشوراتك وقصصك ومتابعاتك نهائياً، وما بترجع. متأكد؟'), [
+    Alert.alert(t('حذف الحساب؟'), t('هاد مش تسجيل خروج. إذا بدك تطلع بس، اختار «تسجيل الخروج».'), [
+      { text: t('تراجع'), style: 'cancel' },
+      { text: t('سجّل خروج بس'), onPress: logout },
+      { text: t('كمّل للحذف'), style: 'destructive', onPress: confirmDelete },
+    ]);
+  }
+  function confirmDelete() {
+    Alert.alert(t('متأكد بدك تحذف حسابك؟'), t('بنحذف حسابك ومنشوراتك وقصصك ومتابعاتك بعد 30 يوم. إذا سجلت دخول قبلها، بيرجع كل إشي زي ما هو.'), [
       { text: t('تراجع'), style: 'cancel' },
       { text: t('احذف حسابي'), style: 'destructive', onPress: async () => {
         const r = await run(supabase.rpc('delete_my_account'), { msg: t('ما زبط حذف الحساب، جرّب كمان مرة.') });
         if (!r.ok) return;
         await signOut();
         router.replace('/(auth)/login');
-        Alert.alert(t('انحذف حسابك'), t('شكراً إنك جربت يونيميت.'));
+        Alert.alert(t('رح ينحذف حسابك بعد 30 يوم'), t('إذا غيّرت رأيك، بس سجّل دخول قبلها وبيرجع كل إشي.'));
       } },
     ]);
   }
@@ -91,7 +99,9 @@ export default function Settings() {
     ] },
     { title: '', items: [
       { icon: <LogOut {...ic} />, color: '#56627F', label: t('تسجيل الخروج'), onPress: logout },
-      { icon: <Trash2 {...ic} />, color: C.red, label: t('حذف الحساب'), danger: true, onPress: deleteAccount },
+    ] },
+    { title: t('منطقة الخطر'), items: [
+      { icon: <Trash2 {...ic} />, color: C.red, label: t('حذف الحساب'), value: t('بعد 30 يوم'), danger: true, onPress: deleteAccount },
     ] },
   ];
   const k = normalize(q);
