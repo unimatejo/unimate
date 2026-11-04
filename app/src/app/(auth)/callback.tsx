@@ -18,7 +18,11 @@ export default function Callback() {
     (async () => {
       // web: the university refused the Teams permission, so sign in without it
       if (p.error_description && retryMicrosoftWithoutTeams()) return;
-      if (p.error_description) { setError(t('الرابط انتهى أو انستخدم قبل. اطلب رابط جديد.')); return; }
+      if (p.error_description) {
+        // Microsoft sign-in that took too long, or was finished in another browser: just start again
+        setError(/state/i.test(p.error_description) ? t('تسجيل الدخول أخد وقت طويل أو انفتح بمتصفح ثاني. اكبس «جرّب كمان مرة».') : t('الرابط انتهى أو انستخدم قبل. اطلب رابط جديد.'));
+        return;
+      }
       let r: { error: unknown; data?: { session?: { provider_token?: string | null } | null } };
       try {
         r = p.code
@@ -47,7 +51,7 @@ export default function Callback() {
         {error ? (
           <>
             <T v="h2" style={{ textAlign: 'center' }}>{error}</T>
-            <Button title={t('رجوع لتسجيل الدخول')} onPress={() => router.replace('/(auth)/login')} />
+            <Button title={t('جرّب كمان مرة')} onPress={() => router.replace('/(auth)/login')} />
           </>
         ) : (
           <>

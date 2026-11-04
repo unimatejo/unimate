@@ -4,7 +4,7 @@ import { router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { BookOpen, CalendarDays, GraduationCap, Lock, Mail, MessageCircle, Users } from 'lucide-react-native';
 import { useEffect, useState, type ReactNode } from 'react';
-import { KeyboardAvoidingView, Platform, ScrollView, View } from 'react-native';
+import { KeyboardAvoidingView, Platform, ScrollView, View, Alert } from 'react-native';
 import Animated, { Easing, FadeInDown, useAnimatedStyle, useSharedValue, withDelay, withRepeat, withTiming } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -66,6 +66,10 @@ export default function Login() {
     } finally { setMailBusy(false); }
   }
 
+  // links opened inside WhatsApp / Instagram / Snapchat use their own browser, which loses the Microsoft sign-in half way
+  const inApp = Platform.OS === 'web' && typeof navigator !== 'undefined'
+    ? (/WhatsApp/i.test(navigator.userAgent) ? 'واتساب' : /Instagram/i.test(navigator.userAgent) ? 'إنستغرام' : /FBAN|FBAV|FB_IAB/i.test(navigator.userAgent) ? 'فيسبوك' : /Snapchat/i.test(navigator.userAgent) ? 'سناب' : /TikTok|musical_ly/i.test(navigator.userAgent) ? 'تيك توك' : /Telegram/i.test(navigator.userAgent) ? 'تيليجرام' : null)
+    : null;
   return (
     <View style={{ flex: 1, backgroundColor: C.bg }}>
       <StatusBar style="light" />
@@ -93,6 +97,13 @@ export default function Login() {
               <T v="body" color={C.muted}>{t('جدولك بيطلع لحاله، ومجتمع جامعتك كله بمكان واحد، ورسائل بدون رقم جوال.')}</T>
             </Animated.View>
 
+            {inApp && (
+              <View style={{ backgroundColor: C.orangeSoft, borderRadius: 18, padding: 14, gap: 8 }}>
+                <T v="bold" color={C.orange}>{t('افتح الرابط بسفاري أو كروم')}</T>
+                <T v="small" color={C.ink2}>{t('إنت فاتح يونيميت من جوا {0}، وتسجيل الدخول بمايكروسوفت ما بيكمل من هون. اكبس ⋯ فوق واختار «افتح بالمتصفح»، أو انسخ الرابط والصقه بسفاري.', [inApp])}</T>
+                <Button kind="white" title={t('انسخ الرابط')} onPress={() => { try { navigator.clipboard?.writeText('https://app.unimate.my'); } catch { /* */ } Alert.alert(t('انسخ الرابط ✓'), 'https://app.unimate.my'); }} style={{ minHeight: 40 }} />
+              </View>
+            )}
             <Animated.View entering={FadeInDown.delay(200).duration(500)} style={{ gap: 10 }}>
               {MS_READY && (
                 <>

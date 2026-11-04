@@ -1,12 +1,13 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import * as ScreenCapture from 'expo-screen-capture';
 import { Image } from 'expo-image';
-import { BadgeCheck, Bookmark, Camera, ChevronRight, EyeOff, Flame, Image as ImageIcon, MoreHorizontal, Phone, Send, ShieldCheck, Timer, Users, Video } from 'lucide-react-native';
+import { BadgeCheck, Bookmark, Camera, Plus, Sticker, ChevronRight, EyeOff, Flame, Image as ImageIcon, MoreHorizontal, Phone, Send, ShieldCheck, Timer, Users, Video } from 'lucide-react-native';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, FlatList, KeyboardAvoidingView, Modal, Platform, Pressable, TextInput, View } from 'react-native';
 import Animated, { FadeIn, FadeInUp, SlideInDown, useAnimatedStyle, useSharedValue, withDelay, withRepeat, withSequence, withTiming } from 'react-native-reanimated';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { AttachSheet, ContactBubble, FileBubble, LocationBubble, PollBubble, StickerBubble, StickerPanel, saveSticker, type Outgoing } from '@/components/ChatAttach';
 import { MessageMenu, ReactionChips, ReactionsSheet, SeenBy, type Reaction } from '@/components/ChatExtras';
 import { Avatar, Row, T, Tap, Toggle } from '@/components/ui';
 import { VoiceBubble, VoiceRecorder } from '@/components/Voice';
@@ -189,6 +190,7 @@ export default function Chat() {
   function menuActions(m: Message) {
     const mineMsg = m.sender_id === profile?.id;
     return [
+      ...(m.kind === 'sticker' && m.media_url && profile ? [{ label: t('احفظ بستيكراتي'), onPress: async () => { if (await saveSticker(profile.id, m.media_url!)) Alert.alert(t('انحفظ الستيكر ✓'), t('بتلاقيه بستيكراتك بأي محادثة.')); } }] : []),
       { label: m.is_saved ? t('إلغاء الحفظ') : t('احفظ بالمحادثة'), onPress: () => toggleSave(m) },
       mineMsg
         ? { label: t('إلغاء الإرسال'), danger: true, onPress: async () => { setMsgs((cur) => cur.filter((x) => x.id !== m.id)); await supabase.rpc('unsend_message', { msg: m.id }); } }
@@ -245,6 +247,16 @@ export default function Chat() {
       .subscribe();
     return () => { supabase.removeChannel(ch); };
   }, [id]);
+
+  const [attach, setAttach] = useState(false);
+  const [stickers, setStickers] = useState(false);
+  /** stickers, files, location, contacts and polls from the "+" sheet */
+  async function sendOut(o: Outgoing) {
+    if (!profile) return;
+    const { data, error } = await supabase.from('messages').insert({ conversation_id: id, sender_id: profile.id, kind: o.kind, body: o.body ?? null, media_url: o.media ?? null, ref_id: o.ref ?? null }).select().single();
+    if (error) { Alert.alert(t('ما انبعتت'), myState === 'request' ? t('لازم تقبل الطلب أول.') : t('جرّب مرة ثانية.')); return; }
+    setMsgs((cur) => [data as Message, ...cur.filter((x) => x.id !== data.id)]);
+  }
 
   async function send(kind: 'text' | 'image' | 'view_once' | 'voice' = 'text', media?: string, extra?: string) {
     if (!profile) return;
@@ -420,6 +432,11 @@ export default function Chat() {
                   {m.kind === 'image' && m.media_url ? <ChatImage path={m.media_url} mine={mine} /> :
                    m.kind === 'voice' && m.media_url ? <VoiceBubble path={m.media_url} seconds={Number(m.body) || 0} mine={mine} /> :
                    m.kind === 'story_reply' ? <StoryReplyBubble m={m} mine={mine} /> :
+                   m.kind === 'sticker' ? <StickerBubble m={m} /> :
+                   m.kind === 'file' && m.media_url ? <FileBubble m={m} mine={mine} /> :
+                   m.kind === 'location' ? <LocationBubble m={m} mine={mine} /> :
+                   m.kind === 'contact' ? <ContactBubble m={m} mine={mine} /> :
+                   m.kind === 'poll' ? <PollBubble m={m} mine={mine} me={profile?.id} /> :
                    m.kind === 'view_once' ? (
                     <Tap onPress={() => !mine && !m.viewed_once_at && openOnce(m)} style={{ flexDirection: 'row', alignItems: 'center', gap: 10, minHeight: 48, paddingHorizontal: 16, borderRadius: 22, borderWidth: 1.5, borderColor: m.viewed_once_at ? C.line : C.pink, backgroundColor: C.card }}>
                       <Camera size={20} color={m.viewed_once_at ? C.faint : C.pinkInk} />
@@ -459,11 +476,13 @@ export default function Chat() {
         ) : (
           <Row gap={6} style={{ backgroundColor: C.glass, paddingHorizontal: 10, paddingTop: 10, paddingBottom: insets.bottom + 10, borderTopWidth: 1, borderTopColor: C.line }}>
             {!recording && <>
+            <Tap onPress={() => setAttach(true)} accessibilityLabel={t('إرفاق')} style={{ width: 36, height: 44, alignItems: 'center', justifyContent: 'center' }}><Plus size={26} color={C.ink} /></Tap>
             <Tap onPress={() => sendPhoto(true, true)} disabled={uploading} accessibilityLabel={t('صورة بتنشاف مرة')} style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: C.primary, alignItems: 'center', justifyContent: 'center', opacity: uploading ? 0.6 : 1 }}>{uploading ? <ActivityIndicator color={C.white} /> : <Camera size={21} color={C.white} />}</Tap>
             <Row gap={0} style={{ flex: 1, minHeight: 44, borderRadius: 22, backgroundColor: C.field, paddingHorizontal: 6 }}>
               <TextInput keyboardAppearance={isDark ? 'dark' : 'light'} value={draft} onChangeText={onDraft} placeholder={t('رسالة...')} placeholderTextColor={C.faint} multiline
                 style={{ flex: 1, fontFamily: F.body, fontSize: 15, color: C.ink, textAlign: ta, paddingHorizontal: 10, maxHeight: 110, paddingVertical: 10 }} accessibilityLabel={t('اكتب رسالة')} />
-              <Tap onPress={() => sendPhoto(false)} disabled={uploading} accessibilityLabel={t('صورة من الاستوديو')} style={{ width: 36, height: 36, alignItems: 'center', justifyContent: 'center' }}><ImageIcon size={21} color={C.ink2} /></Tap>
+              <Tap onPress={() => setStickers(true)} accessibilityLabel={t('ستيكرات')} style={{ width: 34, height: 36, alignItems: 'center', justifyContent: 'center' }}><Sticker size={21} color={C.ink2} /></Tap>
+              <Tap onPress={() => sendPhoto(false)} disabled={uploading} accessibilityLabel={t('صورة من الاستوديو')} style={{ width: 34, height: 36, alignItems: 'center', justifyContent: 'center' }}><ImageIcon size={21} color={C.ink2} /></Tap>
             </Row>
             </>}
             {draft.trim() && !recording ? (
@@ -503,6 +522,8 @@ export default function Chat() {
         </Animated.View>
       </Modal>
 
+      <AttachSheet open={attach} onClose={() => setAttach(false)} conv={id} send={sendOut} onStickers={() => setStickers(true)} />
+      <StickerPanel open={stickers} onClose={() => setStickers(false)} send={sendOut} />
       <MessageMenu open={!!menuFor} onClose={() => setMenuFor(null)} picked={menuFor ? (reactions[menuFor.id] ?? []).find((r) => r.user_id === profile?.id)?.emoji : null}
         onReact={(e) => menuFor && react(menuFor, e)} actions={menuFor ? menuActions(menuFor) : []} />
       <ReactionsSheet list={reactSheet ? reactions[reactSheet] ?? [] : null} people={people} me={profile?.id} onClose={() => setReactSheet(null)}
