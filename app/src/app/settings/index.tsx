@@ -1,8 +1,7 @@
 import Constants from 'expo-constants';
 import { router } from 'expo-router';
 import {
-  BadgeCheck, Ban, Bell, KeyRound, Palette, Search, Bookmark, ChevronLeft, CircleHelp, EyeOff, FileText, Lock, LogOut, MessageCircle, Shield, Star, Trash2, UserPen, UserPlus, Users,
-} from 'lucide-react-native';
+  BadgeCheck, Ban, Bell, KeyRound, Palette, Search, Bookmark, ChevronLeft, CircleHelp, EyeOff, FileText, Lock, LogOut, MessageCircle, Shield, Star, Trash2, UserPen, UserPlus, Users, Info } from 'lucide-react-native';
 import { useState, type ReactNode } from 'react';
 import { Alert, ScrollView, TextInput, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
@@ -88,6 +87,7 @@ export default function Settings() {
       { icon: <CircleHelp {...ic} />, color: C.primary, label: t('الدعم والمساعدة'), onPress: () => router.push('/settings/support') },
       { icon: <Shield {...ic} />, color: C.green, label: t('سياسة الخصوصية'), onPress: () => router.push({ pathname: '/settings/legal', params: { doc: 'privacy' } }) },
       { icon: <FileText {...ic} />, color: C.violet, label: t('شروط الاستخدام'), onPress: () => router.push({ pathname: '/settings/legal', params: { doc: 'terms' } }) },
+      { icon: <Info {...ic} />, color: '#56627F', label: t('عن يونيميت'), value: t('محمد شنيك'), onPress: () => router.push('/settings/about') },
     ] },
     { title: '', items: [
       { icon: <LogOut {...ic} />, color: '#56627F', label: t('تسجيل الخروج'), onPress: logout },
@@ -128,7 +128,10 @@ export default function Settings() {
           </Group>
         ) : <T key="none" v="small" color={C.muted} style={{ textAlign: 'center' }}>{t('ما لقينا إعداد بهالاسم')}</T>)}
 
-        <T v="tiny" color={C.faint} style={{ textAlign: 'center' }}>{t('يونيميت · الإصدار {0}', [Constants.expoConfig?.version ?? ''])}</T>
+        <Tap haptic={false} onPress={() => router.push('/settings/about')} style={{ alignItems: 'center', gap: 2 }}>
+          <T v="tiny" color={C.faint} style={{ textAlign: 'center' }}>{t('يونيميت · الإصدار {0}', [Constants.expoConfig?.version ?? ''])}</T>
+          <T v="tiny" color={C.faint} style={{ textAlign: 'center' }}>{t('فكرة وتطوير محمد شنيك')}</T>
+        </Tap>
       </ScrollView>
     </Screen>
   );

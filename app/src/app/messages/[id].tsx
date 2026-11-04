@@ -3,10 +3,11 @@ import * as ScreenCapture from 'expo-screen-capture';
 import { Image } from 'expo-image';
 import { BadgeCheck, Bookmark, Camera, ChevronRight, EyeOff, Flame, Image as ImageIcon, MoreHorizontal, Phone, Send, ShieldCheck, Timer, Users, Video } from 'lucide-react-native';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ActionSheetIOS, ActivityIndicator, Alert, FlatList, KeyboardAvoidingView, Modal, Platform, Pressable, TextInput, View } from 'react-native';
+import { ActivityIndicator, Alert, FlatList, KeyboardAvoidingView, Modal, Platform, Pressable, TextInput, View } from 'react-native';
 import Animated, { FadeIn, FadeInUp, SlideInDown, useAnimatedStyle, useSharedValue, withDelay, withRepeat, withSequence, withTiming } from 'react-native-reanimated';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { MessageMenu, ReactionChips, ReactionsSheet, SeenBy, type Reaction } from '@/components/ChatExtras';
 import { Avatar, Row, T, Tap, Toggle } from '@/components/ui';
 import { VoiceBubble, VoiceRecorder } from '@/components/Voice';
 import { useAuth } from '@/lib/auth';
@@ -80,6 +81,11 @@ export default function Chat() {
   const [myState, setMyState] = useState<string>('active');
   const [people, setPeople] = useState<Record<string, { full_name: string; avatar_url: string | null }>>({});
   const [otherRead, setOtherRead] = useState<string | null>(null);
+  const [reads, setReads] = useState<Record<string, string | null>>({}); // everyone's last read time, for "seen"
+  const [reactions, setReactions] = useState<Record<string, Reaction[]>>({});
+  const [menuFor, setMenuFor] = useState<Message | null>(null);
+  const [reactSheet, setReactSheet] = useState<string | null>(null);
+  const lastTap = useRef<{ id: string; at: number } | null>(null);
   const list = useRef<FlatList<Message>>(null);
   const [typing, setTyping] = useState<string | null>(null);
   const typingCh = useRef<ReturnType<typeof supabase.channel> | null>(null);
@@ -105,12 +111,51 @@ export default function Chat() {
     const rows = (mem ?? []) as any[];
     setPeople(Object.fromEntries(rows.filter((r) => r.profile).map((r) => [r.user_id, r.profile])));
     setOtherRead(rows.find((m) => m.user_id !== (profile?.id ?? ''))?.last_read_at ?? null);
+    setReads(Object.fromEntries(rows.filter((r) => r.user_id !== profile.id && r.state === 'active').map((r) => [r.user_id, r.last_read_at])));
     setOther(rows.find((m) => m.user_id !== (profile?.id ?? ''))?.profile ?? null);
     setMyState(rows.find((m) => m.user_id === (profile?.id ?? ''))?.state ?? 'active');
     const { data: m } = await supabase.from('messages').select('*').eq('conversation_id', id).order('created_at', { ascending: false }).limit(60);
     setMsgs((m ?? []) as Message[]);
+    loadReactions(((m ?? []) as Message[]).map((x) => x.id));
     supabase.rpc('mark_read', { conv: id });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id, profile]);
+
+  async function loadReactions(ids: string[]) {
+    if (!ids.length) return;
+    const { data } = await supabase.from('message_reactions').select('message_id, user_id, emoji').eq('conversation_id', id).in('message_id', ids);
+    setReactions((cur) => {
+      const next = { ...cur };
+      for (const mid of ids) delete next[mid];
+      for (const r of data ?? []) (next[r.message_id] ??= []).push({ user_id: r.user_id, emoji: r.emoji });
+      return next;
+    });
+  }
+
+  /** One reaction per person: tapping the same emoji again takes it off. */
+  async function react(m: Message, emoji: string) {
+    if (!profile) return;
+    const me = profile.id;
+    const had = (reactions[m.id] ?? []).find((r) => r.user_id === me)?.emoji;
+    const set = (e: string | null) => setReactions((cur) => ({ ...cur, [m.id]: [...(cur[m.id] ?? []).filter((r) => r.user_id !== me), ...(e ? [{ user_id: me, emoji: e }] : [])] }));
+    if (had === emoji) {
+      set(null);
+      const { error } = await supabase.from('message_reactions').delete().eq('message_id', m.id).eq('user_id', me);
+      if (error) set(had);
+    } else {
+      set(emoji);
+      const { error } = await supabase.from('message_reactions').upsert({ message_id: m.id, user_id: me, conversation_id: id, emoji });
+      if (error) set(had ?? null);
+    }
+  }
+
+  // double-tap a message for ❤️, like Instagram
+  function tapMessage(m: Message, single: () => void) {
+    const n = Date.now();
+    if (lastTap.current?.id === m.id && n - lastTap.current.at < 300) { lastTap.current = null; react(m, '❤️'); return; }
+    lastTap.current = { id: m.id, at: n };
+    single();
+  }
 
   useEffect(() => { load(); }, [load]);
 
@@ -139,29 +184,44 @@ export default function Chat() {
     }
   }
 
-  /** Long-press a message: save it, unsend it (yours), or report it. */
-  function messageMenu(m: Message) {
+  /** Long-press a message: react, save it, unsend it (yours), or report it. */
+  const messageMenu = (m: Message) => setMenuFor(m);
+  function menuActions(m: Message) {
     const mineMsg = m.sender_id === profile?.id;
-    const opts: [string, () => void][] = [
-      [m.is_saved ? t('إلغاء الحفظ') : t('احفظ بالمحادثة'), () => toggleSave(m)],
-      ...(mineMsg ? [[t('إلغاء الإرسال'), async () => {
-        setMsgs((cur) => cur.filter((x) => x.id !== m.id));
-        await supabase.rpc('unsend_message', { msg: m.id });
-      }] as [string, () => void]] : [[t('إبلاغ'), () => router.push({ pathname: '/report', params: { type: 'conversation', id, user: m.sender_id ?? '' } })] as [string, () => void]]),
+    return [
+      { label: m.is_saved ? t('إلغاء الحفظ') : t('احفظ بالمحادثة'), onPress: () => toggleSave(m) },
+      mineMsg
+        ? { label: t('إلغاء الإرسال'), danger: true, onPress: async () => { setMsgs((cur) => cur.filter((x) => x.id !== m.id)); await supabase.rpc('unsend_message', { msg: m.id }); } }
+        : { label: t('إبلاغ'), danger: true, onPress: () => router.push({ pathname: '/report', params: { type: 'conversation', id, user: m.sender_id ?? '' } }) },
     ];
-    if (Platform.OS === 'ios') ActionSheetIOS.showActionSheetWithOptions({ options: [...opts.map((o) => o[0]), t('إلغاء')], cancelButtonIndex: opts.length, destructiveButtonIndex: opts.length - 1 }, (i) => opts[i]?.[1]());
-    else Alert.alert('', undefined, [...opts.map(([text, onPress]) => ({ text, onPress })), { text: t('إلغاء'), style: 'cancel' as const }]);
   }
 
-  // "Seen": refresh when the other side reads
+  // "Seen": live when someone reads (and a slow poll as a fallback)
   useEffect(() => {
-    if (conv?.kind !== 'direct' || !profile) return;
-    const tick = async () => {
-      const { data } = await supabase.from('conversation_members').select('last_read_at').eq('conversation_id', id).neq('user_id', profile.id).maybeSingle();
-      setOtherRead(data?.last_read_at ?? null);
+    if (!profile) return;
+    const apply = (rows: { user_id: string; last_read_at: string | null; state?: string }[]) => {
+      setReads((cur) => {
+        const next = { ...cur };
+        for (const r of rows) if (r.user_id !== profile.id && (!r.state || r.state === 'active')) next[r.user_id] = r.last_read_at;
+        return next;
+      });
+      const o = rows.find((r) => r.user_id !== profile.id);
+      if (o && conv?.kind === 'direct') setOtherRead(o.last_read_at);
     };
-    const tm = setInterval(tick, 8000);
-    return () => clearInterval(tm);
+    const tick = async () => {
+      const { data } = await supabase.from('conversation_members').select('user_id, last_read_at, state').eq('conversation_id', id);
+      apply((data ?? []) as never);
+    };
+    const ch = supabase.channel(`reads-${id}`)
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'conversation_members', filter: `conversation_id=eq.${id}` }, (p) => apply([p.new as never]))
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'message_reactions', filter: `conversation_id=eq.${id}` }, (p) => {
+        const r = (p.eventType === 'DELETE' ? p.old : p.new) as { message_id?: string; user_id?: string; emoji?: string };
+        if (!r?.message_id || !r.user_id || r.user_id === profile.id) return;
+        setReactions((cur) => ({ ...cur, [r.message_id!]: [...(cur[r.message_id!] ?? []).filter((x) => x.user_id !== r.user_id), ...(p.eventType === 'DELETE' ? [] : [{ user_id: r.user_id!, emoji: r.emoji! }])] }));
+      })
+      .subscribe();
+    const tm = setInterval(tick, 15000);
+    return () => { clearInterval(tm); supabase.removeChannel(ch); };
   }, [conv?.kind, id, profile]);
 
   // live messages
@@ -229,6 +289,7 @@ export default function Chat() {
     loadingOlder.current = false;
     if (!data?.length) { setMore(false); return; }
     setMsgs((cur) => [...cur, ...(data as Message[]).filter((m) => !cur.some((x) => x.id === m.id))]);
+    loadReactions((data as Message[]).map((m) => m.id));
   }
 
   const [answering, setAnswering] = useState(false);
@@ -355,7 +416,7 @@ export default function Chat() {
                     <T v="tiny" color={C.muted}>{people[m.sender_id!].full_name}</T>
                   </Row>
                 )}
-                <Pressable onPress={async () => { if (m.kind === 'image' && m.media_url) setViewer(await mediaUrl('chat', m.media_url)); }} onLongPress={() => messageMenu(m)} delayLongPress={350}>
+                <Pressable onPress={() => tapMessage(m, async () => { if (m.kind === 'image' && m.media_url) setViewer(await mediaUrl('chat', m.media_url)); })} onLongPress={() => messageMenu(m)} delayLongPress={350}>
                   {m.kind === 'image' && m.media_url ? <ChatImage path={m.media_url} mine={mine} /> :
                    m.kind === 'voice' && m.media_url ? <VoiceBubble path={m.media_url} seconds={Number(m.body) || 0} mine={mine} /> :
                    m.kind === 'story_reply' ? <StoryReplyBubble m={m} mine={mine} /> :
@@ -371,10 +432,16 @@ export default function Chat() {
                     </View>
                   )}
                 </Pressable>
+                <ReactionChips list={reactions[m.id] ?? []} mine={mine} me={profile?.id} onPress={() => setReactSheet(m.id)} />
                 <Row gap={4} style={{ alignSelf: mine ? 'flex-end' : 'flex-start' }}>
                   {m.is_saved && <Bookmark size={11} color={C.primary} fill={C.primary} />}
                   <T v="tiny" color={C.faint} style={{ fontSize: 10 }}>{timeAgo(m.created_at)}</T>
-                  {lastMine && conv?.kind === 'direct' && <T v="tiny" color={otherRead && otherRead >= m.created_at ? C.primary : C.faint} style={{ fontSize: 10 }}>{otherRead && otherRead >= m.created_at ? t('شافها') : t('انبعتت')}</T>}
+                  {lastMine && conv?.kind === 'direct' && <T v="tiny" color={otherRead && otherRead >= m.created_at ? C.primary : C.faint} style={{ fontSize: 10 }}>{otherRead && otherRead >= m.created_at ? t('شافها {0}', [timeAgo(otherRead)]) : t('انبعتت')}</T>}
+                  {lastMine && conv?.kind !== 'direct' && (() => {
+                    const others = Object.keys(reads);
+                    const seen = others.filter((u) => (reads[u] ?? '') >= m.created_at);
+                    return <SeenBy readers={seen} total={others.length} people={people} onPress={() => Alert.alert(t('شافها'), seen.map((u) => people[u]?.full_name ?? '').join('\n'))} />;
+                  })()}
                 </Row>
               </Animated.View>
             );
@@ -435,6 +502,11 @@ export default function Chat() {
           </Tap>
         </Animated.View>
       </Modal>
+
+      <MessageMenu open={!!menuFor} onClose={() => setMenuFor(null)} picked={menuFor ? (reactions[menuFor.id] ?? []).find((r) => r.user_id === profile?.id)?.emoji : null}
+        onReact={(e) => menuFor && react(menuFor, e)} actions={menuFor ? menuActions(menuFor) : []} />
+      <ReactionsSheet list={reactSheet ? reactions[reactSheet] ?? [] : null} people={people} me={profile?.id} onClose={() => setReactSheet(null)}
+        onRemove={() => { const m = msgs.find((x) => x.id === reactSheet); const mineR = reactSheet && (reactions[reactSheet] ?? []).find((r) => r.user_id === profile?.id); if (m && mineR) react(m, mineR.emoji); }} />
 
       <Modal visible={!!viewer} transparent animationType="fade" onRequestClose={() => setViewer(null)}>
         <Pressable onPress={() => setViewer(null)} style={{ flex: 1, backgroundColor: '#000', justifyContent: 'center' }}>

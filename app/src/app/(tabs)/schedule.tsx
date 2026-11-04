@@ -1,6 +1,6 @@
 import { router } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Bell, BellOff, BookOpen, CalendarPlus, Clock, FlaskConical, MapPin, MessagesSquare, Video } from 'lucide-react-native';
+import { Bell, BellOff, BookOpen, CalendarPlus, ScanLine, Clock, FlaskConical, MapPin, MessagesSquare, Video } from 'lucide-react-native';
 import { useEffect, useMemo, useState } from 'react';
 import { Alert, Linking, RefreshControl, ScrollView, View } from 'react-native';
 import Animated, { FadeInDown, LinearTransition, useAnimatedStyle, useSharedValue, withRepeat, withTiming } from 'react-native-reanimated';
@@ -99,6 +99,7 @@ export default function Schedule() {
             <Row gap={6}><View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: C.green }} /><T v="tiny" color={C.greenInk}>{t('بيتحدّث تلقائياً')}</T></Row>
           </View>
           <Row gap={8}>
+            <IconButton label={t('صوّر جدولك')} onPress={() => router.push({ pathname: '/courses', params: { scan: '1' } })}><ScanLine size={21} color={C.ink} /></IconButton>
             <IconButton label={t('موادي')} onPress={() => router.push('/courses')}><BookOpen size={21} color={C.ink} /></IconButton>
             <IconButton label={t('أضف موعد أو امتحان')} onPress={() => router.push('/event/new')}><CalendarPlus size={21} color={C.ink} /></IconButton>
             <IconButton label={t('إعدادات التنبيهات')} onPress={() => router.push('/settings/reminders')}><Bell size={21} color={C.ink} /></IconButton>
@@ -149,7 +150,12 @@ export default function Schedule() {
         : list.length === 0 ? (
           <Empty icon={<Clock size={28} color={C.primary} />} title={t('ما عندك محاضرات هاليوم')}
             body={meetings.length === 0 ? t('جيب موادك من Teams بكبسة، أو ضيفها مرة وحدة. وقت المحاضرة اللي بيضيفه أي زميل بشعبتك بيطلع للكل.') : t('استمتع بيومك.')}
-            action={meetings.length === 0 ? <Button title={t('ضيف موادي')} icon={<BookOpen size={18} color={C.white} />} onPress={() => router.push('/courses')} style={{ marginTop: 8, paddingHorizontal: 22 }} /> : undefined} />
+            action={meetings.length === 0 ? (
+              <View style={{ gap: 8, marginTop: 8 }}>
+                <Button title={t('صوّر جدولك')} icon={<ScanLine size={18} color={C.white} />} onPress={() => router.push({ pathname: '/courses', params: { scan: '1' } })} style={{ paddingHorizontal: 22 }} />
+                <Button kind="soft" title={t('ضيف موادي')} icon={<BookOpen size={18} color={C.primary} />} onPress={() => router.push('/courses')} style={{ paddingHorizontal: 22 }} />
+              </View>
+            ) : undefined} />
         ) : list.map((m, i) => {
           const k = KIND[m.kind] ?? KIND.lecture;
           const Icon = KIND_ICON[m.kind as keyof typeof KIND_ICON] ?? BookOpen;
@@ -160,7 +166,7 @@ export default function Schedule() {
           const done = isToday && nowMin >= en;
           const pct = live ? (nowMin - st) / (en - st) : 0;
           return (
-            <Animated.View key={m.id} entering={FadeInDown.delay(i * 60).springify().damping(16)} layout={LinearTransition} style={{ opacity: done ? 0.55 : 1 }}>
+            <Animated.View key={m.id} entering={FadeInDown.delay(i * 60).springify().damping(16)} layout={LinearTransition} style={{ opacity: done || m.changed === 'cancelled' ? 0.55 : 1 }}>
               <Row gap={10} center={false}>
                 <View style={{ width: 50, alignItems: 'center', paddingTop: 6 }}>
                   <T v="bold" style={{ fontSize: 15 }}>{clock(m.starts_at, false)}</T>
@@ -182,6 +188,13 @@ export default function Schedule() {
                       <Row gap={6} style={{ backgroundColor: g[1], paddingHorizontal: 10, paddingVertical: 5, borderRadius: 999 }}><LiveDot /><T v="tiny" color={C.white}>{t('هلأ')}</T></Row>
                     ) : <Tag label={k[0]} bg={k[1]} fg={k[2]} />}
                   </Row>
+                  {m.changed && (
+                    <Tap haptic={false} onPress={() => router.push('/courses')} style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 10, paddingVertical: 7, borderRadius: 12, backgroundColor: m.changed === 'cancelled' ? C.redSoft : C.orangeSoft }}>
+                      <T v="tiny" color={m.changed === 'cancelled' ? C.red : C.orange} style={{ flex: 1 }}>
+                        {m.changed === 'cancelled' ? t('ألغيت هالمحاضرة هالأسبوع') : t('موعد معدّل لهالأسبوع بس')}{m.note ? ` · ${m.note}` : ''}
+                      </T>
+                    </Tap>
+                  )}
                   {live && (
                     <View style={{ height: 6, borderRadius: 3, backgroundColor: C.soft, overflow: 'hidden' }}>
                       <View style={{ width: `${Math.round(pct * 100)}%`, height: 6, borderRadius: 3, backgroundColor: g[1] }} />

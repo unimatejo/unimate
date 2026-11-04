@@ -1,7 +1,7 @@
 import * as Location from 'expo-location';
 import { router, useLocalSearchParams } from 'expo-router';
 import {
-  BookOpen, Building2, Banknote, Bus, Car, ChevronRight, Coffee, Crosshair, DoorOpen, ExternalLink, Footprints, Landmark, Layers, MapPin, Maximize2, Moon, Navigation,
+  BookOpen, Building2, MapPinPlus, Banknote, Bus, Car, ChevronRight, Coffee, Crosshair, DoorOpen, ExternalLink, Footprints, Landmark, Layers, MapPin, Maximize2, Moon, Navigation,
   Pause, Pill, Play, Printer, Rotate3d, Search, ShoppingBag, SkipBack, SkipForward, Stethoscope, Store, Trees, Trophy, UtensilsCrossed, X, type LucideIcon,
 } from 'lucide-react-native';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -11,7 +11,7 @@ import Animated, { FadeIn, SlideInDown } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { GlyphTile, GRAD } from '@/components/Glyph';
-import { Button, Chip, Row, T, Tap } from '@/components/ui';
+import { Button, Chip, Field, Row, T, Tap } from '@/components/ui';
 import { useAuth } from '@/lib/auth';
 import { supabase } from '@/lib/supabase';
 import { C, F, isDark, shadow } from '@/lib/theme';
@@ -74,7 +74,7 @@ function distM(a: { lat: number; lng: number }, b: { lat: number; lng: number })
 }
 
 export default function CampusMap() {
-  const { university } = useAuth();
+  const { university, profile } = useAuth();
   const params = useLocalSearchParams<{ building?: string; advertiser?: string }>();
   const map = useRef<MapView>(null);
   const [pins, setPins] = useState<Pin[]>([]);
@@ -87,6 +87,21 @@ export default function CampusMap() {
   const [routing, setRouting] = useState(false);
   const [sat, setSat] = useState(false);
   const [zoom, setZoom] = useState(16);
+  const mid = useRef<{ lat: number; lng: number } | null>(null);
+  // "suggest a place": move the map under the pin, name it, and the team approves it
+  const [suggest, setSuggest] = useState<'pin' | 'form' | null>(null);
+  const [sName, setSName] = useState(''); const [sKind, setSKind] = useState('cafeteria'); const [sDesc, setSDesc] = useState('');
+  const [sBusy, setSBusy] = useState(false);
+  async function sendSuggestion() {
+    if (!university || !mid.current || sBusy) return;
+    if (sName.trim().length < 2) { Alert.alert(t('اكتب اسم المكان')); return; }
+    setSBusy(true);
+    const { error } = await supabase.from('places').insert({ university_id: university.id, kind: sKind, name_ar: sName.trim(), description: sDesc.trim() || null, lat: mid.current.lat, lng: mid.current.lng, state: 'pending', created_by: profile?.id });
+    setSBusy(false);
+    if (error) { Alert.alert(t('ما انبعت'), t('جرّب كمان مرة.')); return; }
+    setSuggest(null); setSName(''); setSDesc('');
+    Alert.alert(t('شكراً! ✓'), t('وصلنا اقتراحك، وبيطلع على الخريطة لكل طلاب جامعتك بعد ما نراجعه.'));
+  }
   // virtual walk: the camera walks you from stop to stop without you moving
   const [tour, setTour] = useState<{ stops: Pin[]; i: number; walk?: boolean } | null>(null);
   const [auto, setAuto] = useState(false);
@@ -249,7 +264,7 @@ export default function CampusMap() {
       <MapView ref={map} provider={PROVIDER_DEFAULT} style={{ flex: 1 }} showsUserLocation showsCompass={false} showsPointsOfInterests={false} showsBuildings pitchEnabled rotateEnabled
         mapType={sat ? (Platform.OS === 'ios' ? 'hybridFlyover' : 'hybrid') : Platform.OS === 'ios' ? 'mutedStandard' : 'standard'}
         initialCamera={{ center, zoom: 16, heading: 0, pitch: 0 }} onPress={() => { Keyboard.dismiss(); }}
-        onRegionChangeComplete={(r) => setZoom(Math.log2(360 / r.longitudeDelta))}>
+        onRegionChangeComplete={(r) => { setZoom(Math.log2(360 / r.longitudeDelta)); mid.current = { lat: r.latitude, lng: r.longitude }; }}>
         {shown.map((p) => {
           const on = sel?.id === p.id;
           const { g, icon: Icon } = kindOf(p.kind);
@@ -318,13 +333,51 @@ export default function CampusMap() {
         )}
       </SafeAreaView>
 
-      {!sel && !tour && (
+      {suggest && (
+        <>
+          <View pointerEvents="none" style={{ position: 'absolute', top: 0, bottom: 0, left: 0, right: 0, alignItems: 'center', justifyContent: 'center' }}>
+            <View style={{ alignItems: 'center', marginTop: -44 }}>
+              <MapPin size={44} color={C.red} fill={C.red} />
+              <View style={{ width: 8, height: 4, borderRadius: 4, backgroundColor: 'rgba(0,0,0,0.3)' }} />
+            </View>
+          </View>
+          <Animated.View entering={SlideInDown.springify().damping(18)} style={[{ position: 'absolute', left: 12, right: 12, bottom: 28, backgroundColor: C.card, borderRadius: 28, padding: 16, gap: 10 }, shadow]}>
+            {suggest === 'pin' ? (
+              <>
+                <T v="h3">{t('اقترح مكان ناقص')}</T>
+                <T v="small" color={C.muted}>{t('حرّك الخريطة لحتى يصير الدبوس الأحمر فوق المكان بالضبط.')}</T>
+                <Row gap={8}>
+                  <Button kind="soft" title={t('إلغاء')} onPress={() => setSuggest(null)} style={{ flex: 1 }} />
+                  <Button title={t('هون بالضبط')} onPress={() => setSuggest('form')} style={{ flex: 1.4 }} />
+                </Row>
+              </>
+            ) : (
+              <>
+                <T v="h3">{t('شو هاد المكان؟')}</T>
+                <Field label={t('الاسم')} value={sName} onChangeText={setSName} placeholder={t('مثلاً كشك أبو أحمد، مدرج الحسن')} maxLength={70} autoFocus />
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 6 }}>
+                  {['building', 'cafeteria', 'restaurant', 'kiosk', 'print', 'shop', 'parking', 'bus', 'gate', 'mosque', 'library', 'atm', 'clinic', 'sports', 'garden', 'service'].map((k) => (
+                    <Chip key={k} label={kindOf(k).label} active={sKind === k} onPress={() => setSKind(k)} />
+                  ))}
+                </ScrollView>
+                <Field label={t('وصف قصير (اختياري)')} value={sDesc} onChangeText={setSDesc} placeholder={t('مثلاً جنب الباب الشمالي، بفتح من 8 لـ 4')} maxLength={160} />
+                <Row gap={8}>
+                  <Button kind="soft" title={t('رجوع')} onPress={() => setSuggest('pin')} style={{ flex: 1 }} />
+                  <Button title={t('ابعت الاقتراح')} loading={sBusy} disabled={sBusy} onPress={sendSuggestion} style={{ flex: 1.4 }} />
+                </Row>
+              </>
+            )}
+          </Animated.View>
+        </>
+      )}
+
+      {!sel && !tour && !suggest && (
         <View pointerEvents="none" style={{ position: 'absolute', left: 0, right: 0, bottom: 12, alignItems: 'center' }}>
           <T v="tiny" color={C.muted} style={{ fontSize: 10, backgroundColor: C.glass, paddingHorizontal: 8, borderRadius: 6, overflow: 'hidden' }}>{t('الأماكن من OpenStreetMap وWikimapia')}</T>
         </View>
       )}
 
-      {!sel && !tour && pinsState === 'ok' && pins.filter((p) => TOUR_KINDS.includes(p.kind)).length > 1 && (
+      {!sel && !tour && !suggest && pinsState === 'ok' && pins.filter((p) => TOUR_KINDS.includes(p.kind)).length > 1 && (
         <View pointerEvents="box-none" style={{ position: 'absolute', right: 16, bottom: 40 }}>
           <Tap onPress={startTour} accessibilityLabel={t('تمشّى بالجامعة')}
             style={[{ flexDirection: 'row', alignItems: 'center', gap: 8, height: 52, paddingHorizontal: 18, borderRadius: 26, backgroundColor: C.primary }, shadow]}>
@@ -334,11 +387,15 @@ export default function CampusMap() {
         </View>
       )}
 
-      {!sel && !tour && (
+      {!sel && !tour && !suggest && (
         <View style={{ position: 'absolute', left: 16, bottom: 40, gap: 10 }}>
           <Tap onPress={() => setSat((x) => !x)} accessibilityLabel={t('غيّر شكل الخريطة')}
             style={[{ width: 48, height: 48, borderRadius: 16, backgroundColor: sat ? C.inverse : C.card, alignItems: 'center', justifyContent: 'center' }, shadow]}>
             <Layers size={21} color={sat ? C.onInverse : C.ink} />
+          </Tap>
+          <Tap onPress={() => { mid.current ??= { lat: center.latitude, lng: center.longitude }; setSuggest('pin'); }} accessibilityLabel={t('اقترح مكان ناقص')}
+            style={[{ width: 48, height: 48, borderRadius: 16, backgroundColor: C.card, alignItems: 'center', justifyContent: 'center' }, shadow]}>
+            <MapPinPlus size={21} color={C.ink} />
           </Tap>
           <Tap onPress={fitAll} accessibilityLabel={t('شوف الجامعة كاملة')}
             style={[{ width: 48, height: 48, borderRadius: 16, backgroundColor: C.card, alignItems: 'center', justifyContent: 'center' }, shadow]}>

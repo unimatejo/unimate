@@ -11,7 +11,22 @@ export type Meeting = {
   course_name: string; course_code: string; section_no: string; instructor: string | null;
   room_code: string | null; room_text?: string | null; source?: string; confirmations?: number; room_floor: number | null; room_directions: string | null;
   building_name: string | null; building_id: string | null; lat: number | null; lng: number | null;
+  /** this week only: the doctor cancelled it, or it's a lecture moved here from another day */
+  changed?: 'cancelled' | 'moved'; note?: string | null; change_id?: string;
 };
+
+export type MeetingChange = {
+  id: string; section_id: string; meeting_id: string | null; on_date: string; new_date: string | null;
+  starts_at: string | null; ends_at: string | null; room_text: string | null; cancelled: boolean; note: string | null; user_id: string | null; created_by: string;
+};
+
+export const ymd = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+/** Sunday of the week the schedule shows (after Thursday it shows next week). */
+export function weekStart(now = new Date()) {
+  const dow = now.getDay();
+  const sun = new Date(now); sun.setHours(0, 0, 0, 0); sun.setDate(now.getDate() - dow + (dow > 4 ? 7 : 0));
+  return sun;
+}
 
 export type AcademicEvent = {
   id: string; section_id: string | null; owner_id: string | null; kind: string; title: string;
@@ -66,6 +81,31 @@ export function useSchedule(userId?: string) {
       if (!sec) continue;
       out.push({ ...sec, section_id: p.section_id, id: p.id, kind: p.kind, weekday: p.weekday, starts_at: p.starts_at, ends_at: p.ends_at, room_text: p.room_text, room_code: null, room_floor: null, room_directions: null, building_name: null, building_id: null, lat: null, lng: null, source: 'personal', confirmations: 0, online_url: null });
     }
+    // one-off changes for the week on screen: a cancelled lecture, or one moved to another day/time
+    const ws = weekStart(); const we = new Date(ws); we.setDate(ws.getDate() + 6);
+    const secIds = [...secs.keys()];
+    if (secIds.length) {
+      const { data: ch } = await supabase.from('meeting_changes').select('*').in('section_id', secIds)
+        .or(`and(on_date.gte.${ymd(ws)},on_date.lte.${ymd(we)}),and(new_date.gte.${ymd(ws)},new_date.lte.${ymd(we)})`);
+      const inWeek = (d: string | null) => !!d && d >= ymd(ws) && d <= ymd(we);
+      const dayOf = (d: string) => new Date(`${d}T12:00:00`).getDay();
+      // a personal change wins over a section one for the same lecture
+      const list = ((ch ?? []) as MeetingChange[]).sort((a, b) => Number(!!a.user_id) - Number(!!b.user_id));
+      for (const c of list) {
+        const orig = c.meeting_id ? out.find((m) => m.id === c.meeting_id && m.weekday === dayOf(c.on_date)) : undefined;
+        if (inWeek(c.on_date) && orig) {
+          if (c.cancelled) { orig.changed = 'cancelled'; orig.note = c.note; orig.change_id = c.id; }
+          else out.splice(out.indexOf(orig), 1);
+        }
+        if (!c.cancelled && inWeek(c.new_date) && c.starts_at && c.ends_at) {
+          const sec = secs.get(c.section_id); const base = c.meeting_id ? ms.find((m) => m.id === c.meeting_id) : undefined;
+          if (sec) out.push({ ...(base ?? {} as Meeting), ...sec, section_id: c.section_id, id: `chg-${c.id}`, kind: base?.kind ?? 'lecture', weekday: dayOf(c.new_date!), starts_at: c.starts_at, ends_at: c.ends_at,
+            room_text: c.room_text ?? base?.room_text ?? null, room_code: c.room_text ? null : base?.room_code ?? null, online_url: base?.online_url ?? null,
+            room_floor: base?.room_floor ?? null, room_directions: base?.room_directions ?? null, building_name: c.room_text ? null : base?.building_name ?? null, building_id: base?.building_id ?? null, lat: base?.lat ?? null, lng: base?.lng ?? null,
+            changed: 'moved', note: c.note, change_id: c.id, source: 'change', confirmations: 0 });
+        }
+      }
+    }
     out.sort((a, b) => a.weekday - b.weekday || a.starts_at.localeCompare(b.starts_at));
     setMeetings(out);
 
@@ -89,7 +129,7 @@ export function useSchedule(userId?: string) {
     return () => { clearInterval(iv); sub.remove(); };
   }, [load]);
 
-  const next = meetings
+  const next = meetings.filter((m) => m.changed !== 'cancelled')
     .map((m) => ({ m, mins: minutesUntil(m.weekday, m.starts_at, now) }))
     .sort((a, b) => a.mins - b.mins)[0];
 

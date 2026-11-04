@@ -1,32 +1,44 @@
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
-import { ArrowLeftRight, BookOpen, CheckCircle2, Clock, Plus, Sparkles, Trash2, User, Users } from 'lucide-react-native';
+import { ArrowLeftRight, BookOpen, CalendarClock, CheckCircle2, Clock, Plus, Sparkles, Trash2, User, Users } from 'lucide-react-native';
 import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, Modal, Pressable, ScrollView, View } from 'react-native';
 import Animated, { FadeInDown, SlideInDown } from 'react-native-reanimated';
 
 import { GlyphTile, GRAD } from '@/components/Glyph';
+import { ScheduleScan } from '@/components/ScheduleScan';
 import { TimeField } from '@/components/TimeField';
 import { Button, Chip, Empty, Field, Header, Row, Screen, T, Tap } from '@/components/ui';
 import { importTeamsCourses, useAuth } from '@/lib/auth';
 import { supabase } from '@/lib/supabase';
 import { C } from '@/lib/theme';
 import { WEEKDAYS_SHORT, clock } from '@/lib/util';
-import { nm, t } from '@/lib/i18n';
+import { nm, t, LOCALE } from '@/lib/i18n';
+import { ymd, type MeetingChange } from '@/lib/schedule';
 
 type Mt = { id: string; weekday: number; starts_at: string; ends_at: string; kind: string; room_text: string | null; source: string; confirmations: number; mine?: boolean; replaces?: string | null };
 type Personal = { id: string; section_id: string; replaces: string | null; hidden: boolean; kind: string; weekday: number | null; starts_at: string | null; ends_at: string | null; room_text: string | null };
 /** add: new time for the section · all: the class really moved (changes it for everyone) · me: only my schedule changes */
 type Edit = { sec: Sec; mode: 'add' | 'all' | 'me'; meeting?: Mt; personalId?: string };
-type Sec = { id: string; section_no: string; instructor: string | null; course: { name_ar: string; code: string } | null; meetings: Mt[]; source: string; mates: number };
+type Sec = { id: string; section_no: string; instructor: string | null; course: { name_ar: string; code: string } | null; meetings: Mt[]; source: string; mates: number; changes?: MeetingChange[] };
+/** one lecture on one date: the doctor moved it or cancelled it */
+type Once = { sec: Sec; meeting: Mt };
 
 const KINDS = [['lecture', t('محاضرة')], ['lab', t('مختبر')], ['online', t('أونلاين')], ['tutorial', t('مناقشة')]] as const;
 const hhmm = (d: Date) => `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
 const at = (h: number, m = 0) => { const d = new Date(); d.setHours(h, m, 0, 0); return d; };
+const dayLabel = (d: string) => new Date(`${d}T12:00:00`).toLocaleDateString(LOCALE, { weekday: 'long', day: 'numeric', month: 'numeric' });
+/** the next few dates this weekday falls on (today included) */
+function nextDates(weekday: number, n: number) {
+  const out: string[] = []; const d = new Date(); d.setHours(12, 0, 0, 0);
+  while (out.length < n) { if (d.getDay() === weekday) out.push(ymd(d)); d.setDate(d.getDate() + 1); }
+  return out;
+}
+function comingDays(n: number) { const out: string[] = []; const d = new Date(); d.setHours(12, 0, 0, 0); for (let i = 0; i < n; i++) { if (d.getDay() !== 5) out.push(ymd(d)); d.setDate(d.getDate() + 1); } return out; }
 
 /** My courses: brought in from Microsoft Teams, or added once by anyone in the section. Times added once fill in for all classmates. */
 export default function Courses() {
   const { profile } = useAuth();
-  const { add, teams } = useLocalSearchParams<{ add?: string; teams?: string }>();
+  const { add, teams, scan } = useLocalSearchParams<{ add?: string; teams?: string; scan?: string }>();
   const [rows, setRows] = useState<Sec[] | null>(null);
   const [importing, setImporting] = useState(false);
   const [adding, setAdding] = useState(false);
@@ -39,6 +51,11 @@ export default function Courses() {
   const [kind, setKind] = useState<(typeof KINDS)[number][0]>('lecture');
   const [room, setRoom] = useState('');
   const [busy, setBusy] = useState(false);
+  const [once, setOnce] = useState<Once | null>(null);
+  const [onceCancel, setOnceCancel] = useState(false);
+  const [onceAll, setOnceAll] = useState(true);
+  const [onDate, setOnDate] = useState(''); const [newDate, setNewDate] = useState('');
+  const [note, setNote] = useState('');
   // opened from search on a course: start adding it straight away
   useEffect(() => { if (add) { setName(add); setAdding(true); } }, [add]);
   // web: back from Microsoft with the Teams import result
@@ -69,6 +86,9 @@ export default function Courses() {
       (sec as Sec & { hiddenCount?: number }).hiddenCount = mine.filter((p) => p.hidden).length;
     }
     if (list.length) {
+      const today = ymd(new Date());
+      const { data: ch } = await supabase.from('meeting_changes').select('*').in('section_id', list.map((x) => x.id)).or(`on_date.gte.${today},new_date.gte.${today}`).order('on_date');
+      for (const s of list) s.changes = ((ch ?? []) as MeetingChange[]).filter((c) => c.section_id === s.id);
       const { data: cnt } = await supabase.from('enrollments').select('section_id').in('section_id', list.map((x) => x.id));
       for (const s of list) s.mates = (cnt ?? []).filter((c) => c.section_id === s.id).length;
     }
@@ -141,9 +161,48 @@ export default function Courses() {
     finally { setBusy(false); }
   }
 
+  function openOnce(o: Once, cancel: boolean) {
+    setOnce(o); setOnceCancel(cancel); setOnceAll(true); setNote('');
+    const first = nextDates(o.meeting.weekday, 1)[0];
+    setOnDate(first); setNewDate(first);
+    const [sh, sm] = o.meeting.starts_at.split(':').map(Number), [eh, em] = o.meeting.ends_at.split(':').map(Number);
+    setSt(at(sh, sm)); setEn(at(eh, em)); setRoom(o.meeting.room_text ?? '');
+  }
+
+  async function saveOnce() {
+    if (!once || busy) return;
+    if (!onceCancel && hhmm(en) <= hhmm(st)) { Alert.alert(t('وقت النهاية لازم يكون بعد البداية')); return; }
+    setBusy(true);
+    try {
+      const { error } = await supabase.from('meeting_changes').insert({
+        section_id: once.sec.id, meeting_id: once.meeting.mine ? null : once.meeting.id, on_date: onDate, cancelled: onceCancel,
+        new_date: onceCancel ? null : newDate, starts_at: onceCancel ? null : hhmm(st), ends_at: onceCancel ? null : hhmm(en),
+        room_text: onceCancel ? null : room.trim() || null, note: note.trim() || null, user_id: onceAll ? null : profile?.id,
+      });
+      if (error) throw error;
+      setOnce(null); await load();
+      Alert.alert(onceCancel ? t('انحفظ إنها ملغية ✓') : t('انحفظ الموعد الجديد ✓'), onceAll ? t('بيطلع لكل زملائك بالشعبة، لهاي المحاضرة بس.') : t('بجدولك إنت بس، لهاي المحاضرة بس.'));
+    } catch { Alert.alert(t('ما انحفظ'), t('جرّب كمان مرة.')); }
+    finally { setBusy(false); }
+  }
+
+  function changeMenu(c: MeetingChange) {
+    const what = c.cancelled ? t('ألغيت محاضرة {0}', [dayLabel(c.on_date)]) : t('محاضرة {0} انتقلت لـ {1} {2}', [dayLabel(c.on_date), dayLabel(c.new_date!), `${clock(c.starts_at!)}`]);
+    Alert.alert(what, c.note ?? (c.user_id ? t('إلك إنت بس.') : t('لكل الشعبة.')), [
+      { text: t('رجّعها زي ما كانت'), style: 'destructive', onPress: async () => {
+        const { error } = await supabase.from('meeting_changes').delete().eq('id', c.id);
+        if (error) Alert.alert(t('ما بتقدر تشيلها'), t('اللي ضافها هو اللي بيقدر يشيلها.')); else load();
+      } },
+      { text: t('تمام'), style: 'cancel' },
+    ]);
+  }
+
   /** Tap a time: change it for everyone, only for me, hide it for me, or delete my own. */
   function meetingMenu(m: Mt, s: Sec) {
     const opts: { text: string; style?: 'destructive' | 'cancel'; onPress?: () => void }[] = [];
+    // the doctor moved or cancelled just one lecture (said in class, posted on Teams)
+    opts.push({ text: t('الدكتور غيّر موعد محاضرة وحدة'), onPress: () => openOnce({ sec: s, meeting: m }, false) });
+    opts.push({ text: t('الدكتور لغى محاضرة وحدة'), onPress: () => openOnce({ sec: s, meeting: m }, true) });
     if (m.mine) {
       opts.push({ text: t('عدّل وقتي'), onPress: () => openTime({ sec: s, mode: 'me', meeting: m }) });
       opts.push({ text: m.replaces ? t('رجّع وقت الشعبة') : t('احذف وقتي'), style: 'destructive', onPress: async () => {
@@ -151,8 +210,8 @@ export default function Courses() {
         if (error) Alert.alert(t('ما زبط'), t('جرّب كمان مرة.')); else { await load(); scheduleRefresh(); }
       } });
     } else {
-      opts.push({ text: t('تغيّر لكل الشعبة'), onPress: () => openTime({ sec: s, mode: 'all', meeting: m }) });
-      opts.push({ text: t('غيّره إلي بس'), onPress: () => openTime({ sec: s, mode: 'me', meeting: m }) });
+      opts.push({ text: t('تغيّر دايماً لكل الشعبة'), onPress: () => openTime({ sec: s, mode: 'all', meeting: m }) });
+      opts.push({ text: t('غيّره دايماً إلي بس'), onPress: () => openTime({ sec: s, mode: 'me', meeting: m }) });
       opts.push({ text: t('خبّيه من جدولي'), onPress: async () => {
         const { error } = await supabase.from('personal_meetings').insert({ user_id: profile?.id, section_id: s.id, replaces: m.id, hidden: true });
         if (error) Alert.alert(t('ما زبط'), t('جرّب كمان مرة.')); else { await load(); scheduleRefresh(); }
@@ -207,6 +266,8 @@ export default function Courses() {
           {importing && <ActivityIndicator color={C.primary} />}
         </Tap>
 
+        <ScheduleScan onDone={load} autoOpen={scan === '1'} />
+
         {rows === null ? <ActivityIndicator color={C.primary} style={{ marginTop: 30 }} /> : rows.length === 0 ? (
           <Empty icon={<BookOpen size={30} color={C.primary} />} title={t('ما في مواد لهلأ')} body={t('جيبهم من Teams، أو ضيف كل مادة مرة وحدة. زملاؤك بنفس الشعبة بياخذوا المادة ووقتها جاهزة.')} />
         ) : rows.map((s, i) => (
@@ -227,6 +288,16 @@ export default function Courses() {
                 {m.mine ? <T v="tiny" color={C.violet}>{t('إلك بس')}</T>
                   : m.confirmations >= 3 ? <Row gap={3}><CheckCircle2 size={14} color={C.greenInk} /><T v="tiny" color={C.greenInk}>{t('مؤكد')}</T></Row>
                   : <Tap onPress={() => confirm(m, s)} style={{ paddingHorizontal: 8, minHeight: 30, justifyContent: 'center' }}><T v="tiny" color={C.primary}>{t('صح؟ أكّد')}</T></Tap>}
+              </Tap>
+            ))}
+            {(s.changes ?? []).map((c) => (
+              <Tap key={c.id} haptic={false} onPress={() => changeMenu(c)} style={{ flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: c.cancelled ? C.redSoft : C.orangeSoft, borderRadius: 14, padding: 10 }}>
+                <CalendarClock size={15} color={c.cancelled ? C.red : C.orange} />
+                <T v="small" style={{ flex: 1 }} color={c.cancelled ? C.red : C.orange}>
+                  {c.cancelled ? t('ألغيت: {0}', [dayLabel(c.on_date)]) : t('{0} ← {1} {2}', [dayLabel(c.on_date), dayLabel(c.new_date!), `${clock(c.starts_at!)}-${clock(c.ends_at!)}`])}
+                  {c.room_text ? ` · ${c.room_text}` : ''}
+                </T>
+                <T v="tiny" color={C.muted}>{c.user_id ? t('إلك بس') : t('للشعبة')}</T>
               </Tap>
             ))}
             {(s as Sec & { hiddenCount?: number }).hiddenCount ? <T v="tiny" color={C.muted}>{t('مخبّي {0} من أوقات الشعبة من جدولك.', [(s as Sec & { hiddenCount?: number }).hiddenCount])}</T> : null}
@@ -256,6 +327,37 @@ export default function Courses() {
           <T v="small" color={C.muted}>{t('{0} · إنت هلأ بشعبة {1}. لما تنتقل بتاخد أوقات الشعبة الجديدة وجروبها.', [nm(moveFor?.course), moveFor?.section_no ?? ''])}</T>
           <Field label={t('رقم الشعبة الجديدة')} value={newSec} onChangeText={setNewSec} keyboardType="number-pad" placeholder="2" maxLength={6} autoFocus />
           <Button title={t('انقلني')} loading={busy} disabled={busy || !newSec.trim()} onPress={moveSection} />
+        </Animated.View>
+      </Modal>
+
+      <Modal visible={!!once} transparent animationType="fade" onRequestClose={() => setOnce(null)}>
+        <Pressable style={{ flex: 1, backgroundColor: 'rgba(14,20,48,0.45)' }} onPress={() => setOnce(null)} />
+        <Animated.View entering={SlideInDown.springify().damping(18)} style={{ backgroundColor: C.bg, borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: 18, gap: 12, paddingBottom: 40, maxHeight: '90%' }}>
+          <ScrollView contentContainerStyle={{ gap: 12 }}>
+            <T v="h3">{onceCancel ? t('محاضرة ألغيت') : t('محاضرة انتقل موعدها')} · {nm(once?.sec.course)}</T>
+            <T v="tiny" color={C.muted}>{t('لمرة وحدة بس. الجدول الأسبوعي بيضل زي ما هو.')}</T>
+            <T v="small" color={C.ink2}>{t('أي محاضرة؟')}</T>
+            <Row gap={6} style={{ flexWrap: 'wrap' }}>
+              {once && nextDates(once.meeting.weekday, 4).map((d) => <Chip key={d} label={dayLabel(d)} active={onDate === d} onPress={() => { setOnDate(d); if (newDate < d) setNewDate(d); }} />)}
+            </Row>
+            {!onceCancel && <>
+              <T v="small" color={C.ink2}>{t('صارت يوم:')}</T>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 6 }}>
+                {comingDays(21).map((d) => <Chip key={d} label={dayLabel(d)} active={newDate === d} onPress={() => setNewDate(d)} />)}
+              </ScrollView>
+              <Row gap={10}>
+                <TimeField label={t('من')} value={st} onChange={setSt} />
+                <TimeField label={t('لـ')} value={en} onChange={setEn} />
+              </Row>
+              <Field label={t('القاعة (إذا تغيّرت)')} value={room} onChangeText={setRoom} placeholder={t('مثلاً قاعة 205')} maxLength={80} />
+            </>}
+            <Field label={t('ملاحظة (اختياري)')} value={note} onChangeText={setNote} placeholder={onceCancel ? t('مثلاً الدكتور مسافر') : t('مثلاً تعويض، حكى عالتيمز')} maxLength={200} />
+            <Row gap={6}>
+              <Chip label={t('لكل الشعبة')} active={onceAll} onPress={() => setOnceAll(true)} />
+              <Chip label={t('إلي بس')} active={!onceAll} onPress={() => setOnceAll(false)} />
+            </Row>
+            <Button title={onceCancel ? t('احفظ إنها ملغية') : t('احفظ الموعد الجديد')} loading={busy} disabled={busy} onPress={saveOnce} />
+          </ScrollView>
         </Animated.View>
       </Modal>
 
