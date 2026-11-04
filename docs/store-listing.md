@@ -57,6 +57,6 @@ Education (primary), Social Networking (secondary).
 
 ## Still needed from the owner
 1. Apple Developer account (99 USD/year) and Google Play Console (25 USD once).
-2. A public privacy-policy URL (the text is in the app under Settings, Privacy policy; host it on the admin website or any page).
+2. Privacy policy URL: https://unimate.my/privacy/ (terms: https://unimate.my/terms/, support: https://unimate.my/support/, account deletion: https://unimate.my/delete-account/, marketing: https://unimate.my/).
 3. Screenshots: 6.9" iPhone and Android phone (can be taken from the simulator build).
 4. A support email for the listing.
