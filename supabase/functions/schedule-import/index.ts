@@ -31,16 +31,25 @@ Deno.serve(async (req) => {
     let text = '';
     if (gemini) {
       // Google Gemini (free tier from Google AI Studio); the model can be changed with GEMINI_MODEL
-      const model = Deno.env.get('GEMINI_MODEL') ?? 'gemini-flash-latest';
-      const g = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
-        method: 'POST',
-        headers: { 'content-type': 'application/json', 'x-goog-api-key': gemini },
-        body: JSON.stringify({
-          contents: [{ role: 'user', parts: [{ inline_data: { mime_type: mime === 'image/png' ? 'image/png' : 'image/jpeg', data: image } }, { text: PROMPT }] }],
-          generationConfig: { responseMimeType: 'application/json', temperature: 0 },
-        }),
-      });
-      if (!g.ok) { console.error('gemini', g.status, (await g.text()).slice(0, 300)); return json({ error: g.status === 429 ? 'busy' : 'ai_failed' }, 502); }
+      // try the newest Flash first; if Google is busy (503/429) or a name is gone (404), fall back to the next one
+      const models = [Deno.env.get('GEMINI_MODEL'), 'gemini-flash-latest', 'gemini-2.5-flash', 'gemini-flash-lite-latest', 'gemini-2.5-flash-lite'].filter(Boolean) as string[];
+      let g: Response | null = null; let last = '';
+      for (const model of [...new Set(models)]) {
+        g = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
+          method: 'POST',
+          headers: { 'content-type': 'application/json', 'x-goog-api-key': gemini },
+          body: JSON.stringify({
+            contents: [{ role: 'user', parts: [{ inline_data: { mime_type: mime === 'image/png' ? 'image/png' : 'image/jpeg', data: image } }, { text: PROMPT }] }],
+            generationConfig: { responseMimeType: 'application/json', temperature: 0 },
+          }),
+        });
+        if (g.ok) break;
+        const msg = (await g.text()).slice(0, 300);
+        console.error('gemini', model, g.status, msg);
+        try { last = `${g.status} ${JSON.parse(msg)?.error?.message ?? ''}`.slice(0, 160); } catch { last = String(g.status); }
+        if (![404, 429, 500, 503].includes(g.status)) break;
+      }
+      if (!g || !g.ok) return json({ error: g?.status === 429 ? 'busy' : 'ai_failed', detail: last }, 502);
       const go = await g.json();
       text = (go.candidates?.[0]?.content?.parts ?? []).map((x: { text?: string }) => x.text ?? '').join('');
     } else {
