@@ -32,6 +32,10 @@ export default function EditProfile() {
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [ready, setReady] = useState(false);
+  const [cooldown, setCooldown] = useState(0);
+  useEffect(() => { supabase.rpc('username_cooldown_days').then(({ data }) => setCooldown(Number(data) || 0), () => {}); }, []);
+  const lockedDays = cooldown > 0 && profile?.username && profile.username_changed_at
+    ? Math.max(0, Math.ceil((new Date(profile.username_changed_at).getTime() + cooldown * 86400000 - Date.now()) / 86400000)) : 0;
 
   // fill the form once the profile is loaded (the screen can open before it arrives)
   useEffect(() => {
@@ -80,23 +84,28 @@ export default function EditProfile() {
     const igH = handleFrom(ig, 'instagram'); const snH = handleFrom(snap, 'snapchat');
     if (name.trim().length < 2) { Alert.alert(t('اكتب اسمك')); return; }
     if (u && !/^[a-z0-9._]{3,24}$/.test(u)) { Alert.alert(t('اسم المستخدم'), t('من 3 لـ 24 حرف إنجليزي أو أرقام أو . و _ (بدون مسافات).')); return; }
-    if (u && !profile.username) {
+    if (profile.username && !u) { Alert.alert(t('اسم المستخدم'), t('لازم يكون عندك يوزر.')); return; }
+    const changingUser = !!u && u !== (profile.username ?? '').toLowerCase();
+    if (changingUser) {
+      if (lockedDays > 0) { Alert.alert(t('اسم المستخدم'), t('بتقدر تغيّر اليوزر بعد {0} يوم.', [lockedDays])); return; }
       const { data: ok } = await supabase.rpc('username_available', { u });
       if (!ok) { Alert.alert(t('اسم المستخدم'), t('هاد اليوزر مأخوذ، جرّب غيره.')); return; }
-      const sure = await new Promise<boolean>((res) => Alert.alert(t('تثبيت اليوزر'), t('@{0}\nبعد الحفظ ما بتقدر تغيّره. متأكد؟', [u]), [{ text: t('لا'), style: 'cancel', onPress: () => res(false) }, { text: t('ثبّته'), onPress: () => res(true) }]));
-      if (!sure) return;
+      if (cooldown > 0) {
+        const sure = await new Promise<boolean>((res) => Alert.alert(t('تغيير اليوزر'), t('@{0}\nبعدها ما بتقدر تغيّره لمدة {1} يوم. متأكد؟', [u, cooldown]), [{ text: t('لا'), style: 'cancel', onPress: () => res(false) }, { text: t('غيّره'), onPress: () => res(true) }]));
+        if (!sure) return;
+      }
     }
     if (igH && !validHandle(igH)) { Alert.alert(t('إنستغرام'), t('اكتب اسم المستخدم أو الصق رابط حسابك.')); return; }
     if (snH && !validHandle(snH)) { Alert.alert(t('سناب شات'), t('اكتب اسم المستخدم أو الصق رابط حسابك.')); return; }
     setSaving(true);
     const { error } = await supabase.from('profiles').update({
-      full_name: name.trim(), ...(profile.username ? {} : { username: u || null }), bio: bio.trim().slice(0, 150), study_year: year,
+      full_name: name.trim(), ...(changingUser ? { username: u } : {}), bio: bio.trim().slice(0, 150), study_year: year,
       instagram: igH || null, snapchat: snH || null, college_id: col, major_id: maj,
     }).eq('id', profile.id);
     setSaving(false);
     if (error) {
       reportError(new Error(`profile save: ${error.code} ${error.message}`));
-      Alert.alert(t('ما انحفظ'), error.code === '23505' ? t('اسم المستخدم مأخوذ، جرّب غيره.') : error.message.includes('username_locked') ? t('اليوزر ثابت وما بيتغيّر.') : t('تأكد من الإنترنت وجرّب كمان مرة.'));
+      Alert.alert(t('ما انحفظ'), error.code === '23505' ? t('اسم المستخدم مأخوذ، جرّب غيره.') : error.message.includes('username_cooldown') ? t('بتقدر تغيّر اليوزر بعد {0} يوم.', [error.message.match(/username_cooldown:(\d+)/)?.[1] ?? cooldown]) : t('تأكد من الإنترنت وجرّب كمان مرة.'));
       return;
     }
     await refreshProfile();
@@ -129,8 +138,8 @@ export default function EditProfile() {
 
           <Field label={t('الاسم')} value={name} onChangeText={setName} maxLength={60} placeholder={t('اسمك الكامل')} />
           <View style={{ gap: 4 }}>
-            <Field label={t('اسم المستخدم')} value={username} editable={!profile?.username} onChangeText={(t) => setUsername(t.replace(/\s/g, '').toLowerCase())} autoCapitalize="none" autoCorrect={false} placeholder={t('مثلاً sara.cs')} style={{ textAlign: 'left', writingDirection: 'ltr', opacity: profile?.username ? 0.6 : 1 }} />
-            <Row gap={6}><Lock size={12} color={C.muted} /><T v="tiny" color={C.muted}>{profile?.username ? t('اليوزر ثابت وما بيتغيّر.') : t('بعد ما تحفظ اليوزر ما بيتغيّر.')}</T></Row>
+            <Field label={t('اسم المستخدم')} value={username} editable={lockedDays === 0} onChangeText={(t) => setUsername(t.replace(/\s/g, '').toLowerCase())} autoCapitalize="none" autoCorrect={false} placeholder={t('مثلاً sara.cs')} style={{ textAlign: 'left', writingDirection: 'ltr', opacity: lockedDays > 0 ? 0.6 : 1 }} />
+            <Row gap={6}><Lock size={12} color={C.muted} /><T v="tiny" color={C.muted}>{lockedDays > 0 ? t('بتقدر تغيّر اليوزر بعد {0} يوم.', [lockedDays]) : cooldown > 0 ? t('بتقدر تغيّر اليوزر مرة كل {0} يوم.', [cooldown]) : t('بتقدر تغيّر اليوزر متى ما بدك.')}</T></Row>
           </View>
           <Field label={t('نبذة')} value={bio} onChangeText={setBio} multiline maxLength={150} placeholder={t('إشي عنك بسطر')} style={{ minHeight: 84, textAlignVertical: 'top', paddingTop: 12 }} />
           <T v="tiny" color={C.muted} style={{ marginTop: -10 }}>{bio.length}/150</T>

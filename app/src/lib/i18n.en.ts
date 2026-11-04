@@ -914,4 +914,13 @@ export const EN: Record<string, string> = {
   "ما انبعتت الرسالة الصوتية": "Voice message not sent",
   "ما زبط التسجيل": "Recording failed",
   "وقّف": "Pause",
+  "@{0}\nبعدها ما بتقدر تغيّره لمدة {1} يوم. متأكد؟": "@{0}\nYou won't be able to change it again for {1} days. Sure?",
+  "بتقدر تغيّر اليوزر بعد {0} يوم.": "You can change your username in {0} days.",
+  "بتقدر تغيّر اليوزر متى ما بدك.": "You can change your username any time.",
+  "بتقدر تغيّر اليوزر مرة كل {0} يوم.": "You can change your username once every {0} days.",
+  "بتقدر تغيّره بعدين من تعديل البروفايل.": "You can change it later from Edit profile.",
+  "تغيير اليوزر": "Change username",
+  "غيّره": "Change",
+  "لازم يكون عندك يوزر.": "You need a username.",
+  "متاح ✓": "Available ✓",
 };

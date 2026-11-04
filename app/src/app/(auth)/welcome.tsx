@@ -184,9 +184,9 @@ export default function Welcome() {
                   <Field label={t('اسم المستخدم (اليوزر)')} value={username} editable={!locked} onChangeText={(t) => setUsername(t.replace(/\s/g, '').toLowerCase())}
                     autoCapitalize="none" autoCorrect={false} placeholder="sara.cs" style={{ textAlign: 'left', writingDirection: 'ltr' }} />
                   <Row gap={6}>
-                    {locked ? <><Lock size={14} color={C.muted} /><T v="tiny" color={C.muted}>{t('اليوزر ثابت وما بيتغيّر.')}</T></>
+                    {locked ? <><Lock size={14} color={C.muted} /><T v="tiny" color={C.muted}>{t('بتقدر تغيّره بعدين من تعديل البروفايل.')}</T></>
                       : uState === 'checking' ? <><ActivityIndicator size="small" color={C.primary} /><T v="tiny" color={C.muted}>{t('عم نتأكد...')}</T></>
-                      : uState === 'ok' ? <><Check size={14} color={C.greenInk} /><T v="tiny" color={C.greenInk}>{t('متاح ✓ (بس انتبه: بعد ما تحفظه ما بيتغيّر)')}</T></>
+                      : uState === 'ok' ? <><Check size={14} color={C.greenInk} /><T v="tiny" color={C.greenInk}>{t('متاح ✓')}</T></>
                       : uState === 'taken' ? <><X size={14} color={C.danger} /><T v="tiny" color={C.danger}>{t('مأخوذ، جرّب غيره')}</T></>
                       : uState === 'bad' ? <T v="tiny" color={C.danger}>{t('من 3 لـ 24: حروف إنجليزي صغيرة، أرقام، . و _')}</T>
                       : <T v="tiny" color={C.muted}>{t('زملاؤك بيلاقوك فيه بالبحث.')}</T>}
