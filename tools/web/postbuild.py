@@ -11,6 +11,7 @@ json.dump({
 p = os.path.join(d, 'index.html'); h = open(p, encoding='utf-8').read()
 tags = ('<link rel="manifest" href="/manifest.webmanifest"><link rel="apple-touch-icon" href="/icon-512.png">'
         '<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes">'
+        '<style>input:focus,textarea:focus{outline:none}html,body{-webkit-tap-highlight-color:transparent}</style>'
         '<meta name="apple-mobile-web-app-title" content="يونيميت"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><meta name="theme-color" content="#0E1430">'
         # iPhone home-screen app: the status bar (clock, battery) sits on the app's own colour instead of a white strip
         '<script>(function(){try{var t=localStorage.getItem("theme");var bg={light:"#F4F5F8",black:"#05070F"}[t]||"#0E1430";'
@@ -23,4 +24,8 @@ ht = open(os.path.join(os.path.dirname(__file__), '../../admin/public/.htaccess'
 ht += open(os.path.join(app, 'web/htaccess-extra')).read() + '\nAddType application/manifest+json .webmanifest\n<Files "sw.js">\n  Header set Cache-Control "no-cache"\n  Header set Service-Worker-Allowed "/"\n</Files>\n'
 open(os.path.join(d, '.htaccess'), 'w').write(ht)
 shutil.copy(os.path.join(app, 'web/sw.js'), os.path.join(d, 'sw.js'))
+# hashed code/asset files never change under the same name: let phones keep them for a year
+for sub in ('_expo/static', 'assets'):
+  if os.path.isdir(os.path.join(d, sub)):
+    open(os.path.join(d, sub, '.htaccess'), 'w').write('<IfModule mod_headers.c>\n  Header set Cache-Control "public, max-age=31536000, immutable"\n</IfModule>\n')
 print('pwa ok')

@@ -3,7 +3,10 @@
 const React = require('react');
 const { View } = require('react-native');
 require('leaflet/dist/leaflet.css');
-const L = require('leaflet');
+// Leaflet (~450 KB) loads only when a map is first shown, not with the rest of the web app
+let L = null;
+let loading = null;
+const loadLeaflet = () => (loading ??= import('leaflet').then((m) => { L = m.default || m; return L; }));
 
 const Ctx = React.createContext(null);
 const STREET = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
@@ -20,8 +23,11 @@ const MapView = React.forwardRef(function MapView(p, ref) {
 
   React.useEffect(() => {
     if (!box.current) return undefined;
+    let m = null, ro = null, dead = false;
+    loadLeaflet().then(() => {
+    if (dead || !box.current) return;
     const c = p.initialCamera?.center || (p.initialRegion && { latitude: p.initialRegion.latitude, longitude: p.initialRegion.longitude }) || { latitude: 32, longitude: 36 };
-    const m = L.map(box.current, { zoomControl: false, attributionControl: true, maxZoom: 20, zoomSnap: 0.25 }).setView([c.latitude, c.longitude], p.initialCamera?.zoom || 16);
+    m = L.map(box.current, { zoomControl: false, attributionControl: true, maxZoom: 20, zoomSnap: 0.25 }).setView([c.latitude, c.longitude], p.initialCamera?.zoom || 16);
     m.attributionControl.setPrefix('');
     const redraw = () => setTick((x) => x + 1);
     m.on('move zoom resize viewreset', redraw);
@@ -31,9 +37,10 @@ const MapView = React.forwardRef(function MapView(p, ref) {
     });
     m.on('click', () => cb.current.onPress?.({}));
     setMap(m);
-    const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(() => m.invalidateSize()) : null;
+    ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(() => m.invalidateSize()) : null;
     ro?.observe(box.current);
-    return () => { ro?.disconnect(); m.remove(); };
+    });
+    return () => { dead = true; ro?.disconnect(); m?.remove(); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

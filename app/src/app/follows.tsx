@@ -53,7 +53,7 @@ export default function Follows() {
 
   return (
     <Screen>
-      <Header title={params.name ?? ''} />
+      <Header title={params.name || t('المتابعات')} />
       <View style={{ paddingHorizontal: 18, gap: 10 }}>
         <Segmented items={[t('المتابِعين'), t('يتابع')]} value={tab} onChange={setTab} />
         <Row gap={8} style={{ minHeight: 44, borderRadius: 14, backgroundColor: C.card, paddingHorizontal: 12 }}>

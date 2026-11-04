@@ -28,7 +28,12 @@ const V: Record<Variant, TextStyle> = {
   small: { fontFamily: F.body, fontSize: 13, lineHeight: 20 },
   tiny: { fontFamily: F.bodyMd, fontSize: 11, lineHeight: 16 },
 };
-export function T({ v = 'body', color = C.ink, style, ...p }: TextProps & { v?: Variant; color?: string }) {
+// on the web a one-line Latin name inside Arabic text used to lose its start ("…AID AKRAM"); let the browser pick the direction per line
+const autoDir = Platform.OS === 'web' ? ({ dir: 'auto' } as object) : null;
+export function T({ v = 'body', color: c = C.ink, style, ...p }: TextProps & { v?: Variant; color?: string }) {
+  // coral text on the light background is too faint to read: use the deeper coral for words, keep the bright one for fills
+  const color = !isDark && c === C.primary ? C.primaryDark : c;
+  if (autoDir && p.numberOfLines) return <Text {...p} {...autoDir} style={[V[v], { color, textAlign: ta }, style]} />;
   return <Text {...p} style={[V[v], { color, textAlign: ta, writingDirection: isAR ? 'rtl' : 'ltr' }, style]} />;
 }
 
@@ -76,7 +81,7 @@ export function Button({ title, onPress, kind = 'primary', loading, disabled, ic
   loading?: boolean; disabled?: boolean; icon?: ReactNode; iconEnd?: boolean; style?: StyleProp<ViewStyle>;
 }) {
   const bg = { primary: C.primary, dark: C.inverse, soft: C.primarySoft, ghost: 'transparent', danger: C.danger, green: C.green, white: C.card }[kind];
-  const fg = { primary: C.onPrimary, dark: C.onInverse, soft: isDark ? C.primaryDark : C.primaryDark, ghost: C.primary, danger: C.white, green: C.white, white: C.ink }[kind];
+  const fg = { primary: C.onPrimary, dark: C.onInverse, soft: isDark ? C.primaryDark : C.primaryDark, ghost: isDark ? C.primary : C.primaryDark, danger: C.white, green: C.white, white: C.ink }[kind];
   // every button floats: colored ones glow in their own color, light ones get a soft lift
   const tint = { primary: C.primary, dark: '#000000', danger: C.danger, green: C.green }[kind as 'primary'];
   const glow = kind === 'ghost' ? null : tint
@@ -222,7 +227,7 @@ export function Toggle({ value, onChange, label, hint, icon, a11yLabel }: { valu
         {label ? <T v="bodyMd">{label}</T> : null}
         {hint && <T v="small" color={C.muted}>{hint}</T>}
       </View>
-      <View style={{ width: 50, height: 30, borderRadius: 15, backgroundColor: value ? C.primary : isDark ? '#3A3D48' : '#DDE1EC', justifyContent: 'center', paddingHorizontal: 3, alignItems: 'flex-start' }}>
+      <View style={{ width: 50, height: 30, borderRadius: 15, backgroundColor: value ? C.primary : isDark ? C.line : '#D5DAE6', justifyContent: 'center', paddingHorizontal: 3, alignItems: 'flex-start' }}>
         <Animated.View style={[{ width: 24, height: 24, borderRadius: 12, backgroundColor: '#FFFFFF' }, shadow, x]} />
       </View>
     </Pressable>

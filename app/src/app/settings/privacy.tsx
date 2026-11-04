@@ -71,7 +71,7 @@ export default function Privacy() {
             <T v="small" color={C.muted}>
               {t('إدارة يونيميت بتقدر تفتح أي محادثة لما يوصلها بلاغ أو للحماية والأمان، وكل فتح بينسجل. التفاصيل بسياسة الخصوصية.')}
             </T>
-            <T v="small" color={C.primary}>{t('اقرأ سياسة الخصوصية')}</T>
+            <T v="small" color={C.primaryDark}>{t('اقرأ سياسة الخصوصية')}</T>
           </View>
         </Tap>
       </ScrollView>

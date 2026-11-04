@@ -1644,4 +1644,7 @@ export const EN: Record<string, string> = {
   "نشط قبل {0} د": "Active {0}m ago",
   "نشط قبل {0} س": "Active {0}h ago",
   "وقت فتح الشاشات": "Screen load time",
+  "ملاحظة؟": "Note?",
+  "انتسخ رابط البروفايل": "Profile link copied",
+  "بروفايل": "Profile",
 };

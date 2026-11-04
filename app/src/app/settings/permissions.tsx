@@ -87,8 +87,8 @@ export default function Permissions() {
                   {busy === p.key || !s ? <ActivityIndicator color={C.primary} /> : (
                     <View style={{ alignItems: 'flex-end', gap: 4 }}>
                       <View style={{ backgroundColor: bg, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 4 }}><T v="tiny" color={fg}>{l}</T></View>
-                      {s === 'ask' && <T v="tiny" color={C.primary}>{t('اسمح')}</T>}
-                      {s === 'denied' && Platform.OS !== 'web' && <T v="tiny" color={C.primary}>{t('افتح الإعدادات')}</T>}
+                      {s === 'ask' && <T v="tiny" color={C.primaryDark}>{t('اسمح')}</T>}
+                      {s === 'denied' && Platform.OS !== 'web' && <T v="tiny" color={C.primaryDark}>{t('افتح الإعدادات')}</T>}
                     </View>
                   )}
                 </Tap>

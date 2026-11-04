@@ -52,7 +52,7 @@ export default function SectionScreen() {
       />
       <Tap onPress={() => router.push({ pathname: '/post/new', params: { category } })} accessibilityLabel={t('أضف')}
         style={{ position: 'absolute', left: 18, bottom: 30, width: 60, height: 60, borderRadius: 22, backgroundColor: meta.color, alignItems: 'center', justifyContent: 'center', shadowColor: meta.color, shadowOpacity: 0.45, shadowRadius: 16, shadowOffset: { width: 0, height: 10 }, elevation: 8 }}>
-        <Plus size={28} color={C.white} strokeWidth={2.4} />
+        <Plus size={28} color={C.onPrimary} strokeWidth={2.4} />
       </Tap>
       <LikesSheet post={likesOf} onClose={() => setLikesOf(null)} />
     </Screen>

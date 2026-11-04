@@ -137,10 +137,10 @@ export default function Community() {
             body={t('اسأل سؤال، شارك ملخص، أو بلّغ عن غرض ضايع.')} />}
       />
       <Tap onPress={() => router.push('/post/new')} accessibilityLabel={t('منشور جديد')}
-        scale={0.88} style={{ position: 'absolute', left: 18, bottom: 104, width: 60, height: 60, borderRadius: 22, shadowColor: '#E0306B', shadowOpacity: 0.45, shadowRadius: 16, shadowOffset: { width: 0, height: 10 }, elevation: 8 }}>
-        <LinearGradient colors={['#FF8FB1', '#7C3AED']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={{ flex: 1, borderRadius: 22, alignItems: 'center', justifyContent: 'center' }}>
-          <Plus size={30} color={C.white} strokeWidth={2.6} />
-        </LinearGradient>
+        scale={0.88} style={{ position: 'absolute', left: 18, bottom: 104, width: 60, height: 60, borderRadius: 22, shadowColor: C.primary, shadowOpacity: 0.4, shadowRadius: 16, shadowOffset: { width: 0, height: 10 }, elevation: 8 }}>
+        <View style={{ flex: 1, borderRadius: 22, backgroundColor: C.primary, alignItems: 'center', justifyContent: 'center' }}>
+          <Plus size={30} color={C.onPrimary} strokeWidth={2.6} />
+        </View>
       </Tap>
       <LikesSheet post={likesOf} onClose={() => setLikesOf(null)} />
     </Screen>

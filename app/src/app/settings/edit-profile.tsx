@@ -156,7 +156,7 @@ export default function EditProfile() {
                 <Camera size={16} color={C.onPrimary} />
               </View>
             </View>
-            <T v="bold" color={C.primary}>{uploading ? t('عم نرفع الصورة…') : shown ? t('غيّر الصورة') : t('حط صورة')}</T>
+            <T v="bold" color={C.primaryDark}>{uploading ? t('عم نرفع الصورة…') : shown ? t('غيّر الصورة') : t('حط صورة')}</T>
           </Tap>
 
           <Field label={t('الاسم')} value={name} onChangeText={setName} maxLength={60} placeholder={t('اسمك الكامل')} />

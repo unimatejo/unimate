@@ -6,7 +6,6 @@ import { FlatList, KeyboardAvoidingView, Modal, Platform, Pressable, RefreshCont
 import Animated, { FadeInDown, FadeOutLeft, LinearTransition } from 'react-native-reanimated';
 
 import { TitleBadge } from '@/components/TitleBadge';
-import { GlyphTile } from '@/components/Glyph';
 import { PushNudge } from '@/components/PushNudge';
 import { OnlineDot } from '@/components/OnlineDot';
 import { useInboxTyping } from '@/lib/presence';
@@ -151,6 +150,10 @@ export function Inbox({ inTab }: { inTab?: boolean }) {
       <FlatList
         data={shown}
         keyExtractor={(i) => i.id}
+        initialNumToRender={12}
+        maxToRenderPerBatch={10}
+        windowSize={7}
+        removeClippedSubviews={Platform.OS === 'android'}
         refreshControl={<RefreshControl refreshing={false} onRefresh={load} tintColor={C.primary} />}
         contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 120 }}
         ListHeaderComponent={
@@ -161,10 +164,8 @@ export function Inbox({ inTab }: { inTab?: boolean }) {
               <TextInput keyboardAppearance={isDark ? 'dark' : 'light'} value={q} onChangeText={setQ} placeholder={t('ابحث عن زميل أو مجموعة')} placeholderTextColor={C.muted} accessibilityLabel={t('بحث في الرسائل')} style={{ flex: 1, fontFamily: F.body, fontSize: 15, textAlign: ta, color: C.ink }} />
             </Row>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 12, paddingTop: 4 }}>
-              <Tap onPress={() => { setNoteText(myNote ?? ''); setNoteOpen(true); }} accessibilityRole="button" accessibilityLabel={myNote ? t('ملاحظتك: {0}', [myNote]) : t('اكتب ملاحظة')} style={{ width: 74, alignItems: 'center', gap: 6, paddingTop: 30 }}>
-                <View style={{ position: 'absolute', top: 0, maxWidth: 86, paddingHorizontal: 9, paddingVertical: 5, borderRadius: 12, backgroundColor: C.soft }}>
-                  <T v="tiny" numberOfLines={2} color={myNote ? C.ink : C.muted} style={{ fontSize: 11, textAlign: 'center' }}>{myNote ?? t('اكتب ملاحظة')}</T>
-                </View>
+              <Tap onPress={() => { setNoteText(myNote ?? ''); setNoteOpen(true); }} accessibilityRole="button" accessibilityLabel={myNote ? t('ملاحظتك: {0}', [myNote]) : t('اكتب ملاحظة')} style={{ width: 76, alignItems: 'center', gap: 6, paddingTop: 34 }}>
+                <NoteBubble text={myNote ?? t('ملاحظة؟')} muted={!myNote} />
                 <View>
                   <Avatar id={profile?.id} name={profile?.full_name} url={profile?.avatar_url} size={62} />
                   {!myNote && <View style={{ position: 'absolute', bottom: -2, left: -2, width: 24, height: 24, borderRadius: 12, backgroundColor: C.primary, borderWidth: 2, borderColor: C.bg, alignItems: 'center', justifyContent: 'center' }}><Plus size={14} color={C.onPrimary} strokeWidth={3} /></View>}
@@ -172,11 +173,9 @@ export function Inbox({ inTab }: { inTab?: boolean }) {
                 <T v="tiny" color={C.muted}>{t('ملاحظتك')}</T>
               </Tap>
               {friends.map((p) => (
-                <Tap key={p.id} onPress={() => openWith(p)} style={{ width: 74, alignItems: 'center', gap: 6, paddingTop: 30 }} accessibilityLabel={notes[p.id] ? `${p.full_name}: ${notes[p.id]}` : t('راسل {0}', [p.full_name])}>
+                <Tap key={p.id} onPress={() => openWith(p)} style={{ width: 76, alignItems: 'center', gap: 6, paddingTop: 34 }} accessibilityLabel={notes[p.id] ? `${p.full_name}: ${notes[p.id]}` : t('راسل {0}', [p.full_name])}>
                   {notes[p.id] ? (
-                    <View style={{ position: 'absolute', top: 0, maxWidth: 86, paddingHorizontal: 9, paddingVertical: 5, borderRadius: 12, backgroundColor: C.soft }}>
-                      <T v="tiny" numberOfLines={2} style={{ fontSize: 11, textAlign: 'center' }}>{notes[p.id]}</T>
-                    </View>
+                    <NoteBubble text={notes[p.id]} />
                   ) : null}
                   <Avatar id={p.id} name={p.full_name} url={p.avatar_url} size={62} />
                   <T v="tiny" color={C.muted} numberOfLines={1}>{(p.full_name ?? '').split(' ')[0]}</T>
@@ -206,7 +205,7 @@ export function Inbox({ inTab }: { inTab?: boolean }) {
             <Tap scale={0.985} haptic={false} onPress={() => router.push({ pathname: '/messages/[id]', params: { id: item.id } })}
               style={{ flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 72, paddingVertical: 8 }}>
               {item.kind === 'direct' ? <View><Avatar id={item.other?.id} name={item.title} url={item.other?.avatar_url} size={54} /><OnlineDot id={item.other?.id} /></View>
-                : <GlyphTile icon={item.course ? BookOpen : item.kind === 'community' ? Users : UsersRound} colors={item.course ? ['#FF9A7E', '#FF7A59'] : item.kind === 'community' ? ['#34D399', '#059669'] : ['#A78BFA', '#7C3AED']} size={54} />}
+                : <GroupAvatar kind={item.course ? 'course' : item.kind === 'community' ? 'community' : 'group'} />}
               <View style={{ flex: 1, minWidth: 0, gap: 3 }}>
                 <Row gap={5}>
                   <T v={item.unread ? 'bold' : 'bodyMd'} numberOfLines={1} style={{ flexShrink: 1, fontSize: 15 }}>{item.title}</T>
@@ -215,7 +214,7 @@ export function Inbox({ inTab }: { inTab?: boolean }) {
                   {item.streak > 1 && <T v="tiny" color="#E8590C">🔥{item.streak}</T>}
                 </Row>
                 <Row gap={4}>
-                  {isTyping(item.id) ? <T v="small" numberOfLines={1} color={C.primary}>{t('عم يكتب…')}</T>
+                  {isTyping(item.id) ? <T v="small" numberOfLines={1} color={C.primaryDark}>{t('عم يكتب…')}</T>
                     : <T v="small" numberOfLines={1} style={{ flexShrink: 1 }} color={item.unread ? C.ink : C.muted}>{item.last ?? (item.kind === 'community' ? t('جروب تلقائي') : '')}</T>}
                   {item.last_at ? <T v="small" color={C.faint}>{(item.last ?? (item.kind === 'community' ? 'x' : '')) ? '· ' : ''}{timeAgo(item.last_at)}</T> : null}
                 </Row>
@@ -259,5 +258,27 @@ export function Inbox({ inTab }: { inTab?: boolean }) {
         </KeyboardAvoidingView>
       </Modal>
     </Screen>
+  );
+}
+
+/** Instagram-style note: a small rounded bubble floating over the top of the avatar, one or two short lines. */
+function NoteBubble({ text, muted }: { text: string; muted?: boolean }) {
+  return (
+    <View pointerEvents="none" style={{ position: 'absolute', top: 0, left: -4, right: -4, alignItems: 'center', zIndex: 2 }}>
+      <View style={{ maxWidth: 84, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 14, backgroundColor: C.card, borderWidth: 1, borderColor: C.line }}>
+        <T v="tiny" numberOfLines={2} color={muted ? C.muted : C.ink} style={{ fontSize: 11, lineHeight: 15, textAlign: 'center' }}>{text}</T>
+      </View>
+      <View style={{ width: 8, height: 8, borderRadius: 4, marginTop: -3, backgroundColor: C.card, borderWidth: 1, borderColor: C.line }} />
+    </View>
+  );
+}
+
+/** Flat round avatar for group chats: course groups, communities and friend groups each get their own soft colour. */
+function GroupAvatar({ kind }: { kind: 'course' | 'community' | 'group' }) {
+  const [bg, fg, Icon] = kind === 'course' ? [C.primarySoft, C.primary, BookOpen] : kind === 'community' ? [C.greenSoft, C.green, Users] : [C.violetSoft, C.violet, UsersRound];
+  return (
+    <View style={{ width: 54, height: 54, borderRadius: 27, backgroundColor: bg, alignItems: 'center', justifyContent: 'center' }}>
+      <Icon size={24} color={fg} strokeWidth={2} />
+    </View>
   );
 }

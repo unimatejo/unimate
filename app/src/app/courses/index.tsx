@@ -11,6 +11,7 @@ import { Button, Chip, Empty, Field, Header, Row, Screen, T, Tap } from '@/compo
 import { importTeamsCourses, useAuth } from '@/lib/auth';
 import { supabase } from '@/lib/supabase';
 import { C } from '@/lib/theme';
+import { ListSkeleton } from '@/components/Skeleton';
 import { WEEKDAYS_SHORT, clock } from '@/lib/util';
 import { nm, t, LOCALE } from '@/lib/i18n';
 import { ymd, type MeetingChange } from '@/lib/schedule';
@@ -268,7 +269,7 @@ export default function Courses() {
 
         <ScheduleScan onDone={load} autoOpen={scan === '1'} />
 
-        {rows === null ? <ActivityIndicator color={C.primary} style={{ marginTop: 30 }} /> : rows.length === 0 ? (
+        {rows === null ? <View style={{ marginTop: 10 }}><ListSkeleton n={3} /></View> : rows.length === 0 ? (
           <Empty icon={<BookOpen size={30} color={C.primary} />} title={t('ما في مواد لهلأ')} body={t('جيبهم من Teams، أو ضيف كل مادة مرة وحدة. زملاؤك بنفس الشعبة بياخذوا المادة ووقتها جاهزة.')} />
         ) : rows.map((s, i) => (
           <Animated.View key={s.id} entering={FadeInDown.delay(i * 50)} style={{ backgroundColor: C.card, borderRadius: 24, padding: 14, gap: 10 }}>

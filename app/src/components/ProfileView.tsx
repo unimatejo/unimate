@@ -3,7 +3,7 @@ import { router, useFocusEffect } from 'expo-router';
 import { BarChart3, Check, ChevronRight, Clapperboard, FileText, Grid3x3, Heart, Lock, Menu, MoreHorizontal, Play, Plus, PlusSquare, Star, UserPlus, UserSquare2, UserX, WifiOff, X } from 'lucide-react-native';
 import { useCallback, useEffect, useState } from 'react';
 import * as Haptics from 'expo-haptics';
-import { Alert, Linking, Modal, Pressable, RefreshControl, ScrollView, Share, TextInput, useWindowDimensions, View } from 'react-native';
+import { Alert, Linking, Modal, Pressable, RefreshControl, ScrollView, Share, TextInput, useWindowDimensions, View, Platform } from 'react-native';
 import Animated, { FadeIn, FadeInDown, useAnimatedStyle, useSharedValue, withSequence, withSpring, withTiming } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -259,7 +259,13 @@ export function ProfileView({ userId, onTitle, back }: { userId: string; onTitle
   function shareProfile() {
     if (!p) return;
     const url = `https://app.unimate.my/user/${p.id}`;
-    Share.share({ message: `${p.full_name}${p.username ? ` (@${p.username})` : ''} على يونيميت\n${url}`, url }).catch(() => {});
+    const message = `${p.full_name}${p.username ? ` (@${p.username})` : ''} على يونيميت\n${url}`;
+    // browsers without a share sheet: copy the link instead of doing nothing
+    if (Platform.OS === 'web' && typeof navigator !== 'undefined' && !(navigator as Navigator & { share?: unknown }).share) {
+      navigator.clipboard?.writeText(url).then(() => toast(t('انتسخ رابط البروفايل')), () => toast(url));
+      return;
+    }
+    Share.share({ message, url }).catch(() => {});
   }
 
   function moreMenu() {

@@ -142,7 +142,7 @@ export default function Welcome() {
             ))}
           </Row>
           <Row>
-            {step > 0 ? <Tap onPress={() => setStep(step - 1)} style={{ minHeight: 36, justifyContent: 'center' }}><T v="bold" color={C.primary}>{t('رجوع')}</T></Tap> : <View />}
+            {step > 0 ? <Tap onPress={() => setStep(step - 1)} style={{ minHeight: 36, justifyContent: 'center' }}><T v="bold" color={C.primaryDark}>{t('رجوع')}</T></Tap> : <View />}
             <View style={{ flex: 1 }} />
             <T v="tiny" color={C.muted}>{t('{0} من {1}', [step + 1, STEPS.length])}</T>
           </Row>
@@ -213,7 +213,7 @@ export default function Welcome() {
                   <Row gap={8} style={{ flexWrap: 'wrap' }}>
                     {years.map((y) => <Chip key={y} label={String(y)} active={entry === y} onPress={() => setEntry(y)} />)}
                   </Row>
-                  {entry && <Animated.View entering={FadeIn}><T v="small" color={C.primary}>{t('يعني إنت سنة')} {studyYearFrom(entry)}{t('، وبتتحدث لحالها كل سنة.')}</T></Animated.View>}
+                  {entry && <Animated.View entering={FadeIn}><T v="small" color={C.primaryDark}>{t('يعني إنت سنة')} {studyYearFrom(entry)}{t('، وبتتحدث لحالها كل سنة.')}</T></Animated.View>}
                 </View>
                 <View style={{ gap: 8 }}>
                   <T v="bold">{t('تاريخ ميلادك (بيضل مخفي، بس إلك)')}</T>

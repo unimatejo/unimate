@@ -42,3 +42,6 @@ example
 /ios
 /android
 dist-web/
+.lucide-lite.js
+
+dist-*/

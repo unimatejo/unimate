@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { View } from 'react-native';
 
 import { ChatViewer, type Member } from '@/components/admin/ChatViewer';
-import { AdminScreen, Filters, Item, Muted, Panel, SearchBox, Sheet, State, fmtDate, fmtNum, tap } from '@/components/admin/kit';
+import { AdminScreen, useAdminRole, Filters, Item, Muted, Panel, SearchBox, Sheet, State, fmtDate, fmtNum, tap } from '@/components/admin/kit';
 import { Avatar, T } from '@/components/ui';
 import { supabase } from '@/lib/supabase';
 import { C } from '@/lib/theme';
@@ -27,20 +27,22 @@ export default function Conversations() {
   const [error, setError] = useState<string | null>(null);
   const [open, setOpen] = useState<Conv | null>(null);
 
+  const role = useAdminRole();
   const load = useCallback(async () => {
+    if (!role) return; // not an admin (or still checking): the screen shows the guard, nothing to fetch
     const { data, error: e } = await supabase.rpc('admin_list_conversations', { q: q.trim(), lim: 100, off: 0 });
     if (e) { setError(e.message); return; }
     setError(null); setList((data ?? []) as Conv[]);
-  }, [q]);
+  }, [q, role]);
 
   useEffect(() => { const h = setTimeout(load, 250); return () => clearTimeout(h); }, [load]);
   // live: the list refreshes on its own every 10 seconds
   useEffect(() => { const i = setInterval(load, 10000); return () => clearInterval(i); }, [load]);
   // opened from a user / report / log entry with ?id=
   useEffect(() => {
-    if (!params.id) return;
+    if (!params.id || !role) return;
     supabase.rpc('admin_list_conversations', { q: params.id, lim: 1, off: 0 }).then(({ data }) => { const c = (data as Conv[] | null)?.[0]; if (c) setOpen(c); }, () => {});
-  }, [params.id]);
+  }, [params.id, role]);
 
   const shown = (list ?? []).filter((c) => kind === 'all' || c.kind === kind);
 

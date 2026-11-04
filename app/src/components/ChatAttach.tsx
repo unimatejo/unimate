@@ -13,6 +13,7 @@ import { AvatarCropper } from './AvatarCropper';
 import { Avatar, Button, Row, T, Tap } from './ui';
 import { useAuth } from '@/lib/auth';
 import { mediaUrl, supabase } from '@/lib/supabase';
+import { rtTopic } from '@/lib/realtime';
 import { C, F, isDark, shadow } from '@/lib/theme';
 import { bubble, SheetModal, subOn } from './ChatExtras';
 import type { Message } from '@/lib/types';
@@ -108,7 +109,7 @@ function PollComposer({ open, onClose, onSend }: { open: boolean; onClose: () =>
               {opts.length > 2 && <Tap onPress={() => setOpts((x) => x.filter((_, j) => j !== i))} accessibilityLabel={t('شيل')}><X size={20} color={C.muted} /></Tap>}
             </Row>
           ))}
-          {opts.length < 8 && <Tap onPress={() => setOpts((x) => [...x, ''])} style={{ flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 40 }}><Plus size={18} color={C.primary} /><T v="small" color={C.primary}>{t('ضيف خيار')}</T></Tap>}
+          {opts.length < 8 && <Tap onPress={() => setOpts((x) => [...x, ''])} style={{ flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 40 }}><Plus size={18} color={C.primary} /><T v="small" color={C.primaryDark}>{t('ضيف خيار')}</T></Tap>}
         </ScrollView>
         <Button title={t('ابعت الاستطلاع')} disabled={!ok} onPress={() => onSend(q.trim(), opts.map((o) => o.trim()).filter(Boolean))} />
       </Animated.View>
@@ -231,7 +232,7 @@ export function StickerPanel({ open, onClose, send }: { open: boolean; onClose: 
               <View style={{ flex: 1, borderRadius: 18, borderWidth: 1.5, borderStyle: 'dashed', borderColor: C.primary, alignItems: 'center', justifyContent: 'center', gap: 4 }}>
                 {making ? <ActivityIndicator color={C.primary} /> : <Plus size={24} color={C.primary} />}
                 {making && <T v="tiny" color={C.muted} style={{ fontSize: 9, textAlign: 'center' }}>{t('عم نشيل الخلفية…')}</T>}
-                <T v="tiny" color={C.primary} style={{ fontSize: 10, textAlign: 'center' }}>{canCutBackground() ? t('من صورة (بنشيل الخلفية)') : t('من صورة')}</T>
+                <T v="tiny" color={C.primaryDark} style={{ fontSize: 10, textAlign: 'center' }}>{canCutBackground() ? t('من صورة (بنشيل الخلفية)') : t('من صورة')}</T>
               </View>
             </Tap>
             {(mine ?? []).map((s) => (
@@ -373,7 +374,7 @@ export function PollBubble({ m, mine, me }: { m: Message; mine: boolean; me?: st
   }, [m.id]);
   useEffect(() => {
     load();
-    const ch = supabase.channel(`poll-${m.id}`).on('postgres_changes', { event: '*', schema: 'public', table: 'poll_answers', filter: `message_id=eq.${m.id}` }, load).subscribe();
+    const ch = supabase.channel(rtTopic(`poll-${m.id}`)).on('postgres_changes', { event: '*', schema: 'public', table: 'poll_answers', filter: `message_id=eq.${m.id}` }, load).subscribe();
     return () => { supabase.removeChannel(ch); };
   }, [m.id, load]);
   const mineVote = votes.find((v) => v.user_id === me)?.option;

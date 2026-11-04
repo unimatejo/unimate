@@ -120,24 +120,24 @@ export default function Schedule() {
         </Row>
 
         <Animated.View entering={FadeInDown.duration(450)} style={{ borderRadius: 28, overflow: 'hidden' }}>
-          <LinearGradient colors={['#2E5BFF', '#7C3AED']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={{ padding: 18, gap: 12 }}>
-            <View style={{ position: 'absolute', top: -60, left: -40, width: 180, height: 180, borderRadius: 90, backgroundColor: 'rgba(255,255,255,0.12)' }} />
+          <LinearGradient colors={[C.primary, C.primaryDark === '#C2412A' ? '#FF8E73' : '#FF9A80']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={{ padding: 18, gap: 12 }}>
+            <View style={{ position: 'absolute', top: -60, left: -40, width: 180, height: 180, borderRadius: 90, backgroundColor: 'rgba(255,255,255,0.16)' }} />
             <Row gap={12}>
               <View style={{ flex: 1, gap: 2 }}>
-                <T v="small" color="#DCE3FF">{new Date().toLocaleDateString(LOCALE, { weekday: 'long', day: 'numeric', month: 'long' })}</T>
-                <T v="h2" color={C.white} style={{ fontFamily: F.display, fontSize: 22 }}>{todayCount ? t('عندك {0} {1} اليوم', [todayCount, todayCount === 1 ? t('محاضرة') : todayCount === 2 ? t('محاضرتين') : t('محاضرات')]) : t('اليوم فاضي')}</T>
+                <T v="small" color={C.onPrimary} style={{ opacity: 0.75 }}>{new Date().toLocaleDateString(LOCALE, { weekday: 'long', day: 'numeric', month: 'long' })}</T>
+                <T v="h2" color={C.onPrimary} style={{ fontFamily: F.display, fontSize: 22 }}>{todayCount ? t('عندك {0} {1} اليوم', [todayCount, todayCount === 1 ? t('محاضرة') : todayCount === 2 ? t('محاضرتين') : t('محاضرات')]) : t('اليوم فاضي')}</T>
               </View>
-              <GlyphTile icon={Clock} colors={['rgba(255,255,255,0.35)', 'rgba(255,255,255,0.12)']} size={52} live />
+              <GlyphTile icon={Clock} colors={['rgba(14,20,48,0.22)', 'rgba(14,20,48,0.10)']} size={52} live />
             </Row>
             {nextExam && (
-              <Row gap={10} style={{ backgroundColor: 'rgba(255,255,255,0.16)', borderRadius: 18, padding: 10 }}>
+              <Row gap={10} style={{ backgroundColor: 'rgba(255,255,255,0.28)', borderRadius: 18, padding: 10 }}>
                 <View style={{ width: 46, height: 46, borderRadius: 15, backgroundColor: C.card, alignItems: 'center', justifyContent: 'center' }}>
                   <T style={{ fontFamily: F.display, fontSize: 19, lineHeight: 22 }} color={C.orange}>{daysLeft}</T>
                   <T v="tiny" color={C.orange} style={{ fontSize: 10 }}>{daysLeft === 1 ? t('يوم') : t('أيام')}</T>
                 </View>
                 <View style={{ flex: 1 }}>
-                  <T v="bold" color={C.white} numberOfLines={1}>{EVENT[nextExam.kind] ?? nextExam.title}: {nextExam.course_name ?? nextExam.title}</T>
-                  <T v="tiny" color="#DCE3FF">{new Date(nextExam.starts_at).toLocaleString(LOCALE, { weekday: 'long', hour: 'numeric', minute: '2-digit' })}</T>
+                  <T v="bold" color={C.onPrimary} numberOfLines={1}>{EVENT[nextExam.kind] ?? nextExam.title}: {nextExam.course_name ?? nextExam.title}</T>
+                  <T v="tiny" color={C.onPrimary} style={{ opacity: 0.75 }}>{new Date(nextExam.starts_at).toLocaleString(LOCALE, { weekday: 'long', hour: 'numeric', minute: '2-digit' })}</T>
                 </View>
               </Row>
             )}

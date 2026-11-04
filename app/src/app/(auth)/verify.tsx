@@ -42,7 +42,7 @@ export default function Verify() {
             <MailCheck size={30} color={C.primary} />
           </View>
           <T v="h1">{t('افتح إيميلك')}</T>
-          <T v="body" color={C.muted}>{t('بعتنا رسالة على')} {email}{uni ? ` (${uni})` : ''}{t('. اضغط الرابط اللي فيها من هالتلفون وبتدخل علطول، أو اكتب الرمز هون إذا وصلك رمز.')}</T>
+          <T v="body" color={C.muted}>{t('بعتنا رسالة على')} {`\u2066${email}\u2069`}{uni ? ` (${uni})` : ''}{t('. اضغط الرابط اللي فيها من هالتلفون وبتدخل علطول، أو اكتب الرمز هون إذا وصلك رمز.')}</T>
         </Animated.View>
 
         <Pressable onPress={() => input.current?.focus()}>

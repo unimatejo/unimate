@@ -227,7 +227,7 @@ export default function Notifications() {
                 </Tap>
                 {showReqs && reqs.map((r) => (
                   <Animated.View key={r.follower_id} entering={FadeIn.duration(250)} style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 14, paddingVertical: 8, borderTopWidth: 1, borderTopColor: C.line }}>
-                    <Tap haptic={false} onPress={() => router.push({ pathname: '/user/[id]', params: { id: r.follower_id } })}><Avatar id={r.follower_id} name={r.profile?.full_name} url={r.profile?.avatar_url} size={42} /></Tap>
+                    <Tap haptic={false} accessibilityLabel={r.profile?.full_name ?? t('بروفايل')} onPress={() => router.push({ pathname: '/user/[id]', params: { id: r.follower_id } })}><Avatar id={r.follower_id} name={r.profile?.full_name} url={r.profile?.avatar_url} size={42} /></Tap>
                     <View style={{ flex: 1 }}>
                       <T v="bold" style={{ fontSize: 14 }} numberOfLines={1}>{r.profile?.full_name}</T>
                       <T v="tiny" color={C.muted} numberOfLines={1}>{nm(r.profile?.major)}</T>

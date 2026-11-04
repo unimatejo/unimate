@@ -23,6 +23,7 @@ function explain(): Promise<boolean> {
 }
 
 export async function ensurePermission(force = false): Promise<boolean> {
+  if (Platform.OS === 'web') return false; // local reminders are phone-only; the web app uses web push
   const cur = await Notifications.getPermissionsAsync();
   if (cur.granted) return true;
   if (!cur.canAskAgain) return false;

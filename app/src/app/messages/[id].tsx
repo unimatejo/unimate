@@ -18,6 +18,7 @@ import { Avatar, Row, T, Tap, Toggle } from '@/components/ui';
 import { VoiceBubble, VoiceRecorder } from '@/components/Voice';
 import { useAuth } from '@/lib/auth';
 import { mediaUrl, supabase } from '@/lib/supabase';
+import { rtTopic } from '@/lib/realtime';
 import { C, F, isDark } from '@/lib/theme';
 import type { Conversation, Message, VanishMode } from '@/lib/types';
 import { pickMedia, uploadFile } from '@/lib/upload';
@@ -230,7 +231,7 @@ export default function Chat() {
       const { data } = await supabase.from('conversation_members').select('user_id, last_read_at, state').eq('conversation_id', id);
       apply((data ?? []) as never);
     };
-    const ch = supabase.channel(`reads-${id}`)
+    const ch = supabase.channel(rtTopic(`reads-${id}`))
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'conversation_members', filter: `conversation_id=eq.${id}` }, (p) => apply([p.new as never]))
       .on('postgres_changes', { event: '*', schema: 'public', table: 'message_reactions', filter: `conversation_id=eq.${id}` }, (p) => {
         const r = (p.eventType === 'DELETE' ? p.old : p.new) as { message_id?: string; user_id?: string; emoji?: string };
@@ -244,7 +245,7 @@ export default function Chat() {
 
   // live messages
   useEffect(() => {
-    const ch = supabase.channel(`conv-${id}`)
+    const ch = supabase.channel(rtTopic(`conv-${id}`))
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: `conversation_id=eq.${id}` }, (p) => {
         const m = p.new as Message;
         setMsgs((cur) => cur.some((x) => x.id === m.id) ? cur : [m, ...cur]);
@@ -363,7 +364,7 @@ export default function Chat() {
   const [now, setNow] = useState(Date.now());
   useEffect(() => { const tm = setInterval(() => setNow(Date.now()), 20000); return () => clearInterval(tm); }, []);
   const visible = useMemo(() => msgs.filter((m) => !m.deleted_at && (m.is_saved || !m.vanishes_at || new Date(m.vanishes_at).getTime() > now)), [msgs, now]);
-  const title = conv?.kind === 'direct' ? other?.full_name ?? '' : conv?.title ?? '';
+  const title = conv?.kind === 'direct' ? other?.full_name ?? (conv ? t('محادثة') : '') : conv?.title ?? '';
   const activity = useActivityLine(conv?.kind === 'direct' ? other?.id : null);
   const vanishLabel = VANISH.find((v) => v.key === conv?.vanish)?.label ?? '';
 
@@ -382,7 +383,7 @@ export default function Chat() {
                 {conv?.kind === 'direct' && <TitleBadge title={other?.academic_title} verified={other?.title_verified} />}
                 {(conv?.streak_days ?? 0) > 1 && <Row gap={2}><Flame size={14} color="#E8590C" fill="#FF8A00" /><T v="tiny" color="#FF9A1F">{conv?.streak_days}</T></Row>}
               </Row>
-              {typing !== null ? <T v="tiny" color={C.primary} numberOfLines={1}>{conv?.kind === 'direct' ? t('عم يكتب…') : t('{0} عم يكتب…', [typing])}</T>
+              {typing !== null ? <T v="tiny" color={C.primaryDark} numberOfLines={1}>{conv?.kind === 'direct' ? t('عم يكتب…') : t('{0} عم يكتب…', [typing])}</T>
                 : conv?.kind === 'direct' ? <T v="tiny" color={activity === t('نشط الآن') ? C.green : C.muted} numberOfLines={1}>{activity ?? (other?.major ? nm(other.major) : other?.username ? `@${other.username}` : '')}</T>
                 : <T v="tiny" color={C.muted} numberOfLines={1}>{conv?.context_label || t('{0} أعضاء', [String(Object.keys(people).length)])}</T>}
             </View>
@@ -399,6 +400,10 @@ export default function Chat() {
         <FlatList
           ref={list}
           inverted
+          initialNumToRender={18}
+          maxToRenderPerBatch={12}
+          windowSize={9}
+          removeClippedSubviews={Platform.OS === 'android'}
           onEndReached={loadOlder}
           onEndReachedThreshold={0.3}
           ListHeaderComponent={typing !== null ? (

@@ -175,7 +175,7 @@ export function Muted({ children }: { children: ReactNode }) {
 
 /** Loading / error / empty for admin lists. */
 export function State({ loading, error, empty, children }: { loading: boolean; error: string | null; empty?: boolean; children: ReactNode }) {
-  if (error) return <Panel><T v="small" color={C.red}>{t('صار خطأ: {0}', [error])}</T></Panel>;
+  if (error) return <Panel><T v="small" color={C.red}>{/fetch|network|timeout/i.test(error) ? t('تأكد من الإنترنت وجرّب كمان مرة.') : t('صار خطأ: {0}', [error])}</T></Panel>;
   if (loading) return <Loading />;
   if (empty) return <Panel><Muted>{t('ما في إشي هون.')}</Muted></Panel>;
   return <>{children}</>;

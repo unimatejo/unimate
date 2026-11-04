@@ -64,7 +64,7 @@ export default function Support() {
               <T v="small" color={C.ink2}>{tk.body}</T>
               {tk.reply ? (
                 <View style={{ backgroundColor: C.primarySoft, borderRadius: 14, padding: 10 }}>
-                  <T v="tiny" color={C.primary}>{t('رد فريق يونيميت')}</T>
+                  <T v="tiny" color={C.primaryDark}>{t('رد فريق يونيميت')}</T>
                   <T v="small">{tk.reply}</T>
                 </View>
               ) : <T v="tiny" color={C.muted}>{t('بانتظار الرد')}</T>}

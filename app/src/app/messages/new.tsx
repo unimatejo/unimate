@@ -80,7 +80,7 @@ export default function NewMessage() {
               <Row gap={8} style={{ flexWrap: 'wrap' }}>
                 {picked.map((p) => (
                   <Tap key={p.id} onPress={() => toggle(p)} style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: C.primarySoft, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 6 }}>
-                    <T v="tiny" color={C.primary}>{p.full_name.split(' ')[0]} ✕</T>
+                    <T v="tiny" color={C.primaryDark}>{p.full_name.split(' ')[0]} ✕</T>
                   </Tap>
                 ))}
               </Row>

@@ -133,7 +133,7 @@ export default function Study() {
           const s = stateWith(p.user_id);
           return (
             <View key={p.user_id} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: C.card, borderRadius: 20, padding: 12 }}>
-              <Tap onPress={() => router.push({ pathname: '/user/[id]', params: { id: p.user_id } })}><Avatar id={p.user_id} name={p.p?.full_name} url={p.p?.avatar_url} size={46} /></Tap>
+              <Tap accessibilityLabel={p.p?.full_name ?? t('بروفايل')} onPress={() => router.push({ pathname: '/user/[id]', params: { id: p.user_id } })}><Avatar id={p.user_id} name={p.p?.full_name} url={p.p?.avatar_url} size={46} /></Tap>
               <View style={{ flex: 1, gap: 2 }}>
                 <T v="bodyMd">{p.p?.full_name}</T>
                 <T v="tiny" color={C.muted} numberOfLines={1}>{[nm(p.p?.major), p.place_pref, p.time_pref].filter(Boolean).join(' · ')}</T>

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { AppState } from 'react-native';
 
 import { supabase } from './supabase';
+import { rtTopic } from './realtime';
 
 /** Unread chats + message requests, refreshed on new messages (realtime), app focus, and every 45s. */
 export function useUnreadMessages(userId?: string | null) {
@@ -20,7 +21,7 @@ export function useUnreadMessages(userId?: string | null) {
     load();
     const t = setInterval(load, 45000);
     const sub = AppState.addEventListener('change', (s) => { if (s === 'active') load(); });
-    const ch = supabase.channel(`unread-${userId}`).on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, () => load()).subscribe();
+    const ch = supabase.channel(rtTopic(`unread-${userId}`)).on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, () => load()).subscribe();
     return () => { alive = false; clearInterval(t); sub.remove(); supabase.removeChannel(ch); };
   }, [userId]);
   return n;

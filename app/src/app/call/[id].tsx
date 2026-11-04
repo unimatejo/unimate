@@ -7,6 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Avatar, T, Tap } from '@/components/ui';
 import { supabase } from '@/lib/supabase';
+import { rtTopic } from '@/lib/realtime';
 import { C, F } from '@/lib/theme';
 import { t } from '@/lib/i18n';
 
@@ -28,7 +29,7 @@ export default function CallScreen() {
   const [muted, setMuted] = useState(false);
 
   useEffect(() => {
-    const ch = supabase.channel(`call-${id}`)
+    const ch = supabase.channel(rtTopic(`call-${id}`))
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'calls', filter: `id=eq.${id}` }, (p) => setStatus((p.new as { status: string }).status))
       .subscribe();
     const miss = setTimeout(async () => { await supabase.from('calls').update({ status: 'missed', ended_at: new Date().toISOString() }).eq('id', id).eq('status', 'ringing'); }, 30000);
