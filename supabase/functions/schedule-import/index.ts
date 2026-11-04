@@ -11,7 +11,7 @@ Read every course and every weekly meeting. Return ONLY JSON, no prose, in this 
 "meetings":[{"days":[0-6],"start":"HH:MM","end":"HH:MM","room":"room/building as written or null","kind":"lecture|lab|online|tutorial"}]}]}
 Days: 0=Sunday(الأحد/ح) 1=Monday(الإثنين/ن) 2=Tuesday(الثلاثاء/ث) 3=Wednesday(الأربعاء/ر) 4=Thursday(الخميس/خ) 5=Friday 6=Saturday(السبت/س).
 Times in 24h: Jordanian classes run 08:00-20:00, so "2:00" or "2:00 م" is 14:00. If a row lists several days (e.g. "ح ث خ" or "Sun Tue Thu"), put them all in days.
-Use kind "lab" for عملي/مختبر/Lab, "online" for عن بعد/online/Teams. If the image is not a timetable, return {"courses":[],"error":"not_schedule"}.`;
+Use kind "lab" for عملي/مختبر/Lab. Use "online" ONLY when the course is fully remote (عن بعد / تعليم إلكتروني بالكامل). "مدمج" / blended means the student still attends on campus, so use "lecture" for it. If the room column holds a note like "المادة تدرس بشكل مدمج…" instead of a room, set room to null. If the image is not a timetable, return {"courses":[],"error":"not_schedule"}.`;
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: cors });
