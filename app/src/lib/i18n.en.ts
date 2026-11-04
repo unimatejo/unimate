@@ -1260,4 +1260,8 @@ export const EN: Record<string, string> = {
   "نزّل ريلز": "Post a reel",
   "نزّل ستوري وبعدين بتقدر تثبّتها هون.": "Post a story, then you can pin it here.",
   "نص": "Text",
+  "الإدارة": "Admin",
+  "لوحة الإدارة": "Admin panel",
+  "كل الصلاحيات": "Full access",
+  "ما زبط فتح لوحة الإدارة، جرّب كمان مرة.": "Couldn’t open the admin panel. Try again.",
 };

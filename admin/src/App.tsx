@@ -104,7 +104,14 @@ export default function App() {
   const route = useHash();
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => setSession(data.session));
+    // opened from the app's Settings: admin.unimate.my?h=<one-time code> signs in without typing anything
+    const h = new URLSearchParams(location.search).get('h');
+    if (h) {
+      history.replaceState(null, '', location.pathname + location.hash);
+      supabase.functions.invoke('admin-handoff', { body: { code: h } })
+        .then(async ({ data }) => { if (data?.token_hash) await supabase.auth.verifyOtp({ token_hash: data.token_hash, type: 'magiclink' }); })
+        .finally(() => supabase.auth.getSession().then(({ data }) => setSession(data.session)));
+    } else supabase.auth.getSession().then(({ data }) => setSession(data.session));
     const { data } = supabase.auth.onAuthStateChange((_e, s) => setSession(s));
     return () => data.subscription.unsubscribe();
   }, []);

@@ -1,9 +1,10 @@
 import Constants from 'expo-constants';
 import { router } from 'expo-router';
 import {
-  BadgeCheck, Ban, Bell, KeyRound, Palette, Search, Bookmark, ChevronLeft, CircleHelp, EyeOff, FileText, Lock, LogOut, MessageCircle, Shield, Star, Trash2, UserPen, UserPlus, Users, Info } from 'lucide-react-native';
-import { useState, type ReactNode } from 'react';
-import { Alert, ScrollView, TextInput, View } from 'react-native';
+  BadgeCheck, Ban, Bell, KeyRound, Palette, Search, Bookmark, ChevronLeft, CircleHelp, EyeOff, FileText, Lock, LogOut, MessageCircle, Shield, Star, Trash2, UserPen, UserPlus, Users, Info, ShieldCheck } from 'lucide-react-native';
+import * as WebBrowser from 'expo-web-browser';
+import { useEffect, useState, type ReactNode } from 'react';
+import { Alert, Platform, ScrollView, TextInput, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 
 import { Avatar, Header, IconTile, Row, Screen, T, Tap } from '@/components/ui';
@@ -11,7 +12,7 @@ import { useAuth } from '@/lib/auth';
 import { supabase } from '@/lib/supabase';
 import { inviteFriends } from '@/lib/invite';
 import { run } from '@/lib/run';
-import { C, F, isDark, shadow } from '@/lib/theme';
+import { C, F, isDark, shadow, themePref } from '@/lib/theme';
 import { normalize } from '@/lib/util';
 import { flip, isAR, nm, t, ta } from '@/lib/i18n';
 
@@ -41,6 +42,16 @@ const ic = { size: 19, color: C.white };
 export default function Settings() {
   const { profile, university, signOut } = useAuth();
   const [q, setQ] = useState('');
+  // the owner / moderators get the admin panel right here, signed in already
+  const [admin, setAdmin] = useState(false);
+  useEffect(() => { supabase.rpc('is_admin').then(({ data }) => setAdmin(data === true), () => {}); }, []);
+  async function openAdmin() {
+    const r = await run(supabase.rpc('admin_handoff_code'), { msg: t('ما زبط فتح لوحة الإدارة، جرّب كمان مرة.') });
+    if (!r.ok || typeof r.data !== 'string') return;
+    const url = `https://admin.unimate.my/?h=${r.data}`;
+    if (Platform.OS === 'web') window.location.assign(url);
+    else WebBrowser.openBrowserAsync(url, { presentationStyle: WebBrowser.WebBrowserPresentationStyle.FULL_SCREEN }).catch(() => {});
+  }
 
   function logout() {
     Alert.alert(t('تسجيل الخروج'), t('أكيد بدك تطلع من حسابك؟'), [
@@ -72,6 +83,9 @@ export default function Settings() {
 
   type It = { icon: ReactNode; color: string; label: string; value?: string; onPress: () => void; danger?: boolean };
   const groups: { title: string; items: It[] }[] = [
+    ...(admin ? [{ title: t('الإدارة'), items: [
+      { icon: <ShieldCheck {...ic} />, color: C.primary, label: t('لوحة الإدارة'), value: t('كل الصلاحيات'), onPress: openAdmin },
+    ] }] : []),
     { title: t('الحساب'), items: [
       { icon: <UserPen {...ic} />, color: C.primary, label: t('تعديل البروفايل'), onPress: () => router.push('/settings/edit-profile') },
       { icon: <Lock {...ic} />, color: C.violet, label: t('الخصوصية'), value: profile?.is_private ? t('خاص') : t('عام'), onPress: () => router.push('/settings/privacy') },
@@ -84,7 +98,7 @@ export default function Settings() {
     ] },
     { title: t('الجهاز'), items: [
       { icon: <KeyRound {...ic} />, color: C.primary, label: t('الصلاحيات'), value: t('كاميرا، صور، مايك…'), onPress: () => router.push('/settings/permissions') },
-      { icon: <Palette {...ic} />, color: C.violet, label: t('المظهر واللغة'), value: [isDark ? t('غامق') : t('فاتح'), isAR ? 'العربية' : 'English'].join(' · '), onPress: () => router.push('/settings/appearance') },
+      { icon: <Palette {...ic} />, color: C.violet, label: t('المظهر واللغة'), value: [{ midnight: t('كحلي'), black: t('أسود'), light: t('فاتح') }[themePref()], isAR ? 'العربية' : 'English'].join(' · '), onPress: () => router.push('/settings/appearance') },
       { icon: <UserPlus {...ic} />, color: C.green, label: t('ادعي زملاءك'), onPress: () => inviteFriends(nm(university)) },
     ] },
     { title: t('الأمان'), items: [
