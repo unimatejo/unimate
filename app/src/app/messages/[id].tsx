@@ -89,9 +89,11 @@ export default function Chat() {
   // Android: the screen shows black in screenshots and recordings. iOS: we hide while recording and tell the other side.
   useEffect(() => {
     if (!shield) return;
+    if (Platform.OS === 'web') return; // browsers can't block or detect screenshots
     ScreenCapture.preventScreenCaptureAsync('chat').catch(() => {});
-    const sub = ScreenCapture.addScreenshotListener(() => { supabase.rpc('report_screenshot', { conv: id, plat: Platform.OS }); });
-    return () => { ScreenCapture.allowScreenCaptureAsync('chat').catch(() => {}); sub.remove(); };
+    let sub: { remove: () => void } | null = null;
+    try { sub = ScreenCapture.addScreenshotListener(() => { supabase.rpc('report_screenshot', { conv: id, plat: Platform.OS }); }); } catch { /* not available */ }
+    return () => { ScreenCapture.allowScreenCaptureAsync('chat').catch(() => {}); sub?.remove(); };
   }, [shield, id]);
 
   const load = useCallback(async () => {
