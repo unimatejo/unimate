@@ -14,6 +14,7 @@ export type Profile = {
   instagram: string | null; snapchat: string | null;
   block_screenshots: boolean; default_vanish: VanishMode; nearby_enabled: boolean;
   is_verified?: boolean; entry_year?: number | null; onboarded?: boolean;
+  account_type?: 'student' | 'faculty' | 'staff'; academic_title?: string | null; title_verified?: boolean; department?: string | null;
   points: number; follower_count: number; following_count: number; post_count: number;
   university?: University | null;
   college?: { id: string; name_ar: string } | null;
@@ -27,7 +28,7 @@ export type Post = {
   category: string; audience: string; title: string | null; body: string; price_jod: number | null;
   lost_found: 'lost' | 'found' | null; is_pinned: boolean; hide_likes: boolean;
   like_count: number; comment_count: number; created_at: string;
-  author?: Pick<Profile, 'id' | 'full_name' | 'avatar_url' | 'study_year' | 'username' | 'is_verified'> & { major?: { name_ar: string } | null };
+  author?: Pick<Profile, 'id' | 'full_name' | 'avatar_url' | 'study_year' | 'username' | 'is_verified' | 'academic_title' | 'title_verified'> & { major?: { name_ar: string } | null };
   media?: { id: string; kind: string; url: string; file_name: string | null; size_bytes: number | null; position: number }[];
   poll?: { options: string[] } | null;
   liked?: boolean; saved?: boolean;

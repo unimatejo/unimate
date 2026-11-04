@@ -8,6 +8,7 @@ import { ActivityIndicator, Alert, FlatList, KeyboardAvoidingView, Modal, Platfo
 import Animated, { FadeIn, FadeInUp, useAnimatedStyle, useSharedValue, withDelay, withRepeat, withSequence, withTiming } from 'react-native-reanimated';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { TitleBadge } from '@/components/TitleBadge';
 import { AttachSheet, ContactBubble, FileBubble, LocationBubble, PollBubble, StickerBubble, StickerPanel, saveSticker, type Outgoing } from '@/components/ChatAttach';
 import { bubble, DateSep, HeartBurst, inkOn, MessageMenu, ReactionChips, ReactionsSheet, SeenBy, SheetModal, subOn, type Reaction } from '@/components/ChatExtras';
 import { Bone } from '@/components/Skeleton';
@@ -73,7 +74,7 @@ export default function Chat() {
   const { profile } = useAuth();
   const insets = useSafeAreaInsets();
   const [conv, setConv] = useState<Conversation | null>(null);
-  const [other, setOther] = useState<{ id: string; full_name: string; avatar_url: string | null; username?: string | null; is_verified?: boolean; major?: { name_ar: string; name_en?: string | null } | null } | null>(null);
+  const [other, setOther] = useState<{ id: string; full_name: string; avatar_url: string | null; username?: string | null; is_verified?: boolean; academic_title?: string | null; title_verified?: boolean; major?: { name_ar: string; name_en?: string | null } | null } | null>(null);
   const [msgs, setMsgs] = useState<Message[]>([]);
   const [draft, setDraft] = useState('');
   const [sheet, setSheet] = useState(false);
@@ -108,7 +109,7 @@ export default function Chat() {
     if (!profile) return;
     const { data: c } = await supabase.from('conversations').select('*').eq('id', id).single();
     setConv(c as Conversation);
-    const { data: mem } = await supabase.from('conversation_members').select('user_id, state, last_read_at, profile:profiles(id, full_name, avatar_url, username, is_verified, major:majors(name_ar, name_en))').eq('conversation_id', id);
+    const { data: mem } = await supabase.from('conversation_members').select('user_id, state, last_read_at, profile:profiles(id, full_name, avatar_url, username, is_verified, academic_title, title_verified, major:majors(name_ar, name_en))').eq('conversation_id', id);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const rows = (mem ?? []) as any[];
     setPeople(Object.fromEntries(rows.filter((r) => r.profile).map((r) => [r.user_id, r.profile])));
@@ -370,6 +371,7 @@ export default function Chat() {
               <Row gap={5}>
                 <T v="bodyMd" numberOfLines={1} style={{ flexShrink: 1, fontSize: 15, fontFamily: F.bodyBold }}>{title}</T>
                 {other?.is_verified && conv?.kind === 'direct' && <BadgeCheck size={15} color={C.onPrimary} fill={C.primary} />}
+                {conv?.kind === 'direct' && <TitleBadge title={other?.academic_title} verified={other?.title_verified} />}
                 {(conv?.streak_days ?? 0) > 1 && <Row gap={2}><Flame size={14} color="#E8590C" fill="#FF8A00" /><T v="tiny" color="#FF9A1F">{conv?.streak_days}</T></Row>}
               </Row>
               {typing !== null ? <T v="tiny" color={C.primary} numberOfLines={1}>{conv?.kind === 'direct' ? t('عم يكتب…') : t('{0} عم يكتب…', [typing])}</T>
@@ -413,6 +415,7 @@ export default function Chat() {
                   <Row gap={5} style={{ marginTop: 8 }}>
                     <T v="h2">{other.full_name}</T>
                     {other.is_verified && <BadgeCheck size={18} color={C.onPrimary} fill={C.primary} />}
+                    <TitleBadge title={other.academic_title} verified={other.title_verified} size="md" />
                   </Row>
                   {other.username ? <T v="small" color={C.muted} style={{ writingDirection: 'ltr' }}>@{other.username}</T> : null}
                   {other.major ? <T v="tiny" color={C.muted}>{nm(other.major)}</T> : null}

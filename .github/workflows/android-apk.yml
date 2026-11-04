@@ -46,7 +46,7 @@ jobs:
           cp app/build/outputs/apk/release/app-release.apk ../../out/UniMate.apk
           ls -la ../../out; test $(stat -c%s ../../out/UniMate.apk) -lt 99000000 || { echo "APK too big for a git push"; exit 1; }
       - name: Publish to the builds-android branch
-        if: always()
+        if: ${{ !cancelled() }}
         working-directory: .
         run: |
           mkdir -p /tmp/pub && cp -R out/. /tmp/pub/ 2>/dev/null || true

@@ -6,6 +6,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ScrollView, SectionList, RefreshControl, View } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
 
+import { titledName } from '@/components/TitleBadge';
 import { Avatar, Empty, Header, Screen, T, Tap } from '@/components/ui';
 import { ListSkeleton } from '@/components/Skeleton';
 import { useAuth } from '@/lib/auth';
@@ -25,7 +26,7 @@ function localizeNote(s: string) { return isAR ? s : NOTE_EN.reduce((x, [re, en]
 
 type N = { id: string; kind: string; title: string; body: string | null; data: Record<string, string>; read_at: string | null; created_at: string; actor_id?: string | null };
 type FR = { follower_id: string; profile: { id: string; full_name: string; avatar_url: string | null; major: { name_ar: string } | null } | null };
-type P = { id: string; full_name: string | null; avatar_url: string | null };
+type P = { id: string; full_name: string | null; avatar_url: string | null; academic_title?: string | null; title_verified?: boolean };
 
 type Filter = 'all' | 'follow' | 'act' | 'uni';
 const FOLLOW = ['follow', 'follow_request', 'follow_accept'];
@@ -74,7 +75,7 @@ export default function Notifications() {
     const actors = [...new Set(list.map((x) => x.actor_id ?? x.data?.user_id).filter(Boolean) as string[])];
     const postIds = [...new Set(list.map((x) => x.data?.post_id).filter(Boolean) as string[])];
     const [{ data: ps }, { data: fl }, { data: st }, { data: md }] = await Promise.all([
-      actors.length ? supabase.from('profiles').select('id, full_name, avatar_url').in('id', actors) : Promise.resolve({ data: [] }),
+      actors.length ? supabase.from('profiles').select('id, full_name, avatar_url, academic_title, title_verified').in('id', actors) : Promise.resolve({ data: [] }),
       actors.length ? supabase.from('follows').select('followee_id, status').eq('follower_id', profile.id).in('followee_id', actors) : Promise.resolve({ data: [] }),
       actors.length ? supabase.from('stories').select('author_id').in('author_id', actors).gt('expires_at', new Date().toISOString()) : Promise.resolve({ data: [] }),
       postIds.length ? supabase.from('post_media').select('post_id, url, position').in('post_id', postIds).eq('kind', 'image').order('position') : Promise.resolve({ data: [] }),
@@ -152,7 +153,7 @@ export default function Notifications() {
     const k = kindOf(n.kind);
     const [Icon, color] = BADGE[n.kind] ?? (k === 'uni' ? [GraduationCap, C.primary] : [Bell, C.primary]);
     const title = localizeNote(n.title);
-    const name = who?.full_name ?? '';
+    const name = titledName(who?.full_name, who?.academic_title, who?.title_verified);
     const rest = name && title.startsWith(name) ? title.slice(name.length) : null;
     const isFollow = n.kind === 'follow' && !!uid;
     const fs = uid ? following[uid] : undefined;

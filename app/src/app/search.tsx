@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, FlatList, Linking, TextInput, View } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
 
+import { titleLabel, titledName } from '@/components/TitleBadge';
 import { Avatar, Chip, Empty, Header, Row, Screen, T, Tap } from '@/components/ui';
 import { useAuth } from '@/lib/auth';
 import { supabase } from '@/lib/supabase';
@@ -58,13 +59,13 @@ export default function Search() {
         const like = s.replace(/[\\%_]/g, (c) => '\\' + c).replace(/[,()"]/g, ' ');
         const [people, campus] = await Promise.all([
           kind !== 'campus'
-            ? supabase.from('profiles').select('id, full_name, username, is_verified, avatar_url, major:majors(name_ar, name_en)')
+            ? supabase.from('profiles').select('id, full_name, username, is_verified, academic_title, title_verified, department, avatar_url, major:majors(name_ar, name_en)')
               .or(`full_name.ilike.%${like}%,username.ilike.%${like.toLowerCase()}%`).neq('id', profile?.id ?? '').limit(15)
             : Promise.resolve({ data: [] }),
           kind !== 'people' ? supabase.rpc('campus_search', { q: s, lim: 20 }) : Promise.resolve({ data: [] }),
         ]);
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        out.push(...((people.data ?? []) as any[]).filter((p) => !blocked.has(p.id)).map((p) => ({ kind: 'person', id: p.id, title: p.full_name, subtitle: [p.username ? '@' + p.username : null, nm(p.major)].filter(Boolean).join(' · '), avatar: p.avatar_url })));
+        out.push(...((people.data ?? []) as any[]).filter((p) => !blocked.has(p.id)).map((p) => ({ kind: 'person', id: p.id, title: titledName(p.full_name, p.academic_title, p.title_verified), subtitle: [p.title_verified && p.academic_title ? titleLabel(p.academic_title) : null, p.username ? '@' + p.username : null, p.title_verified ? p.department : null, nm(p.major)].filter(Boolean).join(' · '), avatar: p.avatar_url })));
         out.push(...((campus.data ?? []) as R[]));
       } catch { /* keep the empty list; the message below explains */ }
       if (my !== seq.current) return; // a newer search already started

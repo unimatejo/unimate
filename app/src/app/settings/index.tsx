@@ -1,11 +1,12 @@
 import Constants from 'expo-constants';
 import { router } from 'expo-router';
 import {
-  BadgeCheck, Ban, Bell, KeyRound, Palette, Search, Bookmark, ChevronLeft, CircleHelp, EyeOff, FileText, Lock, LogOut, MessageCircle, Shield, Star, Trash2, UserPen, UserPlus, Users, Info, ShieldCheck } from 'lucide-react-native';
+  BadgeCheck, Ban, Bell, KeyRound, Palette, Search, Bookmark, ChevronLeft, CircleHelp, EyeOff, FileText, Lock, LogOut, MessageCircle, Shield, Star, Trash2, UserPen, UserPlus, Users, Info, ShieldCheck, GraduationCap } from 'lucide-react-native';
 import { useEffect, useState, type ReactNode } from 'react';
 import { Alert, ScrollView, TextInput, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 
+import { titleLabel } from '@/components/TitleBadge';
 import { Avatar, Header, IconTile, Row, Screen, T, Tap } from '@/components/ui';
 import { useAuth } from '@/lib/auth';
 import { supabase } from '@/lib/supabase';
@@ -83,6 +84,7 @@ export default function Settings() {
       { icon: <UserPen {...ic} />, color: C.primary, label: t('تعديل البروفايل'), onPress: () => router.push('/settings/edit-profile') },
       { icon: <Lock {...ic} />, color: C.violet, label: t('الخصوصية'), value: profile?.is_private ? t('خاص') : t('عام'), onPress: () => router.push('/settings/privacy') },
       { icon: <Users {...ic} />, color: C.green, label: t('الأصدقاء المقربين'), onPress: () => router.push('/settings/close-friends') },
+      { icon: <GraduationCap {...ic} />, color: '#3D6BFF', label: t('أنا عضو هيئة تدريس / موظف'), value: profile?.title_verified ? titleLabel(profile.academic_title) : undefined, onPress: () => router.push('/settings/faculty') },
       { icon: <Bookmark {...ic} />, color: '#56627F', label: t('المحفوظات'), onPress: () => router.push('/settings/saved') },
     ] },
     { title: t('التنبيهات والرسائل'), items: [

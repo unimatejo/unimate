@@ -9,13 +9,14 @@ import { Image } from 'expo-image';
 
 import { ImageViewer } from './ImageViewer';
 import { PostVideo } from './PostVideo';
+import { TitleBadge, titledName } from './TitleBadge';
 import { Avatar, Row, T, Tag, Tap } from './ui';
 import { useAuth } from '@/lib/auth';
 import { toggleLike, toggleSave } from '@/lib/posts';
 import { optimistic, run } from '@/lib/run';
 import { toast } from '@/lib/toast';
 import { mediaUrl, supabase } from '@/lib/supabase';
-import { CATEGORY, C, shadow } from '@/lib/theme';
+import { CATEGORY, C, F, shadow } from '@/lib/theme';
 import type { Post } from '@/lib/types';
 import { timeAgo } from '@/lib/util';
 import { nm, t } from '@/lib/i18n';
@@ -184,10 +185,11 @@ export function PostCard({ post, onLikes, compact, detail }: { post: Post; onLik
         </Tap>
         <View style={{ flex: 1 }}>
           <Row gap={4}>
-            <T v="bold" numberOfLines={1} style={{ fontSize: 14, flexShrink: 1 }}>{p.author?.full_name}</T>
+            <T v="bold" numberOfLines={1} style={{ fontSize: 14, flexShrink: 1 }}>{titledName(p.author?.full_name, p.author?.academic_title, p.author?.title_verified)}</T>
             {p.author?.is_verified && <BadgeCheck size={15} color={C.white} fill={C.primary} />}
+            <TitleBadge title={p.author?.academic_title} verified={p.author?.title_verified} />
           </Row>
-          <T v="tiny" color={C.muted} style={{ fontFamily: 'Rubik_400Regular' }}>{[nm(p.author?.major), timeAgo(p.created_at)].filter(Boolean).join(' · ')}</T>
+          <T v="tiny" color={C.muted} style={{ fontFamily: F.body }}>{[nm(p.author?.major), timeAgo(p.created_at)].filter(Boolean).join(' · ')}</T>
         </View>
         {p.lost_found ? <Tag label={p.lost_found === 'lost' ? t('ضاع مني') : t('لقيت')} bg={p.lost_found === 'lost' ? C.orangeSoft : C.greenSoft} fg={p.lost_found === 'lost' ? '#C2410C' : C.greenInk} />
           : <Tag label={cat.label} bg={cat.soft} fg={cat.ink} />}

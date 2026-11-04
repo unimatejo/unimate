@@ -1,3 +1,4 @@
+import { TitleBadge, titledName } from './TitleBadge';
 import { router, useFocusEffect } from 'expo-router';
 import { BarChart3, Check, ChevronRight, Clapperboard, FileText, Grid3x3, Heart, Lock, Menu, MoreHorizontal, Play, Plus, PlusSquare, Star, UserPlus, UserSquare2, UserX, WifiOff, X } from 'lucide-react-native';
 import { useCallback, useEffect, useState } from 'react';
@@ -303,10 +304,14 @@ export function ProfileView({ userId, onTitle, back }: { userId: string; onTitle
   const shown = tab === 0 ? posts : tab === 1 ? reels : (tagged ?? []);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const uni = nm((p as any).university);
-  const badge = [uni, nm(p.major), p.study_year ? t('سنة {0}', [p.study_year]) : null].filter(Boolean).join(' · ');
+  const staffAcct = p.title_verified && (p.account_type === 'faculty' || p.account_type === 'staff');
+  // faculty show their department instead of a study year
+  const badge = staffAcct
+    ? [uni, p.department || nm(p.major)].filter(Boolean).join(' · ')
+    : [uni, nm(p.major), p.study_year ? t('سنة {0}', [p.study_year]) : null].filter(Boolean).join(' · ');
   const pill = { flex: 1, minHeight: 40, borderRadius: R.pill, backgroundColor: C.soft, alignItems: 'center' as const, justifyContent: 'center' as const, paddingHorizontal: 12 };
   const Verified = () => (
-    <View accessibilityLabel={t('طالب موثّق بحساب الجامعة')} style={{ width: 17, height: 17, borderRadius: 9, backgroundColor: C.primary, alignItems: 'center', justifyContent: 'center' }}>
+    <View accessibilityLabel={staffAcct ? t('حساب موثّق بالجامعة') : t('طالب موثّق بحساب الجامعة')} style={{ width: 17, height: 17, borderRadius: 9, backgroundColor: C.primary, alignItems: 'center', justifyContent: 'center' }}>
       <Check size={11} color={C.onPrimary} strokeWidth={3.4} />
     </View>
   );
@@ -326,6 +331,7 @@ export function ProfileView({ userId, onTitle, back }: { userId: string; onTitle
               {p.is_private && <Lock size={15} color={C.ink} />}
               <T numberOfLines={1} style={{ fontFamily: F.title, fontSize: 20, writingDirection: 'ltr', flexShrink: 1 }}>{p.username ? p.username : p.full_name}</T>
               {p.is_verified && <Verified />}
+              <TitleBadge title={p.academic_title} verified={p.title_verified} />
             </Row>
             {mine ? (
               <>
@@ -358,9 +364,10 @@ export function ProfileView({ userId, onTitle, back }: { userId: string; onTitle
 
           <View style={{ gap: 6 }}>
             <Row gap={6}>
-              <T style={{ fontFamily: F.bodyBold, fontSize: 15 }}>{p.full_name}</T>
+              <T style={{ fontFamily: F.bodyBold, fontSize: 15 }}>{titledName(p.full_name, p.academic_title, p.title_verified)}</T>
               {friends && <Animated.View entering={FadeIn}><View style={{ backgroundColor: C.greenSoft, borderRadius: 999, paddingHorizontal: 8, paddingVertical: 2 }}><T v="tiny" color={C.greenInk}>{t('أصدقاء')}</T></View></Animated.View>}
             </Row>
+            <TitleBadge title={p.academic_title} verified={p.title_verified} size="md" />
             {!!badge && (
               <View style={{ alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 26, paddingHorizontal: 10, borderRadius: 13, backgroundColor: C.soft, maxWidth: '100%' }}>
                 <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: C.primary }} />

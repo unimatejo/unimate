@@ -3,6 +3,7 @@ import { Search } from 'lucide-react-native';
 import { useEffect, useMemo, useState } from 'react';
 import { FlatList, TextInput, View } from 'react-native';
 
+import { TitleBadge, titledName } from '@/components/TitleBadge';
 import { Avatar, Button, Empty, Header, Row, Screen, Segmented, T, Tap } from '@/components/ui';
 import { useAuth } from '@/lib/auth';
 import { supabase } from '@/lib/supabase';
@@ -10,7 +11,7 @@ import { C, F, isDark } from '@/lib/theme';
 import { nm, t, ta } from '@/lib/i18n';
 import { ListSkeleton } from '@/components/Skeleton';
 
-type P = { id: string; full_name: string; avatar_url: string | null; username: string | null; major: { name_ar: string } | null };
+type P = { id: string; full_name: string; avatar_url: string | null; username: string | null; academic_title?: string | null; title_verified?: boolean; major: { name_ar: string } | null };
 
 /** Followers / following lists, like Instagram. Hidden lists are blocked by the profile owner's privacy settings. */
 export default function Follows() {
@@ -27,8 +28,8 @@ export default function Follows() {
       setLoading(true);
       const followers = tab === 0;
       const sel = followers
-        ? 'p:profiles!follows_follower_id_fkey(id, full_name, avatar_url, username, major:majors(name_ar, name_en))'
-        : 'p:profiles!follows_followee_id_fkey(id, full_name, avatar_url, username, major:majors(name_ar, name_en))';
+        ? 'p:profiles!follows_follower_id_fkey(id, full_name, avatar_url, username, academic_title, title_verified, major:majors(name_ar, name_en))'
+        : 'p:profiles!follows_followee_id_fkey(id, full_name, avatar_url, username, academic_title, title_verified, major:majors(name_ar, name_en))';
       const { data } = await supabase.from('follows').select(sel).eq(followers ? 'followee_id' : 'follower_id', params.user).eq('status', 'accepted').limit(500);
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       setRows(((data ?? []) as any[]).map((x) => x.p).filter(Boolean));
@@ -69,7 +70,10 @@ export default function Follows() {
             <Tap haptic={false} scale={0.98} onPress={() => router.push({ pathname: '/user/[id]', params: { id: item.id } })} style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 12 }}>
               <Avatar id={item.id} name={item.full_name} url={item.avatar_url} size={46} />
               <View style={{ flex: 1 }}>
-                <T v="bodyMd" numberOfLines={1}>{item.full_name}</T>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+                  <T v="bodyMd" numberOfLines={1} style={{ flexShrink: 1 }}>{titledName(item.full_name, item.academic_title, item.title_verified)}</T>
+                  <TitleBadge title={item.academic_title} verified={item.title_verified} />
+                </View>
                 <T v="tiny" color={C.muted} numberOfLines={1}>{item.username ? `@${item.username}` : nm(item.major) ?? ''}</T>
               </View>
             </Tap>

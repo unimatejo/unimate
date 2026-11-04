@@ -3,6 +3,7 @@ import { View } from 'react-native';
 
 import { Avatar, Field, Row, T } from '../ui';
 import { ChatViewer } from './ChatViewer';
+import { TITLE_ORDER, TitleBadge, titleLabel } from '../TitleBadge';
 import { Act, Actions, Item, Muted, Panel, Pill, Section, Status, audit, confirm, done, fmtDate, fmtNum, promptText, useLoad } from './kit';
 import { supabase } from '@/lib/supabase';
 import { C } from '@/lib/theme';
@@ -21,6 +22,16 @@ export function UserDetail({ id, onChanged }: { id: string; onChanged?: () => vo
   const [edit, setEdit] = useState<{ full_name: string; bio: string } | null>(null);
 
   useEffect(() => { setOpen(null); setEdit(null); }, [id]);
+  const { data: acad, reload: reloadAcad } = useLoad<{ academic_title: string | null; title_verified: boolean; account_type: string }>(
+    () => supabase.from('profiles').select('academic_title, title_verified, account_type').eq('id', id).single(), [id]);
+  const [pickTitle, setPickTitle] = useState(false);
+  async function setTitle(k: string | null) {
+    const ok = await confirm(k ? t('توثيق كـ {0}؟', [titleLabel(k)]) : t('تشيل اللقب؟'),
+      k ? t('بيظهر اللقب جنب اسم {0} للكل.', [u?.full_name ?? '']) : t('بيرجع حساب عادي بدون لقب.'), k ? t('وثّق') : t('شيله'));
+    if (!ok) return;
+    await supabase.rpc('admin_set_title', { p_user: id, p_title: k, p_type: k ? null : 'student' });
+    done(); setPickTitle(false); reloadAcad(); onChanged?.();
+  }
 
   async function setStatus(s: string) {
     const label = s === 'active' ? t('تفعيل الحساب') : s === 'suspended' ? t('إيقاف مؤقت') : t('حظر نهائي');
@@ -69,6 +80,21 @@ export function UserDetail({ id, onChanged }: { id: string; onChanged?: () => vo
         }} />
         {u.avatar_url && <Act label={t('شيل الصورة')} onPress={removeAvatar} />}
       </Actions>
+      <Section title={t('اللقب الأكاديمي')} />
+      <Panel>
+        <Row gap={8}>
+          {acad?.title_verified && acad.academic_title ? <TitleBadge title={acad.academic_title} verified size="md" /> : <Muted>{acad?.account_type === 'faculty' ? t('إيميله من الجامعة، ممكن يكون دكتور أو موظف') : t('بدون لقب')}</Muted>}
+        </Row>
+        <Actions>
+          <Act label={pickTitle ? t('إلغاء') : t('غيّر اللقب')} onPress={() => setPickTitle(!pickTitle)} />
+          {acad?.academic_title && <Act label={t('شيل اللقب')} kind="danger" onPress={() => setTitle(null)} />}
+        </Actions>
+        {pickTitle && (
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+            {TITLE_ORDER.map((k) => <Act key={k} label={titleLabel(k)} kind={acad?.academic_title === k ? 'primary' : 'soft'} onPress={() => setTitle(k)} />)}
+          </View>
+        )}
+      </Panel>
       {edit && (
         <Panel>
           <Field label={t('الاسم')} value={edit.full_name} onChangeText={(v) => setEdit({ ...edit, full_name: v })} />

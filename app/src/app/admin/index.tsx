@@ -1,7 +1,6 @@
 import { useFocusEffect } from 'expo-router';
 import {
-  BadgePercent, BarChart3, Bug, Flag, LifeBuoy, Map, Megaphone, MessagesSquare, ScrollText, Send, ShieldCheck, SquareStack, Users, type LucideIcon,
-} from 'lucide-react-native';
+  BadgePercent, BarChart3, Bug, Flag, LifeBuoy, Map, Megaphone, MessagesSquare, ScrollText, Send, ShieldCheck, SquareStack, Users, GraduationCap, type LucideIcon } from 'lucide-react-native';
 import { useCallback, useState } from 'react';
 import { View } from 'react-native';
 
@@ -13,7 +12,7 @@ import { t } from '@/lib/i18n';
 
 type Stats = {
   users: number; users_7d: number; active_today: number; posts: number; posts_7d: number; messages_7d: number;
-  reports_open: number; tickets_open: number; aliases_pending: number; places_pending: number; ads_live: number;
+  reports_open: number; tickets_open: number; titles_pending?: number; aliases_pending: number; places_pending: number; ads_live: number;
   per_university: { id: string; slug: string; name_ar: string; data_status: string; users: number; posts_7d: number }[];
 };
 
@@ -21,6 +20,7 @@ type Sec = { key: string; label: string; icon: LucideIcon; color: string; badge?
 const SECTIONS: Sec[] = [
   { key: 'reports', label: t('البلاغات'), icon: Flag, color: C.red, badge: (s) => s.reports_open },
   { key: 'users', label: t('المستخدمين'), icon: Users, color: C.blue },
+  { key: 'titles', label: t('توثيق الأساتذة'), icon: GraduationCap, color: '#3D6BFF', badge: (s) => s.titles_pending ?? 0 },
   { key: 'chats', label: t('المحادثات'), icon: MessagesSquare, color: C.violet },
   { key: 'content', label: t('المحتوى'), icon: SquareStack, color: C.sky },
   { key: 'support', label: t('الدعم'), icon: LifeBuoy, color: C.green, badge: (s) => s.tickets_open },
@@ -48,7 +48,10 @@ export default function AdminHome() {
   const [s, setS] = useState<Stats | null>(null);
   useFocusEffect(useCallback(() => {
     if (!role) return;
-    supabase.rpc('admin_stats').then(({ data }) => { if (data) setS(data as Stats); }, () => {});
+    Promise.all([
+      supabase.rpc('admin_stats'),
+      supabase.from('title_requests').select('id', { count: 'exact', head: true }).eq('status', 'pending'),
+    ]).then(([st, tr]) => { if (st.data) setS({ ...(st.data as Stats), titles_pending: tr.count ?? 0 }); }, () => {});
   }, [role]));
 
   return (

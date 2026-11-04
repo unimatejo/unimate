@@ -56,7 +56,7 @@ jobs:
           zip -qry ../out/UniMate.ipa Payload
           ls -la ../out
       - name: Publish to the builds branch
-        if: always()
+        if: ${{ !cancelled() }}
         working-directory: .
         run: |
           mkdir -p /tmp/pub && cp -R out/. /tmp/pub/ 2>/dev/null || true

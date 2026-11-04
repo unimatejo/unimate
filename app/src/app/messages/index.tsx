@@ -5,6 +5,7 @@ import { useCallback, useState } from 'react';
 import { FlatList, KeyboardAvoidingView, Modal, Platform, Pressable, RefreshControl, ScrollView, TextInput, View } from 'react-native';
 import Animated, { FadeInDown, FadeOutLeft, LinearTransition } from 'react-native-reanimated';
 
+import { TitleBadge } from '@/components/TitleBadge';
 import { GlyphTile } from '@/components/Glyph';
 import { PushNudge } from '@/components/PushNudge';
 import { Avatar, Button, Empty, Header, IconButton, Row, Screen, StateView, T, Tap } from '@/components/ui';
@@ -18,7 +19,7 @@ import { timeAgo } from '@/lib/util';
 import { t, ta } from '@/lib/i18n';
 import { ListSkeleton } from '@/components/Skeleton';
 
-type Person = { id: string; full_name: string; avatar_url: string | null; is_verified?: boolean };
+type Person = { id: string; full_name: string; avatar_url: string | null; is_verified?: boolean; academic_title?: string | null; title_verified?: boolean };
 type Item = {
   id: string; kind: string; course?: boolean; title: string; other?: Person | null; state: string; created_by: string | null;
   last?: string | null; last_at: string; unread: boolean; count?: number; streak: number; context?: string | null;
@@ -62,7 +63,7 @@ export function Inbox({ inTab }: { inTab?: boolean }) {
     const rows = ((mine ?? []) as any[]).filter((r) => r.conversation);
     const ids = rows.map((r) => r.conversation.id);
     const [{ data: members }, { data: lasts }, { data: counts }] = ids.length ? await Promise.all([
-      supabase.from('conversation_members').select('conversation_id, user_id, profile:profiles(id, full_name, avatar_url, is_verified)').in('conversation_id', ids).neq('user_id', profile.id),
+      supabase.from('conversation_members').select('conversation_id, user_id, profile:profiles(id, full_name, avatar_url, is_verified, academic_title, title_verified)').in('conversation_id', ids).neq('user_id', profile.id),
       supabase.rpc('inbox_last_messages', { conv_ids: ids }),
       supabase.rpc('unread_counts', { conv_ids: ids }),
     ]) : [{ data: [] }, { data: [] }, { data: [] }];
@@ -84,7 +85,7 @@ export function Inbox({ inTab }: { inTab?: boolean }) {
     out.sort((a, b) => (b.last_at ?? '').localeCompare(a.last_at ?? ''));
     setItems(out);
     // mutual friends for the quick row
-    const { data: f } = await supabase.from('follows').select('p:profiles!follows_followee_id_fkey(id, full_name, avatar_url, is_verified)').eq('follower_id', profile.id).eq('status', 'accepted').limit(30);
+    const { data: f } = await supabase.from('follows').select('p:profiles!follows_followee_id_fkey(id, full_name, avatar_url, is_verified, academic_title, title_verified)').eq('follower_id', profile.id).eq('status', 'accepted').limit(30);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const fr: Person[] = ((f ?? []) as any[]).map((x) => x.p).filter(Boolean);
     // people you chat with directly also show in the notes row
@@ -205,6 +206,7 @@ export function Inbox({ inTab }: { inTab?: boolean }) {
                 <Row gap={5}>
                   <T v={item.unread ? 'bold' : 'bodyMd'} numberOfLines={1} style={{ flexShrink: 1, fontSize: 15 }}>{item.title}</T>
                   {item.other?.is_verified && <BadgeCheck size={14} color={C.onPrimary} fill={C.primary} />}
+                  <TitleBadge title={item.other?.academic_title} verified={item.other?.title_verified} />
                   {item.streak > 1 && <T v="tiny" color="#E8590C">🔥{item.streak}</T>}
                 </Row>
                 <Row gap={4}>

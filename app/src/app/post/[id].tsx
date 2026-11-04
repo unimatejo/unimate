@@ -10,6 +10,7 @@ import { PostCard } from '@/components/PostCard';
 import { Avatar, Button, Empty, Header, IconButton, Row, Screen, T, Tap } from '@/components/ui';
 import { PostSkeleton } from '@/components/Skeleton';
 import { toast } from '@/lib/toast';
+import { TitleBadge, titledName } from '@/components/TitleBadge';
 import { useAuth } from '@/lib/auth';
 import { POST_SELECT, withMine } from '@/lib/posts';
 import { supabase } from '@/lib/supabase';
@@ -19,7 +20,7 @@ import { normalize, timeAgo } from '@/lib/util';
 import { isAR, t, ta } from '@/lib/i18n';
 import { run } from '@/lib/run';
 
-type Comment = { id: string; author_id: string; parent_id: string | null; body: string; created_at: string; author: { full_name: string; avatar_url: string | null } | null };
+type Comment = { id: string; author_id: string; parent_id: string | null; body: string; created_at: string; author: { full_name: string; avatar_url: string | null; academic_title?: string | null; title_verified?: boolean } | null };
 
 export default function PostScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -36,7 +37,7 @@ export default function PostScreen() {
     try {
       const [{ data, error }, { data: c }, { data: hw }, { data: bl }] = await Promise.all([
         supabase.from('posts').select(POST_SELECT).eq('id', id).maybeSingle(),
-        supabase.from('comments').select('id, author_id, parent_id, body, created_at, author:profiles(full_name, avatar_url)').eq('post_id', id).order('created_at'),
+        supabase.from('comments').select('id, author_id, parent_id, body, created_at, author:profiles(full_name, avatar_url, academic_title, title_verified)').eq('post_id', id).order('created_at'),
         profile ? supabase.from('hidden_words').select('word').eq('user_id', profile.id) : Promise.resolve({ data: [] as { word: string }[] }),
         profile ? supabase.from('blocks').select('blocked_id').eq('blocker_id', profile.id) : Promise.resolve({ data: [] as { blocked_id: string }[] }),
       ]);
@@ -59,7 +60,7 @@ export default function PostScreen() {
     const body = draft.trim();
     setSending(true);
     const r = await run(supabase.from('comments').insert({ post_id: id, author_id: profile.id, body, parent_id: replyTo?.id ?? null })
-      .select('id, author_id, parent_id, body, created_at, author:profiles(full_name, avatar_url)').single(), { msg: t('ما انبعت التعليق، جرّب كمان مرة.') });
+      .select('id, author_id, parent_id, body, created_at, author:profiles(full_name, avatar_url, academic_title, title_verified)').single(), { msg: t('ما انبعت التعليق، جرّب كمان مرة.') });
     setSending(false);
     if (!r.ok || !r.data) return; // the text stays in the box
     setDraft(''); setReplyTo(null);
@@ -108,7 +109,8 @@ export default function PostScreen() {
                 <View style={{ flex: 1, gap: 4 }}>
                   <View style={{ backgroundColor: C.card, borderRadius: 18, borderTopRightRadius: 6, paddingHorizontal: 12, paddingVertical: 8, alignSelf: 'flex-start' }}>
                     <Row gap={6}>
-                      <T v="bold" style={{ fontSize: 13 }}>{item.author?.full_name}</T>
+                      <T v="bold" style={{ fontSize: 13 }}>{titledName(item.author?.full_name, item.author?.academic_title, item.author?.title_verified)}</T>
+                      <TitleBadge title={item.author?.academic_title} verified={item.author?.title_verified} />
                       {own && <View style={{ backgroundColor: C.primarySoft, borderRadius: 999, paddingHorizontal: 6 }}><T v="tiny" color={C.primary} style={{ fontSize: 10 }}>{t('صاحب المنشور')}</T></View>}
                     </Row>
                     <T v="small">{item.body}</T>
