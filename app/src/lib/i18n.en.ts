@@ -1162,4 +1162,11 @@ export const EN: Record<string, string> = {
   "ما لقينا شخص أو إشي واضح بالصورة": "No clear person or object in the photo",
   "بنقصها بإيدك بدالها.": "Crop it by hand instead.",
   "عم نشيل الخلفية…": "Removing background…",
+  "إخفاء": "Hide",
+  "إشعار لما توصلك رسالة أو حدا يتفاعل معك، حتى لو الموقع مسكّر.": "A notification when you get a message or someone interacts with you, even with the site closed.",
+  "بتوصلك الرسالة حتى لو يونيميت مسكّر.": "Get messages even when UniMate is closed.",
+  "بدك توصلك إشعارات الرسائل؟": "Want message notifications?",
+  "فعّل": "Turn on",
+  "فعّل إشعارات الرسائل": "Turn on message notifications",
+  "من سفاري اكبس زر المشاركة، بعدين «إضافة إلى الشاشة الرئيسية»، وافتح يونيميت من الأيقونة.": "In Safari tap Share, then “Add to Home Screen”, and open UniMate from the icon.",
 };

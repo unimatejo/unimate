@@ -9,6 +9,7 @@ import { getPref, setPref } from './prefs';
 import { toast } from './toast';
 import { t } from './i18n';
 import { clearMediaCache, supabase } from './supabase';
+import { dropWebPush } from './webpush';
 import type { Profile, University } from './types';
 
 WebBrowser.maybeCompleteAuthSession();
@@ -82,6 +83,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     session, profile, university, loading, profileError,
     refreshProfile: () => loadProfile(session?.user.id),
     signOut: async () => {
+      await dropWebPush();
       try { await supabase.auth.signOut(); } catch (e) { reportError(e); await supabase.auth.signOut({ scope: 'local' }).catch(() => {}); }
       clearMediaCache();
       setProfile(null); setUniversity(null); setSession(null);

@@ -5,6 +5,7 @@ import { FlatList, RefreshControl, ScrollView, TextInput, View } from 'react-nat
 import Animated, { FadeInDown, FadeOutLeft, LinearTransition } from 'react-native-reanimated';
 
 import { GlyphTile } from '@/components/Glyph';
+import { PushNudge } from '@/components/PushNudge';
 import { Avatar, Button, Empty, Header, IconButton, Row, Screen, StateView, T, Tap } from '@/components/ui';
 import { useAuth } from '@/lib/auth';
 import { reportError } from '@/lib/errors';
@@ -118,6 +119,7 @@ export function Inbox({ inTab }: { inTab?: boolean }) {
         contentContainerStyle={{ paddingHorizontal: 18, paddingBottom: 120, gap: 2 }}
         ListHeaderComponent={
           <View style={{ gap: 14, marginBottom: 6 }}>
+            <PushNudge />
             <Row gap={8} style={{ minHeight: 46, borderRadius: 15, backgroundColor: C.soft, paddingHorizontal: 14 }}>
               <Search size={19} color={C.muted} />
               <TextInput keyboardAppearance={isDark ? 'dark' : 'light'} value={q} onChangeText={setQ} placeholder={t('ابحث بالمحادثات')} placeholderTextColor={C.faint} style={{ flex: 1, fontFamily: F.body, fontSize: 15, textAlign: ta, color: C.ink }} />

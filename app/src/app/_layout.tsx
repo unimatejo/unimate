@@ -12,6 +12,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { ToastHost } from '@/components/Toast';
 import { WebAlertHost } from '@/components/WebAlert';
 import { useOtaUpdates } from '@/lib/ota';
+import { useWebPush } from '@/lib/webpush';
 import { AuthProvider, useAuth } from '@/lib/auth';
 import { installGlobalErrorHandler, reportError, setScreen } from '@/lib/errors';
 import { runQaLaunchArgs } from '@/lib/qa';
@@ -46,6 +47,7 @@ function Gate() {
   const { session, profile, loading, profileError, refreshProfile, signOut } = useAuth();
   const [retrying, setRetrying] = useState(false);
   const seg = useSegments() as string[];
+  useWebPush(session?.user.id);
   useEffect(() => { setScreen(seg.join('/')); }, [seg]);
 
   // the splash stays until we know who is signed in

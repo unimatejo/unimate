@@ -15,6 +15,7 @@ tags = ('<link rel="manifest" href="/manifest.webmanifest"><link rel="apple-touc
 if 'manifest.webmanifest' not in h: h = h.replace('</head>', tags + '</head>', 1)
 open(p, 'w', encoding='utf-8').write(h)
 ht = open(os.path.join(os.path.dirname(__file__), '../../admin/public/.htaccess')).read().replace('Header always set X-Frame-Options "DENY"\n', '')
-ht += open(os.path.join(app, 'web/htaccess-extra')).read() + '\nAddType application/manifest+json .webmanifest\n'
+ht += open(os.path.join(app, 'web/htaccess-extra')).read() + '\nAddType application/manifest+json .webmanifest\n<Files "sw.js">\n  Header set Cache-Control "no-cache"\n  Header set Service-Worker-Allowed "/"\n</Files>\n'
 open(os.path.join(d, '.htaccess'), 'w').write(ht)
+shutil.copy(os.path.join(app, 'web/sw.js'), os.path.join(d, 'sw.js'))
 print('pwa ok')

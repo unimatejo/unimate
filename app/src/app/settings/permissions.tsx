@@ -10,13 +10,20 @@ import { ActivityIndicator, AppState, Linking, Platform, ScrollView, View } from
 import { Header, IconTile, Row, Screen, T, Tap } from '@/components/ui';
 import { C, shadow } from '@/lib/theme';
 import { t } from '@/lib/i18n';
+import { enableWebPush, webPushState } from '@/lib/webpush';
 
 type State = 'granted' | 'denied' | 'ask' | 'unavailable';
 type Perm = { key: string; icon: ReactNode; color: string; label: string; why: string; get: () => Promise<{ granted: boolean; canAskAgain?: boolean; status?: string }>; ask: () => Promise<unknown> };
 
 const ic = { size: 19, color: '#FFFFFF' };
+// the web app: message notifications through the browser (iPhone: only once added to the home screen)
+async function webNotif() {
+  const s = webPushState();
+  if (s === 'unavailable' || s === 'install') throw new Error(s);
+  return { granted: s === 'granted', canAskAgain: s !== 'denied', status: s === 'denied' ? 'denied' : undefined };
+}
 const PERMS: Perm[] = [
-  { key: 'notif', icon: <Bell {...ic} />, color: C.orange, label: t('التنبيهات'), why: t('تذكير قبل المحاضرات والامتحانات، وملخص بكرة كل ليلة.'), get: () => Notifications.getPermissionsAsync(), ask: () => Notifications.requestPermissionsAsync() },
+  { key: 'notif', icon: <Bell {...ic} />, color: C.orange, label: t('التنبيهات'), why: Platform.OS === 'web' ? t('إشعار لما توصلك رسالة أو حدا يتفاعل معك، حتى لو الموقع مسكّر.') : t('تذكير قبل المحاضرات والامتحانات، وملخص بكرة كل ليلة.'), get: () => Platform.OS === 'web' ? webNotif() : Notifications.getPermissionsAsync(), ask: () => Platform.OS === 'web' ? enableWebPush() : Notifications.requestPermissionsAsync() },
   { key: 'camera', icon: <Camera {...ic} />, color: C.pink, label: t('الكاميرا'), why: t('تصوّر ستوري أو صورة بالمحادثة.'), get: () => ImagePicker.getCameraPermissionsAsync(), ask: () => ImagePicker.requestCameraPermissionsAsync() },
   { key: 'photos', icon: <ImageIcon {...ic} />, color: C.green, label: t('الصور'), why: t('تختار صور للمنشورات والستوري والبروفايل.'), get: () => ImagePicker.getMediaLibraryPermissionsAsync(), ask: () => ImagePicker.requestMediaLibraryPermissionsAsync() },
   { key: 'mic', icon: <Mic {...ic} />, color: C.violet, label: t('المايك'), why: t('الرسائل الصوتية وصوت فيديو الستوري.'), get: () => getRecordingPermissionsAsync(), ask: () => requestRecordingPermissionsAsync() },
