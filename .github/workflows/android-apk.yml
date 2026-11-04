@@ -1,0 +1,56 @@
+# Builds an installable UniMate .apk for Android (signed with the standard debug key, so it installs directly).
+# The .apk and the build log are pushed to the "builds-android" branch.
+name: Android APK
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ['app/**', '.github/workflows/android-apk.yml']
+permissions:
+  contents: write
+concurrency:
+  group: android-apk
+  cancel-in-progress: true
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    defaults:
+      run:
+        shell: bash -eo pipefail {0}
+        working-directory: app
+    env:
+      EXPO_PUBLIC_SUPABASE_URL: https://slkfyblvpewlxrifzrhg.supabase.co
+      EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY: sb_publishable_1otcwSg3NdpjsEmXJWJO7g_yxdXR2xP
+      EXPO_PUBLIC_MS_LOGIN: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - run: mkdir -p ../out
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - run: npm ci 2>&1 | tee ../out/npm.log | tail -20
+      - run: npx expo prebuild --platform android --clean 2>&1 | tee ../out/prebuild.log
+      - name: Build (Release APK)
+        run: |
+          cd android && ./gradlew assembleRelease --no-daemon -Dorg.gradle.jvmargs=-Xmx4g > ../../out/gradle.log 2>&1 \
+            || { grep -E "error:|FAILURE|What went wrong" -A5 ../../out/gradle.log | head -80; tail -60 ../../out/gradle.log; exit 1; }
+          tail -5 ../../out/gradle.log
+          cp app/build/outputs/apk/release/app-release.apk ../../out/UniMate.apk
+          ls -la ../../out
+      - name: Publish to the builds-android branch
+        if: always()
+        working-directory: .
+        run: |
+          mkdir -p /tmp/pub && cp -R out/. /tmp/pub/ 2>/dev/null || true
+          echo "${{ github.sha }} ${{ job.status }} $(date -u)" > /tmp/pub/BUILD.txt
+          cd /tmp/pub && git init -q && git checkout -q -b builds-android
+          git -c user.name=ci -c user.email=ci@unimate.local add -A
+          git -c user.name=ci -c user.email=ci@unimate.local commit -qm "android build ${{ github.sha }}"
+          git push -qf "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" builds-android

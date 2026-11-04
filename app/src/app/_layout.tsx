@@ -11,6 +11,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { ToastHost } from '@/components/Toast';
 import { WebAlertHost } from '@/components/WebAlert';
+import { useOtaUpdates } from '@/lib/ota';
 import { AuthProvider, useAuth } from '@/lib/auth';
 import { installGlobalErrorHandler, reportError, setScreen } from '@/lib/errors';
 import { runQaLaunchArgs } from '@/lib/qa';
@@ -105,6 +106,7 @@ function Gate() {
 }
 
 export default function RootLayout() {
+  useOtaUpdates();
   const [fontsLoaded, fontError] = useFonts({
     Alexandria_500Medium, Alexandria_700Bold, Alexandria_800ExtraBold,
     Rubik_400Regular, Rubik_500Medium, Rubik_600SemiBold,

@@ -200,6 +200,13 @@
     "experiments": {
       "typedRoutes": false,
       "reactCompiler": true
+    },
+    "runtimeVersion": "1.1.0",
+    "updates": {
+      "enabled": true,
+      "url": "https://app.unimate.my/ota/manifest",
+      "checkAutomatically": "ON_LOAD",
+      "fallbackToCacheTimeout": 0
     }
   }
 }
