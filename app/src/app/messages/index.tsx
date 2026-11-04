@@ -1,7 +1,8 @@
 import { router, useFocusEffect } from 'expo-router';
-import { BadgeCheck, Camera, Inbox as InboxIcon, MessageCircle, PenSquare, Search, Users, UsersRound } from 'lucide-react-native';
+import * as Haptics from 'expo-haptics';
+import { BadgeCheck, BookOpen, Camera, Inbox as InboxIcon, MessageCircle, PenSquare, Plus, Search, Users, UsersRound } from 'lucide-react-native';
 import { useCallback, useState } from 'react';
-import { FlatList, RefreshControl, ScrollView, TextInput, View } from 'react-native';
+import { FlatList, KeyboardAvoidingView, Modal, Platform, Pressable, RefreshControl, ScrollView, TextInput, View } from 'react-native';
 import Animated, { FadeInDown, FadeOutLeft, LinearTransition } from 'react-native-reanimated';
 
 import { GlyphTile } from '@/components/Glyph';
@@ -12,18 +13,19 @@ import { reportError } from '@/lib/errors';
 import { optimistic } from '@/lib/run';
 import { inviteFriends } from '@/lib/invite';
 import { supabase } from '@/lib/supabase';
-import { C, F, isDark, shadow } from '@/lib/theme';
+import { C, F, R, isDark } from '@/lib/theme';
 import { timeAgo } from '@/lib/util';
 import { t, ta } from '@/lib/i18n';
 import { ListSkeleton } from '@/components/Skeleton';
 
 type Person = { id: string; full_name: string; avatar_url: string | null; is_verified?: boolean };
 type Item = {
-  id: string; kind: string; title: string; other?: Person | null; state: string; created_by: string | null;
+  id: string; kind: string; course?: boolean; title: string; other?: Person | null; state: string; created_by: string | null;
   last?: string | null; last_at: string; unread: boolean; count?: number; streak: number; context?: string | null;
 };
 
-const TABS = [t('الرئيسية'), t('الطلبات'), t('الجروبات')] as const;
+const TABS = [t('الكل'), t('المواد'), t('المجموعات'), t('الطلبات')] as const;
+type Note = { user_id: string; body: string };
 
 function preview(m?: { kind: string; body: string | null } | null) {
   if (!m) return null;
@@ -43,6 +45,10 @@ export function Inbox({ inTab }: { inTab?: boolean }) {
   const [friends, setFriends] = useState<Person[]>([]);
   const [q, setQ] = useState('');
   const [loading, setLoading] = useState(true);
+  const [notes, setNotes] = useState<Record<string, string>>({});
+  const [noteOpen, setNoteOpen] = useState(false);
+  const [noteText, setNoteText] = useState('');
+  const [noteBusy, setNoteBusy] = useState(false);
 
   const [failed, setFailed] = useState(false);
   const load = useCallback(async () => {
@@ -50,7 +56,7 @@ export function Inbox({ inTab }: { inTab?: boolean }) {
     setLoading(true); setFailed(false);
     try {
     const { data: mine } = await supabase.from('conversation_members')
-      .select('state, last_read_at, conversation:conversations(id, kind, title, context_label, streak_days, last_message_at, created_by)')
+      .select('state, last_read_at, conversation:conversations(id, kind, title, context_label, streak_days, last_message_at, created_by, community:communities(kind))')
       .eq('user_id', profile.id).neq('state', 'left');
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const rows = ((mine ?? []) as any[]).filter((r) => r.conversation);
@@ -68,7 +74,7 @@ export function Inbox({ inTab }: { inTab?: boolean }) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const other = c.kind === 'direct' ? ((members ?? []) as any[]).find((m) => m.conversation_id === c.id)?.profile ?? null : null;
       return {
-        id: c.id, kind: c.kind, state: r.state, created_by: c.created_by, title: other?.full_name ?? c.title ?? t('محادثة'), other, context: c.context_label,
+        id: c.id, kind: c.kind, course: c.community?.kind === 'course_section', state: r.state, created_by: c.created_by, title: other?.full_name ?? c.title ?? t('محادثة'), other, context: c.context_label,
         last: preview(lastBy.get(c.id)) ?? c.context_label, last_at: c.last_message_at,
         // my own last message is never "unread"
         // unread = real messages from others after I last opened the chat (an empty group isn't "unread")
@@ -80,7 +86,14 @@ export function Inbox({ inTab }: { inTab?: boolean }) {
     // mutual friends for the quick row
     const { data: f } = await supabase.from('follows').select('p:profiles!follows_followee_id_fkey(id, full_name, avatar_url, is_verified)').eq('follower_id', profile.id).eq('status', 'accepted').limit(30);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    setFriends(((f ?? []) as any[]).map((x) => x.p).filter(Boolean));
+    const fr: Person[] = ((f ?? []) as any[]).map((x) => x.p).filter(Boolean);
+    // people you chat with directly also show in the notes row
+    for (const it of out) if (it.other && !fr.some((p) => p.id === it.other!.id)) fr.push(it.other);
+    const { data: ns } = await supabase.from('notes').select('user_id, body').in('user_id', [profile.id, ...fr.map((p) => p.id)]).gt('expires_at', new Date().toISOString());
+    const nb = Object.fromEntries(((ns ?? []) as Note[]).map((n) => [n.user_id, n.body]));
+    setNotes(nb);
+    // friends with a note first
+    setFriends(fr.sort((a, b) => Number(!!nb[b.id]) - Number(!!nb[a.id])));
     } catch (e) {
       reportError(e); setFailed(true);
     } finally { setLoading(false); }
@@ -102,61 +115,96 @@ export function Inbox({ inTab }: { inTab?: boolean }) {
     if (data) router.push({ pathname: '/messages/[id]', params: { id: data as string } });
   }
 
+  async function saveNote(clear?: boolean) {
+    if (!profile || noteBusy) return;
+    const body = noteText.trim();
+    if (!clear && !body) return;
+    setNoteBusy(true);
+    const { error } = clear ? await supabase.rpc('clear_note') : await supabase.rpc('set_note', { p_body: body });
+    setNoteBusy(false);
+    if (error) { reportError(error); return; }
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+    setNotes((n) => { const c = { ...n }; if (clear) delete c[profile.id]; else c[profile.id] = body; return c; });
+    setNoteOpen(false);
+  }
+
   const requests = items.filter((i) => i.state === 'request');
-  const shown = items.filter((i) => i.state !== 'left' && (tab === 0 ? i.kind === 'direct' && i.state === 'active' : tab === 1 ? i.state === 'request' : i.kind !== 'direct' && i.state === 'active'))
-    .filter((i) => !q || i.title.includes(q));
-  const unreadDirect = items.filter((i) => i.kind === 'direct' && i.state === 'active' && i.unread).length;
-  const unreadGroups = items.filter((i) => i.kind !== 'direct' && i.state === 'active' && i.unread).length;
-  const badges = [unreadDirect, requests.length, unreadGroups];
+  const active = items.filter((i) => i.state === 'active');
+  const matches = (i: Item, k: number) => k === 0 ? i.state === 'active' : k === 1 ? i.state === 'active' && !!i.course : k === 2 ? i.state === 'active' && i.kind !== 'direct' && !i.course : i.state === 'request';
+  const shown = items.filter((i) => matches(i, tab)).filter((i) => !q || i.title.includes(q));
+  const badges = [active.filter((i) => i.unread).length, active.filter((i) => i.course && i.unread).length, active.filter((i) => i.kind !== 'direct' && !i.course && i.unread).length, requests.length];
+  const myNote = profile ? notes[profile.id] : undefined;
 
   return (
     <Screen>
-      <Header back={!inTab} title={profile?.username ? `\u200E@${profile.username}` : t('الرسائل')} right={<IconButton label={t('رسالة جديدة')} onPress={() => router.push('/messages/new')}><PenSquare size={20} color={C.ink} /></IconButton>} />
+      <Header back={!inTab} title={t('الرسائل')} right={
+        <Tap onPress={() => router.push('/messages/new')} accessibilityRole="button" accessibilityLabel={t('رسالة جديدة')}
+          style={{ width: 44, height: 44, borderRadius: R.sm, backgroundColor: C.card, borderWidth: 1, borderColor: C.line, alignItems: 'center', justifyContent: 'center' }}>
+          <PenSquare size={20} color={C.ink} />
+        </Tap>} />
       <FlatList
         data={shown}
         keyExtractor={(i) => i.id}
-        refreshControl={<RefreshControl refreshing={loading} onRefresh={load} />}
-        contentContainerStyle={{ paddingHorizontal: 18, paddingBottom: 120, gap: 2 }}
+        refreshControl={<RefreshControl refreshing={false} onRefresh={load} tintColor={C.primary} />}
+        contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 120 }}
         ListHeaderComponent={
-          <View style={{ gap: 14, marginBottom: 6 }}>
+          <View style={{ gap: 12, marginBottom: 6 }}>
             <PushNudge />
-            <Row gap={8} style={{ minHeight: 46, borderRadius: 15, backgroundColor: C.soft, paddingHorizontal: 14 }}>
-              <Search size={19} color={C.muted} />
-              <TextInput keyboardAppearance={isDark ? 'dark' : 'light'} value={q} onChangeText={setQ} placeholder={t('ابحث بالمحادثات')} placeholderTextColor={C.faint} style={{ flex: 1, fontFamily: F.body, fontSize: 15, textAlign: ta, color: C.ink }} />
+            <Row gap={8} style={{ minHeight: 46, borderRadius: R.sm, backgroundColor: C.card, borderWidth: 1, borderColor: C.line, paddingHorizontal: 14 }}>
+              <Search size={18} color={C.muted} />
+              <TextInput keyboardAppearance={isDark ? 'dark' : 'light'} value={q} onChangeText={setQ} placeholder={t('ابحث عن زميل أو مجموعة')} placeholderTextColor={C.muted} accessibilityLabel={t('بحث في الرسائل')} style={{ flex: 1, fontFamily: F.body, fontSize: 15, textAlign: ta, color: C.ink }} />
             </Row>
-            {tab === 0 && friends.length > 0 && (
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 14, paddingVertical: 4 }}>
-                {friends.map((p) => (
-                  <Tap key={p.id} onPress={() => openWith(p)} style={{ alignItems: 'center', gap: 5, width: 64 }} accessibilityLabel={t('راسل {0}', [p.full_name])}>
-                    <View style={[{ padding: 2.5, borderRadius: 34, backgroundColor: C.card }, shadow]}><Avatar id={p.id} name={p.full_name} url={p.avatar_url} size={60} /></View>
-                    <T v="tiny" numberOfLines={1}>{(p.full_name ?? '').split(' ')[0]}</T>
-                  </Tap>
-                ))}
-              </ScrollView>
-            )}
-            <Row gap={8}>
-              {TABS.map((tb, i) => (
-                <Tap key={tb} onPress={() => setTab(i)} accessibilityRole="tab" accessibilityState={{ selected: tab === i }}
-                  style={{ flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 40, paddingHorizontal: 16, borderRadius: 20, backgroundColor: tab === i ? C.inverse : C.card }}>
-                  <T v="bold" style={{ fontSize: 14 }} color={tab === i ? C.onInverse : C.ink}>{tb}</T>
-                  {badges[i] > 0 && <View style={{ minWidth: 20, height: 20, borderRadius: 10, paddingHorizontal: 5, backgroundColor: i === 1 ? C.pink : C.primary, alignItems: 'center', justifyContent: 'center' }}><T v="tiny" color={C.white} style={{ fontSize: 11 }}>{badges[i]}</T></View>}
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 12, paddingTop: 4 }}>
+              <Tap onPress={() => { setNoteText(myNote ?? ''); setNoteOpen(true); }} accessibilityRole="button" accessibilityLabel={myNote ? t('ملاحظتك: {0}', [myNote]) : t('اكتب ملاحظة')} style={{ width: 74, alignItems: 'center', gap: 6, paddingTop: 30 }}>
+                <View style={{ position: 'absolute', top: 0, maxWidth: 86, paddingHorizontal: 9, paddingVertical: 5, borderRadius: 12, backgroundColor: C.soft }}>
+                  <T v="tiny" numberOfLines={2} color={myNote ? C.ink : C.muted} style={{ fontSize: 11, textAlign: 'center' }}>{myNote ?? t('اكتب ملاحظة')}</T>
+                </View>
+                <View>
+                  <Avatar id={profile?.id} name={profile?.full_name} url={profile?.avatar_url} size={62} />
+                  {!myNote && <View style={{ position: 'absolute', bottom: -2, left: -2, width: 24, height: 24, borderRadius: 12, backgroundColor: C.primary, borderWidth: 2, borderColor: C.bg, alignItems: 'center', justifyContent: 'center' }}><Plus size={14} color={C.onPrimary} strokeWidth={3} /></View>}
+                </View>
+                <T v="tiny" color={C.muted}>{t('ملاحظتك')}</T>
+              </Tap>
+              {friends.map((p) => (
+                <Tap key={p.id} onPress={() => openWith(p)} style={{ width: 74, alignItems: 'center', gap: 6, paddingTop: 30 }} accessibilityLabel={notes[p.id] ? `${p.full_name}: ${notes[p.id]}` : t('راسل {0}', [p.full_name])}>
+                  {notes[p.id] ? (
+                    <View style={{ position: 'absolute', top: 0, maxWidth: 86, paddingHorizontal: 9, paddingVertical: 5, borderRadius: 12, backgroundColor: C.soft }}>
+                      <T v="tiny" numberOfLines={2} style={{ fontSize: 11, textAlign: 'center' }}>{notes[p.id]}</T>
+                    </View>
+                  ) : null}
+                  <Avatar id={p.id} name={p.full_name} url={p.avatar_url} size={62} />
+                  <T v="tiny" color={C.muted} numberOfLines={1}>{(p.full_name ?? '').split(' ')[0]}</T>
                 </Tap>
               ))}
-            </Row>
-            {tab === 1 && shown.length > 0 && <T v="tiny" color={C.muted}>{t('المرسل ما بيعرف إذا شفت رسالته. لما تتابعوا بعض، الطلب بينقل للرئيسية لحاله.')}</T>}
-            {tab === 2 && <Button kind="soft" title={t('جروب جديد')} icon={<UsersRound size={18} color={C.primary} />} onPress={() => router.push({ pathname: '/messages/new', params: { group: '1' } })} style={{ minHeight: 44 }} />}
+            </ScrollView>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
+              {TABS.map((tb, i) => {
+                const on = tab === i;
+                return (
+                  <Tap key={tb} onPress={() => setTab(i)} accessibilityRole="tab" accessibilityState={{ selected: on }}
+                    style={{ flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 36, paddingHorizontal: 14, borderRadius: R.pill, backgroundColor: on ? C.inverse : C.card }}>
+                    <T v="bold" style={{ fontSize: 13 }} color={on ? C.onInverse : C.muted}>{tb}</T>
+                    {badges[i] > 0 && (i === 3
+                      ? <View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: C.primary }} />
+                      : <View style={{ minWidth: 18, height: 18, borderRadius: 9, paddingHorizontal: 5, backgroundColor: C.primary, alignItems: 'center', justifyContent: 'center' }}><T v="tiny" color={C.onPrimary} style={{ fontSize: 10 }}>{badges[i]}</T></View>)}
+                  </Tap>
+                );
+              })}
+            </ScrollView>
+            {tab === 3 && shown.length > 0 && <T v="tiny" color={C.muted}>{t('المرسل ما بيعرف إذا شفت رسالته. لما تتابعوا بعض، الطلب بينقل للرئيسية لحاله.')}</T>}
+            {tab === 2 && <Button kind="soft" title={t('جروب جديد')} icon={<UsersRound size={18} color={C.primaryDark} />} onPress={() => router.push({ pathname: '/messages/new', params: { group: '1' } })} style={{ minHeight: 44 }} />}
           </View>
         }
         renderItem={({ item, index }) => (
           <Animated.View entering={FadeInDown.delay(Math.min(index, 8) * 35)} exiting={FadeOutLeft} layout={LinearTransition}>
             <Tap scale={0.985} haptic={false} onPress={() => router.push({ pathname: '/messages/[id]', params: { id: item.id } })}
-              style={{ flexDirection: 'row', alignItems: 'center', gap: 13, minHeight: 72, paddingVertical: 8, borderRadius: 18 }}>
-              {item.kind === 'direct' ? <Avatar id={item.other?.id} name={item.title} url={item.other?.avatar_url} size={56} />
-                : <GlyphTile icon={item.kind === 'community' ? Users : UsersRound} colors={item.kind === 'community' ? ['#34D399', '#059669'] : ['#A78BFA', '#7C3AED']} size={56} />}
+              style={{ flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 72, paddingVertical: 8 }}>
+              {item.kind === 'direct' ? <Avatar id={item.other?.id} name={item.title} url={item.other?.avatar_url} size={54} />
+                : <GlyphTile icon={item.course ? BookOpen : item.kind === 'community' ? Users : UsersRound} colors={item.course ? ['#FF9A7E', '#FF7A59'] : item.kind === 'community' ? ['#34D399', '#059669'] : ['#A78BFA', '#7C3AED']} size={54} />}
               <View style={{ flex: 1, minWidth: 0, gap: 3 }}>
                 <Row gap={5}>
                   <T v={item.unread ? 'bold' : 'bodyMd'} numberOfLines={1} style={{ flexShrink: 1, fontSize: 15 }}>{item.title}</T>
-                  {item.other?.is_verified && <BadgeCheck size={14} color={C.white} fill={C.primary} />}
+                  {item.other?.is_verified && <BadgeCheck size={14} color={C.onPrimary} fill={C.primary} />}
                   {item.streak > 1 && <T v="tiny" color="#E8590C">🔥{item.streak}</T>}
                 </Row>
                 <Row gap={4}>
@@ -165,12 +213,12 @@ export function Inbox({ inTab }: { inTab?: boolean }) {
                 </Row>
                 {item.state === 'request' && (
                   <Row gap={8} style={{ marginTop: 6 }}>
-                    <Button title={t('قبول')} onPress={() => answer(item.id, true)} style={{ flex: 1, minHeight: 36, borderRadius: 12 }} />
-                    <Button kind="soft" title={t('تجاهل')} onPress={() => answer(item.id, false)} style={{ flex: 1, minHeight: 36, borderRadius: 12 }} />
+                    <Button title={t('قبول')} onPress={() => answer(item.id, true)} style={{ flex: 1, minHeight: 40 }} />
+                    <Button kind="soft" title={t('تجاهل')} onPress={() => answer(item.id, false)} style={{ flex: 1, minHeight: 40 }} />
                   </Row>
                 )}
               </View>
-              {item.unread && (item.count ?? 0) > 1 ? (
+              {item.unread && (item.count ?? 0) > 0 ? (
                 <View style={{ minWidth: 22, height: 22, borderRadius: 11, paddingHorizontal: 6, backgroundColor: C.primary, alignItems: 'center', justifyContent: 'center' }}>
                   <T v="tiny" color={C.onPrimary} style={{ fontSize: 11 }}>{(item.count ?? 0) >= 99 ? '99+' : item.count}</T>
                 </View>
@@ -179,12 +227,29 @@ export function Inbox({ inTab }: { inTab?: boolean }) {
             </Tap>
           </Animated.View>
         )}
-        ListEmptyComponent={loading ? <ListSkeleton n={6} /> : failed ? <StateView error onRetry={load} /> : tab === 1
+        ListEmptyComponent={loading ? <ListSkeleton n={6} /> : failed ? <StateView error onRetry={load} /> : tab === 3
           ? <Empty icon={<InboxIcon size={28} color={C.primary} />} title={t('ما في طلبات')} body={t('لما حدا ما بتتابعه يراسلك، بيوصل هون أول.')} />
+          : tab === 1 ? <Empty icon={<BookOpen size={28} color={C.primary} />} title={t('ما في جروبات مواد')} body={t('بتنضاف لجروب كل شعبة لما تضيف موادك بالجدول.')} />
           : tab === 2 ? <Empty icon={<Users size={28} color={C.primary} />} title={t('ما في جروبات لهلأ')} body={t('بتنضاف لحالك لجروب كليتك وتخصصك ودفعتك لما تكمّل معلوماتك.')} />
           : <Empty icon={<MessageCircle size={28} color={C.primary} />} title={t('ما في محادثات لهلأ')} body={t('اكبس على القلم فوق وابدأ مع زميل.')}
               action={<Button kind="soft" title={t('ادعي زملاءك')} onPress={() => inviteFriends()} style={{ marginTop: 10, paddingHorizontal: 20 }} />} />}
       />
+      <Modal visible={noteOpen} transparent animationType="fade" onRequestClose={() => setNoteOpen(false)}>
+        <Pressable onPress={() => setNoteOpen(false)} style={{ flex: 1, backgroundColor: C.overlay }} accessibilityLabel={t('إغلاق')} />
+        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ position: 'absolute', left: 0, right: 0, bottom: 0 }}>
+          <View style={{ backgroundColor: C.card, borderTopLeftRadius: R.xl, borderTopRightRadius: R.xl, padding: 18, paddingBottom: 34, gap: 14 }}>
+            <View style={{ alignSelf: 'center', width: 40, height: 5, borderRadius: 3, backgroundColor: C.line }} />
+            <T v="h3" style={{ textAlign: 'center' }}>{t('ملاحظة لأصحابك')}</T>
+            <T v="tiny" color={C.muted} style={{ textAlign: 'center' }}>{t('بتطلع فوق صورتك بالرسائل، وبتختفي بعد ٢٤ ساعة.')}</T>
+            <TextInput autoFocus value={noteText} onChangeText={(v) => setNoteText(v.slice(0, 60))} maxLength={60} placeholder={t('شو بالك؟')} placeholderTextColor={C.muted}
+              keyboardAppearance={isDark ? 'dark' : 'light'} accessibilityLabel={t('الملاحظة')}
+              style={{ minHeight: 52, borderRadius: R.sm, backgroundColor: C.soft, paddingHorizontal: 16, fontFamily: F.body, fontSize: 16, color: C.ink, textAlign: ta }} />
+            <T v="tiny" color={C.muted} style={{ textAlign: 'left' }}>{noteText.length}/60</T>
+            <Button title={t('شارك')} loading={noteBusy} disabled={!noteText.trim()} onPress={() => saveNote()} />
+            {myNote ? <Button kind="ghost" title={t('احذف الملاحظة')} disabled={noteBusy} onPress={() => saveNote(true)} /> : null}
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
     </Screen>
   );
 }
