@@ -1,7 +1,9 @@
+import * as Notifications from 'expo-notifications';
 import { router } from 'expo-router';
 import { useEffect } from 'react';
 import { Platform } from 'react-native';
 
+import { getPref, setPref } from './prefs';
 import { supabase } from './supabase';
 
 // public half of the VAPID key pair (the private half is a secret of the `push` edge function)
@@ -45,8 +47,36 @@ export async function enableWebPush(): Promise<boolean> {
   return true;
 }
 
+// ---------- Android app (Firebase) ----------
+async function nativeToken(): Promise<string | null> {
+  if (Platform.OS !== 'android') return null; // iPhone app needs an Apple developer account first
+  try { return (await Notifications.getDevicePushTokenAsync()).data as string; } catch { return null; }
+}
+
+async function nativeRegister(ask: boolean) {
+  await Notifications.setNotificationChannelAsync('messages', { name: 'الرسائل والتفاعلات', importance: Notifications.AndroidImportance.HIGH, sound: 'default' }).catch(() => {});
+  let perm = await Notifications.getPermissionsAsync();
+  if (!perm.granted && ask && perm.canAskAgain && getPref('push_asked') !== '1') {
+    setPref('push_asked', '1');
+    perm = await Notifications.requestPermissionsAsync();
+  }
+  if (!perm.granted) return;
+  const tok = await nativeToken();
+  if (tok) await supabase.rpc('register_push', { p_token: tok, p_platform: 'android', p_keys: null });
+}
+
+function openFrom(r: Notifications.NotificationResponse | null) {
+  const url = r?.notification.request.content.data?.url;
+  if (typeof url === 'string' && url.startsWith('/')) setTimeout(() => router.push(url as never), 300);
+}
+
 /** On sign-out: this device stops getting the old account's messages. */
 export async function dropWebPush() {
+  if (Platform.OS === 'android') {
+    const tok = await nativeToken();
+    if (tok) await supabase.rpc('unregister_push', { p_token: tok }).then(() => {}, () => {});
+    return;
+  }
   if (!isWeb || !('serviceWorker' in navigator)) return;
   try {
     const reg = await navigator.serviceWorker.getRegistration();
@@ -59,6 +89,13 @@ export async function dropWebPush() {
 
 /** Signed in: keep this browser's subscription fresh, and open the right screen when a notification is tapped. */
 export function useWebPush(userId?: string) {
+  useEffect(() => {
+    if (Platform.OS !== 'android' || !userId) return;
+    nativeRegister(true).catch(() => {});
+    Notifications.getLastNotificationResponseAsync().then(openFrom, () => {});
+    const sub = Notifications.addNotificationResponseReceivedListener(openFrom);
+    return () => sub.remove();
+  }, [userId]);
   useEffect(() => {
     if (!isWeb || !userId || !('serviceWorker' in navigator)) return;
     if (webPushState() === 'granted') subscribe().catch(() => {});

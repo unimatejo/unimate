@@ -137,10 +137,12 @@
       },
       "permissions": [
         "CAMERA",
-        "ACCESS_FINE_LOCATION"
+        "ACCESS_FINE_LOCATION",
+        "POST_NOTIFICATIONS"
       ],
       "predictiveBackGestureEnabled": false,
-      "versionCode": 2
+      "versionCode": 2,
+      "googleServicesFile": "./google-services.json"
     },
     "web": {
       "output": "single",
@@ -168,7 +170,8 @@
       [
         "expo-notifications",
         {
-          "color": "#FF7A5C"
+          "color": "#FF7A5C",
+          "icon": "./assets/images/android-icon-monochrome.png"
         }
       ],
       [
