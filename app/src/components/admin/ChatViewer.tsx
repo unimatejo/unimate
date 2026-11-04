@@ -25,10 +25,22 @@ export function ChatViewer({ conversationId, members, presetReason }: { conversa
   const [busy, setBusy] = useState(false);
 
   useEffect(() => { setMsgs(null); setReason(presetReason ?? ''); }, [conversationId, presetReason]);
+  // opens straight away (no reason needed) and keeps following new messages live
+  useEffect(() => { if (!msgs && !busy) open(); }, [conversationId]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (!msgs) return;
+    const tick = setInterval(async () => {
+      const last = msgs[msgs.length - 1]?.created_at ?? new Date(0).toISOString();
+      const { data } = await supabase.rpc('admin_conversation_since', { conv: conversationId, after: last });
+      const fresh = (data ?? []) as Msg[];
+      if (fresh.length) setMsgs((x) => [...(x ?? []), ...fresh.filter((f) => !(x ?? []).some((y) => y.id === f.id))]);
+    }, 4000);
+    return () => clearInterval(tick);
+  }, [msgs, conversationId]);
 
   async function open() {
     setError(null); setBusy(true);
-    const { data, error: e } = await supabase.rpc('admin_conversation_messages', { conv: conversationId, reason: reason.trim() });
+    const { data, error: e } = await supabase.rpc('admin_conversation_messages', { conv: conversationId, reason: reason.trim() || 'browse' });
     setBusy(false);
     if (e) { setError(e.message); return; }
     const list = (data ?? []) as Msg[];
@@ -53,10 +65,8 @@ export function ChatViewer({ conversationId, members, presetReason }: { conversa
 
   if (!msgs) return (
     <Panel>
-      <View style={{ backgroundColor: C.orangeSoft, borderRadius: R.sm, padding: 10 }}><T v="small" color={C.orangeInk}>{t('فتح المحادثة بينسجل باسمك مع السبب بسجل الإدارة.')}</T></View>
-      <Field label={t('سبب الفتح')} value={reason} onChangeText={setReason} placeholder={t('مثلاً: بلاغ تحرش رقم …')} />
-      <Act label={t('افتح المحادثة')} kind="primary" disabled={reason.trim().length < 3} loading={busy} onPress={open} />
-      {error && <T v="small" color={C.red}>{error}</T>}
+      {error ? <T v="small" color={C.red}>{error}</T> : <Muted>{t('عم نفتح المحادثة…')}</Muted>}
+      {error && <Act label={t('جرّب كمان مرة')} kind="primary" loading={busy} onPress={open} />}
     </Panel>
   );
 

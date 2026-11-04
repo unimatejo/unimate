@@ -1,45 +1,77 @@
 import { useLocalSearchParams } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { Users } from 'lucide-react-native';
+import { useCallback, useEffect, useState } from 'react';
+import { View } from 'react-native';
 
 import { ChatViewer, type Member } from '@/components/admin/ChatViewer';
-import { Act, AdminScreen, Muted, Panel, fmtDate } from '@/components/admin/kit';
-import { Field, T } from '@/components/ui';
+import { AdminScreen, Filters, Item, Muted, Panel, SearchBox, Sheet, State, fmtDate, fmtNum, tap } from '@/components/admin/kit';
+import { Avatar, T } from '@/components/ui';
 import { supabase } from '@/lib/supabase';
 import { C } from '@/lib/theme';
 import { t } from '@/lib/i18n';
 
-type Conv = { id: string; kind: string; title: string | null; context_label: string | null; last_message_at: string; members: (Member & { state: string })[] };
+type Conv = {
+  id: string; kind: string; title: string | null; context_label: string | null; last_message_at: string | null;
+  members: (Member & { username?: string | null; avatar_url?: string | null; state: string })[] | null; message_count: number; last_body: string | null;
+};
+type Kind = 'all' | 'direct' | 'group' | 'community';
 
+const label = (c: Conv) => c.title || (c.members ?? []).map((m) => m.name).join('، ') || t('محادثة');
+
+/** Every chat on the platform, newest first, refreshed live. Tap one to read it (and follow new messages as they arrive). */
 export default function Conversations() {
   const params = useLocalSearchParams<{ id?: string }>();
-  const [id, setId] = useState(params.id ?? '');
-  const [conv, setConv] = useState<Conv | null>(null);
-  const [err, setErr] = useState<string | null>(null);
+  const [q, setQ] = useState('');
+  const [kind, setKind] = useState<Kind>('all');
+  const [list, setList] = useState<Conv[] | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [open, setOpen] = useState<Conv | null>(null);
 
-  async function find(v = id.trim()) {
-    setErr(null); setConv(null);
-    const { data } = await supabase.from('conversations').select('id, kind, title, context_label, last_message_at').eq('id', v).maybeSingle();
-    if (!data) { setErr(t('ما لقينا محادثة بهالرقم. لتشوف محادثات شخص، افتحه من صفحة المستخدمين.')); return; }
-    const { data: m } = await supabase.from('conversation_members').select('user_id, state, p:profiles(full_name)').eq('conversation_id', v);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    setConv({ ...data, members: ((m ?? []) as any[]).map((x) => ({ id: x.user_id, name: x.p?.full_name ?? t('؟'), state: x.state })) });
-  }
-  useEffect(() => { if (params.id) find(params.id); }, [params.id]); // eslint-disable-line react-hooks/exhaustive-deps
+  const load = useCallback(async () => {
+    const { data, error: e } = await supabase.rpc('admin_list_conversations', { q: q.trim(), lim: 100, off: 0 });
+    if (e) { setError(e.message); return; }
+    setError(null); setList((data ?? []) as Conv[]);
+  }, [q]);
+
+  useEffect(() => { const h = setTimeout(load, 250); return () => clearTimeout(h); }, [load]);
+  // live: the list refreshes on its own every 10 seconds
+  useEffect(() => { const i = setInterval(load, 10000); return () => clearInterval(i); }, [load]);
+  // opened from a user / report / log entry with ?id=
+  useEffect(() => {
+    if (!params.id) return;
+    supabase.rpc('admin_list_conversations', { q: params.id, lim: 1, off: 0 }).then(({ data }) => { const c = (data as Conv[] | null)?.[0]; if (c) setOpen(c); }, () => {});
+  }, [params.id]);
+
+  const shown = (list ?? []).filter((c) => kind === 'all' || c.kind === kind);
 
   return (
-    <AdminScreen title={t('المحادثات')} subtitle={t('افتح أي محادثة برقمها، أو من صفحة المستخدم أو البلاغ')}>
-      <Panel>
-        <Field value={id} onChangeText={setId} placeholder={t('رقم المحادثة (UUID)')} autoCapitalize="none" autoCorrect={false} style={{ writingDirection: 'ltr', textAlign: 'left' }} />
-        <Act label={t('جيب')} kind="primary" onPress={() => find()} disabled={id.trim().length < 30} />
-      </Panel>
-      {err && <Panel><T v="small" color={C.red}>{err}</T></Panel>}
-      {conv && (
+    <AdminScreen title={t('المحادثات')} subtitle={t('كل المحادثات على المنصة، بتتحدّث لحالها')}>
+      <SearchBox value={q} onChange={setQ} placeholder={t('ابحث باسم شخص أو يوزر أو اسم جروب')} />
+      <Filters items={[['all', t('الكل')], ['direct', t('خاص')], ['group', t('جروبات')], ['community', t('مجتمعات')]]} value={kind} onChange={setKind} />
+      <State loading={list === null && !error} error={error} empty={!shown.length}>
         <Panel>
-          <T v="h3">{conv.title ?? conv.members.map((m) => m.name).join('، ')}</T>
-          <Muted>{[conv.context_label, t('آخر رسالة {0}', [fmtDate(conv.last_message_at)]), conv.members.map((m) => `${m.name}${m.state === 'request' ? ` (${t('طلب')})` : m.state === 'left' ? ` (${t('طلع')})` : ''}`).join('، ')].filter(Boolean).join(' · ')}</Muted>
-          <ChatViewer conversationId={conv.id} members={conv.members} />
+          {shown.map((c) => {
+            const ms = c.members ?? [];
+            return (
+              <Item key={c.id} onPress={() => { tap(); setOpen(c); }}
+                start={c.kind === 'direct' && ms[0]
+                  ? <Avatar id={ms[0].id} name={ms[0].name} url={ms[0].avatar_url} size={44} />
+                  : <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: C.soft, alignItems: 'center', justifyContent: 'center' }}><Users size={20} color={C.ink} /></View>}
+                title={label(c)}
+                sub={[c.last_body, t('{0} رسالة', [fmtNum(c.message_count)]), c.last_message_at ? fmtDate(c.last_message_at) : null].filter(Boolean).join(' · ')} />
+            );
+          })}
         </Panel>
-      )}
+      </State>
+      <Sheet open={!!open} onClose={() => setOpen(null)} title={open ? label(open) : ''}>
+        {open && (
+          <View style={{ gap: 10 }}>
+            <Muted>{[open.context_label, (open.members ?? []).map((m) => `${m.name}${m.username ? ` (⁦@${m.username}⁩)` : ''}${m.state === 'request' ? ` · ${t('طلب')}` : m.state === 'left' ? ` · ${t('طلع')}` : ''}`).join('، ')].filter(Boolean).join(' · ')}</Muted>
+            <T v="tiny" color={C.muted}>{t('بتوصلك الرسائل الجديدة لحالها وإنت فاتح.')}</T>
+            <ChatViewer conversationId={open.id} members={open.members ?? []} />
+          </View>
+        )}
+      </Sheet>
     </AdminScreen>
   );
 }
