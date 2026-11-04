@@ -20,13 +20,30 @@ Deno.serve(async (req) => {
     const sb = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_ANON_KEY')!, { global: { headers: { Authorization: auth } } });
     const { data: { user } } = await sb.auth.getUser();
     if (!user) return json({ error: 'auth' }, 401);
+    const gemini = Deno.env.get('GEMINI_API_KEY');
     const key = Deno.env.get('ANTHROPIC_API_KEY');
-    if (!key) return json({ error: 'not_configured' }, 503);
+    if (!gemini && !key) return json({ error: 'not_configured' }, 503);
 
     const { image, mime } = await req.json();
     if (typeof image !== 'string' || image.length < 100) return json({ error: 'no_image' }, 400);
     if (image.length > 7_000_000) return json({ error: 'too_big' }, 413);
 
+    let text = '';
+    if (gemini) {
+      // Google Gemini (free tier from Google AI Studio); the model can be changed with GEMINI_MODEL
+      const model = Deno.env.get('GEMINI_MODEL') ?? 'gemini-flash-latest';
+      const g = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', 'x-goog-api-key': gemini },
+        body: JSON.stringify({
+          contents: [{ role: 'user', parts: [{ inline_data: { mime_type: mime === 'image/png' ? 'image/png' : 'image/jpeg', data: image } }, { text: PROMPT }] }],
+          generationConfig: { responseMimeType: 'application/json', temperature: 0 },
+        }),
+      });
+      if (!g.ok) { console.error('gemini', g.status, (await g.text()).slice(0, 300)); return json({ error: g.status === 429 ? 'busy' : 'ai_failed' }, 502); }
+      const go = await g.json();
+      text = (go.candidates?.[0]?.content?.parts ?? []).map((x: { text?: string }) => x.text ?? '').join('');
+    } else {
     const r = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: { 'x-api-key': key, 'anthropic-version': '2023-06-01', 'content-type': 'application/json' },
@@ -41,7 +58,8 @@ Deno.serve(async (req) => {
     });
     if (!r.ok) { console.error('anthropic', r.status, (await r.text()).slice(0, 300)); return json({ error: 'ai_failed' }, 502); }
     const out = await r.json();
-    const text: string = (out.content ?? []).map((c: { text?: string }) => c.text ?? '').join('');
+    text = (out.content ?? []).map((c: { text?: string }) => c.text ?? '').join('');
+    }
     const m = text.match(/\{[\s\S]*\}/);
     if (!m) return json({ error: 'unreadable' }, 422);
     const parsed = JSON.parse(m[0]);
