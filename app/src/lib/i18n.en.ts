@@ -368,7 +368,7 @@ export const EN: Record<string, string> = {
   "لقطات الشاشة": "Screenshots",
   "إذا فعّلت منع لقطة الشاشة، بنحاول نمنعها على جهاز الطرف التاني وبنخبرك إذا حدا حاول. ما في نظام بيقدر يمنع تصوير الشاشة بجهاز تاني، فخلي هالشي ببالك.": "If you turn on screenshot blocking, we try to block it on the other person's device and tell you if someone tries. No system can stop someone filming the screen with another device, so keep that in mind.",
   "الإعلانات": "Ads",
-  "الإعلانات جوا التطبيق من محلات حوالين الجامعة ومكتوب عليها «ممول». ما بنبيع بياناتك لحدا، والمعلن بيعرف بس عدد المشاهدات والضغطات.": "In-app ads are from shops around the university and are labeled \"Sponsored\". We don't sell your data to anyone, and advertisers only see view and tap counts.",
+  "الإعلانات جوا التطبيق من محلات حوالين الجامعة ومكتوب عليها «ممول». ما بنبيع بياناتك لحدا، والمعلن بيعرف بس عدد المشاهدات والضغطات. إذا فعّلت «عروض على الإيميل» بنبعتلك عروض على إيميلك الجامعي، وبكل إيميل في رابط لإلغاء الاشتراك.": "In-app ads are from shops around the university and are labeled \"Sponsored\". We don't sell your data to anyone, and advertisers only see view and tap counts. If you turn on “Offers by email”, we send deals to your university email, with an unsubscribe link in every email.",
   "وين بتنحفظ بياناتك": "Where your data is stored",
   "على خوادم Supabase وخدمات التخزين اللي بنستخدمها، مع تشفير بالنقل.": "On Supabase servers and the storage services we use, encrypted in transit.",
   "حقوقك": "Your rights",
@@ -881,4 +881,6 @@ export const EN: Record<string, string> = {
   "فعّلها من إعدادات الجهاز عشان توصلك التذكيرات.": "Turn them on in your phone settings to get reminders.",
   "مش هلأ": "Not now",
   "نذكّرك بمحاضراتك؟": "Remind you about lectures?",
+  "عروض على الإيميل": "Offers by email",
+  "عروض وخصومات حوالين جامعتك على إيميلك الجامعي، وبتقدر توقفها من أي إيميل": "Deals near your campus sent to your university email. Unsubscribe from any email.",
 };

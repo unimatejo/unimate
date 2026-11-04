@@ -1,4 +1,4 @@
-import { AlarmClock, BellRing, CalendarDays, Heart, Megaphone, MessageCircle, Moon, Users } from 'lucide-react-native';
+import { AlarmClock, Mail, BellRing, CalendarDays, Heart, Megaphone, MessageCircle, Moon, Users } from 'lucide-react-native';
 import { useEffect, useState, type ReactNode } from 'react';
 import { Alert, Linking, ScrollView, View } from 'react-native';
 
@@ -82,6 +82,7 @@ export default function Reminders() {
           <Toggle icon={ic(<Heart size={18} color={C.red} />)} label={t('لايكات وتعليقات ومتابعات')} value={prefs.social} onChange={(v) => set({ social: v })} />
           <Toggle icon={ic(<Users size={18} color={C.primary} />)} label={t('مجتمعات موادي وكليتي')} value={prefs.community} onChange={(v) => set({ community: v })} />
           <Toggle icon={ic(<Megaphone size={18} color={C.ink2} />)} label={t('عروض المطاعم والمحلات')} value={prefs.ads} onChange={(v) => set({ ads: v })} />
+          <Toggle icon={ic(<Mail size={18} color={C.green} />)} label={t('عروض على الإيميل')} hint={t('عروض وخصومات حوالين جامعتك على إيميلك الجامعي، وبتقدر توقفها من أي إيميل')} value={prefs.email_offers} onChange={(v) => set({ email_offers: v })} />
         </View>
 
         <View style={{ gap: 8 }}>

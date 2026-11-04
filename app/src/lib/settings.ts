@@ -30,11 +30,11 @@ export function useProfilePatch() {
 
 export type Prefs = {
   lectures: boolean; lecture_minutes: number; smart_leave: boolean; nightly_summary: boolean; summary_time: string;
-  exams: boolean; messages: boolean; social: boolean; community: boolean; ads: boolean;
+  exams: boolean; messages: boolean; social: boolean; community: boolean; ads: boolean; email_offers: boolean;
 };
 const DEFAULT_PREFS: Prefs = {
   lectures: true, lecture_minutes: 10, smart_leave: true, nightly_summary: true, summary_time: '21:00:00',
-  exams: true, messages: true, social: true, community: true, ads: true,
+  exams: true, messages: true, social: true, community: true, ads: true, email_offers: false,
 };
 
 export function usePrefs() {

@@ -1,6 +1,6 @@
 import type { Session } from '@supabase/supabase-js';
 import {
-  BarChart3, Bug, Flag, LifeBuoy, LogOut, Map, Megaphone, MessagesSquare, ScrollText, Send, ShieldCheck, SquareStack, Users,
+  BarChart3, BadgePercent, Bug, Flag, LifeBuoy, LogOut, Map, Megaphone, MessagesSquare, ScrollText, Send, ShieldCheck, SquareStack, Users,
 } from 'lucide-react';
 import { useEffect, useState, type ComponentType } from 'react';
 
@@ -13,6 +13,7 @@ import Content from './pages/Content';
 import Errors from './pages/Errors';
 import Conversations from './pages/Conversations';
 import Notify from './pages/Notify';
+import Offers from './pages/Offers';
 import Overview from './pages/Overview';
 import Reports from './pages/Reports';
 import Support from './pages/Support';
@@ -28,6 +29,7 @@ const ROUTES: Route[] = [
   { key: 'support', label: 'الدعم', icon: LifeBuoy, page: Support, badge: 'tickets_open' },
   { key: 'ads', label: 'الإعلانات', icon: Megaphone, page: Ads },
   { key: 'campus', label: 'الجامعات والخرائط', icon: Map, page: Campus, badge: 'campus_pending' },
+  { key: 'offers', label: 'العروض', icon: BadgePercent, page: Offers },
   { key: 'notify', label: 'إرسال إشعار', icon: Send, page: Notify },
   { key: 'audit', label: 'سجل الإدارة', icon: ScrollText, page: Audit },
   { key: 'errors', label: 'أخطاء التطبيق', icon: Bug, page: Errors },
