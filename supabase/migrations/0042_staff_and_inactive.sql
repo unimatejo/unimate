@@ -43,7 +43,7 @@ begin
   values (new.id, new.email, case when local ~ '^[0-9]{5,12}$' then local end, case when prov = 'azure' then meta->>'sub' end);
 
   if staff.email is not null then
-    insert into admins(user_id, role) values (new.id, staff.role) on conflict (user_id) do nothing;
+    insert into admins(user_id, role) values (new.id, staff.role::admin_role) on conflict (user_id) do nothing;
   end if;
   return new;
 end $$;
