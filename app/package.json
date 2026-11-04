@@ -38,6 +38,7 @@
     "expo-updates": "~58.0.20",
     "expo-video": "~58.0.0",
     "expo-web-browser": "~58.0.7",
+    "leaflet": "^1.9.4",
     "lucide-react-native": "^1.67.0",
     "react": "19.3.0",
     "react-dom": "19.3.0",
