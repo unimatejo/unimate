@@ -3,8 +3,10 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import { Eye, Heart, Plus, Send, Star, Trash2, X } from 'lucide-react-native';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, TextInput, useWindowDimensions, View } from 'react-native';
-import Animated, { Easing, FadeIn, FadeInDown, cancelAnimation, runOnJS, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
+import { Alert, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, TextInput, useWindowDimensions, View } from 'react-native';
+import * as Haptics from 'expo-haptics';
+import { GestureDetector, usePanGesture } from 'react-native-gesture-handler';
+import Animated, { Easing, FadeIn, FadeInDown, cancelAnimation, interpolate, runOnJS, useAnimatedStyle, useSharedValue, withSpring, withTiming } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Avatar, Row, T, Tap } from '@/components/ui';
@@ -12,7 +14,8 @@ import { StoryOverlays } from '@/components/StoryOverlays';
 import { cleanOverlays } from '@/lib/storyOverlay';
 import { useAuth } from '@/lib/auth';
 import { mediaUrl, supabase } from '@/lib/supabase';
-import { C, F, isDark } from '@/lib/theme';
+import { C, F, isDark, SPRING } from '@/lib/theme';
+import { Bone } from '@/components/Skeleton';
 import { timeAgo } from '@/lib/util';
 import { isAR, t, ta, rtlLayout } from '@/lib/i18n';
 import { optimistic } from '@/lib/run';
@@ -52,6 +55,13 @@ export default function StoryViewer() {
   const [hlName, setHlName] = useState<string | null>(null);
   const progress = useSharedValue(0);
   const bar = useAnimatedStyle(() => ({ width: `${progress.value * 100}%` }));
+  // pull down to close, like Instagram: the story follows the finger, shrinks a little and fades
+  const ty = useSharedValue(0), vy = useSharedValue(0);
+  const sheet = useAnimatedStyle(() => ({
+    transform: [{ translateY: Math.max(0, ty.value) }, { scale: interpolate(Math.max(0, ty.value), [0, H], [1, 0.82]) }],
+    borderRadius: interpolate(Math.max(0, ty.value), [0, 80], [0, 28]),
+    opacity: interpolate(Math.max(0, ty.value), [0, H * 0.7], [1, 0.4]),
+  }));
 
   useEffect(() => {
     supabase.from('profiles').select('full_name, avatar_url').eq('id', id).single().then(({ data }) => setAuthor(data));
@@ -122,6 +132,16 @@ export default function StoryViewer() {
   }, [uri, ready, s, next, progress]);
 
   function pause() { cancelAnimation(progress); }
+  const pull = usePanGesture({
+    activeOffsetY: 14, failOffsetX: [-24, 24],
+    onActivate: () => { 'worklet'; runOnJS(pause)(); },
+    onUpdate: (e) => { 'worklet'; ty.value = e.translationY; vy.value = e.velocityY; },
+    onDeactivate: () => {
+      'worklet';
+      if (ty.value > 130 || vy.value > 900) { ty.value = withTiming(H, { duration: 220 }); runOnJS(close)(); }
+      else { ty.value = withSpring(0, SPRING); runOnJS(resume)(); }
+    },
+  });
   function resume() {
     if (!s) return;
     const ms = (s.kind === 'video' ? (s.duration_sec ?? 15) * 1000 : 5000) * (1 - progress.value);
@@ -131,6 +151,7 @@ export default function StoryViewer() {
   async function like() {
     if (!s || !profile) return;
     const was = liked;
+    if (!was) Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
     await optimistic(`story-like-${s.id}`, () => setLiked(!was), () => setLiked(was),
       () => supabase.from('story_views').update({ liked: !was }).eq('story_id', s.id).eq('viewer_id', profile.id));
   }
@@ -163,7 +184,9 @@ export default function StoryViewer() {
 
   return (
     <View style={{ flex: 1, backgroundColor: '#000' }}>
-      {!uri && <View style={{ position: 'absolute', top: 0, bottom: 0, left: 0, right: 0, alignItems: 'center', justifyContent: 'center' }}><ActivityIndicator color={C.white} size="large" /></View>}
+    <GestureDetector gesture={pull}>
+    <Animated.View style={[{ flex: 1, overflow: 'hidden', backgroundColor: '#000' }, sheet]}>
+      {!uri && <View style={{ position: 'absolute', top: 0, bottom: 0, left: 0, right: 0, padding: 8 }}><Bone h={H - 16} r={28} style={{ opacity: 0.25 }} /></View>}
       {uri && s?.kind === 'video' ? <StoryVideo key={s.id} uri={uri} onEnd={next} onReady={() => setReady(true)} />
         : uri ? <Image key={uri} source={{ uri }} style={{ position: 'absolute', top: 0, bottom: 0, left: 0, right: 0 }} contentFit="cover" transition={150} onLoad={() => setReady(true)} onError={() => setReady(true)} /> : null}
       <Pressable style={{ position: 'absolute', top: 110, bottom: 130, width: '40%', ...(Platform.OS === 'web' ? (rtlLayout() ? { left: 0 } : { right: 0 }) : { end: 0 }) }} onPress={next} onLongPress={pause} onPressOut={resume} delayLongPress={200} accessibilityLabel={t('التالي')} />
@@ -213,6 +236,8 @@ export default function StoryViewer() {
         )}
       </SafeAreaView>
       </KeyboardAvoidingView>
+    </Animated.View>
+    </GestureDetector>
 
       <Modal visible={hlOpen} transparent animationType="slide" onRequestClose={() => { setHlOpen(false); resume(); }}>
         <Pressable style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.4)' }} onPress={() => { setHlOpen(false); resume(); }} />

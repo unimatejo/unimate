@@ -15,7 +15,8 @@ export type Picked = { uri: string; mime: string; kind: 'image' | 'video'; durat
  * Pick a photo or short video. `square` opens the system crop (like Instagram's profile photo);
  * photos are resized and saved as JPEG so every phone (including HEIC iPhones) uploads the same way.
  */
-export async function pickMedia(opts: { video?: boolean; camera?: boolean; square?: boolean; maxWidth?: number } = {}): Promise<Picked | null> {
+export async function pickMedia(opts: { video?: boolean; videoOnly?: boolean; maxSec?: number; camera?: boolean; square?: boolean; maxWidth?: number } = {}): Promise<Picked | null> {
+  const maxSec = opts.maxSec ?? 15;
   const perm = opts.camera ? await ImagePicker.requestCameraPermissionsAsync() : await ImagePicker.requestMediaLibraryPermissionsAsync();
   if (!perm.granted) {
     Alert.alert(opts.camera ? t('الكاميرا مسكّرة') : t('الصور مسكّرة'), t('افتح الإعدادات واسمح ليونيميت يوصل للصور والكاميرا.'), [
@@ -24,9 +25,9 @@ export async function pickMedia(opts: { video?: boolean; camera?: boolean; squar
     return null;
   }
   const options: ImagePicker.ImagePickerOptions = {
-    mediaTypes: opts.video ? ['images', 'videos'] : ['images'],
+    mediaTypes: opts.videoOnly ? ['videos'] : opts.video ? ['images', 'videos'] : ['images'],
     quality: 0.85,
-    videoMaxDuration: 15,
+    videoMaxDuration: maxSec,
     videoQuality: ImagePicker.UIImagePickerControllerQualityType.IFrame960x540,
     allowsEditing: !!opts.square,
     aspect: opts.square ? [1, 1] : undefined,
@@ -35,7 +36,7 @@ export async function pickMedia(opts: { video?: boolean; camera?: boolean; squar
   if (res.canceled || !res.assets?.[0]) return null;
   const a = res.assets[0];
   if (a.type === 'video') {
-    if ((a.duration ?? 0) > 15500) { Alert.alert(t('الفيديو طويل'), t('الفيديو لازم يكون 15 ثانية أو أقل.')); return null; }
+    if ((a.duration ?? 0) > maxSec * 1000 + 500) { Alert.alert(t('الفيديو طويل'), t('الفيديو لازم يكون {0} ثانية أو أقل.', [maxSec])); return null; }
     if ((a.fileSize ?? 0) > 50 * 1048576) { Alert.alert(t('الفيديو كبير'), t('جرّب فيديو أقصر.')); return null; }
     return { uri: a.uri, mime: a.mimeType ?? 'video/mp4', kind: 'video', duration: a.duration, size: a.fileSize };
   }

@@ -1,22 +1,26 @@
 import { router, useFocusEffect } from 'expo-router';
-import { BadgeCheck, BarChart3, BookOpen, FileText, Flag, Grid3x3, Lock, Menu, MessageCircle, MoreHorizontal, PlusSquare, Rows3, Star, UserX, WifiOff } from 'lucide-react-native';
+import { BarChart3, Check, ChevronRight, Clapperboard, FileText, Grid3x3, Heart, Lock, Menu, MoreHorizontal, Play, Plus, PlusSquare, Star, UserPlus, UserSquare2, UserX, WifiOff, X } from 'lucide-react-native';
 import { useCallback, useEffect, useState } from 'react';
-import { Alert, Linking, RefreshControl, ScrollView, Share, View } from 'react-native';
-import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
+import * as Haptics from 'expo-haptics';
+import { Alert, Linking, Modal, Pressable, RefreshControl, ScrollView, Share, TextInput, useWindowDimensions, View } from 'react-native';
+import Animated, { FadeIn, FadeInDown, useAnimatedStyle, useSharedValue, withSequence, withSpring, withTiming } from 'react-native-reanimated';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 
 import { LikesSheet } from './LikesSheet';
 import { InstagramGlyph, SnapGlyph } from './SocialGlyphs';
-import { PostCard } from './PostCard';
-import { Avatar, Button, Empty, IconButton, Row, T, Tap } from './ui';
+import { SuggestedPeople } from './SuggestedPeople';
+import { Avatar, Button, Empty, Row, T, Tap } from './ui';
 import { useAuth } from '@/lib/auth';
-import { POST_SELECT, withMine } from '@/lib/posts';
+import { POST_SELECT, toggleLike, withMine } from '@/lib/posts';
+import { optimistic } from '@/lib/run';
+import { toast } from '@/lib/toast';
 import { mediaUrl, supabase } from '@/lib/supabase';
-import { C, F } from '@/lib/theme';
+import { C, F, isDark, R, SPRING } from '@/lib/theme';
 import type { Post, Profile } from '@/lib/types';
-import { nm, t, ta, LOCALE } from '@/lib/i18n';
+import { flip, nm, t, ta, LOCALE } from '@/lib/i18n';
 import { Bone } from './Skeleton';
 import { run } from '@/lib/run';
 
@@ -33,46 +37,142 @@ export function openSocial(site: 'instagram' | 'snapchat', handle: string) {
   Linking.openURL(app).catch(() => Linking.openURL(web).catch(() => Alert.alert(t('ما قدرنا نفتح الرابط'))));
 }
 
-const TILE_G: [string, string][] = [['#6E95FF', '#2E5BFF'], ['#FF8FB1', '#E0306B'], ['#5EE3A1', '#0E9F6E'], ['#FFB86B', '#FF6B2C'], ['#B794FF', '#7C3AED']];
+const TILE_G: [string, string][] = [['#2E5BFF', '#17204A'], ['#FF7A59', '#C0264A'], ['#0D9488', '#17204A'], ['#6A3BE0', '#17204A'], ['#B45309', '#3A2A44']];
 
-/** One square in the profile grid: the photo, or a colored card with the text. */
+/** A highlight circle under the bio (opens its stories). */
 function HighlightBubble({ h, owner }: { h: { id: string; title: string; cover_url: string | null }; owner: string }) {
   const [uri, setUri] = useState<string | null>(null);
   useEffect(() => { if (h.cover_url) mediaUrl('stories', h.cover_url).then(setUri); }, [h.cover_url]);
   return (
-    <Tap onPress={() => router.push({ pathname: '/story/[id]', params: { id: owner, highlight: h.id } })} style={{ alignItems: 'center', gap: 5, width: 70 }} accessibilityLabel={h.title}>
-      <View style={{ width: 64, height: 64, borderRadius: 32, padding: 2.5, borderWidth: 1.5, borderColor: C.line }}>
-        <View style={{ flex: 1, borderRadius: 30, overflow: 'hidden', backgroundColor: C.soft }}>{uri && <Image source={{ uri }} style={{ flex: 1 }} contentFit="cover" />}</View>
+    <Tap onPress={() => router.push({ pathname: '/story/[id]', params: { id: owner, highlight: h.id } })} style={{ alignItems: 'center', gap: 6, width: 66 }} accessibilityLabel={h.title}>
+      <View style={{ width: 62, height: 62, borderRadius: 31, padding: 3, borderWidth: 1, borderColor: C.line }}>
+        <View style={{ flex: 1, borderRadius: 28, overflow: 'hidden', backgroundColor: C.soft }}>{uri && <Image source={{ uri }} style={{ flex: 1 }} contentFit="cover" transition={150} />}</View>
       </View>
       <T v="tiny" numberOfLines={1}>{h.title}</T>
     </Tap>
   );
 }
 
+/** One square in the profile grid. Tap opens the post, double tap likes it (heart pulse + haptic). */
 export function GridTile({ post, i }: { post: Post; i: number }) {
+  const { profile } = useAuth();
   const img = (post.media ?? []).find((m) => m.kind === 'image');
+  const video = (post.media ?? []).some((m) => m.kind === 'video');
   const file = (post.media ?? []).some((m) => m.kind === 'file');
   const [uri, setUri] = useState<string | null>(null);
+  const [liked, setLiked] = useState(!!post.liked);
   useEffect(() => { if (img) mediaUrl('posts', img.url).then(setUri); }, [img]);
+  const burst = useSharedValue(0);
+  const burstStyle = useAnimatedStyle(() => ({ opacity: burst.value, transform: [{ scale: 0.5 + burst.value * 0.7 }] }));
+  const [last, setLast] = useState(0);
+  const [timer, setTimer] = useState<ReturnType<typeof setTimeout> | null>(null);
+  function press() {
+    const now = Date.now();
+    if (now - last < 260) {
+      if (timer) clearTimeout(timer);
+      setTimer(null); setLast(0);
+      burst.value = withSequence(withSpring(1, SPRING), withTiming(1, { duration: 280 }), withTiming(0, { duration: 200 }));
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
+      if (!liked && profile) optimistic(`like:${post.id}`, () => setLiked(true), () => setLiked(false), () => toggleLike({ ...post, liked: false }, profile.id));
+      return;
+    }
+    setLast(now);
+    setTimer(setTimeout(() => router.push({ pathname: '/post/[id]', params: { id: post.id } }), 270));
+  }
   return (
-    <Tap haptic={false} scale={0.97} onPress={() => router.push({ pathname: '/post/[id]', params: { id: post.id } })} style={{ width: '33.333%', aspectRatio: 1, padding: 1.5 }} accessibilityLabel={post.title ?? post.body.slice(0, 40)}>
-      <View style={{ flex: 1, borderRadius: 6, overflow: 'hidden', backgroundColor: C.soft }}>
-        {img ? (uri ? <Image source={{ uri }} style={{ flex: 1 }} contentFit="cover" transition={150} /> : null) : (
-          <LinearGradient colors={TILE_G[i % TILE_G.length]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={{ flex: 1, padding: 8, justifyContent: 'center' }}>
-            <T v="tiny" color="#fff" numberOfLines={5} style={{ fontSize: 11, lineHeight: 16 }}>{post.title || post.body}</T>
+    <Tap haptic={false} scale={0.98} throttle={0} onPress={press} style={{ width: '33.333%', aspectRatio: 1, padding: 1 }} accessibilityLabel={post.title ?? post.body.slice(0, 40)}>
+      <View style={{ flex: 1, overflow: 'hidden', backgroundColor: C.soft, alignItems: 'center', justifyContent: 'center' }}>
+        {img ? (uri ? <Image source={{ uri }} style={{ position: 'absolute', top: 0, bottom: 0, left: 0, right: 0 }} contentFit="cover" transition={150} /> : null) : (
+          <LinearGradient colors={TILE_G[i % TILE_G.length]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={{ position: 'absolute', top: 0, bottom: 0, left: 0, right: 0, padding: 8, justifyContent: 'center' }}>
+            {video ? <Play size={30} color="#fff" fill="#fff" style={{ alignSelf: 'center' }} /> : <T v="tiny" color="#fff" numberOfLines={5} style={{ fontSize: 11, lineHeight: 16 }}>{post.title || post.body}</T>}
           </LinearGradient>
         )}
-        {(file || post.poll) && (
-          <View style={{ position: 'absolute', top: 5, right: 5, width: 20, height: 20, borderRadius: 6, backgroundColor: 'rgba(0,0,0,0.35)', alignItems: 'center', justifyContent: 'center' }}>
-            {file ? <FileText size={12} color="#fff" /> : <BarChart3 size={12} color="#fff" />}
+        {(file || post.poll || video) && (
+          <View style={{ position: 'absolute', top: 6, right: 6, width: 22, height: 22, borderRadius: 7, backgroundColor: 'rgba(0,0,0,0.4)', alignItems: 'center', justifyContent: 'center' }}>
+            {video ? <Clapperboard size={12} color="#fff" /> : file ? <FileText size={12} color="#fff" /> : <BarChart3 size={12} color="#fff" />}
           </View>
         )}
+        <Animated.View style={burstStyle} pointerEvents="none"><Heart size={46} color="#fff" fill="#fff" /></Animated.View>
       </View>
     </Tap>
   );
 }
 
-export function ProfileView({ userId, onTitle }: { userId: string; onTitle?: (title: string) => void }) {
+type MyStory = { id: string; media_url: string; created_at: string };
+/** Pick your old photo stories and name a new highlight (Instagram's "New" bubble). */
+function NewHighlight({ open, onClose, onMade }: { open: boolean; onClose: () => void; onMade: () => void }) {
+  const { profile } = useAuth();
+  const { width } = useWindowDimensions();
+  const [list, setList] = useState<(MyStory & { uri?: string })[] | null>(null);
+  const [sel, setSel] = useState<string[]>([]);
+  const [title, setTitle] = useState('');
+  const [busy, setBusy] = useState(false);
+  useEffect(() => {
+    if (!open || !profile) return;
+    setSel([]); setTitle(''); setList(null);
+    supabase.from('stories').select('id, media_url, created_at').eq('author_id', profile.id).eq('kind', 'image').order('created_at', { ascending: false }).limit(60)
+      .then(async ({ data }) => {
+        const rows = (data ?? []) as MyStory[];
+        const withUri = await Promise.all(rows.map(async (r) => ({ ...r, uri: (await mediaUrl('stories', r.media_url)) ?? undefined })));
+        setList(withUri);
+      });
+  }, [open, profile]);
+  async function make() {
+    if (!profile || busy) return;
+    if (!sel.length) { Alert.alert(t('اختار قصة وحدة على الأقل')); return; }
+    if (!title.trim()) { Alert.alert(t('سمّي الهايلايت')); return; }
+    setBusy(true);
+    try {
+      const cover = list?.find((x) => x.id === sel[0])?.media_url ?? null;
+      const { data, error } = await supabase.from('highlights').insert({ owner_id: profile.id, title: title.trim().slice(0, 30), cover_url: cover }).select('id').single();
+      if (error || !data) throw error;
+      const { error: ie } = await supabase.from('highlight_items').insert(sel.map((story_id) => ({ highlight_id: data.id, story_id })));
+      if (ie) throw ie;
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+      toast(t('انعمل الهايلايت ✓'));
+      onMade(); onClose();
+    } catch (e) {
+      Alert.alert(t('ما زبط'), String((e as Error)?.message ?? '').includes('limit') ? t('وصلت الحد: 30 قصة بالهايلايت.') : t('جرّب كمان مرة.'));
+    } finally { setBusy(false); }
+  }
+  const side = (width - 16 * 2 - 6 * 2) / 3;
+  return (
+    <Modal visible={open} animationType="slide" onRequestClose={onClose} presentationStyle="pageSheet">
+      <SafeAreaView style={{ flex: 1, backgroundColor: C.bg }}>
+        <Row gap={8} style={{ paddingHorizontal: 12, paddingVertical: 8 }}>
+          <Tap onPress={onClose} accessibilityLabel={t('إغلاق')} style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}><X size={22} color={C.ink} /></Tap>
+          <T v="h3" style={{ flex: 1, textAlign: 'center' }}>{t('هايلايت جديد')}</T>
+          <Tap onPress={make} disabled={busy} style={{ minHeight: 38, paddingHorizontal: 18, borderRadius: R.pill, backgroundColor: C.primary, alignItems: 'center', justifyContent: 'center', opacity: busy ? 0.6 : 1 }}>
+            <T v="bold" color={C.onPrimary}>{t('تم')}</T>
+          </Tap>
+        </Row>
+        <View style={{ paddingHorizontal: 16, paddingBottom: 12 }}>
+          <TextInput value={title} onChangeText={setTitle} maxLength={30} placeholder={t('اسم الهايلايت، مثلاً «سنة أولى»')} placeholderTextColor={C.faint} keyboardAppearance={isDark ? 'dark' : 'light'}
+            style={{ minHeight: 48, borderRadius: 16, backgroundColor: C.card, borderWidth: 1, borderColor: C.line, paddingHorizontal: 14, fontFamily: F.body, fontSize: 15, color: C.ink, textAlign: ta }} />
+        </View>
+        <ScrollView contentContainerStyle={{ paddingHorizontal: 16, flexDirection: 'row', flexWrap: 'wrap', gap: 6, paddingBottom: 40 }}>
+          {list === null ? [0, 1, 2, 3, 4, 5].map((k) => <Bone key={k} w={side} h={side * 1.6} r={16} />)
+            : list.length === 0 ? <View style={{ width: '100%' }}><Empty title={t('ما عندك قصص صور لهلأ')} body={t('نزّل ستوري وبعدين بتقدر تثبّتها هون.')} /></View>
+            : list.map((x) => {
+              const n = sel.indexOf(x.id);
+              return (
+                <Pressable key={x.id} onPress={() => { Haptics.selectionAsync().catch(() => {}); setSel((cur) => (n >= 0 ? cur.filter((y) => y !== x.id) : [...cur, x.id])); }}
+                  accessibilityRole="checkbox" accessibilityState={{ checked: n >= 0 }} accessibilityLabel={new Date(x.created_at).toLocaleDateString(LOCALE)}
+                  style={{ width: side, height: side * 1.6, borderRadius: 16, overflow: 'hidden', backgroundColor: C.soft }}>
+                  {x.uri && <Image source={{ uri: x.uri }} style={{ flex: 1 }} contentFit="cover" />}
+                  <View style={{ position: 'absolute', top: 6, left: 6, width: 24, height: 24, borderRadius: 12, borderWidth: 2, borderColor: '#fff', backgroundColor: n >= 0 ? C.primary : 'rgba(0,0,0,0.25)', alignItems: 'center', justifyContent: 'center' }}>
+                    {n >= 0 && <T v="tiny" color={C.onPrimary} style={{ fontFamily: F.bodyBold }}>{n + 1}</T>}
+                  </View>
+                </Pressable>
+              );
+            })}
+        </ScrollView>
+      </SafeAreaView>
+    </Modal>
+  );
+}
+
+export function ProfileView({ userId, onTitle, back }: { userId: string; onTitle?: (title: string) => void; back?: boolean }) {
   const { profile: me } = useAuth();
   const mine = me?.id === userId;
   const [p, setP] = useState<Profile | null>(null);
@@ -87,6 +187,9 @@ export function ProfileView({ userId, onTitle }: { userId: string; onTitle?: (ti
   const [hls, setHls] = useState<{ id: string; title: string; cover_url: string | null }[]>([]);
   const [failed, setFailed] = useState<'none' | 'error' | 'missing'>('none');
   const [busy, setBusy] = useState(false);
+  const [suggest, setSuggest] = useState(false);
+  const [newHl, setNewHl] = useState(false);
+  const [tagged, setTagged] = useState<Post[] | null>(null);
 
   const load = useCallback(async () => {
     if (!me) return;
@@ -127,6 +230,7 @@ export function ProfileView({ userId, onTitle }: { userId: string; onTitle?: (ti
     setBusy(true);
     try {
       if (rel === 'none') {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
         const next: Rel = p?.is_private ? 'pending' : 'accepted';
         setRel(next); if (next === 'accepted') bump(1);
         const r = await run(supabase.from('follows').insert({ follower_id: me.id, followee_id: userId }));
@@ -169,6 +273,13 @@ export function ProfileView({ userId, onTitle }: { userId: string; onTitle?: (ti
     router.push({ pathname: '/messages/[id]', params: { id: data as string } });
   }
 
+  // posts other people wrote that mention @username (loaded when the tab opens)
+  useEffect(() => {
+    if (tab !== 2 || tagged !== null || !p?.username || !me) return;
+    supabase.from('posts').select(POST_SELECT).ilike('body', `%@${p.username}%`).neq('author_id', userId).order('created_at', { ascending: false }).limit(30)
+      .then(async ({ data }) => setTagged(await withMine((data ?? []) as unknown as Post[], me.id)));
+  }, [tab, tagged, p?.username, me, userId]);
+
   if (!p && failed !== 'none') return (
     <View style={{ flex: 1, padding: 24, paddingTop: 60 }}>
       <Empty icon={failed === 'missing' ? <UserX size={28} color={C.muted} /> : <WifiOff size={28} color={C.muted} />} title={failed === 'missing' ? t('هالحساب مش موجود') : t('ما قدرنا نفتح البروفايل')}
@@ -177,142 +288,180 @@ export function ProfileView({ userId, onTitle }: { userId: string; onTitle?: (ti
     </View>
   );
   if (!p) return (
-    <View style={{ flex: 1, padding: 18, gap: 16 }}>
-      <Row gap={16}><Bone w={86} h={86} r={43} /><View style={{ flex: 1, gap: 10 }}><Bone h={18} w="70%" /><Bone h={12} w="50%" /></View></Row>
-      <Bone h={16} w="40%" /><Bone h={12} w="60%" />
-      <Row gap={8}><Bone h={46} r={14} style={{ flex: 1 }} /><Bone h={46} r={14} style={{ flex: 1 }} /></Row>
+    <View style={{ flex: 1, padding: 20, gap: 16 }}>
+      <Row gap={20}><Bone w={92} h={92} r={46} /><Row gap={10} style={{ flex: 1 }}><Bone h={34} r={10} style={{ flex: 1 }} /><Bone h={34} r={10} style={{ flex: 1 }} /><Bone h={34} r={10} style={{ flex: 1 }} /></Row></Row>
+      <Bone h={16} w="40%" /><Bone h={26} w="70%" r={13} /><Bone h={12} w="60%" />
+      <Row gap={8}><Bone h={40} r={20} style={{ flex: 1 }} /><Bone h={40} r={20} style={{ flex: 1 }} /></Row>
+      <Row gap={16}>{[0, 1, 2, 3].map((k) => <Bone key={k} w={60} h={60} r={30} />)}</Row>
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 2 }}>{[0, 1, 2, 3, 4, 5].map((k) => <Bone key={k} w="32.8%" h={120} r={0} />)}</View>
     </View>
   );
   const canSee = mine || !p.is_private || rel === 'accepted';
   const friends = rel === 'accepted' && followsMe;
   const socialsVisible = mine || (p.socials_visible_to === 'everyone') || (p.socials_visible_to === 'friends' && friends) || (p.socials_visible_to === 'close_friends' && isClose);
-  const shown = tab === 2 ? posts.filter((x) => x.category === 'summaries') : posts;
+  const reels = posts.filter((x) => (x.media ?? []).some((m) => m.kind === 'video'));
+  const shown = tab === 0 ? posts : tab === 1 ? reels : (tagged ?? []);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const uni = nm((p as any).university);
+  const badge = [uni, nm(p.major), p.study_year ? t('سنة {0}', [p.study_year]) : null].filter(Boolean).join(' · ');
+  const pill = { flex: 1, minHeight: 40, borderRadius: R.pill, backgroundColor: C.soft, alignItems: 'center' as const, justifyContent: 'center' as const, paddingHorizontal: 12 };
+  const Verified = () => (
+    <View accessibilityLabel={t('طالب موثّق بحساب الجامعة')} style={{ width: 17, height: 17, borderRadius: 9, backgroundColor: C.primary, alignItems: 'center', justifyContent: 'center' }}>
+      <Check size={11} color={C.onPrimary} strokeWidth={3.4} />
+    </View>
+  );
 
   return (
     <>
-      <ScrollView contentContainerStyle={{ paddingBottom: 130 }} refreshControl={<RefreshControl refreshing={loading} onRefresh={load} />}>
-        <View style={{ padding: 18, gap: 14 }}>
-          {/* top bar like Instagram: @username, then create + menu (mine) or more (others) */}
-          <Row gap={8}>
-            <Row gap={5} style={{ flex: 1 }}>
-              {p.is_private && <Lock size={16} color={C.ink} />}
-              {mine && <T v="h2" numberOfLines={1} style={{ writingDirection: 'ltr', flexShrink: 1 }}>{p.username ? p.username : p.full_name}</T>}
-              {mine && p.is_verified && <BadgeCheck size={18} color={C.white} fill={C.primary} />}
+      <ScrollView contentContainerStyle={{ paddingBottom: 130 }} refreshControl={<RefreshControl refreshing={loading} onRefresh={load} tintColor={C.muted} />}>
+        <View style={{ paddingHorizontal: 20, paddingTop: 6, gap: 12 }}>
+          {/* top bar like Instagram: username + badge, then create / activity / menu (mine) or more (others) */}
+          <Row gap={4} style={{ minHeight: 48, marginHorizontal: -6 }}>
+            {back && (
+              <Tap onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))} accessibilityLabel={t('رجوع')} style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}>
+                <ChevronRight size={24} color={C.ink} style={flip} />
+              </Tap>
+            )}
+            <Row gap={6} style={{ flex: 1, paddingHorizontal: back ? 0 : 6 }}>
+              {p.is_private && <Lock size={15} color={C.ink} />}
+              <T numberOfLines={1} style={{ fontFamily: F.title, fontSize: 20, writingDirection: 'ltr', flexShrink: 1 }}>{p.username ? p.username : p.full_name}</T>
+              {p.is_verified && <Verified />}
             </Row>
             {mine ? (
               <>
-                <IconButton label={t('منشور جديد')} onPress={() => router.push('/post/new')}><PlusSquare size={21} color={C.ink} /></IconButton>
-                <IconButton label={t('الإعدادات')} onPress={() => router.push('/settings')}><Menu size={21} color={C.ink} /></IconButton>
+                <Tap onPress={() => router.push('/post/new')} accessibilityLabel={t('إنشاء')} style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}><PlusSquare size={23} color={C.ink} /></Tap>
+                <Tap onPress={() => router.push('/notifications')} accessibilityLabel={t('الإشعارات')} style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}><Heart size={23} color={C.ink} /></Tap>
+                <Tap onPress={() => router.push('/settings')} accessibilityLabel={t('الإعدادات')} style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}><Menu size={24} color={C.ink} /></Tap>
               </>
             ) : (
-              <IconButton label={t('خيارات')} onPress={moreMenu}><MoreHorizontal size={21} color={C.ink} /></IconButton>
+              <Tap onPress={moreMenu} accessibilityLabel={t('خيارات')} style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}><MoreHorizontal size={23} color={C.ink} /></Tap>
             )}
           </Row>
 
-          <Row gap={16}>
+          <Row gap={20}>
             <Tap haptic={false} scale={0.95} disabled={!hasStory} onPress={() => router.push({ pathname: '/story/[id]', params: { id: p.id } })} accessibilityLabel={hasStory ? t('شوف قصته') : p.full_name}>
-              {hasStory ? (
-                <LinearGradient colors={['#FFB547', '#FF4F7B', '#7C3AED']} start={{ x: 0, y: 1 }} end={{ x: 1, y: 0 }} style={{ padding: 3, borderRadius: 50 }}>
-                  <View style={{ padding: 3, borderRadius: 48, backgroundColor: C.bg }}><Avatar id={p.id} name={p.full_name} url={p.avatar_url} size={82} /></View>
-                </LinearGradient>
-              ) : <Avatar id={p.id} name={p.full_name} url={p.avatar_url} size={86} ring />}
+              <View style={{ width: 92, height: 92, borderRadius: 46, padding: 4, borderWidth: 2, borderColor: hasStory ? C.primary : 'transparent' }}>
+                <Avatar id={p.id} name={p.full_name} url={p.avatar_url} size={80} />
+              </View>
             </Tap>
             <View style={{ flex: 1, flexDirection: 'row' }}>
-              {[[p.post_count, t('منشور'), true], [p.follower_count, t('متابِع'), mine || !p.hide_followers], [p.following_count, t('يتابع'), mine || !p.hide_following]].map(([n, l, vis]) => (
-                <Tap key={l as string} haptic={false} scale={0.95} disabled={!vis || l === t('منشور') || !canSee}
-                  onPress={() => router.push({ pathname: '/follows', params: { user: userId, type: l === t('متابِع') ? 'followers' : 'following', name: p.full_name } })}
-                  style={{ flex: 1, alignItems: 'center' }} accessibilityLabel={l as string}>
-                  {vis ? <T style={{ fontFamily: F.display, fontSize: 20 }}>{String(n)}</T> : <Lock size={18} color={C.faint} style={{ height: 30 }} />}
-                  <T v="tiny" color={C.muted}>{l as string}</T>
+              {([[p.post_count, t('منشور'), true, null], [p.follower_count, t('متابِع'), mine || !p.hide_followers, 'followers'], [p.following_count, t('متابَع'), mine || !p.hide_following, 'following']] as [number, string, boolean, string | null][]).map(([n, l, vis, type]) => (
+                <Tap key={l} haptic={false} scale={0.95} disabled={!vis || !type || !canSee}
+                  onPress={() => router.push({ pathname: '/follows', params: { user: userId, type: type ?? 'followers', name: p.full_name } })}
+                  style={{ flex: 1, alignItems: 'center', minHeight: 48, justifyContent: 'center' }} accessibilityLabel={`${n} ${l}`}>
+                  {vis ? <T style={{ fontFamily: F.title, fontSize: 18 }}>{(n ?? 0).toLocaleString(LOCALE)}</T> : <Lock size={17} color={C.faint} style={{ height: 27 }} />}
+                  <T v="tiny" color={C.muted}>{l}</T>
                 </Tap>
               ))}
             </View>
           </Row>
 
-          <View style={{ gap: 3 }}>
+          <View style={{ gap: 6 }}>
             <Row gap={6}>
-              <T v="h2" style={{ fontFamily: F.display }}>{p.full_name}</T>
-              {p.is_verified && <BadgeCheck size={18} color={C.white} fill={C.primary} accessibilityLabel={t('طالب موثّق بحساب الجامعة')} />}
+              <T style={{ fontFamily: F.bodyBold, fontSize: 15 }}>{p.full_name}</T>
               {friends && <Animated.View entering={FadeIn}><View style={{ backgroundColor: C.greenSoft, borderRadius: 999, paddingHorizontal: 8, paddingVertical: 2 }}><T v="tiny" color={C.greenInk}>{t('أصدقاء')}</T></View></Animated.View>}
             </Row>
-            {/* the @username is already at the top (or in the screen header), like Instagram */}
-            <T v="small" color={C.ink2}>{[nm(p.major), p.study_year ? t('سنة {0}', [p.study_year]) : null].filter(Boolean).join(t('، '))}</T>
-            {p.bio ? <T v="body">{p.bio}</T> : null}
+            {!!badge && (
+              <View style={{ alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 26, paddingHorizontal: 10, borderRadius: 13, backgroundColor: C.soft, maxWidth: '100%' }}>
+                <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: C.primary }} />
+                <T v="tiny" numberOfLines={1} style={{ fontFamily: F.bodyBold, flexShrink: 1 }}>{badge}</T>
+              </View>
+            )}
+            {p.bio ? <T style={{ fontSize: 14, lineHeight: 22 }}>{p.bio}</T> : null}
             {p.birth_year ? (() => {
               const today = new Date();
               const isToday = p.birth_day === `${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
               const full = p.birth_day ? new Date(`${p.birth_year}-${p.birth_day}T12:00:00`).toLocaleDateString(LOCALE, { day: 'numeric', month: 'long', year: 'numeric' }) : null;
-              return <T v="small" color={isToday ? C.pink : C.ink2}>🎂 {isToday ? t('عيد ميلاده اليوم! 🎉') : full ? t('مواليد {0}', [full]) : t('مواليد {0}', [String(p.birth_year)])}</T>;
+              return <T v="small" color={isToday ? C.primary : C.ink2}>🎂 {isToday ? t('عيد ميلاده اليوم! 🎉') : full ? t('مواليد {0}', [full]) : t('مواليد {0}', [String(p.birth_year)])}</T>;
             })() : null}
             {p.points > 0 && <Row gap={5}><Star size={14} color="#F59E0B" fill="#F59E0B" /><T v="tiny" color={C.muted}>{p.points} {t('نقطة مساعدة')}</T></Row>}
           </View>
 
-          {mine ? (
-            <Row gap={8}>
-              <Button kind="soft" title={t('تعديل البروفايل')} onPress={() => router.push('/settings/edit-profile')} style={{ flex: 1, minHeight: 46 }} />
-              <Button kind="soft" title={t('شارك البروفايل')} onPress={shareProfile} style={{ flex: 1, minHeight: 46 }} />
-            </Row>
-          ) : (
-            <Row gap={8}>
-              <Button kind={rel === 'none' ? 'primary' : 'soft'} title={rel === 'none' ? t('متابعة') : rel === 'pending' ? t('تم إرسال الطلب') : friends ? t('أصدقاء') : t('تتابعه')} onPress={follow} loading={busy} disabled={busy} style={{ flex: 1.4, minHeight: 46 }} />
-              <Button kind="white" title={t('رسالة')} icon={<MessageCircle size={18} color={C.ink} />} onPress={message} style={{ flex: 1, minHeight: 46 }} />
-            </Row>
-          )}
+          <Row gap={8}>
+            {mine ? (
+              <>
+                <Tap onPress={() => router.push('/settings/edit-profile')} style={pill}><T v="bold" style={{ fontSize: 14 }}>{t('تعديل الملف')}</T></Tap>
+                <Tap onPress={shareProfile} style={pill}><T v="bold" style={{ fontSize: 14 }}>{t('مشاركة الملف')}</T></Tap>
+              </>
+            ) : (
+              <>
+                <Tap onPress={follow} disabled={busy} style={[pill, rel === 'none' && { backgroundColor: C.primary }]} accessibilityLabel={rel === 'none' ? t('متابعة') : t('إلغاء المتابعة')}>
+                  <T v="bold" color={rel === 'none' ? C.onPrimary : C.ink} style={{ fontSize: 14 }}>{rel === 'none' ? (followsMe ? t('تابِع بالمثل') : t('متابعة')) : rel === 'pending' ? t('تم إرسال الطلب') : friends ? t('أصدقاء') : t('تتابعه')}</T>
+                </Tap>
+                <Tap onPress={message} style={pill}><T v="bold" style={{ fontSize: 14 }}>{t('رسالة')}</T></Tap>
+              </>
+            )}
+            <Tap onPress={() => setSuggest((v) => !v)} accessibilityLabel={t('اقتراحات زملاء')} accessibilityState={{ expanded: suggest }}
+              style={{ width: 44, minHeight: 40, borderRadius: R.pill, backgroundColor: suggest ? C.inverse : C.soft, alignItems: 'center', justifyContent: 'center' }}>
+              <UserPlus size={18} color={suggest ? C.onInverse : C.ink} />
+            </Tap>
+          </Row>
 
           {socialsVisible && (p.instagram || p.snapchat) && (
             <Animated.View entering={FadeInDown} style={{ flexDirection: 'row', gap: 12 }}>
               {p.instagram && (
                 <Tap onPress={() => openSocial('instagram', p.instagram!)} scale={0.9} accessibilityLabel={t('افتح إنستغرام {0}', [p.instagram])} style={{ alignItems: 'center', gap: 4 }}>
-                  <View style={{ shadowColor: '#E1306C', shadowOpacity: 0.35, shadowRadius: 10, shadowOffset: { width: 0, height: 6 } }}><InstagramGlyph size={52} /></View>
+                  <InstagramGlyph size={44} />
                   <T v="tiny" color={C.muted}>{t('إنستغرام')}</T>
                 </Tap>
               )}
               {p.snapchat && (
                 <Tap onPress={() => openSocial('snapchat', p.snapchat!)} scale={0.9} accessibilityLabel={t('افتح سناب {0}', [p.snapchat])} style={{ alignItems: 'center', gap: 4 }}>
-                  <View style={{ shadowColor: '#C9B800', shadowOpacity: 0.4, shadowRadius: 10, shadowOffset: { width: 0, height: 6 } }}><SnapGlyph size={52} /></View>
+                  <SnapGlyph size={44} />
                   <T v="tiny" color={C.muted}>{t('سناب')}</T>
                 </Tap>
               )}
             </Animated.View>
           )}
-          {canSee && hls.length > 0 && (
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
-              {hls.map((h) => <HighlightBubble key={h.id} h={h} owner={userId} />)}
-            </ScrollView>
-          )}
         </View>
 
+        {suggest && <Animated.View entering={FadeInDown.springify().damping(SPRING.damping)} style={{ paddingTop: 14 }}><SuggestedPeople /></Animated.View>}
+
+        {canSee && (hls.length > 0 || mine) && (
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 12, paddingHorizontal: 18, paddingTop: 16, paddingBottom: 6 }}>
+            {mine && (
+              <Tap onPress={() => setNewHl(true)} style={{ alignItems: 'center', gap: 6, width: 66 }} accessibilityLabel={t('هايلايت جديد')}>
+                <View style={{ width: 62, height: 62, borderRadius: 31, borderWidth: 1, borderColor: C.line, alignItems: 'center', justifyContent: 'center' }}><Plus size={26} color={C.ink} /></View>
+                <T v="tiny">{t('جديد')}</T>
+              </Tap>
+            )}
+            {hls.map((h) => <HighlightBubble key={h.id} h={h} owner={userId} />)}
+          </ScrollView>
+        )}
+
         {canSee ? (
-          <View style={{ gap: 10 }}>
-            <Row style={{ borderBottomWidth: 0.5, borderBottomColor: C.line }}>
-              {[[Grid3x3, t('المنشورات')], [Rows3, t('القائمة')], [BookOpen, t('الملخصات')]].map(([Icon, label], i) => {
-                const I = Icon as typeof Grid3x3;
-                return (
-                  <Tap key={i} haptic={false} onPress={() => setTab(i)} accessibilityRole="tab" accessibilityLabel={label as string} accessibilityState={{ selected: tab === i }}
-                    style={{ flex: 1, alignItems: 'center', paddingVertical: 12, borderBottomWidth: 2, borderBottomColor: tab === i ? C.ink : 'transparent' }}>
-                    <I size={22} color={tab === i ? C.ink : C.faint} />
-                  </Tap>
-                );
-              })}
-            </Row>
-            {shown.length === 0 ? <Empty title={t('ما في منشورات لهلأ')} />
-              : tab === 0 ? (
-                <View style={{ flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: 1.5 }}>
-                  {shown.map((x, i) => <GridTile key={x.id} post={x} i={i} />)}
-                </View>
-              ) : (
-                <View style={{ paddingHorizontal: 18, gap: 14 }}>{shown.map((x) => <PostCard key={x.id} post={x} onLikes={setLikesOf} compact />)}</View>
-              )}
+          <View style={{ marginTop: 10 }}>
+            <View accessibilityRole="tablist" style={{ flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: C.line }}>
+              {([[Grid3x3, t('المنشورات')], [Clapperboard, t('الريلز')], [UserSquare2, t('الإشارات')]] as [typeof Grid3x3, string][]).map(([I, label], i) => (
+                <Tap key={i} haptic={false} onPress={() => setTab(i)} accessibilityRole="tab" accessibilityLabel={label} accessibilityState={{ selected: tab === i }}
+                  style={{ flex: 1, alignItems: 'center', justifyContent: 'center', minHeight: 46, borderBottomWidth: 2, borderBottomColor: tab === i ? C.ink : 'transparent', marginBottom: -1 }}>
+                  <I size={22} color={tab === i ? C.ink : C.muted} />
+                </Tap>
+              ))}
+            </View>
+            {tab === 2 && tagged === null && p.username ? (
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', paddingTop: 1 }}>{[0, 1, 2].map((k) => <View key={k} style={{ width: '33.333%', aspectRatio: 1, padding: 1 }}><Bone h={200} r={0} style={{ flex: 1 }} /></View>)}</View>
+            ) : shown.length === 0 ? (
+              <Empty icon={tab === 1 ? <Clapperboard size={28} color={C.primary} /> : tab === 2 ? <UserSquare2 size={28} color={C.primary} /> : <Grid3x3 size={28} color={C.primary} />}
+                title={tab === 1 ? t('ما في ريلز لهلأ') : tab === 2 ? t('ما في إشارات لهلأ') : t('ما في منشورات لهلأ')}
+                body={tab === 2 ? t('المنشورات اللي بتذكر @{0} بتطلع هون.', [p.username ?? '']) : undefined}
+                action={mine && tab !== 2 ? <Button kind="soft" title={tab === 1 ? t('نزّل ريلز') : t('شارك أول منشور')} onPress={() => router.push({ pathname: '/post/new', params: tab === 1 ? { mode: 'reel' } : {} })} style={{ marginTop: 8, paddingHorizontal: 22 }} /> : undefined} />
+            ) : (
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', paddingTop: 1 }}>
+                {shown.map((x, i) => <GridTile key={x.id} post={x} i={i} />)}
+              </View>
+            )}
           </View>
         ) : (
-          <View style={{ margin: 18, backgroundColor: C.card, borderRadius: 26, padding: 28, alignItems: 'center', gap: 10 }}>
-            <View style={{ width: 60, height: 60, borderRadius: 22, backgroundColor: C.primarySoft, alignItems: 'center', justifyContent: 'center' }}><Lock size={28} color={C.primary} /></View>
+          <View style={{ margin: 18, backgroundColor: C.card, borderRadius: R.xl, borderWidth: 1, borderColor: C.line, padding: 28, alignItems: 'center', gap: 10 }}>
+            <View style={{ width: 60, height: 60, borderRadius: 30, borderWidth: 2, borderColor: C.ink, alignItems: 'center', justifyContent: 'center' }}><Lock size={26} color={C.ink} /></View>
             <T v="h3">{t('هاد الحساب خاص')}</T>
             <T v="small" color={C.muted} style={{ textAlign: 'center' }}>{t('لما يتقبل طلب متابعتك، بتشوف منشوراته وقصصه وحساباته الثانية.')}</T>
           </View>
         )}
       </ScrollView>
       <LikesSheet post={likesOf} onClose={() => setLikesOf(null)} />
+      {mine && <NewHighlight open={newHl} onClose={() => setNewHl(false)} onMade={load} />}
     </>
   );
 }

@@ -1,3 +1,4 @@
+import * as Haptics from 'expo-haptics';
 import { router } from 'expo-router';
 import { BadgeCheck, Bookmark, FileText, MoreHorizontal, Heart, MessageCircle, Send } from 'lucide-react-native';
 import { useEffect, useState } from 'react';
@@ -7,6 +8,7 @@ import Animated, { useAnimatedStyle, useSharedValue, withSequence, withSpring, w
 import { Image } from 'expo-image';
 
 import { ImageViewer } from './ImageViewer';
+import { PostVideo } from './PostVideo';
 import { Avatar, Row, T, Tag, Tap } from './ui';
 import { useAuth } from '@/lib/auth';
 import { toggleLike, toggleSave } from '@/lib/posts';
@@ -135,11 +137,13 @@ export function PostCard({ post, onLikes, compact, detail }: { post: Post; onLik
   const cat = CATEGORY[p.category] ?? CATEGORY.square;
   const images = (p.media ?? []).filter((m) => m.kind === 'image').sort((a, b) => a.position - b.position);
   const files = (p.media ?? []).filter((m) => m.kind === 'file');
+  const video = (p.media ?? []).find((m) => m.kind === 'video');
 
   async function like() {
     if (!profile) return;
     heart.value = withSequence(withTiming(1.45, { duration: 120 }), withSpring(1, { damping: 6, stiffness: 300 }));
     const before = p;
+    if (!before.liked) Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
     await optimistic(`like:${p.id}`,
       () => setP((x) => ({ ...x, liked: !before.liked, like_count: Math.max(0, before.like_count + (before.liked ? -1 : 1)) })),
       () => setP((x) => ({ ...x, liked: before.liked, like_count: before.like_count })),
@@ -192,6 +196,7 @@ export function PostCard({ post, onLikes, compact, detail }: { post: Post; onLik
         </Tap>
       </Row>
 
+      {video && <PostVideo path={video.url} onDoubleTap={() => { if (!p.liked) like(); }} />}
       {images.length > 0 && <Photos paths={images.map((m) => m.url)} onDoubleTap={() => { if (!p.liked) like(); }} />}
       <Tap scale={0.99} haptic={false} disabled={detail} onPress={() => router.push({ pathname: '/post/[id]', params: { id: p.id } })}>
         <View style={{ paddingHorizontal: 16, paddingTop: 10, gap: 4 }}>
