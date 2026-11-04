@@ -8,7 +8,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, FlatList, Linking, Modal, Platform, Pressable, ScrollView, TextInput, View } from 'react-native';
 import Animated, { FadeIn, SlideInDown } from 'react-native-reanimated';
 
-import { canLift, liftSubject } from '../../modules/subject-lift';
+import { canCutBackground, cutBackground } from '@/lib/stickerCut';
 import { AvatarCropper } from './AvatarCropper';
 import { Avatar, Button, Row, T, Tap } from './ui';
 import { useAuth } from '@/lib/auth';
@@ -178,10 +178,10 @@ export function StickerPanel({ open, onClose, send }: { open: boolean; onClose: 
     const f = await pickMedia({ maxWidth: 1600 });
     if (!f) return;
     const original = { uri: f.uri, width: f.width ?? 800, height: f.height ?? 800 };
-    if (canLift()) {
+    if (canCutBackground()) {
       setMaking(true);
-      try { const r = await liftSubject(f.uri); setLifted({ uri: r.uri, original }); }
-      catch { setCropSrc(original); }
+      try { const r = await cutBackground(f.uri); setLifted({ uri: r.uri, original }); }
+      catch { Alert.alert(t('ما لقينا شخص أو إشي واضح بالصورة'), t('بنقصها بإيدك بدالها.')); setCropSrc(original); }
       finally { setMaking(false); }
     } else setCropSrc(original);
   }
@@ -235,7 +235,8 @@ export function StickerPanel({ open, onClose, send }: { open: boolean; onClose: 
             <Tap onPress={make} disabled={making} style={{ width: '25%', aspectRatio: 1, padding: 6 }}>
               <View style={{ flex: 1, borderRadius: 18, borderWidth: 1.5, borderStyle: 'dashed', borderColor: C.primary, alignItems: 'center', justifyContent: 'center', gap: 4 }}>
                 {making ? <ActivityIndicator color={C.primary} /> : <Plus size={24} color={C.primary} />}
-                <T v="tiny" color={C.primary} style={{ fontSize: 10, textAlign: 'center' }}>{canLift() ? t('من صورة (بنشيل الخلفية)') : t('من صورة')}</T>
+                {making && <T v="tiny" color={C.muted} style={{ fontSize: 9, textAlign: 'center' }}>{t('عم نشيل الخلفية…')}</T>}
+                <T v="tiny" color={C.primary} style={{ fontSize: 10, textAlign: 'center' }}>{canCutBackground() ? t('من صورة (بنشيل الخلفية)') : t('من صورة')}</T>
               </View>
             </Tap>
             {(mine ?? []).map((s) => (

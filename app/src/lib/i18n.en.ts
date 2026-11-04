@@ -1159,4 +1159,7 @@ export const EN: Record<string, string> = {
   "بالخلفية": "Keep background",
   "احفظه": "Save it",
   "من صورة (بنشيل الخلفية)": "From photo (background removed)",
+  "ما لقينا شخص أو إشي واضح بالصورة": "No clear person or object in the photo",
+  "بنقصها بإيدك بدالها.": "Crop it by hand instead.",
+  "عم نشيل الخلفية…": "Removing background…",
 };

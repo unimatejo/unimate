@@ -30,10 +30,16 @@ public class SubjectLiftModule: Module {
           }
           let buffer = try result.generateMaskedImage(ofInstances: result.allInstances, from: handler, croppedToInstancesExtent: true)
           let masked = CIImage(cvPixelBuffer: buffer)
-          // fit in 512x512 like WhatsApp stickers
+          // like WhatsApp: fit the subject in 512x512 and give it a white outline
           let side = max(masked.extent.width, masked.extent.height)
-          let scale = min(1, 512 / side)
-          let scaled = masked.transformed(by: CGAffineTransform(scaleX: scale, y: scale))
+          let scale = min(1, 470 / side)
+          let small = masked.transformed(by: CGAffineTransform(scaleX: scale, y: scale))
+          let moved = small.transformed(by: CGAffineTransform(translationX: -small.extent.minX + 21, y: -small.extent.minY + 21))
+          let canvas = CGRect(x: 0, y: 0, width: moved.extent.width + 42, height: moved.extent.height + 42)
+          let grown = moved.applyingFilter("CIMorphologyMaximum", parameters: [kCIInputRadiusKey: 10]).cropped(to: canvas)
+          let white = CIImage(color: CIColor.white).cropped(to: canvas)
+          let ring = white.applyingFilter("CIBlendWithAlphaMask", parameters: [kCIInputBackgroundImageKey: CIImage.empty(), kCIInputMaskImageKey: grown])
+          let scaled = moved.composited(over: ring).cropped(to: canvas)
           let ctx = CIContext()
           guard let cg = ctx.createCGImage(scaled, from: scaled.extent), let png = UIImage(cgImage: cg).pngData() else {
             promise.reject("render", "Could not make the sticker"); return
