@@ -3,11 +3,13 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import { Eye, Heart, Plus, Send, Star, Trash2, X } from 'lucide-react-native';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, TextInput, View } from 'react-native';
+import { ActivityIndicator, Alert, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, TextInput, useWindowDimensions, View } from 'react-native';
 import Animated, { Easing, FadeIn, FadeInDown, cancelAnimation, runOnJS, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Avatar, Row, T, Tap } from '@/components/ui';
+import { StoryOverlays } from '@/components/StoryOverlays';
+import { cleanOverlays } from '@/lib/storyOverlay';
 import { useAuth } from '@/lib/auth';
 import { mediaUrl, supabase } from '@/lib/supabase';
 import { C, F, isDark } from '@/lib/theme';
@@ -16,7 +18,7 @@ import { isAR, t, ta, rtlLayout } from '@/lib/i18n';
 import { optimistic } from '@/lib/run';
 import { toast } from '@/lib/toast';
 
-type S = { id: string; media_url: string; kind: string; caption: string | null; created_at: string; duration_sec: number | null };
+type S = { id: string; media_url: string; kind: string; caption: string | null; created_at: string; duration_sec: number | null; overlays?: unknown };
 type Viewer = { viewer_id: string; liked: boolean; p: { full_name: string; avatar_url: string | null } | null };
 
 function StoryVideo({ uri, onEnd, onReady }: { uri: string; onEnd: () => void; onReady: () => void }) {
@@ -31,6 +33,7 @@ function StoryVideo({ uri, onEnd, onReady }: { uri: string; onEnd: () => void; o
 
 /** Instagram-style story viewer: tap sides to move, hold to pause, video plays to the end, your own story shows who viewed it. */
 export default function StoryViewer() {
+  const { width: W, height: H } = useWindowDimensions();
   const { id, highlight } = useLocalSearchParams<{ id: string; highlight?: string }>(); // author id, optional highlight
   const { profile } = useAuth();
   const mine = profile?.id === id;
@@ -54,12 +57,12 @@ export default function StoryViewer() {
     supabase.from('profiles').select('full_name, avatar_url').eq('id', id).single().then(({ data }) => setAuthor(data));
     if (highlight) {
       supabase.from('highlights').select('title').eq('id', highlight).single().then(({ data }) => setHlName(data?.title ?? null));
-      supabase.from('highlight_items').select('added_at, s:stories(id, media_url, kind, caption, created_at, duration_sec)').eq('highlight_id', highlight).order('added_at')
+      supabase.from('highlight_items').select('added_at, s:stories(id, media_url, kind, caption, created_at, duration_sec, overlays)').eq('highlight_id', highlight).order('added_at')
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         .then(({ data }) => { const list = ((data ?? []) as any[]).map((x) => x.s).filter(Boolean) as S[]; setItems(list); if (list.length === 0) close(); });
       return;
     }
-    supabase.from('stories').select('id, media_url, kind, caption, created_at, duration_sec').eq('author_id', id).gt('expires_at', new Date().toISOString()).order('created_at')
+    supabase.from('stories').select('id, media_url, kind, caption, created_at, duration_sec, overlays').eq('author_id', id).gt('expires_at', new Date().toISOString()).order('created_at')
       .then(({ data }) => { const list = (data ?? []) as S[]; setItems(list); if (list.length === 0) close(); });
   }, [id, highlight]);
 
@@ -165,6 +168,7 @@ export default function StoryViewer() {
         : uri ? <Image key={uri} source={{ uri }} style={{ position: 'absolute', top: 0, bottom: 0, left: 0, right: 0 }} contentFit="cover" transition={150} onLoad={() => setReady(true)} onError={() => setReady(true)} /> : null}
       <Pressable style={{ position: 'absolute', top: 110, bottom: 130, width: '40%', ...(Platform.OS === 'web' ? (rtlLayout() ? { left: 0 } : { right: 0 }) : { end: 0 }) }} onPress={next} onLongPress={pause} onPressOut={resume} delayLongPress={200} accessibilityLabel={t('التالي')} />
       <Pressable style={{ position: 'absolute', top: 110, bottom: 130, width: '40%', ...(Platform.OS === 'web' ? (rtlLayout() ? { right: 0 } : { left: 0 }) : { start: 0 }) }} onPress={() => setI((x) => Math.max(0, x - 1))} onLongPress={pause} onPressOut={resume} delayLongPress={200} accessibilityLabel={t('السابق')} />
+      {s && ready && <StoryOverlays items={cleanOverlays(s.overlays)} width={W} height={H} onOpen={pause} />}
       <SafeAreaView edges={['top']} style={{ paddingHorizontal: 12, gap: 12, paddingBottom: 12 }}>
         <Row gap={4} style={{ marginTop: 6 }}>
           {(items ?? []).map((it, k) => (

@@ -8,6 +8,7 @@ import Animated, { FadeIn, FadeInUp, SlideInDown, useAnimatedStyle, useSharedVal
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Avatar, Row, T, Tap, Toggle } from '@/components/ui';
+import { VoiceBubble, VoiceRecorder } from '@/components/Voice';
 import { useAuth } from '@/lib/auth';
 import { mediaUrl, supabase } from '@/lib/supabase';
 import { C, F, isDark, shadow } from '@/lib/theme';
@@ -23,6 +24,32 @@ const VANISH: { key: VanishMode; label: string; hint: string }[] = [
   { key: 'd7', label: t('بعد أسبوع'), hint: '' },
   { key: 'never', label: t('ما تختفي'), hint: t('بتنحفظ') },
 ];
+
+/** A reply to a story, like Instagram: the story's photo (while it still exists) above the text. */
+function StoryReplyBubble({ m, mine }: { m: Message; mine: boolean }) {
+  const [thumb, setThumb] = useState<string | null>(null);
+  const [gone, setGone] = useState(false);
+  useEffect(() => {
+    if (!m.ref_id) { setGone(true); return; }
+    supabase.from('stories').select('media_url, kind, author_id').eq('id', m.ref_id).maybeSingle().then(async ({ data }) => {
+      if (!data || data.kind !== 'image') { setGone(!data); return; }
+      setThumb(await mediaUrl('stories', data.media_url));
+    }, () => setGone(true));
+  }, [m.ref_id]);
+  return (
+    <View style={{ gap: 6, alignItems: mine ? 'flex-end' : 'flex-start' }}>
+      <T v="tiny" color={C.muted}>{mine ? t('رديت على قصته') : t('رد على قصتك')}</T>
+      <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 8 }}>
+        <View style={{ width: 4, alignSelf: 'stretch', borderRadius: 2, backgroundColor: C.line }} />
+        {thumb ? <Image source={{ uri: thumb }} style={{ width: 92, height: 150, borderRadius: 14 }} contentFit="cover" />
+          : <View style={{ width: 92, height: 150, borderRadius: 14, backgroundColor: C.soft, alignItems: 'center', justifyContent: 'center', padding: 8 }}><T v="tiny" color={C.muted} style={{ textAlign: 'center' }}>{gone ? t('القصة خلصت') : '…'}</T></View>}
+      </View>
+      <View style={[{ paddingHorizontal: 14, paddingVertical: 10, borderRadius: 22, backgroundColor: mine ? C.primary : C.card }, mine ? { borderBottomRightRadius: 6 } : { borderBottomLeftRadius: 6 }]}>
+        <T v="body" color={mine ? C.white : C.ink}>{m.body}</T>
+      </View>
+    </View>
+  );
+}
 
 function ChatImage({ path, mine }: { path: string; mine: boolean }) {
   const [uri, setUri] = useState<string | null>(null);
@@ -157,9 +184,9 @@ export default function Chat() {
     return () => { supabase.removeChannel(ch); };
   }, [id]);
 
-  async function send(kind: 'text' | 'image' | 'view_once' = 'text', media?: string) {
+  async function send(kind: 'text' | 'image' | 'view_once' | 'voice' = 'text', media?: string, extra?: string) {
     if (!profile) return;
-    const body = kind === 'text' ? draft.trim() : null;
+    const body = kind === 'text' ? draft.trim() : kind === 'voice' ? extra ?? null : null;
     if (kind === 'text' && !body) return;
     if (kind === 'text') setDraft('');
     const { data, error } = await supabase.from('messages').insert({ conversation_id: id, sender_id: (profile?.id ?? ''), kind, body, media_url: media ?? null }).select().single();
@@ -181,6 +208,12 @@ export default function Chat() {
       await send(viewOnce ? 'view_once' : 'image', path);
     } catch (e) { Alert.alert(t('ما انبعتت الصورة'), (e as Error).message); }
     finally { setUploading(false); }
+  }
+
+  const [recording, setRecording] = useState(false);
+  async function sendVoice(file: { uri: string; mime: string }, seconds: number) {
+    const path = await uploadFile('chat', id, file);
+    await send('voice', path, String(seconds));
   }
 
   // older messages when you scroll up
@@ -305,6 +338,8 @@ export default function Chat() {
                 )}
                 <Pressable onPress={async () => { if (m.kind === 'image' && m.media_url) setViewer(await mediaUrl('chat', m.media_url)); }} onLongPress={() => messageMenu(m)} delayLongPress={350}>
                   {m.kind === 'image' && m.media_url ? <ChatImage path={m.media_url} mine={mine} /> :
+                   m.kind === 'voice' && m.media_url ? <VoiceBubble path={m.media_url} seconds={Number(m.body) || 0} mine={mine} /> :
+                   m.kind === 'story_reply' ? <StoryReplyBubble m={m} mine={mine} /> :
                    m.kind === 'view_once' ? (
                     <Tap onPress={() => !mine && !m.viewed_once_at && openOnce(m)} style={{ flexDirection: 'row', alignItems: 'center', gap: 10, minHeight: 48, paddingHorizontal: 16, borderRadius: 22, borderWidth: 1.5, borderColor: m.viewed_once_at ? C.line : C.pink, backgroundColor: C.card }}>
                       <Camera size={20} color={m.viewed_once_at ? C.faint : C.pinkInk} />
@@ -337,17 +372,19 @@ export default function Chat() {
           </View>
         ) : (
           <Row gap={6} style={{ backgroundColor: C.glass, paddingHorizontal: 10, paddingTop: 10, paddingBottom: insets.bottom + 10, borderTopWidth: 1, borderTopColor: C.line }}>
+            {!recording && <>
             <Tap onPress={() => sendPhoto(true, true)} disabled={uploading} accessibilityLabel={t('صورة بتنشاف مرة')} style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: C.primary, alignItems: 'center', justifyContent: 'center', opacity: uploading ? 0.6 : 1 }}>{uploading ? <ActivityIndicator color={C.white} /> : <Camera size={21} color={C.white} />}</Tap>
             <Row gap={0} style={{ flex: 1, minHeight: 44, borderRadius: 22, backgroundColor: C.field, paddingHorizontal: 6 }}>
               <TextInput keyboardAppearance={isDark ? 'dark' : 'light'} value={draft} onChangeText={onDraft} placeholder={t('رسالة...')} placeholderTextColor={C.faint} multiline
                 style={{ flex: 1, fontFamily: F.body, fontSize: 15, color: C.ink, textAlign: ta, paddingHorizontal: 10, maxHeight: 110, paddingVertical: 10 }} accessibilityLabel={t('اكتب رسالة')} />
               <Tap onPress={() => sendPhoto(false)} disabled={uploading} accessibilityLabel={t('صورة من الاستوديو')} style={{ width: 36, height: 36, alignItems: 'center', justifyContent: 'center' }}><ImageIcon size={21} color={C.ink2} /></Tap>
             </Row>
-            {draft.trim() ? (
+            </>}
+            {draft.trim() && !recording ? (
               <Animated.View entering={FadeIn}>
                 <Tap onPress={() => send()} accessibilityLabel={t('إرسال')} style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: C.primary, alignItems: 'center', justifyContent: 'center' }}><Send size={19} color={C.white} style={isAR ? { transform: [{ scaleX: -1 }] } : undefined} /></Tap>
               </Animated.View>
-            ) : null}
+            ) : <VoiceRecorder onRecorded={sendVoice} onRecording={setRecording} disabled={uploading} />}
           </Row>
         )}
       </KeyboardAvoidingView>

@@ -11,7 +11,7 @@ import {
 import Animated, { useAnimatedStyle, useSharedValue, withRepeat, withSequence, withSpring, withTiming } from 'react-native-reanimated';
 import { SafeAreaView, type Edge } from 'react-native-safe-area-context';
 
-import { C, F, R, avatarColors, isDark, shadow } from '@/lib/theme';
+import { C, F, R, avatarColors, isDark, shadow, glassStyle } from '@/lib/theme';
 import { flip, isAR, t, ta, rtlLayout } from '@/lib/i18n';
 
 // ---------- text ----------
@@ -76,7 +76,11 @@ export function Button({ title, onPress, kind = 'primary', loading, disabled, ic
 }) {
   const bg = { primary: C.primary, dark: C.inverse, soft: C.primarySoft, ghost: 'transparent', danger: C.danger, green: C.green, white: C.card }[kind];
   const fg = { primary: C.white, dark: C.onInverse, soft: C.primary, ghost: C.primary, danger: C.white, green: C.white, white: C.ink }[kind];
-  const glow = kind === 'primary' ? { shadowColor: C.primary, shadowOpacity: 0.35, shadowRadius: 14, shadowOffset: { width: 0, height: 8 }, elevation: 6 } : null;
+  // every button floats: colored ones glow in their own color, light ones get a soft lift
+  const tint = { primary: C.primary, dark: '#000000', danger: C.danger, green: C.green }[kind as 'primary'];
+  const glow = kind === 'ghost' ? null : tint
+    ? { shadowColor: tint, shadowOpacity: isDark ? 0.5 : 0.35, shadowRadius: 16, shadowOffset: { width: 0, height: 9 }, elevation: 7 }
+    : { ...shadow };
   return (
     <Tap
       onPress={disabled || loading ? undefined : onPress}
@@ -98,7 +102,7 @@ export function Button({ title, onPress, kind = 'primary', loading, disabled, ic
 export function IconButton({ children, onPress, label, dark, badge, style }: { children: ReactNode; onPress?: () => void; label: string; dark?: boolean; badge?: number; style?: StyleProp<ViewStyle> }) {
   return (
     <Tap onPress={onPress} accessibilityRole="button" accessibilityLabel={label}
-      style={[{ width: 44, height: 44, borderRadius: 15, backgroundColor: dark ? C.inverse : C.card, alignItems: 'center', justifyContent: 'center' }, !dark && shadow, style]}>
+      style={[{ width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' }, dark ? { backgroundColor: C.inverse } : glassStyle, style]}>
       {children}
       {!!badge && badge > 0 && (
         <View style={{ position: 'absolute', top: -5, left: -5, minWidth: 20, height: 20, borderRadius: 10, paddingHorizontal: 5, backgroundColor: C.pink, borderWidth: 2, borderColor: C.bg, alignItems: 'center', justifyContent: 'center' }}>
@@ -112,7 +116,8 @@ export function IconButton({ children, onPress, label, dark, badge, style }: { c
 export function Chip({ label, active, onPress, dot, style }: { label: string; active?: boolean; onPress?: () => void; dot?: string; style?: StyleProp<ViewStyle> }) {
   return (
     <Tap onPress={onPress} accessibilityRole="button" accessibilityState={{ selected: !!active }}
-      style={[{ minHeight: 38, paddingHorizontal: 14, borderRadius: R.pill, flexDirection: 'row', alignItems: 'center', gap: 7, backgroundColor: active ? C.inverse : C.card }, !active && { borderWidth: 1, borderColor: C.line }, style]}>
+      style={[{ minHeight: 38, paddingHorizontal: 14, borderRadius: R.pill, flexDirection: 'row', alignItems: 'center', gap: 7, backgroundColor: active ? C.inverse : C.card },
+        active ? { shadowColor: C.ink, shadowOpacity: isDark ? 0.4 : 0.22, shadowRadius: 10, shadowOffset: { width: 0, height: 5 }, elevation: 4 } : { ...shadow, shadowOpacity: isDark ? 0.4 : 0.06, shadowRadius: 10, shadowOffset: { width: 0, height: 4 } }, style]}>
       {dot && <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: dot }} />}
       <Text style={{ fontFamily: active ? F.bodyBold : F.bodyMd, fontSize: 13, color: active ? C.onInverse : C.ink }}>{label}</Text>
     </Tap>

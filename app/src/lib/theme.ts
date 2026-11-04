@@ -100,12 +100,28 @@ export const F = {
 
 export const R = { sm: 12, md: 16, lg: 22, xl: 28, pill: 999 };
 
+/** Everything floats a little: a soft lift plus a hairline edge that catches the light. */
 export const shadow = {
-  shadowColor: isDark ? '#000000' : '#0E1430',
-  shadowOpacity: isDark ? 0.5 : 0.07,
+  shadowColor: isDark ? '#000000' : '#1B2250',
+  shadowOpacity: isDark ? 0.55 : 0.11,
+  shadowRadius: 22,
+  shadowOffset: { width: 0, height: 10 },
+  elevation: 5,
+  borderWidth: 1,
+  borderColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.9)',
+};
+
+/** Frosted glass for buttons that sit on top of content. */
+export const glassStyle = {
+  backgroundColor: isDark ? 'rgba(28,30,38,0.72)' : 'rgba(255,255,255,0.78)',
+  borderWidth: 1,
+  borderColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.95)',
+  shadowColor: isDark ? '#000000' : '#1B2250',
+  shadowOpacity: isDark ? 0.5 : 0.14,
   shadowRadius: 18,
   shadowOffset: { width: 0, height: 8 },
-  elevation: 3,
+  elevation: 6,
+  ...({ backdropFilter: 'blur(18px)', WebkitBackdropFilter: 'blur(18px)' } as object), // web only; ignored on phones
 };
 
 // avatar palette: deterministic per user

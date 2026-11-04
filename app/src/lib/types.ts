@@ -40,6 +40,6 @@ export type Conversation = {
 
 export type Message = {
   id: string; conversation_id: string; sender_id: string | null; kind: string; body: string | null;
-  media_url: string | null; is_saved: boolean; viewed_once_at: string | null; vanishes_at: string | null;
+  media_url: string | null; ref_id?: string | null; is_saved: boolean; viewed_once_at: string | null; vanishes_at: string | null;
   deleted_at: string | null; created_at: string;
 };

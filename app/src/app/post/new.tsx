@@ -1,12 +1,15 @@
 import { Image } from 'expo-image';
 import { router, useLocalSearchParams } from 'expo-router';
-import { BarChart3, Camera, FileText, Image as ImageIcon, MapPin, Plus, Video, X } from 'lucide-react-native';
+import { BarChart3, Camera, FileText, Image as ImageIcon, MapPin, Plus, Video, Wand2, X } from 'lucide-react-native';
 import { useState } from 'react';
 import * as Haptics from 'expo-haptics';
-import { ActivityIndicator, Alert, KeyboardAvoidingView, Platform, ScrollView, TextInput, View } from 'react-native';
+import { ActivityIndicator, Alert, KeyboardAvoidingView, Modal, Platform, ScrollView, TextInput, View } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
 
 import { Avatar, Button, Chip, Row, Screen, Segmented, T, Tap } from '@/components/ui';
+import { StoryEditor } from '@/components/StoryEditor';
+import { StoryOverlays } from '@/components/StoryOverlays';
+import type { Overlay } from '@/lib/storyOverlay';
 import { useAuth } from '@/lib/auth';
 import { reportError } from '@/lib/errors';
 import { supabase } from '@/lib/supabase';
@@ -33,9 +36,14 @@ export default function NewPost() {
   const [pdf, setPdf] = useState<{ uri: string; mime: string; name: string; size: number | null } | null>(null);
   const [poll, setPoll] = useState<string[] | null>(null);
   const isPost = mode === 0;
+  const [overlays, setOverlays] = useState<Overlay[]>([]);
+  const [editing, setEditing] = useState(false);
 
   async function pick(camera = false, video = false) {
-    try { const m = await pickMedia({ camera, video }); if (m) setMedia(m); }
+    try {
+      const m = await pickMedia({ camera, video });
+      if (m) { setMedia(m); if (!isPost) { setOverlays([]); setEditing(true); } } // stories open the editor right away
+    }
     catch (e) { Alert.alert(t('ما زبط'), (e as Error).message); }
   }
 
@@ -76,7 +84,7 @@ export default function NewPost() {
         const path = await uploadFile('stories', (profile?.id ?? ''), media);
         const { error } = await supabase.from('stories').insert({
           author_id: (profile?.id ?? ''), university_id: profile.university_id, kind: media.kind, media_url: path,
-          duration_sec: media.duration ? Math.ceil(media.duration / 1000) : null, caption: body.trim() || null, audience: STORY_AUD[aud][0],
+          duration_sec: media.duration ? Math.ceil(media.duration / 1000) : null, caption: body.trim() || null, audience: STORY_AUD[aud][0], overlays,
         });
         if (error) throw error;
       }
@@ -111,9 +119,15 @@ export default function NewPost() {
           </Row>
 
           {media && (
-            <Animated.View entering={FadeIn} style={{ borderRadius: 22, overflow: 'hidden', height: 220, backgroundColor: C.bg }}>
+            <Animated.View entering={FadeIn} style={[{ borderRadius: 22, overflow: 'hidden', backgroundColor: C.bg }, isPost ? { height: 220 } : { width: 170, aspectRatio: 9 / 16, alignSelf: 'center' }]}>
               <Image source={{ uri: media.uri }} style={{ flex: 1 }} contentFit="cover" />
-              <Tap onPress={() => setMedia(null)} accessibilityLabel={t('شيل الصورة')} style={{ position: 'absolute', top: 10, left: 10, width: 36, height: 36, borderRadius: 18, backgroundColor: 'rgba(14,20,48,0.6)', alignItems: 'center', justifyContent: 'center' }}><X size={18} color={C.white} /></Tap>
+              {!isPost && <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }} pointerEvents="none"><StoryOverlays items={overlays} width={170} height={170 * 16 / 9} /></View>}
+              {!isPost && (
+                <Tap onPress={() => setEditing(true)} accessibilityLabel={t('عدّل الستوري')} style={{ position: 'absolute', bottom: 10, alignSelf: 'center', flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 36, paddingHorizontal: 14, borderRadius: 18, backgroundColor: 'rgba(14,20,48,0.6)' }}>
+                  <Wand2 size={16} color={C.white} /><T v="tiny" color={C.white}>{t('عدّل')}</T>
+                </Tap>
+              )}
+              <Tap onPress={() => { setMedia(null); setOverlays([]); }} accessibilityLabel={t('شيل الصورة')} style={{ position: 'absolute', top: 10, left: 10, width: 36, height: 36, borderRadius: 18, backgroundColor: 'rgba(14,20,48,0.6)', alignItems: 'center', justifyContent: 'center' }}><X size={18} color={C.white} /></Tap>
             </Animated.View>
           )}
 
@@ -204,6 +218,10 @@ export default function NewPost() {
           )}
         </ScrollView>
       </KeyboardAvoidingView>
+      <Modal visible={editing && !!media} animationType="fade" onRequestClose={() => setEditing(false)} statusBarTranslucent>
+        {media && <StoryEditor media={media} initial={overlays} onCancel={() => { setEditing(false); if (!overlays.length) setMedia(null); }}
+          onDone={(m, o) => { setMedia(m); setOverlays(o); setEditing(false); }} />}
+      </Modal>
       {busy && (
         <Animated.View entering={FadeIn} style={{ position: 'absolute', top: 0, bottom: 0, left: 0, right: 0, backgroundColor: 'rgba(14,20,48,0.55)', alignItems: 'center', justifyContent: 'center' }}>
           <View style={{ backgroundColor: C.card, borderRadius: 26, paddingVertical: 26, paddingHorizontal: 34, alignItems: 'center', gap: 12 }}>

@@ -26,7 +26,7 @@
           "en"
         ],
         "CFBundleDevelopmentRegion": "ar",
-        "NSMicrophoneUsageDescription": "لتسجيل صوت فيديو الستوري لما تصوّره من الكاميرا.",
+        "NSMicrophoneUsageDescription": "لتسجيل الرسائل الصوتية بالمحادثات وصوت فيديو الستوري.",
         "NSLocationAlwaysAndWhenInUseUsageDescription": "يونيميت بيستخدم موقعك بس وإنت فاتح التطبيق، لعرضك على خريطة الجامعة.",
         "UISupportedInterfaceOrientations": [
           "UIInterfaceOrientationPortrait"
@@ -186,10 +186,16 @@
         {
           "photosPermission": "لاختيار صور للمنشورات والمحادثات.",
           "cameraPermission": "لتصوير الستوري والصور.",
-          "microphonePermission": "لتسجيل صوت فيديو الستوري لما تصوّره من الكاميرا."
+          "microphonePermission": "لتسجيل الرسائل الصوتية بالمحادثات وصوت فيديو الستوري."
         }
       ],
-      "expo-video"
+      "expo-video",
+      [
+        "expo-audio",
+        {
+          "microphonePermission": "لتسجيل الرسائل الصوتية بالمحادثات وصوت فيديو الستوري."
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": false,
