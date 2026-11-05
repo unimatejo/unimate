@@ -40,11 +40,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     uidRef.current = uid;
     if (!uid) { setProfile(null); setUniversity(null); setProfileError(false); return; }
     try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*, university:universities(*), college:colleges(id, name_ar, name_en), major:majors(id, name_ar, name_en)')
-        .eq('id', uid)
-        .maybeSingle();
+      // a weak connection shouldn't lock anyone out: try up to 3 times before showing the error screen
+      let data: Record<string, any> | null = null; // eslint-disable-line @typescript-eslint/no-explicit-any
+      let error: { message?: string; code?: string } | null = null;
+      for (let attempt = 0; attempt < 3; attempt++) {
+        ({ data, error } = await supabase
+          .from('profiles')
+          .select('*, university:universities(*), college:colleges(id, name_ar, name_en), major:majors(id, name_ar, name_en)')
+          .eq('id', uid)
+          .maybeSingle());
+        if (!error || uidRef.current !== uid) break;
+        // the saved sign-in is no longer valid: get a fresh one once, then try again
+        if (/jwt|token|PGRST30/i.test(`${error.code ?? ''} ${error.message ?? ''}`)) {
+          const { error: re } = await supabase.auth.refreshSession();
+          if (re) { await supabase.auth.signOut().catch(() => {}); return; } // back to the sign-in screen
+        }
+        await new Promise((r) => setTimeout(r, 800 * (attempt + 1)));
+      }
       if (uidRef.current !== uid) return; // a newer sign-in started meanwhile
       if (error) throw error;
       setProfileError(false);
