@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { View } from 'react-native';
+import { TextInput, View } from 'react-native';
 
-import { Act, Actions, AdminScreen, Filters, Item, Muted, Panel, Sheet, State, Status, confirm, done, fmtDate, go, useLoad } from '@/components/admin/kit';
-import { TitleBadge, titleLabel } from '@/components/TitleBadge';
+import { Act, Actions, AdminScreen, UniPicker, Filters, Item, Muted, Panel, Sheet, State, Status, confirm, done, fmtDate, go, useLoad } from '@/components/admin/kit';
+import { TITLE_ORDER, TitleBadge, titleLabel } from '@/components/TitleBadge';
+import { C, F } from '@/lib/theme';
 import { T } from '@/components/ui';
 import { run } from '@/lib/run';
 import { supabase } from '@/lib/supabase';
@@ -18,6 +19,28 @@ export default function Titles() {
   const [filter, setFilter] = useState<'pending' | 'approved' | 'rejected' | 'all'>('pending');
   const [sel, setSel] = useState<Req | null>(null);
   const [busy, setBusy] = useState(false);
+  const [imp, setImp] = useState(false);
+  const [text, setText] = useState('');
+  const [uni, setUni] = useState('');
+  const [res, setRes] = useState<string | null>(null);
+
+  // one person per line: email, title (English key or Arabic, e.g. «عميد»), department
+  function parse() {
+    return text.split(/\n+/).map((l) => l.split(/[,\t،]/).map((x) => x.trim())).filter((c) => c[0]?.includes('@')).map(([email, title, department]) => {
+      const k = TITLE_ORDER.find((o) => o === title || titleLabel(o) === title) ?? 'doctor';
+      return { email: email.toLowerCase(), title: k, department: department || null };
+    });
+  }
+  async function importList() {
+    const rows = parse();
+    if (!rows.length) return;
+    setBusy(true);
+    const r = await run(supabase.rpc('admin_import_staff_titles', { p_rows: rows, p_university: uni || null }));
+    setBusy(false);
+    if (!r.ok) return;
+    const d = r.data as { saved: number; bad: number; matched: number };
+    done(); setRes(t('انحفظ {0} · طابق {1} حساب مسجّل · {2} سطر غلط', [String(d.saved), String(d.matched), String(d.bad)]));
+  }
   const { data, loading, error, reload } = useLoad<Req[]>(() => {
     let q = supabase.from('title_requests').select('*, user:profiles!title_requests_user_id_fkey(full_name, username, account_type)').order('created_at', { ascending: false }).limit(200);
     if (filter !== 'all') q = q.eq('status', filter);
@@ -39,6 +62,10 @@ export default function Titles() {
 
   return (
     <AdminScreen title={t('توثيق الأساتذة')} subtitle={t('الدكاترة والموظفين اللي طلبوا لقب')}>
+      <Panel onPress={() => { setRes(null); setImp(true); }}>
+        <T v="bodyMd">{t('استيراد قائمة الكادر الرسمية')}</T>
+        <Muted>{t('الصق قائمة الجامعة (إيميل، رتبة، قسم) وكل واحد بياخد رتبته تلقائي — هلأ ولما يسجّل بعدين.')}</Muted>
+      </Panel>
       <Filters items={[['pending', t('بانتظار')], ['approved', t('موثّقة')], ['rejected', t('مرفوضة')], ['all', t('الكل')]]} value={filter} onChange={setFilter} />
       <State loading={loading} error={error} empty={data?.length === 0}>
         <View style={{ gap: 8 }}>
@@ -48,6 +75,15 @@ export default function Titles() {
           ))}
         </View>
       </State>
+      <Sheet open={imp} onClose={() => setImp(false)} title={t('قائمة الكادر الرسمية')}>
+        <Muted>{t('كل سطر شخص: الإيميل، الرتبة، القسم. الرتبة بالعربي متل «عميد» أو «أستاذ مشارك».')}</Muted>
+        <UniPicker value={uni} onChange={setUni} allowAll={false} />
+        <TextInput multiline value={text} onChangeText={setText} placeholder={'dean.it@hu.edu.jo, عميد, كلية تكنولوجيا المعلومات\nahmad@hu.edu.jo, أستاذ مشارك, علم الحاسوب'}
+          placeholderTextColor={C.faint} style={{ minHeight: 160, backgroundColor: C.soft, borderRadius: 14, padding: 12, fontFamily: F.body, fontSize: 13, color: C.ink, textAlignVertical: 'top', textAlign: 'left' }} />
+        <Muted>{t('{0} شخص جاهزين', [String(parse().length)])}</Muted>
+        {res && <T v="bodyMd" color={C.greenInk}>{res}</T>}
+        <Actions><Act label={t('استورد')} kind="primary" onPress={importList} loading={busy} disabled={!parse().length} /></Actions>
+      </Sheet>
       <Sheet open={!!sel} onClose={() => setSel(null)} title={sel?.user?.full_name}>
         {sel && (
           <>

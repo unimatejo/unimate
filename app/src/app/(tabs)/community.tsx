@@ -1,7 +1,7 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import { PullRefresh } from '@/components/PullRefresh';
 import { router, useFocusEffect } from 'expo-router';
-import { Briefcase, BookOpen, CircleAlert, Bus, Gift, GraduationCap, Image as ImageIcon, LayoutGrid, MessageSquare, NotebookPen, PartyPopper, Plus, Map as MapIcon, Search, SearchCheck, ShoppingBag } from 'lucide-react-native';
+import { Briefcase, BookOpen, CircleAlert, Bus, Gift, GraduationCap, Image as ImageIcon, LayoutGrid, MessageSquare, NotebookPen, PartyPopper, Plus, Map as MapIcon, Landmark, Search, SearchCheck, ShoppingBag } from 'lucide-react-native';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { FlatList, ScrollView, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
@@ -91,6 +91,7 @@ export default function Community() {
                 <T v="h1">{t('المجتمع')}</T>
                 <T v="small" color={C.muted}>{nm(university)}</T>
               </View>
+              <IconButton label={t('مجتمع الجامعة')} onPress={() => router.push('/directory')}><Landmark size={21} color={C.ink} /></IconButton>
               <IconButton label={t('بحث')} onPress={() => router.push('/search')}><Search size={21} color={C.ink} /></IconButton>
               <IconButton label={t('الخريطة')} onPress={() => router.push('/map')}><MapIcon size={21} color={C.ink} /></IconButton>
             </Row>
