@@ -32,7 +32,7 @@ export default function NewEvent() {
   useEffect(() => {
     if (!profile) return;
     supabase.from('enrollments').select('section:sections(id, course:courses(name_ar, name_en))').eq('user_id', (profile?.id ?? ''))
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+       
       .then(({ data }) => { const s = ((data ?? []) as any[]).map((e) => e.section).filter(Boolean) as Sec[]; setSecs(s); if (!editId) setSection(s[0]?.id ?? null); });
   }, [profile, editId]);
 

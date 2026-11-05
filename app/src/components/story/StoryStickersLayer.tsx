@@ -1,4 +1,5 @@
 import * as Haptics from 'expo-haptics';
+import { isWebUrl } from '@/lib/util';
 import { router } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { KeyboardAvoidingView, Linking, Modal, Platform, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
@@ -80,7 +81,7 @@ export function StoryStickersLayer({ story, mine, width, height, onPause, onResu
   function open(o: Overlay) {
     onPause();
     if (o.kind === 'mention' && o.userId) router.push({ pathname: '/user/[id]', params: { id: o.userId } });
-    else if (o.kind === 'link' && o.data?.url) Linking.openURL(o.data.url).catch(() => {});
+    else if (o.kind === 'link' && isWebUrl(o.data?.url)) Linking.openURL(o.data.url).catch(() => {});
     else if (o.kind === 'place') router.push({ pathname: '/map', params: o.data?.lat != null ? { lat: String(o.data.lat), lng: String(o.data.lng), name: o.text } : {} });
     else if (o.kind === 'hashtag') router.push({ pathname: '/search', params: { q: `#${o.text.replace(/^#/, '')}` } });
   }

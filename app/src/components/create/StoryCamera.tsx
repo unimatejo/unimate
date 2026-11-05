@@ -32,6 +32,11 @@ type Props = {
 };
 
 /** Instagram-style story camera: full screen, tap to shoot, hold to record, slide up while holding to zoom. */
+// expo-camera is optional (missing on some builds): pick the permission hooks once, so hooks always run in the same order
+const NO_PERM = (): [{ granted: boolean; canAskAgain: boolean } | null, () => Promise<unknown>] => [null, async () => null];
+const useCameraPermissions = cameraModule()?.useCameraPermissions ?? NO_PERM;
+const useMicrophonePermissions = cameraModule()?.useMicrophonePermissions ?? NO_PERM;
+
 export function StoryCamera({ maxSec, onPicked, onClose, onSystemPicker, footer, videoOnly }: Props) {
   const Cam = cameraModule();
   const { width, height } = useWindowDimensions();
@@ -51,8 +56,8 @@ export function StoryCamera({ maxSec, onPicked, onClose, onSystemPicker, footer,
   const startedAt = useRef(0);
   const canRecord = Platform.OS !== 'web';
 
-  const [perm, requestPerm] = Cam ? Cam.useCameraPermissions() : [null, async () => null];
-  const [mic, requestMic] = Cam ? Cam.useMicrophonePermissions() : [null, async () => null];
+  const [perm, requestPerm] = useCameraPermissions();
+  const [mic, requestMic] = useMicrophonePermissions();
 
   useEffect(() => { if (perm && !perm.granted && perm.canAskAgain) requestPerm(); }, [perm?.granted]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => { if (mediaLibrary()) latestAsset().then(setThumb); }, []);
@@ -74,7 +79,7 @@ export function StoryCamera({ maxSec, onPicked, onClose, onSystemPicker, footer,
 
   async function startRecord() {
     if (!canRecord || recording || busy || !Cam) return;
-    if (!mic?.granted) { const r = await requestMic(); if (!r?.granted && !mic?.canAskAgain) { /* records without sound */ } }
+    if (!mic?.granted) await requestMic(); // if refused, it records without sound
     if (mode !== 'video') { setMode('video'); await new Promise((r) => setTimeout(r, 350)); }
     if (!ref.current) return;
     setRecording(true);

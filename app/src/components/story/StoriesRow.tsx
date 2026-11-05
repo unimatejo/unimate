@@ -39,7 +39,7 @@ export function StoriesRow() {
       .select('id, author_id, created_at, author:profiles!stories_author_id_fkey(full_name, avatar_url), views:story_views(viewer_id)')
       .gt('expires_at', new Date().toISOString()).order('created_at', { ascending: false }).limit(200);
     const map = new Map<string, Group>();
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+     
     for (const s of (data ?? []) as any[]) {
       const seen = (s.views ?? []).some((v: { viewer_id: string }) => v.viewer_id === (profile?.id ?? ''));
       const g = map.get(s.author_id);

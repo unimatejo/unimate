@@ -146,7 +146,7 @@ export default function Gpa() {
       const { data, error } = await supabase.from('enrollments').select('section:sections(id, course:courses(name_ar, code, credit_hours))').eq('user_id', profile.id);
       if (error) { Alert.alert(t('ما قدرنا نجيب موادك'), t('تأكد من الإنترنت وجرّب كمان مرة.')); return; }
       const have = new Set(all.map((r) => r.section_id).filter(Boolean));
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+       
       const fresh = ((data ?? []) as any[]).map((e) => e.section).filter((s) => s && !have.has(s.id)).map((s, i) => ({
         term_label: term, course_name: String(s.course?.name_ar ?? t('مادة')).slice(0, 80), course_code: s.course?.code ? String(s.course.code).slice(0, 20) : null,
         credit_hours: Math.max(0, Math.min(12, Number(s.course?.credit_hours) || 3)), section_id: s.id, position: all.length + i,

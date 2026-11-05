@@ -1,4 +1,5 @@
 import { router } from 'expo-router';
+import { isWebUrl } from '@/lib/util';
 import { BookOpen, Building2, Clock, FileText, Link as LinkIcon, MapPin, NotebookPen, Search as SearchIcon, X } from 'lucide-react-native';
 import { useEffect, useRef, useState } from 'react';
 import { Alert, FlatList, Linking, ScrollView, TextInput, View } from 'react-native';
@@ -87,13 +88,13 @@ export default function Search() {
           want('summaries') ? postQ(true) : none,
           want('courses') ? supabase.from('courses').select('id, name_ar, name_en, code').eq('university_id', uni).or(`name_ar.ilike.%${like}%,name_en.ilike.%${like}%,code.ilike.%${like}%`).limit(kind === 'all' ? 5 : 30) : none,
         ]);
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+         
         out.push(...((people.data ?? []) as any[]).filter((p) => !blocked.has(p.id)).map((p) => ({ kind: 'person', id: p.id, title: titledName(p.full_name, p.academic_title, p.title_verified), subtitle: [p.title_verified && p.academic_title ? titleLabel(p.academic_title) : null, p.username ? '@' + p.username : null, p.title_verified ? p.department : null, nm(p.major)].filter(Boolean).join(' · '), avatar: p.avatar_url })));
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+         
         out.push(...((courses.data ?? []) as any[]).map((c) => ({ kind: 'course', id: c.id, title: nm(c) ?? c.name_ar, subtitle: c.code ?? '' })));
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+         
         out.push(...((sums.data ?? []) as any[]).map((p) => ({ kind: 'summary', id: p.id, title: excerpt(p), subtitle: [t('ملخص'), p.author?.full_name].filter(Boolean).join(' · ') })));
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+         
         out.push(...((posts.data ?? []) as any[]).map((p) => ({ kind: 'post', id: p.id, title: excerpt(p), subtitle: [p.author?.full_name, t('{0} لايك', [p.like_count ?? 0])].filter(Boolean).join(' · ') })));
         if (want('campus')) out.push(...((campus.data ?? []) as R[]).filter((r) => kind === 'campus' || r.kind !== 'course' || !out.some((o) => o.kind === 'course' && o.title === r.title)));
       } catch { /* keep the empty list; the message below explains */ }
@@ -104,7 +105,7 @@ export default function Search() {
   }, [q, kind, profile, blocked]);
 
   function openLink(url: string) {
-    if (!/^https?:\/\//i.test(url)) { Alert.alert(t('الرابط مش صالح')); return; }
+    if (!isWebUrl(url)) { Alert.alert(t('الرابط مش صالح')); return; }
     Linking.openURL(url).catch(() => Alert.alert(t('ما قدرنا نفتح الرابط')));
   }
 

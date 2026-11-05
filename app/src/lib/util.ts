@@ -32,6 +32,9 @@ export function normalize(s: string | null | undefined): string {
 }
 
 
+/** Only open real web links from user content (never `javascript:` or other schemes). */
+export const isWebUrl = (u: unknown): u is string => typeof u === 'string' && /^https?:\/\/[^\s]+$/i.test(u.trim());
+
 export const WEEKDAYS = [t('الأحد'), t('الاثنين'), t('الثلاثاء'), t('الأربعاء'), t('الخميس'), t('الجمعة'), t('السبت')];
 export const WEEKDAYS_SHORT = [t('أحد'), t('اثنين'), t('ثلاثاء'), t('أربعاء'), t('خميس'), t('جمعة'), t('سبت')];
 

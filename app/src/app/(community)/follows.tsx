@@ -31,7 +31,7 @@ export default function Follows() {
         ? 'p:profiles!follows_follower_id_fkey(id, full_name, avatar_url, username, academic_title, title_verified, major:majors!profiles_major_id_fkey(name_ar, name_en))'
         : 'p:profiles!follows_followee_id_fkey(id, full_name, avatar_url, username, academic_title, title_verified, major:majors!profiles_major_id_fkey(name_ar, name_en))';
       const { data } = await supabase.from('follows').select(sel).eq(followers ? 'followee_id' : 'follower_id', params.user).eq('status', 'accepted').limit(500);
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+       
       setRows(((data ?? []) as any[]).map((x) => x.p).filter(Boolean));
       if (profile) {
         const { data: f } = await supabase.from('follows').select('followee_id').eq('follower_id', profile.id);

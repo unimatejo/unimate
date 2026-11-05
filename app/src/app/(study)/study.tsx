@@ -34,7 +34,7 @@ export default function Study() {
     setLoading(true);
     try {
     const { data: enr } = await supabase.from('enrollments').select('section:sections(course:courses(id, name_ar, name_en, code))').eq('user_id', (profile?.id ?? ''));
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+     
     const cs = ((enr ?? []) as any[]).map((e) => e.section?.course).filter(Boolean) as Course[];
     setCourses(cs);
     setCourse((c) => c ?? cs[0]?.id ?? null);

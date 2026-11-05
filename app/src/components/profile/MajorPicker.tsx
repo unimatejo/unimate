@@ -42,7 +42,7 @@ export function MajorPicker({ universityId, collegeId, majorId, onChange }: {
     supabase.from('colleges').select('id, name_ar, name_en, majors(id, name_ar, name_en, degree)').eq('university_id', universityId).order('name_ar')
       .then(({ data, error }) => { if (error) { setState('error'); return; } setCols((data ?? []) as College[]); setState('ok'); }, () => setState('error'));
   };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+   
   useEffect(load, [universityId]);
 
   const col = cols.find((c) => c.id === collegeId);

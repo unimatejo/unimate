@@ -393,7 +393,7 @@ function AddSheet({ open, conv, members, onClose, onSaved }: SheetProps & { memb
       const me = (await supabase.auth.getUser()).data.user?.id ?? '';
       if (!s) {
         const { data } = await supabase.from('follows').select('p:profiles!follows_followee_id_fkey(id, full_name, username, avatar_url)').eq('follower_id', me).eq('status', 'accepted').limit(80);
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+         
         setList(((data ?? []) as any[]).map((x) => x.p).filter(Boolean));
       } else {
         const { data } = await supabase.from('profiles').select('id, full_name, username, avatar_url').or(`full_name.ilike.%${s}%,username.ilike.%${s.toLowerCase()}%`).neq('id', me).limit(30);

@@ -56,7 +56,7 @@ export function useSchedule(userId?: string) {
 
     const ms: Meeting[] = [];
     const secs = new Map<string, { course_name: string; course_code: string; section_no: string; instructor: string | null }>();
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+     
     for (const e of (enr ?? []) as any[]) {
       const s = e.section; if (!s) continue;
       secs.set(s.id, { course_name: s.course?.name_ar ?? '', course_code: s.course?.code ?? '', section_no: s.section_no, instructor: s.instructor });
@@ -127,7 +127,7 @@ export function useSchedule(userId?: string) {
       .select('id, section_id, owner_id, kind, title, starts_at, location, section:sections(course:courses(name_ar, name_en))')
       .gte('starts_at', new Date(Date.now() - 86400000).toISOString())
       .order('starts_at');
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+     
     setEvents(((ev ?? []) as any[]).map((x) => ({ ...x, course_name: x.section?.course?.name_ar ?? null })));
     setError(false);
     } catch { setError(true); }

@@ -26,13 +26,13 @@ export function ShareToChat({ place, onClose }: { place: { lat: number; lng: num
     if (!place || !profile || chats) return;
     (async () => {
       const { data } = await supabase.from('conversation_members').select('conversation:conversations(id, kind, title, last_message_at)').eq('user_id', profile.id).eq('state', 'active');
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+       
       const convs = ((data ?? []) as any[]).map((r) => r.conversation).filter((c) => c && (c.kind === 'direct' || c.kind === 'group'));
       const direct = convs.filter((c) => c.kind === 'direct').map((c) => c.id);
       const { data: others } = direct.length
         ? await supabase.from('conversation_members').select('conversation_id, user_id, profile:profiles(full_name, avatar_url)').in('conversation_id', direct).neq('user_id', profile.id)
         : { data: [] };
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+       
       const by = Object.fromEntries(((others ?? []) as any[]).map((o) => [o.conversation_id, o]));
       setChats(convs.map((c) => ({
         id: c.id, kind: c.kind, at: c.last_message_at ?? '',

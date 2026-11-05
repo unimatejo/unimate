@@ -67,13 +67,13 @@ export default function Exams() {
           .order('starts_at').limit(200),
         supabase.from('studying_now').select('section_id, place, until, user_id').gt('until', new Date().toISOString()),
       ]);
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+       
       const s: Sec[] = ((enr ?? []) as any[]).map((e) => e.section).filter(Boolean).map((x) => ({ id: x.id, name: x.course?.name_ar ?? '', section_no: x.section_no }));
       setSecs(s);
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+       
       const list: Ev[] = ((ev ?? []) as any[]).map((x) => ({ ...x, course_name: x.section?.course?.name_ar ?? null }));
       setEvents(list);
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+       
       setMine(((st ?? []) as any[]).find((r) => r.user_id === profile.id) ?? null);
       scheduleExamReminders(list).catch(reportError);
       // classmates studying, for the courses on screen

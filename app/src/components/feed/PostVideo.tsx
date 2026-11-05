@@ -1,9 +1,8 @@
 import { FramedMedia } from '@/components/media/FramedMedia';
-import { Play, Volume2, VolumeX } from 'lucide-react-native';
+import { Play, Volume2, VolumeX , Heart } from 'lucide-react-native';
 import { useEffect, useRef, useState } from 'react';
 import { View } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withSequence, withTiming } from 'react-native-reanimated';
-import { Heart } from 'lucide-react-native';
 
 import { Tap } from '@/components/ui';
 import type { MediaMeta } from '@/lib/cropper';

@@ -7,7 +7,7 @@ import { TitleBadge, titledName } from '@/components/profile/TitleBadge';
 import { Avatar, Row, T, Tap } from '@/components/ui';
 import { C, F, shadow } from '@/lib/theme';
 import { t } from '@/lib/i18n';
-import { timeAgo } from '@/lib/util';
+import { timeAgo, isWebUrl } from '@/lib/util';
 
 export type Announcement = {
   id: string; college_id: string | null; college_name: string | null; title: string; body: string; link: string | null;
@@ -25,6 +25,7 @@ export function AnnouncementCard({ a, index, onAuthor, onMenu }: { a: Announceme
 
   function openLink() {
     if (!a.link || !/^https:\/\//.test(a.link)) return;
+    if (!isWebUrl(a.link)) return;
     Linking.openURL(a.link).catch(() => Alert.alert(t('ما قدرنا نفتح الرابط')));
   }
 

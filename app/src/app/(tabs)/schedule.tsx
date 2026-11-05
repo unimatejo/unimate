@@ -19,7 +19,7 @@ import { placeLine, useSchedule, ymd, type Meeting } from '@/lib/schedule';
 import { toast } from '@/lib/toast';
 import { supabase } from '@/lib/supabase';
 import { C, F, shadow } from '@/lib/theme';
-import { WEEKDAYS_SHORT, clock } from '@/lib/util';
+import { WEEKDAYS_SHORT, clock, isWebUrl } from '@/lib/util';
 import { LOCALE, t } from '@/lib/i18n';
 import { useScreenTimer } from '@/lib/perf';
 
@@ -121,7 +121,7 @@ export default function Schedule() {
     setFlipping(null);
   }
 
-  function openLink(url: string) { Linking.openURL(url).catch(() => Alert.alert(t('ما قدرنا نفتح الرابط'))); }
+  function openLink(url: string) { if (!isWebUrl(url)) { Alert.alert(t('الرابط مش صالح')); return; } Linking.openURL(url).catch(() => Alert.alert(t('ما قدرنا نفتح الرابط'))); }
 
   function eventMenu(e: (typeof events)[number]) {
     Alert.alert(e.title, new Date(e.starts_at).toLocaleString(LOCALE, { weekday: 'long', day: 'numeric', month: 'long', hour: 'numeric', minute: '2-digit' }) + (e.location ? `\n${e.location}` : ''), [

@@ -41,7 +41,7 @@ export default function Swap() {
     if (courseIds.length) {
       const { data: secs } = await supabase.from('sections').select('id, course_id, section_no, instructor, meetings:section_meetings(weekday, starts_at)').in('course_id', courseIds).order('section_no');
       const by: Record<string, Sec[]> = {};
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+       
       for (const s of (secs ?? []) as any[]) (by[s.course_id] ??= []).push(s);
       setOthers(by);
     }

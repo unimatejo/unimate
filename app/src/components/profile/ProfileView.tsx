@@ -16,14 +16,13 @@ import { SuggestedPeople } from '@/components/feed/SuggestedPeople';
 import { Avatar, Button, Empty, Row, T, Tap } from '@/components/ui';
 import { useAuth } from '@/lib/auth';
 import { POST_SELECT, toggleLike, withMine } from '@/lib/posts';
-import { optimistic } from '@/lib/run';
+import { optimistic , run } from '@/lib/run';
 import { toast } from '@/lib/toast';
 import { mediaUrl, supabase } from '@/lib/supabase';
 import { C, F, isDark, R, SPRING } from '@/lib/theme';
 import type { Post, Profile } from '@/lib/types';
 import { flip, nm, t, ta, LOCALE } from '@/lib/i18n';
 import { Bone } from '@/components/ui/Skeleton';
-import { run } from '@/lib/run';
 import { useScreenTimer } from '@/lib/perf';
 
 type Rel = 'none' | 'pending' | 'accepted';
@@ -317,7 +316,7 @@ export function ProfileView({ userId, onTitle, back }: { userId: string; onTitle
   const socialsVisible = mine || (p.socials_visible_to === 'everyone') || (p.socials_visible_to === 'friends' && friends) || (p.socials_visible_to === 'close_friends' && isClose);
   const reels = posts.filter((x) => (x.media ?? []).some((m) => m.kind === 'video'));
   const shown = tab === 0 ? posts : tab === 1 ? reels : (tagged ?? []);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   
   const uni = nm((p as any).university);
   const staffAcct = p.title_verified && (p.account_type === 'faculty' || p.account_type === 'staff');
   // faculty show their department instead of a study year

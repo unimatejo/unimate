@@ -1,10 +1,9 @@
 import { useMemo, useState } from 'react';
 import { TextInput, View } from 'react-native';
 
-import { Act, Actions, AdminScreen, Muted, Panel, UniPicker, confirm, done } from '@/components/admin/kit';
+import { Act, Actions, AdminScreen, Muted, Panel, UniPicker, confirm, done , fmtNum } from '@/components/admin/kit';
 import { Field, T, Toggle } from '@/components/ui';
 import { useAuth } from '@/lib/auth';
-import { fmtNum } from '@/components/admin/kit';
 import { run } from '@/lib/run';
 import { supabase } from '@/lib/supabase';
 import { C, F } from '@/lib/theme';

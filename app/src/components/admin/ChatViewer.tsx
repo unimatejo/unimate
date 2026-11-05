@@ -92,7 +92,7 @@ export function ChatViewer({ conversationId, members, presetReason, rightId }: {
       }
     }, 4000);
     return () => clearInterval(tick);
-  }, [msgs, conversationId]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [msgs, conversationId]);  
 
   async function del(m: Message) {
     if (m.deleted_at) return;

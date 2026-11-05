@@ -162,7 +162,7 @@ export default function Chat() {
     const { data: c } = await supabase.from('conversations').select('*').eq('id', id).single();
     setConv(c as Conversation);
     const { data: mem } = await supabase.from('conversation_members').select('user_id, state, last_read_at, profile:profiles(id, full_name, avatar_url, username, is_verified, academic_title, title_verified, major:majors!profiles_major_id_fkey(name_ar, name_en))').eq('conversation_id', id);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+     
     const rows = (mem ?? []) as any[];
     setPeople(Object.fromEntries(rows.filter((r) => r.profile).map((r) => [r.user_id, r.profile])));
     setOtherRead(rows.find((m) => m.user_id !== (profile?.id ?? ''))?.last_read_at ?? null);

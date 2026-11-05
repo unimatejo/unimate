@@ -62,7 +62,7 @@ export default function StoryViewer() {
     if (highlight) {
       supabase.from('highlights').select('title').eq('id', highlight).single().then(({ data }) => setHlName(data?.title ?? null));
       supabase.from('highlight_items').select('added_at, s:stories(id, media_url, kind, caption, created_at, duration_sec, overlays, meta)').eq('highlight_id', highlight).order('added_at')
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+         
         .then(({ data }) => { const list = ((data ?? []) as any[]).map((x) => x.s).filter(Boolean) as S[]; setItems(list); if (list.length === 0) close(); });
       return;
     }

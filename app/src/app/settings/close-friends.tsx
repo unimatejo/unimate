@@ -22,7 +22,7 @@ export default function CloseFriends() {
     if (!profile) return;
     supabase.from('follows').select('p:profiles!follows_follower_id_fkey(id, full_name, avatar_url, major:majors!profiles_major_id_fkey(name_ar, name_en))')
       .eq('followee_id', (profile?.id ?? '')).eq('status', 'accepted')
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+       
       .then(({ data }) => setPeople(((data ?? []) as any[]).map((x) => x.p).filter(Boolean)));
     supabase.from('close_friends').select('friend_id').eq('owner_id', (profile?.id ?? ''))
       .then(({ data }) => setPicked(new Set((data ?? []).map((x) => x.friend_id))));

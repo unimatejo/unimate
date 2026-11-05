@@ -30,7 +30,7 @@ export default function Advertiser() {
       setA({ ...row, photos: row.photos ?? [], menu: row.menu ?? [] }); setState('ok');
     }, () => setState('error'));
   };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+   
   useEffect(load, [id]);
 
   function call() {

@@ -25,7 +25,7 @@ export default function Share() {
   useEffect(() => {
     if (!profile) return;
     supabase.from('follows').select('p:profiles!follows_followee_id_fkey(id, full_name, avatar_url)').eq('follower_id', (profile?.id ?? '')).eq('status', 'accepted').limit(300)
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+       
       .then(({ data }) => setPeople(((data ?? []) as any[]).map((x) => x.p).filter(Boolean)));
   }, [profile]);
 

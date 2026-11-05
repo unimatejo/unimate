@@ -63,7 +63,7 @@ export function Inbox({ inTab }: { inTab?: boolean }) {
     const { data: mine } = await supabase.from('conversation_members')
       .select('state, last_read_at, conversation:conversations(id, kind, title, context_label, streak_days, last_message_at, created_by, community:communities(kind))')
       .eq('user_id', profile.id).neq('state', 'left');
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+     
     const rows = ((mine ?? []) as any[]).filter((r) => r.conversation);
     const ids = rows.map((r) => r.conversation.id);
     const [{ data: members }, { data: lasts }, { data: counts }] = ids.length ? await Promise.all([
@@ -76,7 +76,7 @@ export function Inbox({ inTab }: { inTab?: boolean }) {
     for (const m of (lasts ?? []) as { conversation_id: string; kind: string; body: string | null; sender_id: string | null }[]) if (!lastBy.has(m.conversation_id)) lastBy.set(m.conversation_id, m);
     const out: Item[] = rows.map((r) => {
       const c = r.conversation;
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+       
       const other = c.kind === 'direct' ? ((members ?? []) as any[]).find((m) => m.conversation_id === c.id)?.profile ?? null : null;
       return {
         id: c.id, kind: c.kind, course: c.community?.kind === 'course_section', state: r.state, created_by: c.created_by, title: other?.full_name ?? c.title ?? t('محادثة'), other, context: c.context_label,
@@ -90,7 +90,7 @@ export function Inbox({ inTab }: { inTab?: boolean }) {
     setItems(out);
     // mutual friends for the quick row
     const { data: f } = await supabase.from('follows').select('p:profiles!follows_followee_id_fkey(id, full_name, avatar_url, is_verified, academic_title, title_verified)').eq('follower_id', profile.id).eq('status', 'accepted').limit(30);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+     
     const fr: Person[] = ((f ?? []) as any[]).map((x) => x.p).filter(Boolean);
     // people you chat with directly also show in the notes row
     for (const it of out) if (it.other && !fr.some((p) => p.id === it.other!.id)) fr.push(it.other);

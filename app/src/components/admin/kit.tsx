@@ -17,7 +17,7 @@ export function useLoad<T>(fn: () => PromiseLike<Res<T>>, deps: unknown[]) {
   const [data, setData] = useState<T | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+   
   const reload = useCallback(async () => {
     setLoading(true);
     try { const r = await fn(); setData(r.data); setError(r.error?.message ?? null); }

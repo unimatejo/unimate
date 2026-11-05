@@ -45,7 +45,7 @@ function TabItem({ name, on, onPress, badge = 0 }: { name: string; on: boolean; 
 }
 
 /** Floating glass tab bar; the active tab gets a solid pill that fades in. */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+ 
 export function TabBar({ state, emitter, navigateToTab, navigation }: any) {
   const insets = useSafeAreaInsets();
   const { profile } = useAuth();

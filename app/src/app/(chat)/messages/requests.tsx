@@ -28,7 +28,7 @@ export default function Requests() {
     setLoading(true);
     try {
       const { data } = await supabase.from('conversation_members').select('conversation:conversations(id, context_label, created_by)').eq('user_id', profile.id).eq('state', 'request');
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+       
       const convs = ((data ?? []) as any[]).map((r) => r.conversation).filter(Boolean);
       const ids = convs.map((c) => c.id); const senders = [...new Set(convs.map((c) => c.created_by).filter(Boolean))];
       const [{ data: from }, { data: msgs }] = ids.length ? await Promise.all([

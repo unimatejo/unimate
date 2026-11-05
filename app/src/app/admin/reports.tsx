@@ -38,7 +38,7 @@ function Target({ r, onChanged }: { r: Report; onChanged: () => void }) {
     }
     if (!cid) { setMiss(true); return; }
     const { data: mem } = await supabase.from('conversation_members').select('user_id, p:profiles(full_name)').eq('conversation_id', cid);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+     
     setConv({ id: cid, members: ((mem ?? []) as any[]).map((x) => ({ id: x.user_id, name: x.p?.full_name ?? t('؟') })) });
   }
 

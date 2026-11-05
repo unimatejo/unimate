@@ -41,7 +41,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!uid) { setProfile(null); setUniversity(null); setProfileError(false); return; }
     try {
       // a weak connection shouldn't lock anyone out: try up to 3 times before showing the error screen
-      let data: Record<string, any> | null = null; // eslint-disable-line @typescript-eslint/no-explicit-any
+      let data: Record<string, any> | null = null;  
       let error: { message?: string; code?: string } | null = null;
       for (let attempt = 0; attempt < 3; attempt++) {
         ({ data, error } = await supabase

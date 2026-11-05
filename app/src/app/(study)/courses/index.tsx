@@ -73,7 +73,7 @@ export default function Courses() {
     const { data } = await supabase.from('enrollments')
       .select('source, section:sections(id, section_no, instructor, course:courses(name_ar, name_en, code), meetings:section_meetings(id, weekday, starts_at, ends_at, kind, room_text, source, confirmations))')
       .eq('user_id', profile.id);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+     
     const list = ((data ?? []) as any[]).filter((e) => e.section).map((e) => ({ ...e.section, source: e.source, mates: 0 })) as Sec[];
     // my own changes: hide or move a section time just for me, or add my own
     const { data: pm } = await supabase.from('personal_meetings').select('*').eq('user_id', profile.id);
