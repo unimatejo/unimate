@@ -1,13 +1,13 @@
 import { router, useFocusEffect } from 'expo-router';
-import { PullRefresh } from '@/components/PullRefresh';
+import { PullRefresh } from '@/components/ui/PullRefresh';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Bell, BookOpen, CalendarDays, GraduationCap, MapPin, Navigation, PartyPopper, Repeat, Search, SearchCheck, ShoppingBag, Sparkles, Users } from 'lucide-react-native';
 import { useCallback, useEffect, useState } from 'react';
 import { ScrollView, View, Platform } from 'react-native';
 import Animated, { FadeIn, Easing, useAnimatedStyle, useSharedValue, withRepeat, withTiming } from 'react-native-reanimated';
 
-import { AdBanner } from '@/components/AdBanner';
-import { GlyphTile, GRAD, Wiggle } from '@/components/Glyph';
+import { AdBanner } from '@/components/feed/AdBanner';
+import { GlyphTile, GRAD, Wiggle } from '@/components/ui/Glyph';
 import { Card, IconButton, Row, Screen, T, Tap } from '@/components/ui';
 import { useAuth } from '@/lib/auth';
 import { placeLine, useSchedule } from '@/lib/schedule';

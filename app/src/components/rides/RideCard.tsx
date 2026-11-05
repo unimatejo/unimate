@@ -2,8 +2,8 @@ import { Image } from 'expo-image';
 import { BadgeCheck, Armchair, ChevronLeft } from 'lucide-react-native';
 import { View } from 'react-native';
 
-import { TitleBadge, titledName } from '../TitleBadge';
-import { Avatar, Row, T, Tap } from '../ui';
+import { TitleBadge, titledName } from '@/components/profile/TitleBadge';
+import { Avatar, Row, T, Tap } from '@/components/ui';
 import { EMOJI, priceLabel, seatsLeft, timeLabel, type Ride } from '@/lib/rides';
 import { C, F, shadow } from '@/lib/theme';
 import { flip, t } from '@/lib/i18n';

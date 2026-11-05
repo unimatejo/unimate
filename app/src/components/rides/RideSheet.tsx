@@ -3,7 +3,7 @@ import { ReactNode } from 'react';
 import { KeyboardAvoidingView, Modal, Platform, Pressable, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { Row, T, Tap } from '../ui';
+import { Row, T, Tap } from '@/components/ui';
 import { C, F } from '@/lib/theme';
 import { t } from '@/lib/i18n';
 

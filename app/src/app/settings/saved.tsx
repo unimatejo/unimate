@@ -1,10 +1,10 @@
 import { Bookmark } from 'lucide-react-native';
-import { PullRefresh } from '@/components/PullRefresh';
+import { PullRefresh } from '@/components/ui/PullRefresh';
 import { useCallback, useEffect, useState } from 'react';
 import { FlatList } from 'react-native';
 
-import { LikesSheet } from '@/components/LikesSheet';
-import { PostCard } from '@/components/PostCard';
+import { LikesSheet } from '@/components/feed/LikesSheet';
+import { PostCard } from '@/components/feed/PostCard';
 import { Empty, Header, Screen } from '@/components/ui';
 import { useAuth } from '@/lib/auth';
 import { POST_SELECT, withMine } from '@/lib/posts';
@@ -13,7 +13,7 @@ import { useFocusEffect } from 'expo-router';
 import { C } from '@/lib/theme';
 import type { Post } from '@/lib/types';
 import { t } from '@/lib/i18n';
-import { ListSkeleton } from '@/components/Skeleton';
+import { ListSkeleton } from '@/components/ui/Skeleton';
 
 export default function Saved() {
   const { profile } = useAuth();

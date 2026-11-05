@@ -1,17 +1,17 @@
 import { LinearGradient } from 'expo-linear-gradient';
-import { PullRefresh } from '@/components/PullRefresh';
+import { PullRefresh } from '@/components/ui/PullRefresh';
 import { router, useFocusEffect } from 'expo-router';
 import { Briefcase, BookOpen, CircleAlert, Bus, Gift, GraduationCap, Image as ImageIcon, LayoutGrid, MessageSquare, NotebookPen, PartyPopper, Plus, Map as MapIcon, Landmark, Megaphone, Search, SearchCheck, ShoppingBag } from 'lucide-react-native';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { FlatList, ScrollView, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 
-import { AdBanner } from '@/components/AdBanner';
-import { LikesSheet } from '@/components/LikesSheet';
-import { PostCard } from '@/components/PostCard';
-import { GlyphTile, GRAD } from '@/components/Glyph';
-import { StoriesRow } from '@/components/StoriesRow';
-import { SuggestedPeople } from '@/components/SuggestedPeople';
+import { AdBanner } from '@/components/feed/AdBanner';
+import { LikesSheet } from '@/components/feed/LikesSheet';
+import { PostCard } from '@/components/feed/PostCard';
+import { GlyphTile, GRAD } from '@/components/ui/Glyph';
+import { StoriesRow } from '@/components/story/StoriesRow';
+import { SuggestedPeople } from '@/components/feed/SuggestedPeople';
 import { Avatar, Button, Empty, IconButton, Row, Screen, Segmented, T, Tap } from '@/components/ui';
 import { useAuth } from '@/lib/auth';
 import { loadFeed, type FeedFilter } from '@/lib/posts';
@@ -19,7 +19,7 @@ import { supabase } from '@/lib/supabase';
 import { CATEGORY, C } from '@/lib/theme';
 import type { Post } from '@/lib/types';
 import { nm, t } from '@/lib/i18n';
-import { ListSkeleton } from '@/components/Skeleton';
+import { ListSkeleton } from '@/components/ui/Skeleton';
 import { useScreenTimer } from '@/lib/perf';
 
 const TABS: FeedFilter['tab'][] = ['university', 'college', 'following'];

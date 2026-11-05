@@ -2,7 +2,7 @@ import { Check, Languages, Smartphone } from 'lucide-react-native';
 import { useState } from 'react';
 import { ScrollView, View } from 'react-native';
 
-import { GlyphTile, GRAD } from '@/components/Glyph';
+import { GlyphTile, GRAD } from '@/components/ui/Glyph';
 import { Header, Row, Screen, T, Tap } from '@/components/ui';
 import { langPref, reloadApp, setLanguage, t, type LangPref } from '@/lib/i18n';
 import { setPref } from '@/lib/prefs';

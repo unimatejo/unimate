@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { Alert, Linking, View } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
 
-import { TitleBadge, titledName } from '@/components/TitleBadge';
+import { TitleBadge, titledName } from '@/components/profile/TitleBadge';
 import { Avatar, Row, T, Tap } from '@/components/ui';
 import { C, F, shadow } from '@/lib/theme';
 import { t } from '@/lib/i18n';

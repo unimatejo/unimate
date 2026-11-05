@@ -5,12 +5,12 @@ import { Alert, FlatList, KeyboardAvoidingView, Platform, TextInput, View } from
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { LikesSheet } from '@/components/LikesSheet';
-import { PostCard } from '@/components/PostCard';
+import { LikesSheet } from '@/components/feed/LikesSheet';
+import { PostCard } from '@/components/feed/PostCard';
 import { Avatar, Button, Empty, Header, IconButton, Row, Screen, T, Tap } from '@/components/ui';
-import { PostSkeleton } from '@/components/Skeleton';
+import { PostSkeleton } from '@/components/ui/Skeleton';
 import { toast } from '@/lib/toast';
-import { TitleBadge, titledName } from '@/components/TitleBadge';
+import { TitleBadge, titledName } from '@/components/profile/TitleBadge';
 import { useAuth } from '@/lib/auth';
 import { POST_SELECT, withMine } from '@/lib/posts';
 import { supabase } from '@/lib/supabase';

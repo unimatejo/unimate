@@ -5,9 +5,9 @@ import { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Alert, KeyboardAvoidingView, Platform, ScrollView, View } from 'react-native';
 import Animated, { FadeIn, FadeInLeft, FadeOutRight, ZoomIn } from 'react-native-reanimated';
 
-import { MajorPicker } from '@/components/MajorPicker';
-import { TitleBadge, titleLabel } from '@/components/TitleBadge';
-import { InstagramGlyph, SnapGlyph } from '@/components/SocialGlyphs';
+import { MajorPicker } from '@/components/profile/MajorPicker';
+import { TitleBadge, titleLabel } from '@/components/profile/TitleBadge';
+import { InstagramGlyph, SnapGlyph } from '@/components/profile/SocialGlyphs';
 import { Avatar, Button, Card, Chip, Field, Row, Screen, T, Tap } from '@/components/ui';
 import { importTeamsCourses, useAuth } from '@/lib/auth';
 import { reportError } from '@/lib/errors';

@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import { PullRefresh } from '@/components/PullRefresh';
+import { PullRefresh } from '@/components/ui/PullRefresh';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Bell, BellOff, BookOpen, Calculator, Car, CalendarPlus, CalendarX, ScanLine, Clock, FlaskConical, Hourglass, MapPin, MessagesSquare, UserX, Video, EyeOff } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
@@ -7,13 +7,13 @@ import { useEffect, useMemo, useState } from 'react';
 import { Alert, Linking, ScrollView, View } from 'react-native';
 import Animated, { FadeIn, useAnimatedStyle, useSharedValue, withRepeat, withTiming } from 'react-native-reanimated';
 
-import { GlyphTile, GRAD } from '@/components/Glyph';
+import { GlyphTile, GRAD } from '@/components/ui/Glyph';
 
 import { Button, Card, Empty, IconButton, Row, Screen, T, Tag, Tap } from '@/components/ui';
 import { useAuth } from '@/lib/auth';
 import { reportError } from '@/lib/errors';
 import { run } from '@/lib/run';
-import { ListSkeleton } from '@/components/Skeleton';
+import { ListSkeleton } from '@/components/ui/Skeleton';
 import { scheduleLectureReminders } from '@/lib/notify';
 import { placeLine, useSchedule, ymd, type Meeting } from '@/lib/schedule';
 import { toast } from '@/lib/toast';

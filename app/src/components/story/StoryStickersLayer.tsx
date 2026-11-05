@@ -4,8 +4,8 @@ import { useCallback, useEffect, useState } from 'react';
 import { KeyboardAvoidingView, Linking, Modal, Platform, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { Placed } from '../StoryOverlays';
-import { Avatar } from '../ui';
+import { Placed } from '@/components/story/StoryOverlays';
+import { Avatar } from '@/components/ui';
 import { DrawLayer, StickerBody, type Live } from './StickerBody';
 import { cleanOverlays, type Overlay } from '@/lib/storyOverlay';
 import { supabase } from '@/lib/supabase';

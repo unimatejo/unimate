@@ -3,7 +3,7 @@ import { CheckCircle2, Clock, XCircle } from 'lucide-react-native';
 import { useCallback, useEffect, useState } from 'react';
 import { ScrollView, View } from 'react-native';
 
-import { TITLE_ORDER, TitleBadge, titleLabel, titledName } from '@/components/TitleBadge';
+import { TITLE_ORDER, TitleBadge, titleLabel, titledName } from '@/components/profile/TitleBadge';
 import { Button, Chip, Field, Header, Loading, Screen, T } from '@/components/ui';
 import { useAuth } from '@/lib/auth';
 import { run } from '@/lib/run';

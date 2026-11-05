@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { TextInput, View } from 'react-native';
 
 import { Act, Actions, AdminScreen, UniPicker, Filters, Item, Muted, Panel, Sheet, State, Status, confirm, done, fmtDate, go, useLoad } from '@/components/admin/kit';
-import { TITLE_ORDER, TitleBadge, titleLabel } from '@/components/TitleBadge';
+import { TITLE_ORDER, TitleBadge, titleLabel } from '@/components/profile/TitleBadge';
 import { C, F } from '@/lib/theme';
 import { T } from '@/components/ui';
 import { run } from '@/lib/run';

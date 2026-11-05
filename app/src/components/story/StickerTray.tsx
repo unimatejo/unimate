@@ -5,7 +5,7 @@ import { createElement, useEffect, useState, type ReactNode } from 'react';
 import { ActivityIndicator, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { Avatar } from '../ui';
+import { Avatar } from '@/components/ui';
 import { useAuth } from '@/lib/auth';
 import { EMOJIS, SLIDER_EMOJIS, type Overlay } from '@/lib/storyOverlay';
 import { supabase } from '@/lib/supabase';

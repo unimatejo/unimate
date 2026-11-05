@@ -8,10 +8,10 @@ import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-nati
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
-import { ToastHost } from '@/components/Toast';
-import { ZoomHost } from '@/components/ZoomPhoto';
-import { WebAlertHost } from '@/components/WebAlert';
-import { MediaCropperHost } from '@/components/MediaCropper';
+import { ToastHost } from '@/components/shell/Toast';
+import { ZoomHost } from '@/components/media/ZoomPhoto';
+import { WebAlertHost } from '@/components/shell/WebAlert';
+import { MediaCropperHost } from '@/components/media/MediaCropper';
 import { useOtaUpdates } from '@/lib/ota';
 import { useWebPush } from '@/lib/webpush';
 import { AuthProvider, useAuth } from '@/lib/auth';

@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
 import { Alert, View } from 'react-native';
 
-import { Avatar, Field, Row, T } from '../ui';
+import { Avatar, Field, Row, T } from '@/components/ui';
 import { ChatViewer } from './ChatViewer';
-import { TITLE_ORDER, TitleBadge, titleLabel } from '../TitleBadge';
+import { TITLE_ORDER, TitleBadge, titleLabel } from '@/components/profile/TitleBadge';
 import { Act, Actions, Item, Muted, Panel, Pill, Section, Status, audit, confirm, done, fmtDate, fmtNum, promptText, useLoad } from './kit';
 import { supabase } from '@/lib/supabase';
 import { C } from '@/lib/theme';

@@ -12,14 +12,14 @@ import { StoryStickersLayer } from '@/components/story/StoryStickersLayer';
 import { useAuth } from '@/lib/auth';
 import { mediaUrl, supabase } from '@/lib/supabase';
 import { C, F, isDark, SPRING } from '@/lib/theme';
-import { Bone } from '@/components/Skeleton';
+import { Bone } from '@/components/ui/Skeleton';
 import { timeAgo } from '@/lib/util';
 import { t, ta, rtlLayout } from '@/lib/i18n';
-import { ActivityChip, StoryActivitySheet, type StoryViewer } from '@/components/StoryActivity';
-import { EmojiBurst, StoryReplyBar, type ReplyBarHandle } from '@/components/StoryReplyBar';
+import { ActivityChip, StoryActivitySheet, type StoryViewer } from '@/components/story/StoryActivity';
+import { EmojiBurst, StoryReplyBar, type ReplyBarHandle } from '@/components/story/StoryReplyBar';
 import { optimistic } from '@/lib/run';
 import { toast } from '@/lib/toast';
-import { FramedMedia } from '@/components/FramedMedia';
+import { FramedMedia } from '@/components/media/FramedMedia';
 import type { MediaMeta } from '@/lib/cropper';
 
 type S = { id: string; media_url: string; kind: string; caption: string | null; created_at: string; duration_sec: number | null; overlays?: unknown; meta?: MediaMeta | null };

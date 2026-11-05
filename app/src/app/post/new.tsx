@@ -8,9 +8,9 @@ import Animated, { FadeIn, FadeInDown, useAnimatedStyle, useSharedValue, withSpr
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Avatar, Chip, Row, T, Tap } from '@/components/ui';
-import { FramedMedia } from '@/components/FramedMedia';
-import { StoryEditor } from '@/components/StoryEditor';
-import { StoryOverlays } from '@/components/StoryOverlays';
+import { FramedMedia } from '@/components/media/FramedMedia';
+import { StoryEditor } from '@/components/story/StoryEditor';
+import { StoryOverlays } from '@/components/story/StoryOverlays';
 import type { Overlay } from '@/lib/storyOverlay';
 import { useAuth } from '@/lib/auth';
 import { reportError } from '@/lib/errors';

@@ -4,8 +4,8 @@ import { ChevronLeft, Search, ShieldAlert } from 'lucide-react-native';
 import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import { Alert, Platform, ScrollView, TextInput, View, type StyleProp, type ViewStyle } from 'react-native';
 
-import { SheetModal } from '../ChatExtras';
-import { Button, Chip, Empty, Field, Header, Loading, Row, Screen, T, Tap } from '../ui';
+import { SheetModal } from '@/components/chat/ChatExtras';
+import { Button, Chip, Empty, Field, Header, Loading, Row, Screen, T, Tap } from '@/components/ui';
 import { supabase } from '@/lib/supabase';
 import { C, F, R, isDark } from '@/lib/theme';
 import { flip, isAR, t, ta } from '@/lib/i18n';

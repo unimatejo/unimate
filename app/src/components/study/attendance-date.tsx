@@ -3,7 +3,7 @@ import { CalendarDays } from 'lucide-react-native';
 import { createElement, useState } from 'react';
 import { Platform, View } from 'react-native';
 
-import { Row, T, Tap } from '../ui';
+import { Row, T, Tap } from '@/components/ui';
 import { C, F } from '@/lib/theme';
 import { LOCALE, t } from '@/lib/i18n';
 

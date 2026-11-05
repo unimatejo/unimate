@@ -3,7 +3,7 @@ import { Image } from 'expo-image';
 import { useEffect, useState } from 'react';
 import { View } from 'react-native';
 
-import { Button, Field, Row, T } from '../ui';
+import { Button, Field, Row, T } from '@/components/ui';
 import { RideSheet, Stepper } from './RideSheet';
 import { run } from '@/lib/run';
 import { EMOJI, LIMITS, clean, dayLabel, rideError, seatsLeft, timeLabel, type Ride } from '@/lib/rides';

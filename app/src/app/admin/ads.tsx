@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { View } from 'react-native';
 
 import { Act, Actions, AdminScreen, Item, Muted, OptionPicker, Panel, Pill, Section, Sheet, State, UniPicker, audit, confirm, done, fmtNum, useLoad, useUnis } from '@/components/admin/kit';
-import { DateField } from '@/components/DateField';
+import { DateField } from '@/components/ui/DateField';
 import { Chip, Field, Row, T, Tap, Toggle } from '@/components/ui';
 import { supabase } from '@/lib/supabase';
 import { pickMedia, publicUrl, uploadFile } from '@/lib/upload';

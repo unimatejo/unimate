@@ -6,7 +6,7 @@ import { useEffect, useState, type ReactNode } from 'react';
 import { Alert, ScrollView, TextInput, View } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
 
-import { titleLabel } from '@/components/TitleBadge';
+import { titleLabel } from '@/components/profile/TitleBadge';
 import { Avatar, Header, IconTile, Row, Screen, T, Tap } from '@/components/ui';
 import { useAuth } from '@/lib/auth';
 import { supabase } from '@/lib/supabase';

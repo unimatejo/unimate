@@ -4,11 +4,11 @@ import { Eye } from 'lucide-react-native';
 import { useEffect, useState } from 'react';
 import { Pressable, View } from 'react-native';
 
-import { Avatar, Row, T } from '../ui';
+import { Avatar, Row, T } from '@/components/ui';
 import { Act, Panel, confirm, promptText, Muted } from './kit';
-import { ContactBubble, FileBubble, LocationBubble, PollBubble, StickerBubble } from '../ChatAttach';
-import { bubble, DateSep, inkOn, ReactionChips, type Reaction } from '../ChatExtras';
-import { VoiceBubble } from '../Voice';
+import { ContactBubble, FileBubble, LocationBubble, PollBubble, StickerBubble } from '@/components/chat/ChatAttach';
+import { bubble, DateSep, inkOn, ReactionChips, type Reaction } from '@/components/chat/ChatExtras';
+import { VoiceBubble } from '@/components/chat/Voice';
 import { supabase } from '@/lib/supabase';
 import { C, F } from '@/lib/theme';
 import { t } from '@/lib/i18n';

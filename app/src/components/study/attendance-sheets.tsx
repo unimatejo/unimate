@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { Button, Field, Row, Segmented, T, Tap } from '../ui';
+import { Button, Field, Row, Segmented, T, Tap } from '@/components/ui';
 import { AbsenceDate, ymdOf } from './attendance-date';
 import { isRateLimited, run } from '@/lib/run';
 import { supabase } from '@/lib/supabase';

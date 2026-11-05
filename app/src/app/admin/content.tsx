@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { View } from 'react-native';
 
 import { Act, Actions, AdminScreen, Filters, Muted, OptionPicker, Panel, Pill, State, UniPicker, audit, confirm, done, fmtDate, useLoad } from '@/components/admin/kit';
-import { ImageViewer } from '@/components/ImageViewer';
+import { ImageViewer } from '@/components/media/ImageViewer';
 import { T, Toggle } from '@/components/ui';
 import { supabase } from '@/lib/supabase';
 import { t } from '@/lib/i18n';
