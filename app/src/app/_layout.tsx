@@ -16,7 +16,6 @@ import { useOtaUpdates } from '@/lib/ota';
 import { useWebPush } from '@/lib/webpush';
 import { AuthProvider, useAuth } from '@/lib/auth';
 import { installGlobalErrorHandler, reportError, setScreen } from '@/lib/errors';
-import { runQaLaunchArgs } from '@/lib/qa';
 import { isAR, syncDirection, t, ta } from '@/lib/i18n';
 import { C, F, isDark } from '@/lib/theme';
 
@@ -125,7 +124,6 @@ export default function RootLayout() {
 
   // a font that fails to load must not keep the app on the splash forever
   const loaded = fontsLoaded || !!fontError;
-  useEffect(() => { if (loaded) runQaLaunchArgs().catch(() => {}); }, [loaded]);
   if (!loaded) return null;
   return (
     <GestureHandlerRootView style={{ flex: 1, backgroundColor: C.bg }}>

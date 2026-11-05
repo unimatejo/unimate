@@ -22,17 +22,17 @@ const SECTIONS: Sec[] = [
   { key: 'moderation', label: t('فحص المحتوى'), icon: ShieldAlert, color: C.orange, badge: (s) => s.mod_pending ?? 0 },
   { key: 'users', label: t('المستخدمين'), icon: Users, color: C.blue },
   { key: 'titles', label: t('توثيق الأساتذة'), icon: GraduationCap, color: '#3D6BFF', badge: (s) => s.titles_pending ?? 0 },
-  { key: 'chats', label: t('المحادثات'), icon: MessagesSquare, color: C.violet },
+  { key: 'chats', label: t('المحادثات'), icon: MessagesSquare, color: C.violet, owner: true },
   { key: 'content', label: t('المحتوى'), icon: SquareStack, color: C.sky },
   { key: 'support', label: t('الدعم'), icon: LifeBuoy, color: C.green, badge: (s) => s.tickets_open },
-  { key: 'ads', label: t('الإعلانات'), icon: Megaphone, color: C.orange },
-  { key: 'study-rules', label: t('قواعد الدراسة'), icon: Calculator, color: C.blue },
-  { key: 'grades', label: t('علامات الجامعة'), icon: GraduationCap, color: '#F5A900' },
-  { key: 'campus', label: t('الجامعات والخرائط'), icon: Map, color: C.green, badge: (s) => s.aliases_pending + s.places_pending },
-  { key: 'offers', label: t('العروض'), icon: BadgePercent, color: C.pink },
-  { key: 'notify', label: t('إرسال إشعار'), icon: Send, color: C.primary },
-  { key: 'audit', label: t('سجل الإدارة'), icon: ScrollText, color: C.muted },
-  { key: 'errors', label: t('أخطاء التطبيق'), icon: Bug, color: C.red },
+  { key: 'ads', label: t('الإعلانات'), icon: Megaphone, color: C.orange, owner: true },
+  { key: 'study-rules', label: t('قواعد الدراسة'), icon: Calculator, color: C.blue, owner: true },
+  { key: 'grades', label: t('علامات الجامعة'), icon: GraduationCap, color: '#F5A900', owner: true },
+  { key: 'campus', label: t('الجامعات والخرائط'), icon: Map, color: C.green, badge: (s) => s.aliases_pending + s.places_pending, owner: true },
+  { key: 'offers', label: t('العروض'), icon: BadgePercent, color: C.pink, owner: true },
+  { key: 'notify', label: t('إرسال إشعار'), icon: Send, color: C.primary, owner: true },
+  { key: 'audit', label: t('سجل الإدارة'), icon: ScrollText, color: C.muted, owner: true },
+  { key: 'errors', label: t('أخطاء التطبيق'), icon: Bug, color: C.red, owner: true },
   { key: 'admins', label: t('المشرفين'), icon: ShieldCheck, color: C.violet, owner: true },
 ];
 
@@ -68,8 +68,8 @@ export default function AdminHome() {
           <Stat n={s.messages_7d} label={t('رسالة هالأسبوع')} />
           <Stat n={s.reports_open} label={t('بلاغ مفتوح')} alert={s.reports_open > 0} onPress={() => go('/admin/reports')} />
           <Stat n={s.tickets_open} label={t('طلب دعم مفتوح')} alert={s.tickets_open > 0} onPress={() => go('/admin/support')} />
-          <Stat n={s.aliases_pending + s.places_pending} label={t('ألقاب وأماكن بانتظارك')} alert={s.aliases_pending + s.places_pending > 0} onPress={() => go('/admin/campus')} />
-          <Stat n={s.ads_live} label={t('إعلان شغّال')} onPress={() => go('/admin/ads')} />
+          <Stat n={s.aliases_pending + s.places_pending} label={t('ألقاب وأماكن بانتظارك')} alert={s.aliases_pending + s.places_pending > 0} onPress={role === 'owner' ? () => go('/admin/campus') : undefined} />
+          <Stat n={s.ads_live} label={t('إعلان شغّال')} onPress={role === 'owner' ? () => go('/admin/ads') : undefined} />
         </View>
       ) : <Muted>{t('بيحمّل…')}</Muted>}
 

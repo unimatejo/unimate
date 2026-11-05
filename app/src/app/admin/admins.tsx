@@ -21,7 +21,7 @@ export default function Admins() {
   useEffect(() => { const x = setTimeout(() => setTerm(q.trim()), 300); return () => clearTimeout(x); }, [q]);
 
   async function add(u: UserRow) {
-    if (!(await confirm(t('تضيف {0}؟', [u.full_name]), role === 'owner' ? t('رح يصير مالك وإله كل الصلاحيات، ومنها إضافة وشيل المشرفين.') : t('رح يصير مشرف ويقدر يراجع البلاغات والمحتوى.'), t('أضف')))) return;
+    if (!(await confirm(t('تضيف {0}؟', [u.full_name]), role === 'owner' ? t('رح يصير مالك وإله كل الصلاحيات، ومنها إضافة وشيل المشرفين.') : t('رح يصير مشرف: البلاغات، فحص المحتوى، إيقاف الحسابات، توثيق الأساتذة والدعم. ما بيشوف المحادثات الخاصة غير المبلّغ عنها، وما بيعدّل الجامعات أو الإعلانات أو الإشعارات العامة.'), t('أضف')))) return;
     const { error: e } = await supabase.from('admins').insert({ user_id: u.id, role });
     if (e) { setMsg(e.message); return; }
     await audit('add_admin', 'user', u.id, { role }); done(); setQ(''); setMsg(null); reload();

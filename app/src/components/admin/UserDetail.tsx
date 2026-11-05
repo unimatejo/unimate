@@ -4,7 +4,7 @@ import { Alert, View } from 'react-native';
 import { Avatar, Field, Row, T } from '@/components/ui';
 import { ChatViewer } from './ChatViewer';
 import { TITLE_ORDER, TitleBadge, titleLabel } from '@/components/profile/TitleBadge';
-import { Act, Actions, Item, Muted, Panel, Pill, Section, Status, audit, confirm, done, fmtDate, fmtNum, promptText, useLoad } from './kit';
+import { Act, Actions, Item, Muted, Panel, Pill, Section, Status, audit, confirm, done, fmtDate, fmtNum, promptText, useAdminRole, useLoad } from './kit';
 import { supabase } from '@/lib/supabase';
 import { C } from '@/lib/theme';
 import { t } from '@/lib/i18n';
@@ -15,7 +15,9 @@ type Conv = { id: string; kind: string; title: string | null; context_label: str
 export function UserDetail({ id, onChanged }: { id: string; onChanged?: () => void }) {
   const { data: rows, reload } = useLoad<UserRow[]>(() => supabase.rpc('admin_find_users', { q: id, lim: 1 }), [id]);
   const u = rows?.[0];
-  const { data: convs } = useLoad<Conv[]>(() => supabase.rpc('admin_user_conversations', { target: id }), [id]);
+  // titles and someone's chat list are for the owner; moderators see reported chats from the reports screen
+  const owner = useAdminRole() === 'owner';
+  const { data: convs } = useLoad<Conv[]>(() => owner ? supabase.rpc('admin_user_conversations', { target: id }) as never : Promise.resolve({ data: [], error: null }), [id, owner]);
   const { data: posts } = useLoad<{ id: string; body: string; category: string; created_at: string; is_hidden: boolean }[]>(
     () => supabase.from('posts').select('id, body, category, created_at, is_hidden').eq('author_id', id).order('created_at', { ascending: false }).limit(20), [id]);
   const [open, setOpen] = useState<Conv | null>(null);
@@ -131,8 +133,8 @@ export function UserDetail({ id, onChanged }: { id: string; onChanged?: () => vo
           </Actions>
         )}
       </Panel>
-      <Section title={t('اللقب الأكاديمي')} />
-      <Panel>
+      {owner && <Section title={t('اللقب الأكاديمي')} />}
+      {owner && <Panel>
         <Row gap={8}>
           {acad?.title_verified && acad.academic_title ? <TitleBadge title={acad.academic_title} verified size="md" /> : <Muted>{acad?.account_type === 'faculty' ? t('إيميله من الجامعة، ممكن يكون دكتور أو موظف') : t('بدون لقب')}</Muted>}
         </Row>
@@ -145,7 +147,7 @@ export function UserDetail({ id, onChanged }: { id: string; onChanged?: () => vo
             {TITLE_ORDER.map((k) => <Act key={k} label={titleLabel(k)} kind={acad?.academic_title === k ? 'primary' : 'soft'} onPress={() => setTitle(k)} />)}
           </View>
         )}
-      </Panel>
+      </Panel>}
       {edit && (
         <Panel>
           <Field label={t('الاسم')} value={edit.full_name} onChangeText={(v) => setEdit({ ...edit, full_name: v })} />
@@ -154,6 +156,7 @@ export function UserDetail({ id, onChanged }: { id: string; onChanged?: () => vo
         </Panel>
       )}
 
+      {owner && <>
       <Section title={t('المحادثات ({0})', [String(convs?.length ?? 0)])} right={open ? <Act label={t('رجوع')} onPress={() => setOpen(null)} /> : undefined} />
       {open ? (
         <Panel>
@@ -170,6 +173,7 @@ export function UserDetail({ id, onChanged }: { id: string; onChanged?: () => vo
           {convs?.length === 0 && <Muted>{t('ما في محادثات.')}</Muted>}
         </View>
       )}
+      </>}
 
       <Section title={t('آخر المنشورات')} />
       <View style={{ gap: 8 }}>

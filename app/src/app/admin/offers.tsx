@@ -44,7 +44,7 @@ export default function Offers() {
   }
 
   return (
-    <AdminScreen title={t('العروض')} subtitle={t('جوا التطبيق للي مفعّلين العروض، وعلى الإيميل للي وافقوا بس')}>
+    <AdminScreen ownerOnly title={t('العروض')} subtitle={t('جوا التطبيق للي مفعّلين العروض، وعلى الإيميل للي وافقوا بس')}>
       <Panel>
         <UniPicker value={uni} onChange={setUni} label={t('لمين')} />
         <Field label={t('العنوان')} value={title} onChangeText={setTitle} maxLength={80} placeholder={t('خصم 20% لطلاب الأردنية')} />

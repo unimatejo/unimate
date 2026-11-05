@@ -11,9 +11,7 @@ app/android/
 web.zip
 site/download/*.apk
 site.zip
-admin.zip
 
-# build leftovers and local tool settings
+# build leftovers
 *.tsbuildinfo
-
-qa/token.txt
+dist-web/

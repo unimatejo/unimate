@@ -1,11 +1,13 @@
-import re, html
-src = open('app/src/app/settings/legal.tsx', encoding='utf-8').read()
+import html, os, re
+
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))  # the repository folder
+src = open(os.path.join(ROOT, 'app/src/app/settings/legal.tsx'), encoding='utf-8').read()
 def secs(name):
     block = src[src.index(f'const {name}: Sec[] = ['):]
     block = block[:block.index('];')]
     return re.findall(r"\[t\('(.*?)'\), t\('(.*?)'\)\]", block)
 PRIVACY, TERMS = secs('PRIVACY'), secs('TERMS')
-EN_SRC = open('app/src/lib/i18n.en.ts', encoding='utf-8').read()
+EN_SRC = open(os.path.join(ROOT, 'app/src/lib/i18n.en.ts'), encoding='utf-8').read()
 def en(ar):
     m = re.search(r'"' + re.escape(ar) + r'":\s*"((?:[^"\\]|\\.)*)"', EN_SRC)
     return m.group(1).replace('\\"', '"') if m else ar

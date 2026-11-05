@@ -20,7 +20,7 @@ tags = ('<link rel="manifest" href="/manifest.webmanifest"><link rel="apple-touc
 if 'manifest.webmanifest' not in h: h = h.replace('</head>', tags + '</head>', 1)
 h = h.replace('content="width=device-width, initial-scale=1, shrink-to-fit=no"', 'content="width=device-width, initial-scale=1, shrink-to-fit=no, viewport-fit=cover"')
 open(p, 'w', encoding='utf-8').write(h)
-ht = open(os.path.join(os.path.dirname(__file__), '../../admin/public/.htaccess')).read().replace('Header always set X-Frame-Options "DENY"\n', '')
+ht = open(os.path.join(os.path.dirname(__file__), 'htaccess')).read()  # https, page fallback, basic safety headers
 ht += open(os.path.join(app, 'web/htaccess-extra')).read() + '\nAddType application/manifest+json .webmanifest\n<FilesMatch "\\.html$">\n  Header set Cache-Control "no-cache, must-revalidate"\n</FilesMatch>\n<Files "sw.js">\n  Header set Cache-Control "no-cache"\n  Header set Service-Worker-Allowed "/"\n</Files>\n'
 # a phone still running an old copy asks for code files that are gone: answer with a tiny script that loads
 # the newest version (instead of index.html, which breaks the import and leaves the page stuck)

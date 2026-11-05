@@ -222,7 +222,7 @@ export default function Campus() {
   useEffect(() => { if (!uni && unis[0]) setUni(unis[0].id); }, [unis, uni]);
 
   return (
-    <AdminScreen title={t('الجامعات والخرائط')}>
+    <AdminScreen ownerOnly title={t('الجامعات والخرائط')}>
       <PendingQueue />
       <UniPicker value={uni} onChange={setUni} allowAll={false} />
       <Filters items={[['info', t('المعلومات')], ['academics', t('الكليات والتخصصات')], ['links', t('روابط البوابات')], ['buildings', t('المباني والألقاب')]]} value={tab} onChange={setTab} />

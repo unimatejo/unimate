@@ -95,7 +95,7 @@ function Performance() {
 export default function ErrorsAndPerformance() {
   const [tab, setTab] = useState<'errors' | 'perf'>('errors');
   return (
-    <AdminScreen title={t('أخطاء التطبيق')} subtitle={t('أي خطأ أو بطء بيصير على تلفونات الطلاب بيوصل هون لحاله')}>
+    <AdminScreen ownerOnly title={t('أخطاء التطبيق')} subtitle={t('أي خطأ أو بطء بيصير على تلفونات الطلاب بيوصل هون لحاله')}>
       <Filters items={[['errors', t('الأخطاء')], ['perf', t('الأداء')]]} value={tab} onChange={setTab} />
       {tab === 'errors' ? <Errors /> : <Performance />}
     </AdminScreen>

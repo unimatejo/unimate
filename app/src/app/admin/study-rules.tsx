@@ -94,7 +94,7 @@ export default function StudyRules() {
   const inputStyle = { minHeight: 44, borderRadius: 12, backgroundColor: C.soft, paddingHorizontal: 12, fontFamily: F.bodyMd, fontSize: 15, color: C.ink, textAlign: 'center' as const };
 
   return (
-    <AdminScreen title={t('قواعد الدراسة')} subtitle={t('نسبة الحرمان وأسابيع الفصل وسلم العلامات')}>
+    <AdminScreen ownerOnly title={t('قواعد الدراسة')} subtitle={t('نسبة الحرمان وأسابيع الفصل وسلم العلامات')}>
       <UniPicker value={uni} onChange={setUni} allowAll={false} />
       <State loading={loading} error={loadErr}>
         <Panel>

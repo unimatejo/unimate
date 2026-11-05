@@ -173,7 +173,7 @@ export default function Ads() {
   }
 
   return (
-    <AdminScreen title={t('الإعلانات')} subtitle={t('مطاعم ومحلات حوالين الجامعات · كل إعلان مكتوب عليه «ممول»')} right={<Act label={t('+ معلن')} kind="primary" onPress={() => setSel(blankAdv())} />}>
+    <AdminScreen ownerOnly title={t('الإعلانات')} subtitle={t('مطاعم ومحلات حوالين الجامعات · كل إعلان مكتوب عليه «ممول»')} right={<Act label={t('+ معلن')} kind="primary" onPress={() => setSel(blankAdv())} />}>
       <State loading={loading} error={error} empty={data?.length === 0}>
         <View style={{ gap: 8 }}>
           {(data ?? []).map((a) => (

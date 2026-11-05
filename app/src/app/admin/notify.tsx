@@ -25,7 +25,7 @@ export default function Notify() {
   }
 
   return (
-    <AdminScreen title={t('إرسال إشعار')} subtitle={t('بيطلع بصفحة الإشعارات، وبيوصل كإشعار للي مفعّلين')}>
+    <AdminScreen ownerOnly title={t('إرسال إشعار')} subtitle={t('بيطلع بصفحة الإشعارات، وبيوصل كإشعار للي مفعّلين')}>
       <Panel>
         <UniPicker value={uni} onChange={setUni} label={t('لمين')} />
         <Field label={t('العنوان')} value={title} onChangeText={setTitle} maxLength={80} />

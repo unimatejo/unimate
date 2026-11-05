@@ -13,8 +13,8 @@ Student community app for Jordanian universities: schedule, study tools, campus 
 | `supabase/migrations/` | Database tables, security rules and server functions, applied in order |
 | `supabase/functions/` | Server functions (push notifications, photo checks, timetable reading…) |
 | `supabase/tests/` | Security checks |
+| `supabase/seed/`, `supabase/data/` | University, college, major and campus data |
 | `site/` | The public site unimate.my |
-| `admin/` | Older web admin panel (the app has its own admin section) |
 | `tools/` | Build and publish scripts |
 
 ## Screen groups (`app/src/app/`)
@@ -32,5 +32,12 @@ Student community app for Jordanian universities: schedule, study tools, campus 
 cd app
 npm run check      # types, lint, unused code
 ```
+
+## Admin levels
+
+- **Owner**: everything.
+- **Moderator**: reports, content checks, suspending accounts, professor titles, support. Sees only reported chats.
+
+The database enforces these rules (`supabase/migrations/0080_admin_roles.sql`); the app only hides what a level can't use.
 
 Secrets are never committed. See `.env.example` files.

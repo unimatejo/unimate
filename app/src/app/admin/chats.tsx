@@ -56,7 +56,7 @@ export default function Conversations() {
   const shown = (list ?? []).filter((c) => kind === 'all' || c.kind === kind);
 
   return (
-    <AdminScreen title={t('المحادثات')} subtitle={full === false ? t('المحادثات الخاصة مقفلة، بتنفتح بس الرسائل اللي عليها بلاغ') : t('كل المحادثات على المنصة، بتتحدّث لحالها')}>
+    <AdminScreen ownerOnly title={t('المحادثات')} subtitle={full === false ? t('المحادثات الخاصة مقفلة، بتنفتح بس الرسائل اللي عليها بلاغ') : t('كل المحادثات على المنصة، بتتحدّث لحالها')}>
       {role === 'owner' && full !== null && (
         <Panel>
           <Toggle value={full} onChange={setMode} label={t('عرض المحادثات الخاصة كاملة')}

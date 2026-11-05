@@ -13,7 +13,7 @@ const ACTION: Record<string, string> = {
 export default function Audit() {
   const { data, loading, error } = useLoad<Row[]>(() => supabase.from('admin_audit_log').select('*, admin:profiles(full_name)').order('created_at', { ascending: false }).limit(300) as never, []);
   return (
-    <AdminScreen title={t('سجل الإدارة')} subtitle={t('كل إجراء بيعمله مشرف بينسجل هون، وما بينحذف')}>
+    <AdminScreen ownerOnly title={t('سجل الإدارة')} subtitle={t('كل إجراء بيعمله مشرف بينسجل هون، وما بينحذف')}>
       <State loading={loading} error={error} empty={data?.length === 0}>
         <View style={{ gap: 8 }}>
           {(data ?? []).map((r) => (

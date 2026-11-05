@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { TextInput, View } from 'react-native';
 
-import { Act, Actions, AdminScreen, UniPicker, Filters, Item, Muted, Panel, Sheet, State, Status, confirm, done, fmtDate, go, useLoad } from '@/components/admin/kit';
+import { Act, Actions, AdminScreen, UniPicker, Filters, Item, Muted, Panel, Sheet, State, Status, confirm, done, fmtDate, go, useAdminRole, useLoad } from '@/components/admin/kit';
 import { TITLE_ORDER, TitleBadge, titleLabel } from '@/components/profile/TitleBadge';
 import { C, F } from '@/lib/theme';
 import { T } from '@/components/ui';
@@ -16,6 +16,7 @@ type Req = {
 
 /** Faculty / staff asking for a verified title: check, then approve or reject. */
 export default function Titles() {
+  const owner = useAdminRole() === 'owner'; // importing the staff list is for the owner
   const [filter, setFilter] = useState<'pending' | 'approved' | 'rejected' | 'all'>('pending');
   const [sel, setSel] = useState<Req | null>(null);
   const [busy, setBusy] = useState(false);
@@ -62,10 +63,10 @@ export default function Titles() {
 
   return (
     <AdminScreen title={t('توثيق الأساتذة')} subtitle={t('الدكاترة والموظفين اللي طلبوا لقب')}>
-      <Panel onPress={() => { setRes(null); setImp(true); }}>
+      {owner && <Panel onPress={() => { setRes(null); setImp(true); }}>
         <T v="bodyMd">{t('استيراد قائمة الكادر الرسمية')}</T>
         <Muted>{t('الصق قائمة الجامعة (إيميل، رتبة، قسم) وكل واحد بياخد رتبته تلقائي — هلأ ولما يسجّل بعدين.')}</Muted>
-      </Panel>
+      </Panel>}
       <Filters items={[['pending', t('بانتظار')], ['approved', t('موثّقة')], ['rejected', t('مرفوضة')], ['all', t('الكل')]]} value={filter} onChange={setFilter} />
       <State loading={loading} error={error} empty={data?.length === 0}>
         <View style={{ gap: 8 }}>
