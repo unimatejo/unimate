@@ -77,7 +77,7 @@ export default function Schedule() {
     setAbsent((a) => ({ ...a, [key]: 'pending' }));
     const r = await run(supabase.from('attendance_marks').insert({ section_id: m.section_id, on_date: today, slot: m.starts_at.slice(0, 5), status: 'absent' }).select('id').single(), { quiet: true });
     if (!r.ok || !r.data) { setAbsent((a) => { const n = { ...a }; delete n[key]; return n; }); toast.error(t('ما انسجل الغياب، جرّب كمان مرة.')); return; }
-    setAbsent((a) => ({ ...a, [key]: (r.data as { id: string }).id }));
+    setAbsent((a) => ({ ...a, [key]: (r.data as unknown as { id: string }).id }));
     toast(t('انسجل غياب {0} ✓', [m.course_name]));
   }
 
