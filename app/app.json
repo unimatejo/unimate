@@ -138,7 +138,10 @@
       "permissions": [
         "CAMERA",
         "ACCESS_FINE_LOCATION",
-        "POST_NOTIFICATIONS"
+        "POST_NOTIFICATIONS",
+        "RECORD_AUDIO",
+        "READ_MEDIA_IMAGES",
+        "READ_MEDIA_VIDEO"
       ],
       "predictiveBackGestureEnabled": false,
       "versionCode": 2,
@@ -197,6 +200,22 @@
         "expo-audio",
         {
           "microphonePermission": "لتسجيل الرسائل الصوتية بالمحادثات وصوت فيديو الستوري."
+        }
+      ],
+      [
+        "expo-media-library",
+        {
+          "photosPermission": "لعرض صورك وفيديوهاتك تحت شاشة النشر، زي إنستغرام.",
+          "savePhotosPermission": "لحفظ الصور والستوري على جهازك.",
+          "isAccessMediaLocationEnabled": false
+        }
+      ],
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "لتصوير الستوري والصور من جوّا يونيميت.",
+          "microphonePermission": "لتسجيل صوت فيديو الستوري والريلز.",
+          "recordAudioAndroid": true
         }
       ]
     ],

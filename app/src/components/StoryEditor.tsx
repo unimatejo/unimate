@@ -3,10 +3,11 @@ import { LinearGradient } from 'expo-linear-gradient';
 import {
   AtSign, Brush, ChevronDown, ChevronLeft, ChevronUp, Download, MessageCircleOff, Palette, Scissors, Smile, Star, Trash2, Type, Wand2, X,
 } from 'lucide-react-native';
-import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import * as Haptics from 'expo-haptics';
+import { memo, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { ActivityIndicator, Alert, Image as RNImage, Platform, Pressable, ScrollView, Share, Text, TextInput, useWindowDimensions, View } from 'react-native';
 import { GestureDetector, GestureHandlerRootView, usePanGesture, usePinchGesture, useRotationGesture, useSimultaneousGestures, useTapGesture } from 'react-native-gesture-handler';
-import Animated, { FadeIn, FadeOut, runOnJS, useAnimatedStyle, useSharedValue } from 'react-native-reanimated';
+import Animated, { FadeIn, FadeOut, runOnJS, useAnimatedStyle, useSharedValue, withTiming, type SharedValue } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { TrimmedVideo } from './FramedMedia';
@@ -38,49 +39,102 @@ const TOOL_ALIGN = WEB && isAR ? 'flex-start' as const : 'flex-end' as const;
 const LTR = WEB ? ({ direction: 'ltr' } as object) : {};
 const closeSide = (n: number) => (Platform.OS === 'web' ? (isAR ? { right: n } : { left: n }) : { start: n });
 
-/** One movable thing on the story: drag with one finger, pinch to resize, twist to rotate, tap to edit. */
-function Movable({ o, W, H, trashY, onTap, onChange, onDrag, onNear }: {
-  o: Overlay; W: number; H: number; trashY: number; onTap: () => void; onChange: (o: Overlay) => void; onDrag: (dragging: boolean, x: number, y: number) => void; onNear: (near: boolean) => void;
+type DragFx = {
+  /** 1 while something is being dragged (the tools fade out, the trash fades in) */
+  on: SharedValue<number>;
+  /** the finger is over the trash */
+  overT: SharedValue<number>;
+  /** the centre guides (vertical / horizontal) */
+  gV: SharedValue<number>; gH: SharedValue<number>;
+  /** the highest layer so far: the touched item goes on top without reordering views mid-gesture */
+  top: SharedValue<number>;
+};
+const SNAP = 9;
+const buzz = (strong?: boolean) => { if (Platform.OS !== 'web') Haptics.impactAsync(strong ? Haptics.ImpactFeedbackStyle.Medium : Haptics.ImpactFeedbackStyle.Light).catch(() => {}); };
+
+/**
+ * One movable thing on the story: drag with one finger, pinch to resize, twist to rotate, tap to edit.
+ * Everything runs on the UI thread with shared values; React only hears about it once, when the fingers lift.
+ */
+const Movable = memo(function Movable({ o, W, H, trashY, fx, hidden, onTap, onChange, onDelete }: {
+  o: Overlay; W: number; H: number; trashY: number; fx: DragFx; hidden: boolean;
+  onTap: (id: string) => void; onChange: (id: string, x: number, y: number, scale: number, rotation: number) => void; onDelete: (id: string) => void;
 }) {
-  const near = useSharedValue(false);
   const x = useSharedValue(o.x * W), y = useSharedValue(o.y * H), sc = useSharedValue(o.scale), rot = useSharedValue(o.rotation);
+  // the unsnapped position under the finger, so snapping never fights the drag
+  const rx = useSharedValue(o.x * W), ry = useSharedValue(o.y * H);
   const w = useSharedValue(0), h = useSharedValue(0);
-  useEffect(() => { x.value = o.x * W; y.value = o.y * H; sc.value = o.scale; rot.value = o.rotation; }, [o.x, o.y, o.scale, o.rotation, W, H, x, y, sc, rot]);
-  const commit = (nx: number, ny: number, ns: number, nr: number) => onChange({ ...o, x: Math.min(1, Math.max(0, nx / W)), y: Math.min(1, Math.max(0, ny / H)), scale: ns, rotation: nr });
+  const fingers = useSharedValue(0), over = useSharedValue(0), lift = useSharedValue(0), z = useSharedValue(0), shrink = useSharedValue(1);
+  useEffect(() => { x.value = o.x * W; y.value = o.y * H; rx.value = x.value; ry.value = y.value; sc.value = o.scale; rot.value = o.rotation; }, [o.x, o.y, o.scale, o.rotation, W, H, x, y, rx, ry, sc, rot]);
+
+  const start = () => {
+    'worklet';
+    if (fingers.value === 0) { rx.value = x.value; ry.value = y.value; fx.top.value += 1; z.value = fx.top.value; }
+    fingers.value += 1;
+  };
+  const end = () => {
+    'worklet';
+    fingers.value = Math.max(0, fingers.value - 1);
+    if (fingers.value > 0) return;
+    const del = over.value === 1;
+    fx.on.value = withTiming(0, { duration: 180 }); fx.overT.value = 0; fx.gV.value = 0; fx.gH.value = 0;
+    lift.value = withTiming(0, { duration: 160 });
+    if (del) { over.value = 0; runOnJS(onDelete)(o.id); return; }
+    shrink.value = 1;
+    runOnJS(onChange)(o.id, x.value / W, y.value / H, sc.value, rot.value);
+  };
 
   const pan = usePanGesture({
-    onActivate: () => { 'worklet'; runOnJS(onDrag)(true, x.value, y.value); },
+    onActivate: () => { 'worklet'; start(); fx.on.value = withTiming(1, { duration: 160 }); lift.value = withTiming(1, { duration: 140 }); },
     onUpdate: (e) => {
       'worklet';
-      x.value += e.changeX; y.value += e.changeY;
-      const n = y.value > trashY - 50 && Math.abs(x.value - W / 2) < 70;
-      if (n !== near.value) { near.value = n; runOnJS(onNear)(n); }
+      rx.value += e.changeX; ry.value += e.changeY;
+      // snap to the centre lines, with one light tap when it locks
+      const sv = Math.abs(rx.value - W / 2) < SNAP, sh = Math.abs(ry.value - H / 2) < SNAP;
+      if (sv && !fx.gV.value) runOnJS(buzz)(false);
+      if (sh && !fx.gH.value) runOnJS(buzz)(false);
+      fx.gV.value = sv && !over.value ? 1 : 0; fx.gH.value = sh && !over.value ? 1 : 0;
+      x.value = sv ? W / 2 : rx.value; y.value = sh ? H / 2 : ry.value;
+      // over the trash: the finger decides (like Instagram), not the sticker's centre
+      const n = ry.value > trashY - 70 && Math.abs(rx.value - W / 2) < 80 ? 1 : 0;
+      if (n !== over.value) { over.value = n; fx.overT.value = n; shrink.value = withTiming(n ? 0.4 : 1, { duration: 160 }); if (n) runOnJS(buzz)(true); }
     },
-    onDeactivate: () => { 'worklet'; runOnJS(onDrag)(false, x.value, y.value); runOnJS(commit)(x.value, y.value, sc.value, rot.value); },
+    onDeactivate: () => { 'worklet'; end(); },
   });
   const pinch = usePinchGesture({
+    onActivate: () => { 'worklet'; start(); },
     onUpdate: (e) => { 'worklet'; sc.value = Math.min(8, Math.max(0.3, sc.value * e.scaleChange)); },
-    onDeactivate: () => { 'worklet'; runOnJS(commit)(x.value, y.value, sc.value, rot.value); },
+    onDeactivate: () => { 'worklet'; end(); },
   });
   const rotate = useRotationGesture({
-    onUpdate: (e) => { 'worklet'; rot.value += e.rotationChange; },
-    onDeactivate: () => { 'worklet'; runOnJS(commit)(x.value, y.value, sc.value, rot.value); },
+    onActivate: () => { 'worklet'; start(); },
+    onUpdate: (e) => {
+      'worklet';
+      rot.value += e.rotationChange;
+      // straight again within ~3°
+      const k = Math.round(rot.value / (Math.PI / 2)) * (Math.PI / 2);
+      if (Math.abs(rot.value - k) < 0.05) rot.value = k;
+    },
+    onDeactivate: () => { 'worklet'; end(); },
   });
-  const tap = useTapGesture({ onDeactivate: (e) => { 'worklet'; if (!e.canceled) runOnJS(onTap)(); } });
+  const tap = useTapGesture({ maxDistance: 10, onDeactivate: (e) => { 'worklet'; if (!e.canceled) runOnJS(onTap)(o.id); } });
   const gesture = useSimultaneousGestures(pan, pinch, rotate, tap);
 
-  const style = useAnimatedStyle(() => ({
-    opacity: w.value ? 1 : 0,
-    transform: [{ translateX: x.value - w.value / 2 }, { translateY: y.value - h.value / 2 }, { scale: sc.value }, { rotate: `${rot.value}rad` }],
-  }));
+  const style = useAnimatedStyle(() => {
+    return {
+      zIndex: z.value,
+      opacity: w.value ? withTiming(over.value ? 0.55 : 1, { duration: 140 }) : 0,
+      transform: [{ translateX: x.value - w.value / 2 }, { translateY: y.value - h.value / 2 }, { scale: sc.value * shrink.value * (1 + lift.value * 0.03) }, { rotate: `${rot.value}rad` }],
+    };
+  });
   return (
     <GestureDetector gesture={gesture}>
-      <Animated.View style={[{ position: 'absolute', left: 0, top: 0 }, style]} onLayout={(e) => { w.value = e.nativeEvent.layout.width; h.value = e.nativeEvent.layout.height; }}>
+      <Animated.View style={[{ position: 'absolute', left: 0, top: 0 }, hidden && { display: 'none' }, style]} onLayout={(e) => { w.value = e.nativeEvent.layout.width; h.value = e.nativeEvent.layout.height; }}>
         <View pointerEvents="none"><StickerBody o={o} width={W} /></View>
       </Animated.View>
     </GestureDetector>
   );
-}
+});
 
 function Tool({ label, show, onPress, children, active }: { label: string; show: boolean; onPress: () => void; children: ReactNode; active?: boolean }) {
   return (
@@ -128,8 +182,7 @@ export function StoryEditor({ media, initial, onCancel, onDone, onShare, sharing
   const [expanded, setExpanded] = useState(false);
   const [noReplies, setNoReplies] = useState(!!media.meta?.noReplies);
   const [caption, setCaption] = useState(media.meta?.caption ?? '');
-  const [dragging, setDragging] = useState(false);
-  const [overTrash, setOverTrash] = useState(false);
+  const [flash, setFlash] = useState<{ name: string; k: number } | null>(null);
   const [trim, setTrim] = useState(false);
 
   // the media's own shape (from the picker, or measured)
@@ -152,22 +205,63 @@ export function StoryEditor({ media, initial, onCancel, onDone, onShare, sharing
     // only once the shape is known
   }, [base.w]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const mpan = usePanGesture({ onUpdate: (e) => { 'worklet'; tx.value += e.changeX; ty.value += e.changeY; } });
+  // one finger sideways swipes through the filters (like Instagram); one finger up/down, or two fingers, move / pinch / turn the photo.
+  const mode = useSharedValue(0); // 0 deciding · 1 moving · 2 swiping filters
+  const acc = useSharedValue(0), accY = useSharedValue(0);
+  const mpan = usePanGesture({
+    onActivate: () => { 'worklet'; mode.value = 0; acc.value = 0; accY.value = 0; },
+    onUpdate: (e) => {
+      'worklet';
+      if (mode.value === 0) {
+        acc.value += e.changeX; accY.value += e.changeY;
+        if (Math.abs(acc.value) + Math.abs(accY.value) < 12) return;
+        const swipe = (e.numberOfPointers ?? 1) <= 1 && Math.abs(acc.value) > Math.abs(accY.value) * 1.5;
+        mode.value = swipe ? 2 : 1;
+        if (mode.value === 1) { tx.value += acc.value; ty.value += accY.value; }
+        return;
+      }
+      if (mode.value === 2) { acc.value += e.changeX; return; }
+      tx.value += e.changeX; ty.value += e.changeY;
+    },
+    onDeactivate: () => { 'worklet'; if (mode.value === 2 && Math.abs(acc.value) > 40) runOnJS(stepFilter)(acc.value < 0 ? 1 : -1); mode.value = 0; },
+  });
   const mpinch = usePinchGesture({ onUpdate: (e) => { 'worklet'; sc.value = Math.min(6, Math.max(0.25, sc.value * e.scaleChange)); } });
   const mrot = useRotationGesture({ onUpdate: (e) => { 'worklet'; rot.value += e.rotationChange; } });
+  function stepFilter(d: number) {
+    setFilter((cur) => {
+      const i = FILTERS.findIndex((f) => f.id === cur);
+      const n = FILTERS[(i + (isAR ? -d : d) + FILTERS.length) % FILTERS.length];
+      setFlash((f) => ({ name: n.name, k: (f?.k ?? 0) + 1 }));
+      return n.id;
+    });
+  }
+  useEffect(() => { if (!flash) return; const h = setTimeout(() => setFlash(null), 900); return () => clearTimeout(h); }, [flash]);
   const cycleBg = () => setBg((b) => { const n = b + 1; return n >= BACKGROUNDS.length ? (m.kind === 'image' ? -1 : 0) : n; });
-  const mtap = useTapGesture({ onDeactivate: (e) => { 'worklet'; if (!e.canceled) runOnJS(cycleBg)(); } });
+  const mtap = useTapGesture({ maxDistance: 10, onDeactivate: (e) => { 'worklet'; if (!e.canceled) runOnJS(cycleBg)(); } });
   const mediaGesture = useSimultaneousGestures(mpan, mpinch, mrot, mtap);
   const mstyle = useAnimatedStyle(() => ({ transform: [{ translateX: tx.value }, { translateY: ty.value }, { scale: sc.value }, { rotate: `${rot.value}rad` }] }));
 
   const trashY = H - 64;
-  const nearTrash = (x: number, y: number) => y > trashY - 50 && Math.abs(x - W / 2) < 70;
-  function onDrag(id: string, d: boolean, x: number, y: number) {
-    setDragging(d);
-    if (d) { setOverTrash(false); return; }
-    if (nearTrash(x, y)) setItems((list) => list.filter((it) => it.id !== id));
-    setOverTrash(false);
-  }
+  const fx: DragFx = { on: useSharedValue(0), overT: useSharedValue(0), gV: useSharedValue(0), gH: useSharedValue(0), top: useSharedValue(0) };
+  const itemsRef = useRef(items); itemsRef.current = items;
+  const onItemChange = useCallback((id: string, x: number, y: number, scale: number, rotation: number) => {
+    // the moved item also goes last, so the saved order matches what's on top
+    setItems((l) => { const o = l.find((it) => it.id === id); return o ? [...l.filter((it) => it.id !== id), { ...o, x: Math.min(1, Math.max(0, x)), y: Math.min(1, Math.max(0, y)), scale, rotation }] : l; });
+  }, []);
+  const onDelete = useCallback((id: string) => setItems((l) => l.filter((it) => it.id !== id)), []);
+  const onTapItem = useCallback((id: string) => { const o = itemsRef.current.find((it) => it.id === id); if (o) tapItem(o); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // the tools fade out while dragging; the trash and the centre guides fade in
+  const uiStyle = useAnimatedStyle(() => ({ opacity: 1 - fx.on.value }));
+  const trashStyle = useAnimatedStyle(() => ({
+    opacity: fx.on.value,
+    backgroundColor: fx.overT.value ? '#E0306B' : 'rgba(0,0,0,0.32)',
+    transform: [{ scale: withTiming(fx.overT.value ? 1.25 : 0.85 + fx.on.value * 0.15, { duration: 150 }) }],
+  }));
+  const gVStyle = useAnimatedStyle(() => ({ opacity: withTiming(fx.gV.value * fx.on.value, { duration: 90 }) }));
+  const gHStyle = useAnimatedStyle(() => ({ opacity: withTiming(fx.gH.value * fx.on.value, { duration: 90 }) }));
+  const MAX_ITEMS = 29; // the story keeps up to 30 things (one is the drawing)
+  const full = () => { if (itemsRef.current.length >= MAX_ITEMS) { toast(t('وصلت للحد، احذف شي قبل ما تضيف')); return true; } return false; };
 
   function saveDraft() {
     if (!draft) return;
@@ -175,11 +269,13 @@ export function StoryEditor({ media, initial, onCancel, onDone, onShare, sharing
     if (!text) { if (draft.id) setItems((l) => l.filter((it) => it.id !== draft.id)); setDraft(null); return; }
     const look = { text, color: draft.color, bg: draft.bg, style: draft.style, align: draft.align, size: draft.size };
     if (draft.id) setItems((l) => l.map((it) => (it.id === draft.id ? { ...it, ...look } : it)));
-    else setItems((l) => [...l, { id: newId(), kind: 'text', x: 0.5, y: 0.42, scale: 1, rotation: 0, font: 'display', ...look }]);
+    else if (!full()) setItems((l) => [...l, { id: newId(), kind: 'text', x: 0.5, y: 0.42, scale: 1, rotation: 0, font: 'display', ...look }]);
     setDraft(null);
   }
 
   function addSticker(s: NewSticker) {
+    if (full()) { setTray(false); return; }
+    buzz();
     setItems((l) => [...l, { id: newId(), kind: s.kind, text: s.text, x: 0.5, y: [0.62, 0.3, 0.75, 0.2, 0.45][l.filter((o) => o.kind !== 'draw').length % 5], size: 0.055, scale: 1, rotation: 0, color: '#FFFFFF', bg: 'none', font: 'display', ...s.extra }]);
     setTray(false);
   }
@@ -206,7 +302,7 @@ export function StoryEditor({ media, initial, onCancel, onDone, onShare, sharing
       ...(caption.trim() ? { caption: caption.trim().slice(0, 200) } : {}),
       ...(noReplies ? { noReplies: true } : {}),
     };
-    const draw: Overlay[] = strokes.length ? [{ id: 'draw', kind: 'draw', text: '', x: 0.5, y: 0.5, size: 0.08, scale: 1, rotation: 0, color: '#FFFFFF', bg: 'none', font: 'display', data: { strokes } }] : [];
+    const draw: Overlay[] = strokes.length ? [{ id: 'draw', kind: 'draw', text: '', x: 0.5, y: 0.5, size: 0.08, scale: 1, rotation: 0, color: '#FFFFFF', bg: 'none', font: 'display', data: { strokes: strokes.map((st) => ({ ...st, pts: st.pts.map((n) => Math.round(n * 1000) / 1000) })) } }] : [];
     return { media: { ...m, meta, aspect: W / H }, overlays: [...items, ...draw] };
   }
 
@@ -231,7 +327,7 @@ export function StoryEditor({ media, initial, onCancel, onDone, onShare, sharing
   const bgView = bg < 0 && m.kind === 'image'
     ? (<><Image source={{ uri: m.uri }} style={fill} contentFit="cover" blurRadius={40} /><View style={[fill, { backgroundColor: 'rgba(0,0,0,0.18)' }]} /></>)
     : <LinearGradient colors={BACKGROUNDS[Math.max(0, bg)]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={fill} />;
-  const busyUI = dragging || drawing;
+  const busyUI = drawing;
 
   return (
     // a Modal is its own window, so gestures need their own root inside it
@@ -245,6 +341,8 @@ export function StoryEditor({ media, initial, onCancel, onDone, onShare, sharing
               {m.kind === 'video'
                 ? <TrimmedVideo uri={m.uri} meta={m.meta} fit="cover" style={fill} />
                 : <Image source={{ uri: m.uri }} style={fill} contentFit="cover" />}
+              {/* a clear sheet over the picture, so the browser never starts dragging the <img> itself */}
+              <View style={fill} />
             </Animated.View>
           </View>
         </GestureDetector>
@@ -254,23 +352,34 @@ export function StoryEditor({ media, initial, onCancel, onDone, onShare, sharing
           ? <DrawTool W={W} H={H} strokes={strokes} onChange={setStrokes} onDone={() => setDrawing(false)} />
           : <DrawLayer strokes={strokes} width={W} height={H} />}
 
+        {/* centre guides */}
+        <Animated.View pointerEvents="none" style={[{ position: 'absolute', top: 0, bottom: 0, left: W / 2 - 0.75, width: 1.5, backgroundColor: '#00C2FF' }, gVStyle]} />
+        <Animated.View pointerEvents="none" style={[{ position: 'absolute', left: 0, right: 0, top: H / 2 - 0.75, height: 1.5, backgroundColor: '#00C2FF' }, gHStyle]} />
+
         {!drawing && items.map((o) => (
-          <Movable key={o.id} o={o} W={W} H={H} trashY={trashY} onNear={setOverTrash}
-            onTap={() => tapItem(o)}
-            onChange={(n) => setItems((l) => l.map((it) => (it.id === n.id ? n : it)))}
-            onDrag={(d, x, y) => onDrag(o.id, d, x, y)} />
+          <Movable key={o.id} o={o} W={W} H={H} trashY={trashY} fx={fx} hidden={draft?.id === o.id}
+            onTap={onTapItem} onChange={onItemChange} onDelete={onDelete} />
         ))}
+
+        {/* the filter's name, flashed while swiping */}
+        {flash && (
+          <Animated.View key={flash.k} entering={FadeIn.duration(150)} exiting={FadeOut.duration(250)} pointerEvents="none" style={{ position: 'absolute', top: H * 0.4, left: 0, right: 0, alignItems: 'center' }}>
+            <Text style={{ fontFamily: F.display, fontSize: 30, color: '#fff', textShadowColor: 'rgba(0,0,0,0.45)', textShadowRadius: 10 }}>{flash.name}</Text>
+          </Animated.View>
+        )}
 
         {/* close */}
         {!busyUI && (
+          <Animated.View style={[{ position: 'absolute', top: 0, left: 0, right: 0, height: 64 }, uiStyle]} pointerEvents="box-none">
           <Pressable onPress={close} accessibilityLabel={t('إغلاق')} style={[{ position: 'absolute', top: 10, width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' }, glass, closeSide(10)]}>
             <X size={22} color="#fff" />
           </Pressable>
+          </Animated.View>
         )}
 
         {/* the tools, down the side; the chevron shows their names and the extra tools */}
         {!busyUI && (
-          <Animated.View entering={FadeIn.duration(180)} style={[{ position: 'absolute', top: 10, gap: 10, alignItems: TOOL_ALIGN }, LTR, toolSide(10)]}>
+          <Animated.View style={[{ position: 'absolute', top: 10, gap: 10, alignItems: TOOL_ALIGN }, LTR, toolSide(10), uiStyle]}>
             <Tool label={t('نص')} show={expanded} onPress={() => setDraft({ text: '', color: '#FFFFFF', bg: 'none', style: 'classic', align: 'center', size: 0.075 })}>
               <Type size={20} color="#fff" />
             </Tool>
@@ -297,7 +406,7 @@ export function StoryEditor({ media, initial, onCancel, onDone, onShare, sharing
 
         {/* filters along the bottom */}
         {filtersOpen && !busyUI && (
-          <Animated.View entering={FadeIn.duration(180)} style={{ position: 'absolute', bottom: 54, left: 0, right: 0 }}>
+          <Animated.View entering={FadeIn.duration(180)} exiting={FadeOut.duration(140)} style={[{ position: 'absolute', bottom: 54, left: 0, right: 0 }, uiStyle]}>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingHorizontal: 12 }}>
               {FILTERS.map((f) => (
                 <Pressable key={f.id} onPress={() => setFilter(f.id)} accessibilityState={{ selected: filter === f.id }} style={{ alignItems: 'center', gap: 4 }}>
@@ -314,22 +423,21 @@ export function StoryEditor({ media, initial, onCancel, onDone, onShare, sharing
 
         {/* caption, at the bottom of the frame */}
         {!busyUI && (
-          <View style={{ position: 'absolute', bottom: 10, left: 12, right: 12 }}>
-            <TextInput value={caption} onChangeText={(v) => setCaption(v.slice(0, 200))} placeholder={t('أضف وصف…')} placeholderTextColor="rgba(255,255,255,0.75)" keyboardAppearance="dark"
-              style={{ minHeight: 36, color: '#fff', fontFamily: F.bodyMd, fontSize: 14, textAlign: isAR ? 'right' : 'left', textShadowColor: 'rgba(0,0,0,0.5)', textShadowRadius: 4, ...(Platform.OS === 'web' ? { outlineStyle: 'none' } as object : {}) }} />
-          </View>
-        )}
-
-        {/* delete zone while dragging */}
-        {dragging && (
-          <Animated.View entering={FadeIn.duration(150)} pointerEvents="none" style={[{ position: 'absolute', top: trashY - 26, left: W / 2 - 26, width: 52, height: 52, borderRadius: 26, alignItems: 'center', justifyContent: 'center', borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.8)' }, glass, overTrash && { backgroundColor: '#E0306B', transform: [{ scale: 1.15 }] }]}>
-            <Trash2 size={22} color="#fff" />
+          <Animated.View style={[{ position: 'absolute', bottom: 10, left: 12, right: 12, flexDirection: 'row', alignItems: 'center', gap: 6 }, uiStyle]}>
+            <TextInput value={caption} multiline maxLength={200} onChangeText={(v) => setCaption(v.slice(0, 200))} placeholder={t('أضف وصف…')} placeholderTextColor="rgba(255,255,255,0.75)" keyboardAppearance="dark"
+              style={{ flex: 1, minHeight: 36, maxHeight: 84, color: '#fff', fontFamily: F.bodyMd, fontSize: 14, textAlign: isAR ? 'right' : 'left', textShadowColor: 'rgba(0,0,0,0.5)', textShadowRadius: 4, ...(Platform.OS === 'web' ? { outlineStyle: 'none' } as object : {}) }} />
+            {caption.length > 150 ? <Text style={{ fontFamily: F.bodyBold, fontSize: 12, color: caption.length >= 200 ? '#FF6B6B' : 'rgba(255,255,255,0.8)', writingDirection: 'ltr' }}>{caption.length}/200</Text> : null}
           </Animated.View>
         )}
+
+        {/* delete zone, shown while dragging */}
+        <Animated.View pointerEvents="none" style={[{ position: 'absolute', top: trashY - 26, left: W / 2 - 26, width: 52, height: 52, borderRadius: 26, alignItems: 'center', justifyContent: 'center', borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.85)' }, trashStyle]}>
+          <Trash2 size={22} color="#fff" />
+        </Animated.View>
       </View>
 
       {/* share: your story / close friends / go on */}
-      <View style={{ position: 'absolute', bottom: insets.bottom + 8, left: 12, right: 12, height: 52, flexDirection: 'row', alignItems: 'center', gap: 8, opacity: busyUI ? 0 : 1 }} pointerEvents={busyUI ? 'none' : 'auto'}>
+      <Animated.View style={[{ position: 'absolute', bottom: insets.bottom + 8, left: 12, right: 12, height: 52, flexDirection: 'row', alignItems: 'center', gap: 8 }, uiStyle, busyUI && { display: 'none' }]} pointerEvents={busyUI ? 'none' : 'auto'}>
         <Pressable onPress={() => { const r = result(); (onShare ? onShare(r.media, r.overlays, 'friends') : onDone(r.media, r.overlays)); }} disabled={sharing} accessibilityLabel={t('شارك بقصتك')}
           style={({ pressed }) => ({ flex: 1, height: 46, borderRadius: 23, backgroundColor: '#262626', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, opacity: pressed ? 0.8 : 1 })}>
           <View style={{ width: 28, height: 28, borderRadius: 14, borderWidth: 2, borderColor: '#FF6B4A', padding: 1.5 }}><Avatar id={profile?.id} name={profile?.full_name} url={profile?.avatar_url} size={21} /></View>
@@ -344,7 +452,7 @@ export function StoryEditor({ media, initial, onCancel, onDone, onShare, sharing
           style={({ pressed }) => ({ width: 46, height: 46, borderRadius: 23, backgroundColor: '#FF6B4A', alignItems: 'center', justifyContent: 'center', opacity: pressed ? 0.85 : 1 })}>
           {sharing ? <ActivityIndicator color="#0E1430" /> : <ChevronLeft size={24} color="#0E1430" strokeWidth={2.6} style={isAR ? undefined : { transform: [{ scaleX: -1 }] }} />}
         </Pressable>
-      </View>
+      </Animated.View>
 
       <TextTool draft={draft} width={W} onChange={setDraft} onDone={saveDraft}
         onMention={() => { saveDraft(); setTray('mention'); }} onPlace={() => { saveDraft(); setTray('place'); }} />

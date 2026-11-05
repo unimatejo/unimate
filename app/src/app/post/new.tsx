@@ -1,9 +1,9 @@
 import { Image } from 'expo-image';
 import { router, useLocalSearchParams } from 'expo-router';
-import { Camera, ChevronRight, Crop, FileText, Images, Plus, Radio, Wand2, X } from 'lucide-react-native';
-import { useEffect, useState } from 'react';
+import { Camera, ChevronDown, ChevronRight, Copy, Crop, Expand, FileText, Images, Plus, Radio, Shrink, Wand2, X } from 'lucide-react-native';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import * as Haptics from 'expo-haptics';
-import { Alert, KeyboardAvoidingView, Modal, Platform, ScrollView, TextInput, useWindowDimensions, View } from 'react-native';
+import { ActivityIndicator, Alert, FlatList, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, TextInput, useWindowDimensions, View } from 'react-native';
 import Animated, { FadeIn, FadeInDown, useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -18,6 +18,9 @@ import { supabase } from '@/lib/supabase';
 import { C, CATEGORY, F, isDark, R, SPRING } from '@/lib/theme';
 import { autoCrop, openCropper, playLength } from '@/lib/cropper';
 import { pickMedia, pickPdf, pickPhotos, uploadFile, type Picked } from '@/lib/upload';
+import { GalleryGrid } from '@/components/create/GalleryGrid';
+import { StoryCamera } from '@/components/create/StoryCamera';
+import { assetToPicked, cameraModule, galleryAlbums, mediaLibrary, type GalleryAlbum, type GalleryAsset } from '@/lib/nativeMedia';
 import { flip, rtlLayout, t, ta } from '@/lib/i18n';
 
 const POST_AUD = [['university', t('الجامعة')], ['college', t('كليتي')], ['major', t('تخصصي')], ['friends', t('أصدقائي')]] as const;
@@ -84,8 +87,87 @@ export default function Create() {
   const cropMode = isStory ? 'story' : 'post';
   const media = items[active] ?? items[0] ?? null;
 
+  // ---- the phone's gallery under the preview (Instagram); missing on web and older app builds ----
+  const gallery = !!mediaLibrary();
+  const camera = !!cameraModule();
+  /** gallery ids of the chosen items, same order as `items` (camera shots get their own ids) */
+  const [sel, setSel] = useState<string[]>([]);
+  const [multi, setMulti] = useState(false);
+  const [album, setAlbum] = useState<GalleryAlbum | null>(null);
+  const [albums, setAlbums] = useState<GalleryAlbum[] | null>(null);
+  const [albumOpen, setAlbumOpen] = useState(false);
+  const [loadingId, setLoadingId] = useState<string | null>(null);
+  /** square (Instagram's default) or the photo's own shape */
+  const [fit, setFit] = useState<'square' | 'original'>('square');
+  const [camOpen, setCamOpen] = useState(false);
+  const pickSeq = useRef(0);
+
   function switchMode(m: Mode) {
     setMode(m); setStep('pick'); setItems([]); setActive(0); setOverlays([]); setAud(0); setPdf(null); setPoll(null); setPostAspect(null);
+    setSel([]); setMulti(false); setFit('square'); setCamOpen(false);
+  }
+
+  /** the frame shape for a post: square, or the first photo's own shape kept between 4:5 and 1.91:1 like Instagram */
+  const first = items[0];
+  const naturalAspect = first?.width && first?.height ? Math.min(1.91, Math.max(0.8, first.width / first.height)) : 1;
+  const frameAspect = mode === 'reel' ? 9 / 16 : postAspect ?? (fit === 'square' ? 1 : naturalAspect);
+
+  const pickAsset = useCallback(async (a: GalleryAsset) => {
+    if (mode === 'reel' && a.mediaType !== 'video') return;
+    if (mode === 'post' && a.mediaType === 'video' && a.duration > 60) { Alert.alert(t('الفيديو طويل'), t('فيديو المنشور لحد دقيقة. للأطول جرّب الريلز.')); return; }
+    if (a.mediaType === 'video' && a.duration > 180) { Alert.alert(t('الفيديو طويل'), t('اختار فيديو لحد 3 دقايق، وبتقصه بعدين.')); return; }
+    const i = sel.indexOf(a.id);
+    if (multi && mode === 'post') {
+      // tap a chosen one again: show it first, then a second tap takes it out
+      if (i >= 0) {
+        if (items[active] && sel[active] === a.id) {
+          Haptics.selectionAsync().catch(() => {});
+          setItems((cur) => cur.filter((_, j) => j !== i)); setSel((cur) => cur.filter((x) => x !== a.id)); setActive(0);
+        } else setActive(i);
+        return;
+      }
+      if (sel.length >= 10) { Alert.alert(t('10 بالكثير'), t('بتقدر تختار لحد 10 صور وفيديوهات.')); return; }
+    } else if (i >= 0) return;
+    const seq = ++pickSeq.current;
+    setLoadingId(a.id);
+    try {
+      const m = await assetToPicked(a);
+      if (seq !== pickSeq.current && !multi) return;
+      Haptics.selectionAsync().catch(() => {});
+      if (multi && mode === 'post') {
+        setItems((cur) => [...cur, m].slice(0, 10)); setSel((cur) => [...cur, a.id].slice(0, 10)); setActive(sel.length);
+      } else {
+        setItems([m]); setSel([a.id]); setActive(0); setPostAspect(null);
+      }
+    } catch (e) { Alert.alert(t('ما زبط'), (e as Error).message); }
+    finally { if (seq === pickSeq.current) setLoadingId(null); }
+  }, [mode, sel, multi, items, active]);
+
+  const onFirstAsset = useCallback((a: GalleryAsset | null) => { if (a && !items.length && (mode !== 'reel' || a.mediaType === 'video')) pickAsset(a); }, [items.length, mode, pickAsset]);
+
+  function toggleMulti() {
+    Haptics.selectionAsync().catch(() => {});
+    if (multi) { setItems((cur) => cur.slice(active, active + 1)); setSel((cur) => cur.slice(active, active + 1)); setActive(0); }
+    setMulti(!multi);
+  }
+  async function openAlbums() {
+    setAlbumOpen(true);
+    if (!albums) setAlbums(await galleryAlbums());
+  }
+  /** shots from the in-app camera join the chosen items like gallery picks */
+  async function fromInAppCamera(m: Picked) {
+    setCamOpen(false);
+    if (mode === 'reel' && m.kind !== 'video') return;
+    const id = `cam-${Date.now()}`;
+    if (multi && mode === 'post') { setItems((cur) => [...cur, m].slice(0, 10)); setSel((cur) => [...cur, id].slice(0, 10)); setActive(items.length); }
+    else { setItems([m]); setSel([id]); setActive(0); setPostAspect(null); }
+  }
+  /** story camera: photos go straight to the editor; videos are trimmed to 15s first */
+  async function storyShot(m: Picked) {
+    let out: Picked | null = m;
+    if (m.kind === 'video') { const r = await openCropper(m, { mode: 'story', maxSec }); out = r ? { ...r.media, aspect: r.aspect } : null; }
+    if (!out) return;
+    setItems([out]); setActive(0); setOverlays([]); setEditing(true);
   }
 
   async function addFromGallery() {
@@ -152,11 +234,27 @@ export default function Create() {
     setItems(next);
   }
 
-  function next() {
-    if (mode === 'live') return;
+  const [preparing, setPreparing] = useState(false);
+  async function next() {
+    if (mode === 'live' || preparing) return;
     if (mode === 'reel' && !media) { addFromGallery(); return; }
     if (isStory && !media) { addFromGallery(); return; }
     if (isStory && media) { setEditing(true); return; }
+    if (gallery && items.length) {
+      setPreparing(true);
+      try {
+        if (mode === 'reel') {
+          // reels: frame + trim in the editor (9:16, up to a minute) unless already done
+          if (!media?.meta) { const r = await openCropper(media!, { mode: 'post', aspect: 9 / 16, maxSec }); if (!r) return; setItems([r.media]); }
+        } else {
+          // photos picked from the grid are cut to the post's frame (the ones cropped by hand stay as they are)
+          const a = postAspect ?? frameAspect;
+          setPostAspect(a);
+          const out = await Promise.all(items.map((m) => (m.orig || m.meta ? m : autoCrop(m, a))));
+          setItems(out);
+        }
+      } finally { setPreparing(false); }
+    }
     setStep('compose');
   }
 
@@ -303,7 +401,129 @@ export default function Create() {
     );
   }
 
-  // ---------- step 1: choose ----------
+  const editorModal = (
+    <Modal visible={editing && !!media} animationType="slide" onRequestClose={() => setEditing(false)} statusBarTranslucent>
+      {media && <StoryEditor media={media} initial={overlays} sharing={busy}
+        onCancel={() => { setEditing(false); if (!overlays.length && !items.length) setItems([]); }}
+        onDone={(m, o) => { setItems([m]); setOverlays(o); setEditing(false); }}
+        onShare={(m, o, audience) => { setItems([m]); setOverlays(o); publish({ m, o, audience }); }} />}
+    </Modal>
+  );
+  const busyOverlay = busy && !editing ? (
+    <Animated.View entering={FadeIn} style={{ position: 'absolute', top: 0, bottom: 0, left: 0, right: 0, backgroundColor: C.overlay, alignItems: 'center', justifyContent: 'center' }}>
+      <View style={{ backgroundColor: C.card, borderRadius: R.xl, paddingVertical: 24, paddingHorizontal: 32, alignItems: 'center', gap: 6 }}>
+        <T v="bold">{isStory ? t('عم نرفع قصتك…') : t('عم ننشر منشورك…')}</T>
+        {media?.kind === 'video' && <T v="tiny" color={C.muted}>{t('الفيديو بياخذ ثواني أكثر')}</T>}
+      </View>
+    </Animated.View>
+  ) : null;
+  const modeBar = (
+    <SafeAreaView edges={['bottom']} style={{ position: 'absolute', bottom: 14, left: 0, right: 0 }} pointerEvents="box-none">
+      <ModeSwitch mode={mode} onChange={switchMode} />
+    </SafeAreaView>
+  );
+
+  // ---------- story: the camera opens straight away (Instagram); a pick or a shot goes to the story editor ----------
+  if (isStory && camera) {
+    return (
+      <View style={{ flex: 1, backgroundColor: '#000' }}>
+        <StoryCamera maxSec={15} onPicked={storyShot} onClose={() => (router.canGoBack() ? router.back() : router.replace('/community'))}
+          onSystemPicker={addFromGallery} footer={<ModeSwitch mode={mode} onChange={switchMode} />} />
+        {editorModal}
+        {busyOverlay}
+      </View>
+    );
+  }
+
+  // ---------- post / reel with the phone's gallery right under the preview (Instagram) ----------
+  if (gallery && (mode === 'post' || mode === 'reel')) {
+    const pw = mode === 'reel' ? Math.min(width, 440 * 9 / 16) : width;
+    const ph = mode === 'reel' ? pw * 16 / 9 : Math.min(width / frameAspect, width * 1.25);
+    const header = (
+      <View>
+        <View style={{ width: pw, height: ph, alignSelf: 'center', backgroundColor: C.soft, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' }}>
+          {media ? (
+            <Animated.View key={media.uri} entering={FadeIn.duration(180)} style={{ position: 'absolute', top: 0, bottom: 0, left: 0, right: 0 }}>
+              {media.kind === 'image' && !media.meta
+                ? <Image source={{ uri: media.uri }} style={{ flex: 1 }} contentFit={mode === 'reel' ? 'cover' : 'cover'} transition={120} />
+                : <FramedMedia key={media.uri + JSON.stringify(media.meta ?? {})} uri={media.uri} kind={media.kind} meta={media.meta} />}
+            </Animated.View>
+          ) : <ActivityIndicator color={C.muted} />}
+          {media && (
+            <Tap onPress={() => recrop(active)} accessibilityLabel={t('قص')} style={{ position: 'absolute', bottom: 12, ...(Platform.OS === 'web' ? { left: 12 } : { start: 12 }), flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 36, paddingHorizontal: 12, borderRadius: R.pill, backgroundColor: 'rgba(7,10,28,0.6)' }}>
+              <Crop size={15} color="#fff" /><T v="tiny" color="#fff">{t('قص')}</T>
+            </Tap>
+          )}
+          {media && mode === 'post' && postAspect == null && (
+            <Tap onPress={() => { Haptics.selectionAsync().catch(() => {}); setFit((f) => (f === 'square' ? 'original' : 'square')); }}
+              accessibilityLabel={fit === 'square' ? t('الحجم الأصلي') : t('مربّع')}
+              style={{ position: 'absolute', bottom: 12, ...(Platform.OS === 'web' ? { right: 12 } : { end: 12 }), width: 36, height: 36, borderRadius: 18, backgroundColor: 'rgba(7,10,28,0.6)', alignItems: 'center', justifyContent: 'center' }}>
+              {fit === 'square' ? <Expand size={16} color="#fff" /> : <Shrink size={16} color="#fff" />}
+            </Tap>
+          )}
+        </View>
+        <Row style={{ paddingStart: 14, paddingEnd: 10, paddingVertical: 8, justifyContent: 'space-between' }}>
+          <Tap onPress={openAlbums} accessibilityLabel={t('اختار ألبوم')} style={{ flexDirection: 'row', alignItems: 'center', gap: 4, minHeight: 44 }}>
+            <T v="bold" style={{ fontSize: 16 }}>{album?.title ?? t('الأحدث')}</T><ChevronDown size={18} color={C.ink} />
+          </Tap>
+          <Row gap={8}>
+            {mode === 'post' && (
+              <Tap onPress={toggleMulti} accessibilityLabel={t('اختيار أكثر من وحدة')} accessibilityState={{ selected: multi }}
+                style={{ flexDirection: 'row', alignItems: 'center', gap: 6, height: 36, paddingHorizontal: 12, borderRadius: R.pill, backgroundColor: multi ? C.primary : C.card, borderWidth: multi ? 0 : 1, borderColor: C.line }}>
+                <Copy size={15} color={multi ? C.onPrimary : C.ink} />
+                <T v="tiny" color={multi ? C.onPrimary : C.ink}>{multi ? t('{0} من 10', [items.length]) : t('اختار أكثر')}</T>
+              </Tap>
+            )}
+            <Tap onPress={() => (camera ? setCamOpen(true) : fromCamera())} accessibilityLabel={t('الكاميرا')}
+              style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: C.card, borderWidth: 1, borderColor: C.line, alignItems: 'center', justifyContent: 'center' }}>
+              <Camera size={18} color={C.ink} />
+            </Tap>
+          </Row>
+        </Row>
+      </View>
+    );
+    return (
+      <SafeAreaView edges={['top']} style={{ flex: 1, backgroundColor: C.bg }}>
+        <Row gap={8} style={{ paddingHorizontal: 12, minHeight: 52 }}>
+          <Tap onPress={() => router.back()} accessibilityLabel={t('إغلاق')} style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}><X size={24} color={C.ink} /></Tap>
+          <T style={{ flex: 1, textAlign: 'center', fontFamily: F.bodyBold, fontSize: 17 }}>{TITLES[mode]}</T>
+          <Tap onPress={next} disabled={preparing || (mode === 'reel' && !media)} accessibilityLabel={t('التالي')}
+            style={{ minHeight: 38, minWidth: 76, paddingHorizontal: 18, borderRadius: R.pill, backgroundColor: C.primary, alignItems: 'center', justifyContent: 'center', opacity: preparing || (mode === 'reel' && !media) ? 0.5 : 1 }}>
+            {preparing ? <ActivityIndicator color={C.onPrimary} size="small" /> : <T v="bold" color={C.onPrimary}>{t('التالي')}</T>}
+          </Tap>
+        </Row>
+        <GalleryGrid key={`${mode}|${album?.id ?? ''}`} kind={mode === 'reel' ? 'video' : 'all'} album={album?.id ?? null} selected={sel} multi={multi && mode === 'post'}
+          activeId={sel[active] ?? null} busyId={loadingId} onPick={pickAsset} header={header} onFirst={onFirstAsset} contentBottom={110} />
+        {modeBar}
+
+        <Modal visible={albumOpen} transparent animationType="fade" onRequestClose={() => setAlbumOpen(false)}>
+          <Pressable onPress={() => setAlbumOpen(false)} style={{ flex: 1, backgroundColor: C.overlay, justifyContent: 'flex-end' }}>
+            <Pressable style={{ maxHeight: '70%', backgroundColor: C.bg, borderTopLeftRadius: 24, borderTopRightRadius: 24, paddingTop: 10, paddingBottom: 28 }}>
+              <View style={{ alignSelf: 'center', width: 40, height: 4, borderRadius: 2, backgroundColor: C.line, marginBottom: 8 }} />
+              <T v="bold" style={{ textAlign: 'center', fontSize: 16, paddingBottom: 8 }}>{t('الألبومات')}</T>
+              {albums === null ? <ActivityIndicator color={C.muted} style={{ padding: 24 }} /> : (
+                <FlatList data={[{ id: '', title: t('الأحدث'), count: 0 }, ...albums]} keyExtractor={(a) => a.id || 'recent'}
+                  renderItem={({ item }) => (
+                    <Tap haptic onPress={() => { setAlbum(item.id ? item : null); setAlbumOpen(false); }}
+                      style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', minHeight: 50, paddingHorizontal: 20 }}>
+                      <T v={(album?.id ?? '') === item.id ? 'bold' : 'body'}>{item.title}</T>
+                      {item.count > 0 && <T v="small" color={C.muted}>{item.count}</T>}
+                    </Tap>
+                  )} />
+              )}
+            </Pressable>
+          </Pressable>
+        </Modal>
+        <Modal visible={camOpen} animationType="slide" onRequestClose={() => setCamOpen(false)} statusBarTranslucent>
+          {camOpen && <StoryCamera maxSec={maxSec} videoOnly={mode === 'reel'} onPicked={fromInAppCamera} onClose={() => setCamOpen(false)}
+            onSystemPicker={() => { setCamOpen(false); addFromGallery(); }} />}
+        </Modal>
+        {busyOverlay}
+      </SafeAreaView>
+    );
+  }
+
+  // ---------- step 1 without the phone's gallery (web, older app builds): the system picker ----------
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: C.bg }}>
       <Row gap={8} style={{ paddingHorizontal: 12, minHeight: 56 }}>
@@ -345,14 +565,15 @@ export default function Create() {
             ) : (
               <Animated.View entering={FadeInDown.springify().damping(SPRING.damping)} style={{ alignItems: 'center', gap: 10, padding: 24 }}>
                 <View style={{ width: 64, height: 64, borderRadius: 32, backgroundColor: C.soft, alignItems: 'center', justifyContent: 'center' }}><Images size={28} color={C.primary} /></View>
-                <T v="bodyMd">{mode === 'reel' ? t('اختار فيديو لحد دقيقة') : mode === 'story' ? t('اختار صورة أو فيديو') : t('اختار صور، أو اكبس التالي لمنشور نص')}</T>
+                <T v="h3" style={{ textAlign: 'center' }}>{t('اختر من جهازك')}</T>
+                <T v="small" color={C.muted} style={{ textAlign: 'center' }}>{mode === 'reel' ? t('اختار فيديو لحد دقيقة') : mode === 'story' ? t('اختار صورة أو فيديو') : t('اختار صور، أو اكبس التالي لمنشور نص')}</T>
               </Animated.View>
             )}
           </Tap>
 
           <Row style={{ paddingHorizontal: 18, paddingTop: 14, paddingBottom: 10, justifyContent: 'space-between' }}>
             <T v="bold" style={{ fontSize: 15 }}>{mode === 'post' && items.length ? t('{0} من 10', [items.length]) : t('الأحدث')}</T>
-            <Tap onPress={fromCamera} accessibilityLabel={t('الكاميرا')} style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: C.card, borderWidth: 1, borderColor: C.line, alignItems: 'center', justifyContent: 'center' }}>
+            <Tap onPress={() => (camera && !isStory ? setCamOpen(true) : fromCamera())} accessibilityLabel={t('الكاميرا')} style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: C.card, borderWidth: 1, borderColor: C.line, alignItems: 'center', justifyContent: 'center' }}>
               <Camera size={20} color={C.ink} />
             </Tap>
           </Row>
@@ -389,25 +610,13 @@ export default function Create() {
         </ScrollView>
       )}
 
-      <SafeAreaView edges={['bottom']} style={{ position: 'absolute', bottom: 14, left: 0, right: 0 }} pointerEvents="box-none">
-        <ModeSwitch mode={mode} onChange={switchMode} />
-      </SafeAreaView>
-
-      <Modal visible={editing && !!media} animationType="slide" onRequestClose={() => setEditing(false)} statusBarTranslucent>
-        {media && <StoryEditor media={media} initial={overlays} sharing={busy}
-          onCancel={() => { setEditing(false); if (!overlays.length && !items.length) setItems([]); }}
-          onDone={(m, o) => { setItems([m]); setOverlays(o); setEditing(false); }}
-          onShare={(m, o, audience) => { setItems([m]); setOverlays(o); publish({ m, o, audience }); }} />}
+      {modeBar}
+      <Modal visible={camOpen} animationType="slide" onRequestClose={() => setCamOpen(false)} statusBarTranslucent>
+        {camOpen && <StoryCamera maxSec={maxSec} videoOnly={mode === 'reel'} onPicked={fromInAppCamera} onClose={() => setCamOpen(false)}
+          onSystemPicker={() => { setCamOpen(false); addFromGallery(); }} />}
       </Modal>
-      {busy && !editing && (
-        <Animated.View entering={FadeIn} style={{ position: 'absolute', top: 0, bottom: 0, left: 0, right: 0, backgroundColor: C.overlay, alignItems: 'center', justifyContent: 'center' }}>
-          <View style={{ backgroundColor: C.card, borderRadius: R.xl, paddingVertical: 24, paddingHorizontal: 32, alignItems: 'center', gap: 6 }}>
-            <T v="bold">{isStory ? t('عم نرفع قصتك…') : t('عم ننشر منشورك…')}</T>
-            {media?.kind === 'video' && <T v="tiny" color={C.muted}>{t('الفيديو بياخذ ثواني أكثر')}</T>}
-          </View>
-        </Animated.View>
-      )}
+      {editorModal}
+      {busyOverlay}
     </SafeAreaView>
   );
 }
-

@@ -97,6 +97,7 @@ export function StoryStickersLayer({ story, mine, width, height, onPause, onResu
           : o.kind === 'slider' ? { slider: res.sliders?.[o.id], author, onSlide: author ? undefined : (v) => slide(o, v) }
           : o.kind === 'countdown' ? { countdown: res.countdowns?.[o.id], author, onRemind: author ? undefined : () => remind(o) }
           : o.kind === 'question' ? { question: res.questions?.[o.id], author, onAsk: () => { onPause(); if (author) setAnswers(o); else setAsk(o); } }
+          : o.kind === 'addyours' ? { author, onAddYours: () => { onPause(); router.push({ pathname: '/post/new', params: { mode: 'story', addyours: o.text } }); } }
           : undefined;
         return (
           <Placed key={o.id} o={o} width={width} height={height} interactive={!!live} onPress={tappable ? () => open(o) : undefined}>

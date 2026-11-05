@@ -1,7 +1,7 @@
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Clock, Link2, MapPin } from 'lucide-react-native';
-import { useEffect, useState } from 'react';
+import { Camera, Clock, Link2, MapPin } from 'lucide-react-native';
+import { memo, useEffect, useState } from 'react';
 import { Platform, Pressable, Text, View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 
@@ -26,6 +26,7 @@ export type Live = {
   onAsk?: () => void;
   onSlide?: (v: number) => void;
   onRemind?: () => void;
+  onAddYours?: () => void;
 };
 
 /** A text overlay in one of Instagram's looks. */
@@ -74,7 +75,30 @@ export function StickerBody({ o, width, live }: { o: Overlay; width: number; liv
     case 'emoji':
       return <Text style={{ fontSize: fs * 1.6, lineHeight: fs * 1.9 }}>{o.text}</Text>;
     case 'sticker':
-      return o.data?.img ? <Image source={{ uri: o.data.img }} style={{ width: fs * 4, height: fs * 4 }} contentFit="contain" /> : null;
+      return o.data?.img ? <Image source={{ uri: o.data.img }} style={{ width: fs * 4, height: fs * 4 }} contentFit="contain" autoplay /> : null;
+    case 'photo': {
+      // a photo from the gallery, as a white-framed cutout (like Instagram's photo sticker)
+      const ar = o.data?.ar ?? 1, pw = width * 0.42;
+      return o.data?.img ? (
+        <View style={{ padding: pw * 0.035, backgroundColor: '#FFFFFF', borderRadius: pw * 0.08, shadowColor: '#000', shadowOpacity: 0.25, shadowRadius: 10 }}>
+          <Image source={{ uri: o.data.img }} style={{ width: pw, height: pw / ar, borderRadius: pw * 0.06 }} contentFit="cover" />
+        </View>
+      ) : null;
+    }
+    case 'addyours':
+      return (
+        <View style={{ width: card * 0.92, borderRadius: 18, backgroundColor: '#FFFFFF', overflow: 'hidden', shadowColor: '#000', shadowOpacity: 0.2, shadowRadius: 10 }}>
+          <View style={{ paddingHorizontal: 14, paddingTop: 12, paddingBottom: 10, alignItems: 'center', gap: 4 }}>
+            <Text style={{ fontFamily: F.bodyBold, fontSize: 12, color: '#FF6B4A' }}>{t('دورك')}</Text>
+            <Text style={{ fontFamily: F.display, fontSize: fs * 0.95, color: '#0E1430', textAlign: 'center' }}>{o.text || t('شاركنا صورتك')}</Text>
+          </View>
+          <Pressable disabled={!live?.onAddYours} onPress={live?.onAddYours} accessibilityRole="button" accessibilityLabel={t('ضيف صورتك')}
+            style={{ marginHorizontal: 10, marginBottom: 10, minHeight: 40, borderRadius: 12, backgroundColor: '#F2F3F7', flexDirection: 'row', gap: 6, alignItems: 'center', justifyContent: 'center' }}>
+            <Camera size={16} color="#0E1430" />
+            <Text style={{ fontFamily: F.bodyBold, fontSize: 14, color: '#0E1430' }}>{t('ضيف صورتك')}</Text>
+          </Pressable>
+        </View>
+      );
     case 'mention':
       return (
         <View style={{ backgroundColor: '#FFFFFF', borderRadius: fs * 0.5, paddingHorizontal: fs * 0.55, paddingVertical: fs * 0.25 }}>
@@ -91,7 +115,7 @@ export function StickerBody({ o, width, live }: { o: Overlay; width: number; liv
       return (
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: fs * 0.3, backgroundColor: '#FFFFFF', borderRadius: fs * 0.5, paddingHorizontal: fs * 0.55, paddingVertical: fs * 0.25, maxWidth: width * 0.8 }}>
           <Link2 size={fs} color="#2E5BFF" />
-          <Text numberOfLines={1} style={{ fontFamily: F.title, fontSize: fs * 0.9, color: '#2E5BFF', writingDirection: 'ltr' }}>{o.text}</Text>
+          <Text numberOfLines={1} style={{ fontFamily: F.title, fontSize: fs * 0.9, color: '#2E5BFF', writingDirection: o.data?.label ? undefined : 'ltr' }}>{o.data?.label || o.text.replace(/^https?:\/\//i, '')}</Text>
         </View>
       );
     case 'time': {
@@ -213,7 +237,7 @@ function SliderBody({ o, fs, card, live }: { o: Overlay; fs: number; card: numbe
 }
 
 /** Freehand drawing over the whole frame. */
-export function DrawLayer({ strokes, width, height }: { strokes: Stroke[]; width: number; height: number }) {
+export const DrawLayer = memo(function DrawLayer({ strokes, width, height }: { strokes: Stroke[]; width: number; height: number }) {
   if (!strokes.length || !width) return null;
   return (
     <Svg pointerEvents="none" width={width} height={height} style={{ position: 'absolute', top: 0, left: 0 }}>
@@ -229,7 +253,7 @@ export function DrawLayer({ strokes, width, height }: { strokes: Stroke[]; width
       })}
     </Svg>
   );
-}
+});
 
 /** Smooth path through the points (fractions) using midpoints, scaled to the frame. */
 export function strokePath(pts: number[], W: number, H: number) {

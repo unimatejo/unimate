@@ -1,12 +1,15 @@
 import { Eraser, Highlighter, PenLine, Sparkles, Undo2 } from 'lucide-react-native';
 import { useRef, useState } from 'react';
-import { Pressable, ScrollView, Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
+import Animated, { FadeIn } from 'react-native-reanimated';
+
+import { ColorRow } from './ColorRow';
 
 import { DrawLayer } from './StickerBody';
 import { VSlider } from './VSlider';
 import { F } from '@/lib/theme';
 import { t } from '@/lib/i18n';
-import { TEXT_COLORS, type Stroke } from '@/lib/storyOverlay';
+import type { Stroke } from '@/lib/storyOverlay';
 
 type Tool = Stroke['mode'] | 'eraser';
 
@@ -30,9 +33,10 @@ export function DrawTool({ W, H, strokes, onChange, onDone }: { W: number; H: nu
 
   const tools: [Tool, string, typeof PenLine][] = [['pen', t('قلم'), PenLine], ['marker', t('ماركر'), Highlighter], ['neon', t('نيون'), Sparkles], ['eraser', t('ممحاة'), Eraser]];
   return (
-    <View style={{ position: 'absolute', top: 0, left: 0, width: W, height: H }}>
-      {/* the strokes already drawn + the one being drawn */}
-      <DrawLayer strokes={live ? [...strokes, live] : strokes} width={W} height={H} />
+    <Animated.View entering={FadeIn.duration(200)} style={{ position: 'absolute', top: 0, left: 0, width: W, height: H }}>
+      {/* the strokes already drawn (only redrawn when they change) + the one being drawn on its own layer */}
+      <DrawLayer strokes={strokes} width={W} height={H} />
+      {live ? <DrawLayer strokes={[live]} width={W} height={H} /> : null}
       <View style={{ position: 'absolute', top: 0, left: 0, width: W, height: H }}
         onStartShouldSetResponder={() => true} onMoveShouldSetResponder={() => true}
         onResponderGrant={(e) => {
@@ -46,7 +50,7 @@ export function DrawTool({ W, H, strokes, onChange, onDone }: { W: number; H: nu
           if (tool === 'eraser') { erase(x, y); return; }
           const c = cur.current; if (!c) return;
           const lx = c.pts[c.pts.length - 2], ly = c.pts[c.pts.length - 1];
-          if (Math.abs(lx - x) + Math.abs(ly - y) < 0.004) return;
+          if (Math.abs(lx - x) + Math.abs(ly - y) < 0.0025) return;
           c.pts.push(x, y);
           if (raf.current == null) raf.current = requestAnimationFrame(flush);
         }}
@@ -77,13 +81,13 @@ export function DrawTool({ W, H, strokes, onChange, onDone }: { W: number; H: nu
         <VSlider value={size} onChange={setSize} height={Math.min(240, H * 0.35)} />
       </View>
 
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ position: 'absolute', bottom: 14, left: 0, right: 0 }} contentContainerStyle={{ gap: 10, paddingHorizontal: 14, alignItems: 'center' }}>
-        <View style={{ width: 28 + width * W, height: 28 + width * W, maxWidth: 40, maxHeight: 40, borderRadius: 20, borderWidth: 2, borderColor: '#fff', backgroundColor: tool === 'eraser' ? 'transparent' : color }} />
-        {TEXT_COLORS.map((c) => (
-          <Pressable key={c} onPress={() => { setColor(c); if (tool === 'eraser') setTool('pen'); }} accessibilityLabel={c}
-            style={{ width: 28, height: 28, borderRadius: 14, backgroundColor: c, borderWidth: color === c ? 3 : 2, borderColor: '#fff' }} />
-        ))}
-      </ScrollView>
-    </View>
+      <View style={{ position: 'absolute', bottom: 10, left: 0, right: 0, flexDirection: 'row', alignItems: 'center', direction: 'ltr' }}>
+        {/* the brush preview: its real size and colour */}
+        <View style={{ width: 44, alignItems: 'center' }}>
+          <View style={{ width: Math.max(8, Math.min(34, width * W * (tool === 'marker' ? 2.2 : 1))), height: Math.max(8, Math.min(34, width * W * (tool === 'marker' ? 2.2 : 1))), borderRadius: 20, borderWidth: 2, borderColor: '#fff', backgroundColor: tool === 'eraser' ? 'transparent' : color, shadowColor: tool === 'neon' ? color : '#000', shadowOpacity: 0.6, shadowRadius: tool === 'neon' ? 8 : 2 }} />
+        </View>
+        <View style={{ flex: 1 }}><ColorRow value={color} onChange={(c) => { setColor(c); if (tool === 'eraser') setTool('pen'); }} size={28} /></View>
+      </View>
+    </Animated.View>
   );
 }

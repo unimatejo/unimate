@@ -1,7 +1,7 @@
 /** Things placed on a story. Positions and sizes are fractions of the frame so they look the same on every screen. */
 export type OverlayKind =
   | 'text' | 'emoji' | 'mention' | 'time' | 'place' | 'hashtag' | 'link'
-  | 'poll' | 'question' | 'slider' | 'countdown' | 'sticker' | 'draw';
+  | 'poll' | 'question' | 'slider' | 'countdown' | 'sticker' | 'draw' | 'addyours' | 'photo';
 
 /** Text looks, like Instagram's: classic, poster, bubble, neon, typewriter, squeeze */
 export type TextStyle = 'classic' | 'poster' | 'bubble' | 'neon' | 'typewriter' | 'squeeze';
@@ -29,6 +29,8 @@ export type Overlay = {
     options?: string[]; emoji?: string; endsAt?: string; url?: string;
     placeId?: string; lat?: number; lng?: number; img?: string; clock?: 'pill' | 'digital' | 'mono';
     strokes?: Stroke[];
+    /** link sticker's shown name · photo sticker's width/height */
+    label?: string; ar?: number;
   };
 };
 
@@ -41,7 +43,7 @@ export const newId = () => Math.random().toString(36).slice(2, 10);
 /** Stickers people can answer (stored answers live in the story_* tables). */
 export const INTERACTIVE: OverlayKind[] = ['poll', 'question', 'slider', 'countdown'];
 
-const KINDS: OverlayKind[] = ['text', 'emoji', 'mention', 'time', 'place', 'hashtag', 'link', 'poll', 'question', 'slider', 'countdown', 'sticker', 'draw'];
+const KINDS: OverlayKind[] = ['text', 'emoji', 'mention', 'time', 'place', 'hashtag', 'link', 'poll', 'question', 'slider', 'countdown', 'sticker', 'draw', 'addyours', 'photo'];
 const STYLES: TextStyle[] = ['classic', 'poster', 'bubble', 'neon', 'typewriter', 'squeeze'];
 const isColor = (c: unknown) => typeof c === 'string' && /^#[0-9a-f]{6}$/i.test(c);
 const str = (v: unknown, n: number) => (typeof v === 'string' ? v.slice(0, n) : undefined);
@@ -62,7 +64,7 @@ function cleanData(d: unknown): Overlay['data'] {
     emoji: str(o.emoji, 8), endsAt: str(o.endsAt, 40), url: url && /^https?:\/\//i.test(url) ? url : undefined,
     placeId: str(o.placeId, 60), lat: num(o.lat), lng: num(o.lng),
     img: str(o.img, 400), clock: (['pill', 'digital', 'mono'].includes(String(o.clock)) ? o.clock : undefined) as 'pill' | undefined,
-    strokes,
+    strokes, label: str(o.label, 40), ar: num(o.ar) !== undefined ? Math.min(4, Math.max(0.25, Number(o.ar))) : undefined,
   };
 }
 

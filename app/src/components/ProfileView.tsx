@@ -355,11 +355,22 @@ export function ProfileView({ userId, onTitle, back }: { userId: string; onTitle
           </Row>
 
           <Row gap={20}>
-            <Tap haptic={false} scale={0.95} disabled={!hasStory} onPress={() => router.push({ pathname: '/story/[id]', params: { id: p.id } })} accessibilityLabel={hasStory ? t('شوف قصته') : p.full_name}>
-              <View style={{ width: 92, height: 92, borderRadius: 46, padding: 4, borderWidth: 2, borderColor: hasStory ? C.primary : 'transparent' }}>
-                <Avatar id={p.id} name={p.full_name} url={p.avatar_url} size={80} />
-              </View>
-            </Tap>
+            <View>
+              <Tap haptic={false} scale={0.95} disabled={!hasStory && !mine}
+                onPress={() => (hasStory ? router.push({ pathname: '/story/[id]', params: { id: p.id } }) : router.push({ pathname: '/post/new', params: { mode: 'story' } }))}
+                accessibilityLabel={hasStory ? t('شوف قصته') : mine ? t('أضف للستوري') : p.full_name}>
+                <View style={{ width: 92, height: 92, borderRadius: 46, padding: 4, borderWidth: 2, borderColor: hasStory ? C.primary : 'transparent' }}>
+                  <Avatar id={p.id} name={p.full_name} url={p.avatar_url} size={80} />
+                </View>
+              </Tap>
+              {/* your own avatar: the little + opens the story camera, like Instagram */}
+              {mine && (
+                <Tap onPress={() => router.push({ pathname: '/post/new', params: { mode: 'story' } })} accessibilityLabel={t('أضف للستوري')} hitSlop={8}
+                  style={{ position: 'absolute', bottom: 2, ...(Platform.OS === 'web' ? { left: 2 } : { end: 2 }), width: 28, height: 28, borderRadius: 14, backgroundColor: C.primary, borderWidth: 3, borderColor: C.bg, alignItems: 'center', justifyContent: 'center' }}>
+                  <Plus size={15} color={C.onPrimary} strokeWidth={3} />
+                </Tap>
+              )}
+            </View>
             <View style={{ flex: 1, flexDirection: 'row' }}>
               {([[p.post_count, t('منشور'), true, null], [p.follower_count, t('متابِع'), mine || !p.hide_followers, 'followers'], [p.following_count, t('متابَع'), mine || !p.hide_following, 'following']] as [number, string, boolean, string | null][]).map(([n, l, vis, type]) => (
                 <Tap key={l} haptic={false} scale={0.95} disabled={!vis || !type || !canSee}
