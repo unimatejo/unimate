@@ -1,7 +1,8 @@
 import { router } from 'expo-router';
 import { PullRefresh } from '@/components/PullRefresh';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Bell, BellOff, BookOpen, CalendarPlus, ScanLine, Clock, FlaskConical, MapPin, MessagesSquare, Video, EyeOff } from 'lucide-react-native';
+import { Bell, BellOff, BookOpen, Calculator, CalendarPlus, CalendarX, ScanLine, Clock, FlaskConical, Hourglass, MapPin, MessagesSquare, UserX, Video, EyeOff } from 'lucide-react-native';
+import * as Haptics from 'expo-haptics';
 import { useEffect, useMemo, useState } from 'react';
 import { Alert, Linking, ScrollView, View } from 'react-native';
 import Animated, { FadeIn, useAnimatedStyle, useSharedValue, withRepeat, withTiming } from 'react-native-reanimated';
@@ -14,7 +15,8 @@ import { reportError } from '@/lib/errors';
 import { run } from '@/lib/run';
 import { ListSkeleton } from '@/components/Skeleton';
 import { scheduleLectureReminders } from '@/lib/notify';
-import { placeLine, useSchedule, type Meeting } from '@/lib/schedule';
+import { placeLine, useSchedule, ymd, type Meeting } from '@/lib/schedule';
+import { toast } from '@/lib/toast';
 import { supabase } from '@/lib/supabase';
 import { C, F, shadow } from '@/lib/theme';
 import { WEEKDAYS_SHORT, clock } from '@/lib/util';
@@ -54,6 +56,30 @@ export default function Schedule() {
   const [day, setDay] = useState(() => { const d = new Date().getDay(); return d > 4 ? 0 : d; });
   const [flipping, setFlipping] = useState<string | null>(null);
   const [off, setOff] = useState<Record<string, boolean>>({});
+  // today's absences I marked from this screen: `${section}|${HH:MM}` -> mark id
+  const [absent, setAbsent] = useState<Record<string, string>>({});
+  const today = ymd(new Date());
+  useEffect(() => {
+    if (!profile) return;
+    supabase.from('attendance_marks').select('id, section_id, slot').eq('on_date', today)
+      .then(({ data }) => setAbsent(Object.fromEntries((data ?? []).map((a) => [`${a.section_id}|${a.slot}`, a.id as string]))), () => {});
+  }, [profile, today]);
+  async function toggleAbsent(m: Meeting) {
+    const key = `${m.section_id}|${m.starts_at.slice(0, 5)}`;
+    const had = absent[key];
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+    if (had) {
+      setAbsent((a) => { const n = { ...a }; delete n[key]; return n; });
+      const r = await run(supabase.from('attendance_marks').delete().eq('id', had));
+      if (!r.ok) setAbsent((a) => ({ ...a, [key]: had }));
+      return;
+    }
+    setAbsent((a) => ({ ...a, [key]: 'pending' }));
+    const r = await run(supabase.from('attendance_marks').insert({ section_id: m.section_id, on_date: today, slot: m.starts_at.slice(0, 5), status: 'absent' }).select('id').single(), { quiet: true });
+    if (!r.ok || !r.data) { setAbsent((a) => { const n = { ...a }; delete n[key]; return n; }); toast.error(t('ما انسجل الغياب، جرّب كمان مرة.')); return; }
+    setAbsent((a) => ({ ...a, [key]: (r.data as { id: string }).id }));
+    toast(t('انسجل غياب {0} ✓', [m.course_name]));
+  }
 
   useEffect(() => {
     if (!profile) return;
@@ -145,6 +171,20 @@ export default function Schedule() {
           </LinearGradient>
         </Animated.View>
 
+        <Row gap={10}>
+          {([
+            [t('غياباتي'), CalendarX, GRAD.red, '/attendance'],
+            [t('معدلي'), Calculator, GRAD.blue, '/gpa'],
+            [t('امتحاناتي'), Hourglass, GRAD.orange, '/exams'],
+          ] as const).map(([label, Icon, g, to]) => (
+            <Tap key={to} onPress={() => router.push(to)} scale={0.95} accessibilityRole="button" accessibilityLabel={label}
+              style={[{ flex: 1, backgroundColor: C.card, borderRadius: 22, paddingVertical: 12, alignItems: 'center', gap: 8 }, shadow]}>
+              <GlyphTile icon={Icon} colors={g} size={42} />
+              <T v="small" style={{ fontFamily: F.bodyBold }}>{label}</T>
+            </Tap>
+          ))}
+        </Row>
+
         <View style={{ flexDirection: 'row', gap: 6 }}>
           {week.map((date, d) => {
             const on = d === day; const has = meetings.some((m) => m.weekday === d); const today = d === dow;
@@ -224,6 +264,15 @@ export default function Schedule() {
                         <MapPin size={15} color={C.primary} /><T v="small" color={C.primary} numberOfLines={1} style={{ flexShrink: 1 }}>{placeLine(m)}</T>
                       </Tap>
                     )}
+                    {done && m.changed !== 'cancelled' && (() => {
+                      const on = !!absent[`${m.section_id}|${m.starts_at.slice(0, 5)}`];
+                      return (
+                        <Tap onPress={() => toggleAbsent(m)} accessibilityRole="button" accessibilityState={{ checked: on }} accessibilityLabel={on ? t('شيل الغياب') : t('غبت عن هالمحاضرة')}
+                          style={{ height: 38, paddingHorizontal: 10, borderRadius: 12, backgroundColor: on ? C.redSoft : C.soft, flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+                          <UserX size={15} color={on ? C.red : C.muted} /><T v="tiny" color={on ? C.red : C.muted}>{on ? t('غبت ✓') : t('غبت؟')}</T>
+                        </Tap>
+                      );
+                    })()}
                     {m.source !== 'personal' && m.source !== 'change' && (
                       <Tap onPress={() => notMine(m)} accessibilityLabel={t('مش محاضرتي')}
                         style={{ height: 38, paddingHorizontal: 10, borderRadius: 12, backgroundColor: C.soft, flexDirection: 'row', alignItems: 'center', gap: 5 }}>
