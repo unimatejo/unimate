@@ -2,8 +2,7 @@ import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
 
 import { ensurePermission } from './notify';
-import { t } from './i18n';
-import { LOCALE } from './i18n';
+import { LOCALE, t } from './i18n';
 
 export type ExamLike = { id: string; kind: string; title: string; starts_at: string; course_name?: string | null; location?: string | null };
 
