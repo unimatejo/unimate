@@ -10,6 +10,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 
+import { BadgesRow } from './badges/BadgesRow';
 import { LikesSheet } from './LikesSheet';
 import { InstagramGlyph, SnapGlyph } from './SocialGlyphs';
 import { SuggestedPeople } from './SuggestedPeople';
@@ -413,7 +414,12 @@ export function ProfileView({ userId, onTitle, back }: { userId: string; onTitle
               const full = p.birth_day ? new Date(`${p.birth_year}-${p.birth_day}T12:00:00`).toLocaleDateString(LOCALE, { day: 'numeric', month: 'long', year: 'numeric' }) : null;
               return <T v="small" color={isToday ? C.primary : C.ink2}>🎂 {isToday ? t('عيد ميلاده اليوم! 🎉') : full ? t('مواليد {0}', [full]) : t('مواليد {0}', [String(p.birth_year)])}</T>;
             })() : null}
-            {p.points > 0 && <Row gap={5}><Star size={14} color="#F59E0B" fill="#F59E0B" /><T v="tiny" color={C.muted}>{p.points} {t('نقطة مساعدة')}</T></Row>}
+            {p.points > 0 && (
+              <Tap haptic={false} scale={0.97} onPress={() => router.push('/leaderboard')} accessibilityRole="button" style={{ alignSelf: 'flex-start' }}>
+                <Row gap={5}><Star size={14} color="#F59E0B" fill="#F59E0B" /><T v="tiny" color={C.muted}>{p.points} {t('نقطة مساعدة')}</T></Row>
+              </Tap>
+            )}
+            <BadgesRow userId={p.id} mine={mine} />
           </View>
 
           <Row gap={8}>

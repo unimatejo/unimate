@@ -135,9 +135,10 @@ export default function Settings() {
               {profile?.username ? <T v="small" color={C.muted} style={{ writingDirection: 'ltr', textAlign: ta }}>@{profile.username}</T> : null}
               <T v="tiny" color={C.muted} numberOfLines={1}>{[nm(profile?.major), nm(university)].filter(Boolean).join(' · ')}</T>
             </View>
-            <Row gap={4} style={{ backgroundColor: C.orangeSoft, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 12 }}>
+            <Tap onPress={() => router.push('/leaderboard')} accessibilityLabel={t('لوحة الشرف')} scale={0.94}
+              style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: C.orangeSoft, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 12 }}>
               <Star size={15} color={C.orange} fill={C.orange} /><T v="bold" color={C.orange} style={{ fontSize: 13 }}>{profile?.points ?? 0}</T>
-            </Row>
+            </Tap>
           </Tap>
         )}
 

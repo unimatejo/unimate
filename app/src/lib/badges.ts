@@ -1,4 +1,4 @@
-import type { ImageSourcePropType } from 'react-native';
+type Img = number;
 
 import { t } from './i18n';
 
@@ -17,12 +17,12 @@ export const EMOJI = {
   car: require('../../assets/emoji3d/automobile_3d.png'),
   fire: require('../../assets/emoji3d/fire_3d.png'),
   locked: require('../../assets/emoji3d/locked_3d.png'),
-} satisfies Record<string, ImageSourcePropType>;
+} satisfies Record<string, Img>;
 
 export type BadgeKey = 'pioneer' | 'summary_1' | 'summary_10' | 'liked_50' | 'finder' | 'driver_5' | 'points_100' | 'top3_month';
 export type BadgeState = { key: BadgeKey; earned: boolean; progress: number | null; goal: number | null };
 
-export const BADGES: Record<BadgeKey, { img: ImageSourcePropType; name: string; how: string }> = {
+export const BADGES: Record<BadgeKey, { img: Img; name: string; how: string }> = {
   pioneer: { img: EMOJI.seedling, name: t('من الأوائل'), how: t('سجّل بيونيميت قبل 2027.') },
   summary_1: { img: EMOJI.books, name: t('أول ملخّص'), how: t('انشر أول ملخّص لزملائك.') },
   summary_10: { img: EMOJI.cap, name: t('صاحب ملخّصات'), how: t('انشر 10 ملخّصات.') },
