@@ -5,7 +5,7 @@ import { View } from 'react-native';
 
 import { ChatViewer, type Member } from '@/components/admin/ChatViewer';
 import { AdminScreen, useAdminRole, Filters, Item, Muted, Panel, SearchBox, Sheet, State, fmtDate, fmtNum, tap } from '@/components/admin/kit';
-import { Avatar, T } from '@/components/ui';
+import { Avatar, T, Toggle } from '@/components/ui';
 import { supabase } from '@/lib/supabase';
 import { C } from '@/lib/theme';
 import { t } from '@/lib/i18n';
@@ -28,6 +28,15 @@ export default function Conversations() {
   const [open, setOpen] = useState<Conv | null>(null);
 
   const role = useAdminRole();
+  // owner's switch: full chats (testing period) or reported messages only
+  const [full, setFull] = useState<boolean | null>(null);
+  useEffect(() => { if (role) supabase.rpc('admin_chat_mode', {}).then(({ data }) => setFull(data === true), () => {}); }, [role]);
+  async function setMode(v: boolean) {
+    setFull(v);
+    const { data, error: e } = await supabase.rpc('admin_chat_mode', { p_full: v });
+    if (e) { setFull(!v); setError(e.message); return; }
+    setFull(data === true); load();
+  }
   const load = useCallback(async () => {
     if (!role) return; // not an admin (or still checking): the screen shows the guard, nothing to fetch
     const { data, error: e } = await supabase.rpc('admin_list_conversations', { q: q.trim(), lim: 100, off: 0 });
@@ -47,7 +56,13 @@ export default function Conversations() {
   const shown = (list ?? []).filter((c) => kind === 'all' || c.kind === kind);
 
   return (
-    <AdminScreen title={t('المحادثات')} subtitle={t('المحادثات الخاصة مقفلة، بتنفتح بس الرسائل اللي عليها بلاغ')}>
+    <AdminScreen title={t('المحادثات')} subtitle={full === false ? t('المحادثات الخاصة مقفلة، بتنفتح بس الرسائل اللي عليها بلاغ') : t('كل المحادثات على المنصة، بتتحدّث لحالها')}>
+      {role === 'owner' && full !== null && (
+        <Panel>
+          <Toggle value={full} onChange={setMode} label={t('عرض المحادثات الخاصة كاملة')}
+            hint={full ? t('شغّال: الأدمنز بيشوفوا كل المحادثات. كل فتحة بتنسجل.') : t('مطفي: بتنفتح بس الرسائل اللي عليها بلاغ.')} />
+        </Panel>
+      )}
       <SearchBox value={q} onChange={setQ} placeholder={t('ابحث باسم شخص أو يوزر أو اسم جروب')} />
       <Filters items={[['all', t('الكل')], ['direct', t('خاص')], ['group', t('جروبات')], ['community', t('مجتمعات')]]} value={kind} onChange={setKind} />
       <State loading={list === null && !error} error={error} empty={!shown.length}>

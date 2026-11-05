@@ -1937,4 +1937,7 @@ export const EN: Record<string, string> = {
   "بتقدر تقرأ جدول بالصورة 15 مرة باليوم. جرّب بكرا، أو ضيف موادك بإيدك.": "You can read a schedule from a photo 15 times a day. Try tomorrow, or add your courses by hand.",
   "وصلت الحد اليومي": "Daily limit reached",
   "🔒 محادثة خاصة. للحفاظ على خصوصية المستخدمين، ما بتنفتح إلا الرسائل اللي انعمل عليها بلاغ.": "🔒 Private chat. To protect users' privacy, only reported messages can be opened.",
+  "شغّال: الأدمنز بيشوفوا كل المحادثات. كل فتحة بتنسجل.": "On: admins can see every chat. Each opening is logged.",
+  "عرض المحادثات الخاصة كاملة": "Show private chats in full",
+  "مطفي: بتنفتح بس الرسائل اللي عليها بلاغ.": "Off: only reported messages can be opened.",
 };
