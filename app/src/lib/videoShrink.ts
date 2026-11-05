@@ -1,6 +1,7 @@
 import { NativeModules, Platform, TurboModuleRegistry } from 'react-native';
 
 import { reportError } from './errors';
+import { recordPerf } from './perf';
 
 /**
  * Phones record 1080p–4K at 10–20 Mbps: a 14 s clip can be 25 MB, slow to upload and too heavy for many phones
@@ -16,17 +17,41 @@ const KEEP_BPS = 4_000_000;
 type Shrunk = { uri: string; mime: 'video/mp4'; blob?: Blob };
 
 export async function shrinkVideo(file: { uri: string; mime: string; duration?: number | null; size?: number | null; width?: number; height?: number }): Promise<Shrunk | null> {
+  const t0 = Date.now();
   try {
-    return Platform.OS === 'web' ? await shrinkWeb(file) : await shrinkNative(file);
+    const out = Platform.OS === 'web' ? await shrinkWeb(file) : await shrinkNative(file);
+    recordPerf('query', `video-shrink ${Platform.OS} ${out ? 'done' : 'kept'}`, Date.now() - t0);
+    return out;
   } catch (e) {
+    recordPerf('query', `video-shrink ${Platform.OS} failed`, Date.now() - t0);
     reportError(e);
     return null;
   }
 }
 
+// ---------- web safety ----------
+// A phone browser can close the page when converting a very big video takes too much memory (iPhone Safari does).
+// A mark is left while converting; if the page restarts with the mark still there, this browser skips converting
+// from then on, so posting works next time (the video goes up as it is).
+const RUNNING = 'um_shrink_running', OFF = 'um_shrink_off';
+const store = {
+  get: (k: string) => { try { return localStorage.getItem(k); } catch { return null; } },
+  set: (k: string, v: string) => { try { localStorage.setItem(k, v); } catch { /* private mode */ } },
+  del: (k: string) => { try { localStorage.removeItem(k); } catch { /* private mode */ } },
+};
+function webShrinkAllowed() {
+  if (store.get(RUNNING)) {
+    store.del(RUNNING); store.set(OFF, '1');
+    reportError(new Error('video-shrink: the page restarted while converting; turned off on this browser'));
+  }
+  return !store.get(OFF);
+}
+/** converting must finish in this time, or the original is uploaded */
+const WEB_LIMIT_MS = 90_000;
+
 // ---------- web: WebCodecs through mediabunny (loaded only when a video is posted) ----------
 async function shrinkWeb(file: { uri: string; mime: string }): Promise<Shrunk | null> {
-  if (typeof VideoEncoder === 'undefined') return null;
+  if (typeof VideoEncoder === 'undefined' || !webShrinkAllowed()) return null;
   const blob = await (await fetch(file.uri)).blob();
   const mb = await import('mediabunny');
   const input = new mb.Input({ source: new mb.BlobSource(blob), formats: mb.ALL_FORMATS });
@@ -47,7 +72,12 @@ async function shrinkWeb(file: { uri: string; mime: string }): Promise<Shrunk | 
   });
   // never trade the sound for a smaller file
   if (!conversion.isValid || (audio && conversion.discardedTracks.some((d) => d.track === audio))) return null;
-  await conversion.execute();
+  store.set(RUNNING, String(Date.now()));
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  try {
+    const late = new Promise<'late'>((res) => { timer = setTimeout(() => res('late'), WEB_LIMIT_MS); });
+    if ((await Promise.race([conversion.execute(), late])) === 'late') { await conversion.cancel(); return null; }
+  } finally { clearTimeout(timer); store.del(RUNNING); }
   const buf = output.target.buffer;
   if (!buf || buf.byteLength >= blob.size) return null;
   const out = new Blob([buf], { type: 'video/mp4' });

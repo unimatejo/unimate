@@ -23,8 +23,8 @@ function place(meta: MediaMeta | null | undefined, W: number, H: number) {
 }
 
 /** A video that respects the crop editor's trim (start → end) and calls onEnd once it reaches the end. */
-export function TrimmedVideo({ uri, meta, loop = true, muted = true, autoPlay = true, paused = false, onEnd, onReady, style, fit = 'cover' }: {
-  uri: string; meta?: MediaMeta | null; loop?: boolean; muted?: boolean; autoPlay?: boolean; paused?: boolean; onEnd?: () => void; onReady?: () => void;
+export function TrimmedVideo({ uri, meta, loop = true, muted = true, autoPlay = true, paused = false, onEnd, onReady, onError, style, fit = 'cover' }: {
+  uri: string; meta?: MediaMeta | null; loop?: boolean; muted?: boolean; autoPlay?: boolean; paused?: boolean; onEnd?: () => void; onReady?: () => void; onError?: () => void;
   style?: StyleProp<ViewStyle>; fit?: 'cover' | 'fill' | 'contain';
 }) {
   const trim = meta?.trim;
@@ -48,7 +48,8 @@ export function TrimmedVideo({ uri, meta, loop = true, muted = true, autoPlay = 
       player.addListener('statusChange', ({ status }) => {
         // some players ignore a start time set before the video loaded
         if (status === 'readyToPlay' && trim && player.currentTime < trim.start - 0.2) player.currentTime = trim.start;
-        if (status === 'readyToPlay' || status === 'error') onReady?.();
+        if (status === 'error' && onError) onError();
+        else if (status === 'readyToPlay' || status === 'error') onReady?.();
       }),
       player.addListener('playToEnd', () => {
         if (trim && loop) { player.currentTime = trim.start; player.play(); return; }
@@ -62,7 +63,7 @@ export function TrimmedVideo({ uri, meta, loop = true, muted = true, autoPlay = 
       onEnd?.();
     }));
     return () => subs.forEach((s) => s.remove());
-  }, [player, trim, loop, onEnd, onReady]);
+  }, [player, trim, loop, onEnd, onReady, onError]);
   return <VideoView player={player} style={style ?? fill} contentFit={fit} nativeControls={false} />;
 }
 
@@ -72,7 +73,7 @@ export function TrimmedVideo({ uri, meta, loop = true, muted = true, autoPlay = 
  */
 export function FramedMedia({ uri, kind, meta, style, video, onImageLoad }: {
   uri: string; kind: 'image' | 'video' | string; meta?: MediaMeta | null; style?: StyleProp<ViewStyle>; onImageLoad?: () => void;
-  video?: { loop?: boolean; muted?: boolean; paused?: boolean; onEnd?: () => void; onReady?: () => void; autoPlay?: boolean };
+  video?: { loop?: boolean; muted?: boolean; paused?: boolean; onEnd?: () => void; onReady?: () => void; onError?: () => void; autoPlay?: boolean };
 }) {
   const [size, setSize] = useState({ w: 0, h: 0 });
   const placed = place(meta, size.w, size.h);

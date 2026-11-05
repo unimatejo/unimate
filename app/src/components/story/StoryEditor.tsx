@@ -436,6 +436,12 @@ export function StoryEditor({ media, initial, onCancel, onDone, onShare, sharing
         </Animated.View>
       </View>
 
+      {sharing && (
+        <View pointerEvents="none" style={{ position: 'absolute', bottom: insets.bottom + 72, alignSelf: 'center', flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 16, height: 38, borderRadius: 19, backgroundColor: 'rgba(0,0,0,0.6)' }}>
+          <ActivityIndicator color="#fff" size="small" />
+          <Text style={{ fontFamily: F.bodyBold, fontSize: 13, color: '#fff' }}>{media.kind === 'video' ? t('عم نجهّز الفيديو وننشره…') : t('عم ننشر…')}</Text>
+        </View>
+      )}
       {/* share: your story / close friends / go on */}
       <Animated.View style={[{ position: 'absolute', bottom: insets.bottom + 8, left: 12, right: 12, height: 52, flexDirection: 'row', alignItems: 'center', gap: 8 }, uiStyle, busyUI && { display: 'none' }]} pointerEvents={busyUI ? 'none' : 'auto'}>
         <Pressable onPress={() => { const r = result(); if (onShare) onShare(r.media, r.overlays, 'friends'); else onDone(r.media, r.overlays); }} disabled={sharing} accessibilityLabel={t('شارك بقصتك')}

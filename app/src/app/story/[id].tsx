@@ -26,8 +26,8 @@ type S = { id: string; media_url: string; kind: string; caption: string | null; 
 type Viewer = StoryViewer;
 
 /** a story video, framed and trimmed the way it was set in the crop editor; plays once with sound */
-function StoryVideo({ uri, meta, onEnd, onReady }: { uri: string; meta?: MediaMeta | null; onEnd: () => void; onReady: () => void }) {
-  return <FramedMedia uri={uri} kind="video" meta={meta} video={{ loop: false, muted: false, onEnd, onReady }} />;
+function StoryVideo({ uri, meta, onEnd, onReady, onError }: { uri: string; meta?: MediaMeta | null; onEnd: () => void; onReady: () => void; onError: () => void }) {
+  return <FramedMedia uri={uri} kind="video" meta={meta} video={{ loop: false, muted: false, onEnd, onReady, onError }} />;
 }
 
 /** Instagram-style story viewer: tap sides to move, hold to pause, video plays to the end, your own story shows who viewed it. */
@@ -102,11 +102,17 @@ export default function StoryViewer() {
 
   const s = items?.[i];
   const markReady = useCallback(() => setReady(true), []);
+  // a video that can't be played (too heavy for this phone, or a slow connection) never leaves the viewer stuck
+  const [failed, setFailed] = useState(false);
+  const markFailed = useCallback(() => { setFailed(true); setReady(true); }, []);
+  const afterVideo = useCallback((sid: string) => {
+    setTimeout(() => { if (items?.[iRef.current]?.id === sid) next(); }, 2000); // its own end usually comes first
+  }, [items, next]);
   const frozen = useRef(false); // the activity sheet is open: don't run the timer
 
   useEffect(() => {
     if (!s || !profile) return;
-    setLiked(false); setUri(null); setReady(false);
+    setLiked(false); setUri(null); setReady(false); setFailed(false);
     mediaUrl('stories', s.media_url).then(setUri);
     if (!mine) {
       supabase.from('story_views').upsert({ story_id: s.id, viewer_id: profile.id }, { onConflict: 'story_id,viewer_id', ignoreDuplicates: true }).then(() => {
@@ -118,15 +124,22 @@ export default function StoryViewer() {
       .then(({ data }) => setViewers((data ?? []) as unknown as Viewer[]));
   }, [s, profile, mine]);
 
+  useEffect(() => {
+    if (!s || s.kind !== 'video' || !uri || ready) return;
+    const tm = setTimeout(markFailed, 12000);
+    return () => clearTimeout(tm);
+  }, [s, uri, ready, markFailed]);
+  const storyMs = (x: S) => (x.kind === 'video' && !failed ? (x.duration_sec ?? 15) * 1000 : failed ? 4000 : 5000);
+
   // the progress bar starts once the photo/video has actually loaded
   useEffect(() => {
     if (!s || !uri || !ready) return;
     progress.value = 0;
     if (frozen.current) return;
-    const ms = s.kind === 'video' ? (s.duration_sec ?? 15) * 1000 : 5000;
-    progress.value = withTiming(1, { duration: ms, easing: Easing.linear }, (done) => { if (done && s.kind !== 'video') runOnJS(next)(); });
+    const timed = s.kind !== 'video' || failed;
+    progress.value = withTiming(1, { duration: storyMs(s), easing: Easing.linear }, (done) => { if (done) runOnJS(timed ? next : afterVideo)(s.id); });
     return () => cancelAnimation(progress);
-  }, [uri, ready, s, next, progress]);
+  }, [uri, ready, s, next, progress, failed]);
 
   function pause() { cancelAnimation(progress); }
   // the story stays still while you hold it, type a reply or look at its activity
@@ -159,8 +172,8 @@ export default function StoryViewer() {
   });
   function resume() {
     if (!s) return;
-    const ms = (s.kind === 'video' ? (s.duration_sec ?? 15) * 1000 : 5000) * (1 - progress.value);
-    progress.value = withTiming(1, { duration: ms, easing: Easing.linear }, (done) => { if (done && s.kind !== 'video') runOnJS(next)(); });
+    const timed = s.kind !== 'video' || failed;
+    progress.value = withTiming(1, { duration: storyMs(s) * (1 - progress.value), easing: Easing.linear }, (done) => { if (done) runOnJS(timed ? next : afterVideo)(s.id); });
   }
 
   async function like() {
@@ -211,10 +224,17 @@ export default function StoryViewer() {
     <GestureDetector gesture={pull}>
     <Animated.View style={[{ flex: 1, overflow: 'hidden', backgroundColor: '#000' }, sheet]}>
       {!uri && <View style={{ position: 'absolute', top: 0, bottom: 0, left: 0, right: 0, padding: 8 }}><Bone h={H - 16} r={28} style={{ opacity: 0.25 }} /></View>}
-      {uri && s?.kind === 'video' ? <StoryVideo key={s.id} uri={uri} meta={s.meta} onEnd={next} onReady={markReady} />
+      {uri && s?.kind === 'video' ? <StoryVideo key={s.id} uri={uri} meta={s.meta} onEnd={next} onReady={markReady} onError={markFailed} />
         : uri ? <FramedMedia key={uri} uri={uri} kind="image" meta={s?.meta} onImageLoad={markReady} /> : null}
       <Pressable style={{ position: 'absolute', top: 110, bottom: 130, width: '40%', ...(Platform.OS === 'web' ? (rtlLayout() ? { left: 0 } : { right: 0 }) : { end: 0 }) }} onPress={next} onLongPress={onHold} onPressOut={onRelease} delayLongPress={200} accessibilityLabel={t('التالي')} />
       <Pressable style={{ position: 'absolute', top: 110, bottom: 130, width: '40%', ...(Platform.OS === 'web' ? (rtlLayout() ? { right: 0 } : { left: 0 }) : { start: 0 }) }} onPress={prev} onLongPress={onHold} onPressOut={onRelease} delayLongPress={200} accessibilityLabel={t('السابق')} />
+      {failed && (
+        <View pointerEvents="none" style={{ position: 'absolute', top: 0, bottom: 0, left: 0, right: 0, alignItems: 'center', justifyContent: 'center' }}>
+          <View style={{ paddingHorizontal: 18, paddingVertical: 10, borderRadius: 18, backgroundColor: 'rgba(0,0,0,0.6)' }}>
+            <T v="bold" color="#fff">{t('ما قدرنا نشغّل هالفيديو')}</T>
+          </View>
+        </View>
+      )}
       {s && ready && <StoryStickersLayer story={s} mine={mine} width={W} height={H} onPause={pause} onResume={resume} />}
       <SafeAreaView edges={['top']} pointerEvents={hold ? 'none' : 'box-none'} style={{ paddingHorizontal: 12, gap: 12, paddingBottom: 12, opacity: hold ? 0 : 1 }}>
         <Row gap={4} style={{ marginTop: 6 }}>
