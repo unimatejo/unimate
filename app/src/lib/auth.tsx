@@ -56,6 +56,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         });
         data.deletion_requested_at = null;
       }
+      // Instagram / Snapchat live in a private table now: only the owner (and who they allow) can read them
+      if (data) {
+        const { data: soc } = await supabase.rpc('profile_socials', { p_user: uid });
+        const s0 = (soc as { instagram: string | null; snapchat: string | null }[] | null)?.[0];
+        data.instagram = s0?.instagram ?? null; data.snapchat = s0?.snapchat ?? null;
+      }
       setProfile((data as Profile) ?? null);
       setUniversity((data?.university as University) ?? null);
     } catch (e) {

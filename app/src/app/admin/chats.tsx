@@ -47,7 +47,7 @@ export default function Conversations() {
   const shown = (list ?? []).filter((c) => kind === 'all' || c.kind === kind);
 
   return (
-    <AdminScreen title={t('المحادثات')} subtitle={t('كل المحادثات على المنصة، بتتحدّث لحالها')}>
+    <AdminScreen title={t('المحادثات')} subtitle={t('المحادثات الخاصة مقفلة، بتنفتح بس الرسائل اللي عليها بلاغ')}>
       <SearchBox value={q} onChange={setQ} placeholder={t('ابحث باسم شخص أو يوزر أو اسم جروب')} />
       <Filters items={[['all', t('الكل')], ['direct', t('خاص')], ['group', t('جروبات')], ['community', t('مجتمعات')]]} value={kind} onChange={setKind} />
       <State loading={list === null && !error} error={error} empty={!shown.length}>

@@ -46,6 +46,7 @@ export function ScheduleScan({ onDone, autoOpen }: { onDone: () => void; autoOpe
       if (!b64) return;
       setReading(true);
       const { data, error } = await supabase.functions.invoke('schedule-import', { body: { image: b64, mime: 'image/jpeg' } });
+      if ((error as { context?: { status?: number } } | null)?.context?.status === 429) { Alert.alert(t('وصلت الحد اليومي'), t('بتقدر تقرأ جدول بالصورة 15 مرة باليوم. جرّب بكرا، أو ضيف موادك بإيدك.')); return; }
       if (error || !data) throw new Error(data?.error ?? 'failed');
       if (data.error === 'not_configured') { Alert.alert(t('القراءة بالذكاء الاصطناعي لسا مش مفعّلة'), t('جرّب كمان شوي، أو ضيف موادك بإيدك.')); return; }
       if (!data.courses?.length) { Alert.alert(t('ما قدرنا نقرأ جدول بالصورة'), t('جرّب سكرين شوت أوضح لصفحة الجدول من بوابة الجامعة.')); return; }

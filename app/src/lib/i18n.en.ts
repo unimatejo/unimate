@@ -1933,4 +1933,8 @@ export const EN: Record<string, string> = {
   "مثلاً قسم علم الحاسوب": "e.g. Computer Science department",
   "نوع الحساب": "Account type",
   "وين بتشتغل؟": "Where do you work?",
+  "المحادثات الخاصة مقفلة، بتنفتح بس الرسائل اللي عليها بلاغ": "Private chats are locked; only reported messages can be opened",
+  "بتقدر تقرأ جدول بالصورة 15 مرة باليوم. جرّب بكرا، أو ضيف موادك بإيدك.": "You can read a schedule from a photo 15 times a day. Try tomorrow, or add your courses by hand.",
+  "وصلت الحد اليومي": "Daily limit reached",
+  "🔒 محادثة خاصة. للحفاظ على خصوصية المستخدمين، ما بتنفتح إلا الرسائل اللي انعمل عليها بلاغ.": "🔒 Private chat. To protect users' privacy, only reported messages can be opened.",
 };

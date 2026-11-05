@@ -73,7 +73,7 @@ export function ChatViewer({ conversationId, members, presetReason, rightId }: {
     setError(null); setBusy(true);
     const { data, error: e } = await supabase.rpc('admin_conversation_messages', { conv: conversationId, reason: presetReason?.trim() || 'browse' });
     setBusy(false);
-    if (e) { setError(e.message); return; }
+    if (e) { setError(/private_chat/.test(e.message) ? t('🔒 محادثة خاصة. للحفاظ على خصوصية المستخدمين، ما بتنفتح إلا الرسائل اللي انعمل عليها بلاغ.') : e.message); return; }
     const list = (data ?? []) as Message[];
     setMsgs(list);
     sign(list); loadReacts(list);
@@ -109,8 +109,8 @@ export function ChatViewer({ conversationId, members, presetReason, rightId }: {
 
   if (!msgs) return (
     <Panel>
-      {error ? <T v="small" color={C.red}>{error}</T> : <Muted>{t('عم نفتح المحادثة…')}</Muted>}
-      {error && <Act label={t('جرّب كمان مرة')} kind="primary" loading={busy} onPress={open} />}
+      {error ? <T v="small" color={error.startsWith('🔒') ? C.ink2 : C.red}>{error}</T> : <Muted>{t('عم نفتح المحادثة…')}</Muted>}
+      {error && !error.startsWith('🔒') && <Act label={t('جرّب كمان مرة')} kind="primary" loading={busy} onPress={open} />}
     </Panel>
   );
 

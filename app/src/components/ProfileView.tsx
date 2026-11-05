@@ -202,6 +202,11 @@ export function ProfileView({ userId, onTitle, back }: { userId: string; onTitle
     if (error) { setFailed('error'); return; }
     if (!data) { setFailed('missing'); return; }
     setFailed('none');
+    {
+      const { data: soc } = await supabase.rpc('profile_socials', { p_user: userId });
+      const s0 = (soc as { instagram: string | null; snapchat: string | null }[] | null)?.[0];
+      (data as Profile).instagram = s0?.instagram ?? null; (data as Profile).snapchat = s0?.snapchat ?? null;
+    }
     setP(data as Profile);
     onTitle?.((data as Profile).username ? `\u200E@${(data as Profile).username}` : (data as Profile).full_name ?? '');
     if (!mine) {

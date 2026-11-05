@@ -118,8 +118,9 @@ export default function EditProfile() {
     setSaving(true);
     const { error } = await supabase.from('profiles').update({
       full_name: name.trim(), ...(changingUser ? { username: u } : {}), bio: bio.trim().slice(0, 150), study_year: year,
-      instagram: igH || null, snapchat: snH || null, college_id: col, major_id: maj,
+      college_id: col, major_id: maj,
     }).eq('id', profile.id);
+    if (!error) await supabase.rpc('set_my_socials', { p_instagram: igH || null, p_snapchat: snH || null });
     setSaving(false);
     if (error) {
       reportError(new Error(`profile save: ${error.code} ${error.message}`));

@@ -20,6 +20,9 @@ Deno.serve(async (req) => {
     const sb = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_ANON_KEY')!, { global: { headers: { Authorization: auth } } });
     const { data: { user } } = await sb.auth.getUser();
     if (!user) return json({ error: 'auth' }, 401);
+    // paid AI model: a daily limit per account so nobody can run up the bill
+    const { data: allowed } = await sb.rpc('take_ai_quota', { p_kind: 'schedule_import' });
+    if (allowed === false) return json({ error: 'quota' }, 429);
     const gemini = Deno.env.get('GEMINI_API_KEY');
     const key = Deno.env.get('ANTHROPIC_API_KEY');
     if (!gemini && !key) return json({ error: 'not_configured' }, 503);

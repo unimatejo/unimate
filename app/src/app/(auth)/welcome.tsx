@@ -111,11 +111,12 @@ export default function Welcome() {
     try {
     const patch: Record<string, unknown> = {
       full_name: name.trim(), college_id: col, major_id: staff ? null : maj, entry_year: staff ? null : entry, study_year: staff ? null : studyYearFrom(entry),
-      instagram: igH || null, snapchat: snH || null, onboarded: true,
+      onboarded: true,
     };
     if (staff && dept.trim() && !profile.title_verified) patch.department = dept.trim().slice(0, 80);
     if (!locked) patch.username = username.trim().toLowerCase();
     const { error } = await supabase.from('profiles').update(patch).eq('id', profile.id).select('id').single();
+    if (!error) await supabase.rpc('set_my_socials', { p_instagram: igH || null, p_snapchat: snH || null });
     if (!error && birth) await supabase.rpc('set_birth_date', { d: birth.toISOString().slice(0, 10) });
     setSaving(false);
     if (error) {
