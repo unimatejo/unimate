@@ -1927,4 +1927,10 @@ export const EN: Record<string, string> = {
   "ما في حدا لهلأ": "No one yet",
   "ما لقينا حدا بهالاسم": "No one found with that name",
   "مجتمع الجامعة": "University community",
+  "القسم أو الدائرة (اختياري)": "Department or office (optional)",
+  "رتبتك (دكتور، عميد…) بتنحط من قائمة الجامعة الرسمية أو بعد التوثيق، ما بتنكتب باليد.": "Your rank (doctor, dean…) comes from the university's official list or after verification — it can't be typed in by hand.",
+  "رتبتك من قائمة الجامعة الرسمية": "Your rank from the university's official list",
+  "مثلاً قسم علم الحاسوب": "e.g. Computer Science department",
+  "نوع الحساب": "Account type",
+  "وين بتشتغل؟": "Where do you work?",
 };

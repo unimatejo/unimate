@@ -18,7 +18,7 @@ import { Avatar, Row, T, Tap, Toggle } from '@/components/ui';
 import { VoiceBubble, VoiceRecorder } from '@/components/Voice';
 import { useAuth } from '@/lib/auth';
 import { mediaUrl, supabase } from '@/lib/supabase';
-import { rtTopic } from '@/lib/realtime';
+import { rtTopic, sharedChannel } from '@/lib/realtime';
 import { C, F, isDark } from '@/lib/theme';
 import type { Conversation, Message, VanishMode } from '@/lib/types';
 import { pickMedia, uploadFile } from '@/lib/upload';
@@ -225,7 +225,7 @@ export default function Chat() {
   useEffect(() => {
     if (!profile) return;
     let clear: ReturnType<typeof setTimeout> | null = null;
-    const ch = supabase.channel(`typing-${id}`, { config: { broadcast: { self: false } } })
+    const ch = sharedChannel(`typing-${id}`, { config: { broadcast: { self: false } } })
       .on('broadcast', { event: 'typing' }, ({ payload }) => {
         if (payload?.user === profile.id) return;
         setTyping(payload?.name ?? '');

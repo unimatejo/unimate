@@ -1,6 +1,7 @@
 import { useEffect, useState, useSyncExternalStore } from 'react';
 import { AppState } from 'react-native';
 
+import { sharedChannel } from './realtime';
 import { supabase } from './supabase';
 import { t } from './i18n';
 
@@ -19,7 +20,7 @@ export function usePresenceTracker(userId?: string, show = true) {
   useEffect(() => {
     enabled = !!userId && show;
     if (!userId || !show) { online = new Set(); emit(); return; }
-    const ch = supabase.channel('online', { config: { presence: { key: userId } } });
+    const ch = sharedChannel('online', { config: { presence: { key: userId } } });
     const sync = () => {
       online = new Set(Object.keys(ch.presenceState()));
       emit();
@@ -73,7 +74,7 @@ const typingEmit = () => { typingVer++; typingSubs.forEach((f) => f()); };
 export function useInboxTyping(userId?: string) {
   useEffect(() => {
     if (!userId) return;
-    const ch = supabase.channel(`inbox-typing-${userId}`, { config: { broadcast: { self: false } } })
+    const ch = sharedChannel(`inbox-typing-${userId}`, { config: { broadcast: { self: false } } })
       .on('broadcast', { event: 'typing' }, ({ payload }) => {
         const c = payload?.conversation as string | undefined;
         if (!c) return;

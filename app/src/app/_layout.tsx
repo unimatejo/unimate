@@ -29,7 +29,7 @@ export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
   const stale = typeof window !== 'undefined' && /Loading module|Failed to fetch dynamically imported module|ChunkLoadError/i.test(error.message);
   useEffect(() => {
     if (stale) {
-      try { if (sessionStorage.getItem('chunk_reload') !== '1') { sessionStorage.setItem('chunk_reload', '1'); window.location.reload(); return; } } catch { /* no storage */ }
+      try { if (sessionStorage.getItem('chunk_reload') !== '1') { sessionStorage.setItem('chunk_reload', '1'); window.location.replace(`${window.location.pathname}?v=${Date.now().toString(36)}`); return; } } catch { /* no storage */ }
     }
     reportError(error, true);
   }, [error, stale]);

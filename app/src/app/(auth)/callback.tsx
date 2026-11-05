@@ -1,6 +1,6 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, View } from 'react-native';
+import { ActivityIndicator, Platform, View } from 'react-native';
 
 import { Button, Screen, T } from '@/components/ui';
 import { supabase } from '@/lib/supabase';
@@ -23,6 +23,9 @@ export default function Callback() {
         setError(/state/i.test(p.error_description) ? t('تسجيل الدخول أخد وقت طويل أو انفتح بمتصفح ثاني. اكبس «جرّب كمان مرة».') : t('الرابط انتهى أو انستخدم قبل. اطلب رابط جديد.'));
         return;
       }
+      // the phone app already finished this sign-in itself (the same link also opens this screen): don't use the code twice
+      const before = (await supabase.auth.getSession()).data.session;
+      if (before && Platform.OS !== 'web') { router.replace('/'); return; }
       let r: { error: unknown; data?: { session?: { provider_token?: string | null } | null } };
       try {
         r = p.code
@@ -31,6 +34,8 @@ export default function Callback() {
             ? await supabase.auth.verifyOtp({ token_hash: p.token_hash, type: (p.type as 'email' | 'magiclink') ?? 'email' })
             : { error: new Error('no code') };
       } catch (e) { r = { error: e }; }
+      // the code was already used, but we're signed in anyway: carry on
+      if (r.error && (await supabase.auth.getSession()).data.session) { router.replace('/'); return; }
       if (r.error) { setError(t('ما زبط الدخول بهالرابط. افتح الرابط على نفس التلفون اللي طلبت منه، أو اطلب رابط جديد.')); return; }
       // web: coming back from "bring my courses from Teams"
       const fromLogin = getPref('ms_teams_login'); setPref('ms_teams_login', '');

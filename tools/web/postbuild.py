@@ -21,7 +21,7 @@ if 'manifest.webmanifest' not in h: h = h.replace('</head>', tags + '</head>', 1
 h = h.replace('content="width=device-width, initial-scale=1, shrink-to-fit=no"', 'content="width=device-width, initial-scale=1, shrink-to-fit=no, viewport-fit=cover"')
 open(p, 'w', encoding='utf-8').write(h)
 ht = open(os.path.join(os.path.dirname(__file__), '../../admin/public/.htaccess')).read().replace('Header always set X-Frame-Options "DENY"\n', '')
-ht += open(os.path.join(app, 'web/htaccess-extra')).read() + '\nAddType application/manifest+json .webmanifest\n<Files "sw.js">\n  Header set Cache-Control "no-cache"\n  Header set Service-Worker-Allowed "/"\n</Files>\n'
+ht += open(os.path.join(app, 'web/htaccess-extra')).read() + '\nAddType application/manifest+json .webmanifest\n<FilesMatch "\\.html$">\n  Header set Cache-Control "no-cache, must-revalidate"\n</FilesMatch>\n<Files "sw.js">\n  Header set Cache-Control "no-cache"\n  Header set Service-Worker-Allowed "/"\n</Files>\n'
 open(os.path.join(d, '.htaccess'), 'w').write(ht)
 shutil.copy(os.path.join(app, 'web/sw.js'), os.path.join(d, 'sw.js'))
 # hashed code/asset files never change under the same name: let phones keep them for a year

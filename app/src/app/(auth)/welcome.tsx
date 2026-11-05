@@ -6,6 +6,7 @@ import { ActivityIndicator, Alert, KeyboardAvoidingView, Platform, ScrollView, V
 import Animated, { FadeIn, FadeInLeft, FadeOutRight, ZoomIn } from 'react-native-reanimated';
 
 import { MajorPicker } from '@/components/MajorPicker';
+import { TitleBadge, titleLabel } from '@/components/TitleBadge';
 import { InstagramGlyph, SnapGlyph } from '@/components/SocialGlyphs';
 import { Avatar, Button, Card, Chip, Field, Row, Screen, T, Tap } from '@/components/ui';
 import { importTeamsCourses, useAuth } from '@/lib/auth';
@@ -44,13 +45,16 @@ export default function Welcome() {
   const [teams, setTeams] = useState<number | null>(null);
   const [teamsBusy, setTeamsBusy] = useState(false);
   const [ready, setReady] = useState(false);
+  const [dept, setDept] = useState('');
+  // a university staff email (name@uni.edu.jo, not a student number): doctors, deans and staff skip the student questions
+  const staff = profile?.account_type === 'faculty' || profile?.account_type === 'staff';
 
   useEffect(() => {
     if (!profile || ready) return;
     setName(/^\d+$/.test(profile.full_name ?? '') ? '' : profile.full_name ?? '');
     setUsername(profile.username ?? '');
     setCol(profile.college_id); setMaj(profile.major_id); setEntry(profile.entry_year ?? null);
-    setIg(profile.instagram ?? ''); setSnap(profile.snapchat ?? '');
+    setIg(profile.instagram ?? ''); setDept(profile.department ?? ''); setSnap(profile.snapchat ?? '');
     supabase.from('profile_private').select('student_number, email, birth_date').eq('user_id', profile.id).single().then(({ data }) => {
       setPriv(data); if (data?.birth_date) setBirth(new Date(data.birth_date));
     });
@@ -84,7 +88,7 @@ export default function Welcome() {
       if (name.trim().length < 2) { Alert.alert(t('اكتب اسمك الكامل')); return; }
       if (!locked && uState !== 'ok') { Alert.alert(t('اسم المستخدم'), uState === 'taken' ? t('هاد اليوزر مأخوذ، جرّب غيره.') : t('اختار يوزر من 3 لـ 24 حرف إنجليزي صغير أو أرقام أو . و _')); return; }
     }
-    if (step === 2 && !maj) {
+    if (step === 2 && !maj && !staff) {
       // universities without colleges yet, or a college without majors, must not block sign-up
       const { count: cols } = await supabase.from('colleges').select('id', { count: 'exact', head: true }).eq('university_id', university?.id ?? '');
       if (cols) {
@@ -93,7 +97,7 @@ export default function Welcome() {
         if (majs) { Alert.alert(t('اختار كليتك وتخصصك')); return; }
       }
     }
-    if (step === 3 && !entry) { Alert.alert(t('اختار سنة دخولك للجامعة')); return; }
+    if (step === 3 && !entry && !staff) { Alert.alert(t('اختار سنة دخولك للجامعة')); return; }
     if (step === 4) { finish(); return; }
     setStep(step + 1);
   }
@@ -106,9 +110,10 @@ export default function Welcome() {
     setSaving(true);
     try {
     const patch: Record<string, unknown> = {
-      full_name: name.trim(), college_id: col, major_id: maj, entry_year: entry, study_year: studyYearFrom(entry),
+      full_name: name.trim(), college_id: col, major_id: staff ? null : maj, entry_year: staff ? null : entry, study_year: staff ? null : studyYearFrom(entry),
       instagram: igH || null, snapchat: snH || null, onboarded: true,
     };
+    if (staff && dept.trim() && !profile.title_verified) patch.department = dept.trim().slice(0, 80);
     if (!locked) patch.username = username.trim().toLowerCase();
     const { error } = await supabase.from('profiles').update(patch).eq('id', profile.id).select('id').single();
     if (!error && birth) await supabase.rpc('set_birth_date', { d: birth.toISOString().slice(0, 10) });
@@ -128,7 +133,9 @@ export default function Welcome() {
   const autoRows: [string, string | null | undefined][] = [
     [t('الجامعة'), nm(university)],
     [t('الإيميل الجامعي'), priv?.email],
-    [t('الرقم الجامعي'), priv?.student_number ?? '—'],
+    staff
+      ? [t('نوع الحساب'), profile?.title_verified && profile.academic_title ? titleLabel(profile.academic_title) : t('كادر الجامعة')]
+      : [t('الرقم الجامعي'), priv?.student_number ?? '—'],
     [t('التوثيق'), profile?.is_verified ? t('موثّق بمايكروسوفت') : t('بالإيميل')],
   ];
 
@@ -195,7 +202,18 @@ export default function Welcome() {
               </>
             )}
 
-            {step === 2 && (
+            {step === 2 && staff && (
+              <>
+                <T v="h1">{t('وين بتشتغل؟')}</T>
+                {profile?.title_verified && profile.academic_title
+                  ? <Row gap={8}><TitleBadge title={profile.academic_title} verified size="md" /><T v="small" color={C.muted}>{t('رتبتك من قائمة الجامعة الرسمية')}</T></Row>
+                  : <T v="small" color={C.muted}>{t('رتبتك (دكتور، عميد…) بتنحط من قائمة الجامعة الرسمية أو بعد التوثيق، ما بتنكتب باليد.')}</T>}
+                <MajorPicker universityId={university?.id} collegeId={col} majorId={maj} onChange={(c, m) => { setCol(c); setMaj(m); }} />
+                {!profile?.title_verified && <Field label={t('القسم أو الدائرة (اختياري)')} value={dept} onChangeText={setDept} placeholder={t('مثلاً قسم علم الحاسوب')} maxLength={80} />}
+              </>
+            )}
+
+            {step === 2 && !staff && (
               <>
                 <T v="h1">{t('شو بتدرس؟')}</T>
                 <T v="small" color={C.muted}>{t('بنضيفك تلقائياً لجروب كليتك وتخصصك ودفعتك.')}</T>
@@ -208,13 +226,13 @@ export default function Welcome() {
             {step === 3 && (
               <>
                 <T v="h1">{t('عنك')}</T>
-                <View style={{ gap: 8 }}>
+                {!staff && <View style={{ gap: 8 }}>
                   <T v="bold">{t('أي سنة دخلت الجامعة؟')}</T>
                   <Row gap={8} style={{ flexWrap: 'wrap' }}>
                     {years.map((y) => <Chip key={y} label={String(y)} active={entry === y} onPress={() => setEntry(y)} />)}
                   </Row>
                   {entry && <Animated.View entering={FadeIn}><T v="small" color={C.primaryDark}>{t('يعني إنت سنة')} {studyYearFrom(entry)}{t('، وبتتحدث لحالها كل سنة.')}</T></Animated.View>}
-                </View>
+                </View>}
                 <View style={{ gap: 8 }}>
                   <T v="bold">{t('تاريخ ميلادك (بيضل مخفي، بس إلك)')}</T>
                   {Platform.OS !== 'ios' && <Button kind="soft" title={birth ? birth.toLocaleDateString(LOCALE) : t('اختار التاريخ')} onPress={() => setShowDate(true)} />}
