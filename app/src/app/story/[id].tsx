@@ -1,28 +1,29 @@
 import { router, useLocalSearchParams } from 'expo-router';
-import { Eye, Heart, Plus, Send, Star, Trash2, X } from 'lucide-react-native';
+import { Plus, Star, Trash2, X } from 'lucide-react-native';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Alert, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, TextInput, useWindowDimensions, View } from 'react-native';
+import { Alert, KeyboardAvoidingView, Modal, Platform, Pressable, TextInput, useWindowDimensions, View } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { GestureDetector, usePanGesture } from 'react-native-gesture-handler';
-import Animated, { Easing, FadeIn, FadeInDown, cancelAnimation, interpolate, runOnJS, useAnimatedStyle, useSharedValue, withSpring, withTiming } from 'react-native-reanimated';
+import Animated, { Easing, FadeIn, FadeInDown, FadeOut, cancelAnimation, interpolate, runOnJS, useAnimatedStyle, useSharedValue, withSpring, withTiming } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Avatar, Row, T, Tap } from '@/components/ui';
-import { StoryOverlays } from '@/components/StoryOverlays';
-import { cleanOverlays } from '@/lib/storyOverlay';
+import { StoryStickersLayer } from '@/components/story/StoryStickersLayer';
 import { useAuth } from '@/lib/auth';
 import { mediaUrl, supabase } from '@/lib/supabase';
 import { C, F, isDark, SPRING } from '@/lib/theme';
 import { Bone } from '@/components/Skeleton';
 import { timeAgo } from '@/lib/util';
-import { isAR, t, ta, rtlLayout } from '@/lib/i18n';
+import { t, ta, rtlLayout } from '@/lib/i18n';
+import { ActivityChip, StoryActivitySheet, type StoryViewer } from '@/components/StoryActivity';
+import { EmojiBurst, StoryReplyBar, type ReplyBarHandle } from '@/components/StoryReplyBar';
 import { optimistic } from '@/lib/run';
 import { toast } from '@/lib/toast';
 import { FramedMedia } from '@/components/FramedMedia';
 import type { MediaMeta } from '@/lib/cropper';
 
 type S = { id: string; media_url: string; kind: string; caption: string | null; created_at: string; duration_sec: number | null; overlays?: unknown; meta?: MediaMeta | null };
-type Viewer = { viewer_id: string; liked: boolean; p: { full_name: string; avatar_url: string | null } | null };
+type Viewer = StoryViewer;
 
 /** a story video, framed and trimmed the way it was set in the crop editor; plays once with sound */
 function StoryVideo({ uri, meta, onEnd, onReady }: { uri: string; meta?: MediaMeta | null; onEnd: () => void; onReady: () => void }) {
@@ -41,9 +42,7 @@ export default function StoryViewer() {
   const [ready, setReady] = useState(false);
   const [uri, setUri] = useState<string | null>(null);
   const [liked, setLiked] = useState(false);
-  const [reply, setReply] = useState('');
   const [viewers, setViewers] = useState<Viewer[]>([]);
-  const [showViewers, setShowViewers] = useState(false);
   const [hlOpen, setHlOpen] = useState(false);
   const [hls, setHls] = useState<{ id: string; title: string }[]>([]);
   const [hlTitle, setHlTitle] = useState('');
@@ -103,6 +102,7 @@ export default function StoryViewer() {
 
   const s = items?.[i];
   const markReady = useCallback(() => setReady(true), []);
+  const frozen = useRef(false); // the activity sheet is open: don't run the timer
 
   useEffect(() => {
     if (!s || !profile) return;
@@ -114,7 +114,7 @@ export default function StoryViewer() {
         supabase.from('story_views').select('liked').eq('story_id', s.id).eq('viewer_id', profile.id).maybeSingle().then(({ data }) => setLiked(!!data?.liked));
       });
     }
-    else supabase.from('story_views').select('viewer_id, liked, p:profiles!story_views_viewer_id_fkey(full_name, avatar_url)').eq('story_id', s.id)
+    else supabase.from('story_views').select('viewer_id, liked, viewed_at, p:profiles!story_views_viewer_id_fkey(full_name, avatar_url)').eq('story_id', s.id).order('viewed_at', { ascending: false })
       .then(({ data }) => setViewers((data ?? []) as unknown as Viewer[]));
   }, [s, profile, mine]);
 
@@ -122,12 +122,30 @@ export default function StoryViewer() {
   useEffect(() => {
     if (!s || !uri || !ready) return;
     progress.value = 0;
+    if (frozen.current) return;
     const ms = s.kind === 'video' ? (s.duration_sec ?? 15) * 1000 : 5000;
     progress.value = withTiming(1, { duration: ms, easing: Easing.linear }, (done) => { if (done && s.kind !== 'video') runOnJS(next)(); });
     return () => cancelAnimation(progress);
   }, [uri, ready, s, next, progress]);
 
   function pause() { cancelAnimation(progress); }
+  // the story stays still while you hold it, type a reply or look at its activity
+  const held = useRef(false);
+  const [hold, setHold] = useState(false);
+  const [typing, setTyping] = useState(false);
+  const [activity, setActivity] = useState(false);
+  const canActivity = mine && !highlight;
+  function openActivity() { frozen.current = true; pause(); setActivity(true); }
+  function closeActivity() { frozen.current = false; setActivity(false); resume(); }
+  function onHold() { held.current = true; setHold(true); pause(); }
+  function onRelease() { if (!held.current) return; held.current = false; setHold(false); resume(); }
+  /** going back on the first story starts it again, like Instagram */
+  function prev() {
+    if (iRef.current > 0) { setI(iRef.current - 1); return; }
+    if (!s) return;
+    cancelAnimation(progress); progress.value = 0;
+    if (s.kind !== 'video') progress.value = withTiming(1, { duration: 5000, easing: Easing.linear }, (done) => { if (done) runOnJS(next)(); });
+  }
   const pull = usePanGesture({
     activeOffsetY: 14, failOffsetX: [-24, 24],
     onActivate: () => { 'worklet'; runOnJS(pause)(); },
@@ -135,6 +153,7 @@ export default function StoryViewer() {
     onDeactivate: () => {
       'worklet';
       if (ty.value > 130 || vy.value > 900) { ty.value = withTiming(H, { duration: 220 }); runOnJS(close)(); }
+      else if (canActivity && (ty.value < -70 || vy.value < -800)) { ty.value = withTiming(0, { duration: 180 }); runOnJS(openActivity)(); }
       else { ty.value = withSpring(0, SPRING); runOnJS(resume)(); }
     },
   });
@@ -153,19 +172,28 @@ export default function StoryViewer() {
   }
 
   const [replying, setReplying] = useState(false);
-  async function sendReply() {
-    if (!reply.trim() || !s || replying) return;
-    const text = reply.trim();
+  const [burst, setBurst] = useState<{ key: number; emoji: string } | null>(null);
+  const bar2 = useRef<ReplyBarHandle>(null);
+  /** a reply (or a quick reaction) goes to the author's DMs as a story reply */
+  async function sendReply(text: string): Promise<boolean> {
+    if (!text || !s || replying) return false;
     setReplying(true);
     try {
       const { data: conv, error } = await supabase.rpc('start_direct', { target: id, context: t('رد على ستوري') });
-      if (error || !conv) { Alert.alert(t('ما انبعت الرد'), t('هاد الشخص مسكّر الرسائل.')); return; }
+      if (error || !conv) { Alert.alert(t('ما انبعت الرد'), t('هاد الشخص مسكّر الرسائل.')); return false; }
       const { error: me } = await supabase.from('messages').insert({ conversation_id: conv, sender_id: profile?.id ?? '', kind: 'story_reply', body: text, ref_id: s.id });
-      if (me) { Alert.alert(t('ما انبعت الرد'), t('جرّب مرة ثانية.')); return; }
-      setReply(''); toast(t('انبعت ✓'));
-    } catch { Alert.alert(t('ما انبعت الرد'), t('تأكد من الإنترنت وجرّب كمان مرة.')); }
-    finally { setReplying(false); resume(); }
+      if (me) { Alert.alert(t('ما انبعت الرد'), t('جرّب مرة ثانية.')); return false; }
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+      toast(t('انبعتت'));
+      return true;
+    } catch { Alert.alert(t('ما انبعت الرد'), t('تأكد من الإنترنت وجرّب كمان مرة.')); return false; }
+    finally { setReplying(false); }
   }
+  function react(emoji: string) {
+    setBurst({ key: Date.now(), emoji });
+    sendReply(emoji);
+  }
+  function onTyping(v: boolean) { setTyping(v); if (v) pause(); else resume(); }
 
   function remove() {
     if (!s) return;
@@ -185,10 +213,10 @@ export default function StoryViewer() {
       {!uri && <View style={{ position: 'absolute', top: 0, bottom: 0, left: 0, right: 0, padding: 8 }}><Bone h={H - 16} r={28} style={{ opacity: 0.25 }} /></View>}
       {uri && s?.kind === 'video' ? <StoryVideo key={s.id} uri={uri} meta={s.meta} onEnd={next} onReady={markReady} />
         : uri ? <FramedMedia key={uri} uri={uri} kind="image" meta={s?.meta} onImageLoad={markReady} /> : null}
-      <Pressable style={{ position: 'absolute', top: 110, bottom: 130, width: '40%', ...(Platform.OS === 'web' ? (rtlLayout() ? { left: 0 } : { right: 0 }) : { end: 0 }) }} onPress={next} onLongPress={pause} onPressOut={resume} delayLongPress={200} accessibilityLabel={t('التالي')} />
-      <Pressable style={{ position: 'absolute', top: 110, bottom: 130, width: '40%', ...(Platform.OS === 'web' ? (rtlLayout() ? { right: 0 } : { left: 0 }) : { start: 0 }) }} onPress={() => setI((x) => Math.max(0, x - 1))} onLongPress={pause} onPressOut={resume} delayLongPress={200} accessibilityLabel={t('السابق')} />
-      {s && ready && <StoryOverlays items={cleanOverlays(s.overlays)} width={W} height={H} onOpen={pause} />}
-      <SafeAreaView edges={['top']} style={{ paddingHorizontal: 12, gap: 12, paddingBottom: 12 }}>
+      <Pressable style={{ position: 'absolute', top: 110, bottom: 130, width: '40%', ...(Platform.OS === 'web' ? (rtlLayout() ? { left: 0 } : { right: 0 }) : { end: 0 }) }} onPress={next} onLongPress={onHold} onPressOut={onRelease} delayLongPress={200} accessibilityLabel={t('التالي')} />
+      <Pressable style={{ position: 'absolute', top: 110, bottom: 130, width: '40%', ...(Platform.OS === 'web' ? (rtlLayout() ? { right: 0 } : { left: 0 }) : { start: 0 }) }} onPress={prev} onLongPress={onHold} onPressOut={onRelease} delayLongPress={200} accessibilityLabel={t('السابق')} />
+      {s && ready && <StoryStickersLayer story={s} mine={mine} width={W} height={H} onPause={pause} onResume={resume} />}
+      <SafeAreaView edges={['top']} pointerEvents={hold ? 'none' : 'box-none'} style={{ paddingHorizontal: 12, gap: 12, paddingBottom: 12, opacity: hold ? 0 : 1 }}>
         <Row gap={4} style={{ marginTop: 6 }}>
           {(items ?? []).map((it, k) => (
             <View key={it.id} style={{ flex: 1, height: 3, borderRadius: 2, backgroundColor: 'rgba(255,255,255,0.3)', overflow: 'hidden' }}>
@@ -214,21 +242,19 @@ export default function StoryViewer() {
           <T style={{ fontFamily: F.display, fontSize: 24, lineHeight: 36, alignSelf: 'flex-start', backgroundColor: 'rgba(14,20,48,0.55)', paddingHorizontal: 14, paddingVertical: 6, borderRadius: 14, overflow: 'hidden' }} color={C.white}>{s.caption}</T>
         </Animated.View>
       ) : null}
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'position' : undefined} style={{ position: 'absolute', bottom: 0, left: 0, right: 0 }}>
-      <SafeAreaView edges={['bottom']} style={{ padding: 12 }}>
+      {/* typing a reply dims the story, like Instagram */}
+      {typing && (
+        <Animated.View entering={FadeIn.duration(180)} exiting={FadeOut.duration(150)} style={{ position: 'absolute', top: 0, bottom: 0, left: 0, right: 0, backgroundColor: 'rgba(0,0,0,0.45)' }}>
+          <Pressable style={{ flex: 1 }} onPress={() => bar2.current?.blur()} accessibilityLabel={t('إغلاق الكيبورد')} />
+        </Animated.View>
+      )}
+      {burst && <EmojiBurst key={burst.key} emoji={burst.emoji} onDone={() => setBurst(null)} />}
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} pointerEvents="box-none" style={{ position: 'absolute', bottom: 0, left: 0, right: 0, opacity: hold ? 0 : 1 }}>
+      <SafeAreaView edges={['bottom']} style={{ paddingHorizontal: 12, paddingTop: 8, paddingBottom: 10 }}>
         {mine ? (
-          <Tap onPress={() => { pause(); setShowViewers(true); }} style={{ alignSelf: 'center', flexDirection: 'row', alignItems: 'center', gap: 8, minHeight: 46, paddingHorizontal: 18, borderRadius: 23, backgroundColor: 'rgba(14,20,48,0.55)' }}>
-            <Eye size={20} color={C.white} />
-            <T v="bold" color={C.white}>{viewers.length} {t('مشاهدة')}</T>
-            {viewers.some((v) => v.liked) && <Row gap={4}><Heart size={16} color={C.pink} fill={C.pink} /><T v="bold" color={C.white}>{viewers.filter((v) => v.liked).length}</T></Row>}
-          </Tap>
+          canActivity ? <ActivityChip viewers={viewers} onOpen={openActivity} /> : null
         ) : (
-          <Row gap={8}>
-            <TextInput keyboardAppearance={isDark ? 'dark' : 'light'} value={reply} onChangeText={setReply} onSubmitEditing={sendReply} onFocus={pause} onBlur={resume} placeholder={t('رد بالخاص...')} placeholderTextColor="#D5DAEA"
-              style={{ flex: 1, minHeight: 48, borderRadius: 24, borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.55)', backgroundColor: 'rgba(14,20,48,0.35)', paddingHorizontal: 16, fontFamily: F.body, fontSize: 14, color: C.white, textAlign: ta }} accessibilityLabel={t('رد على الستوري')} />
-            <Tap onPress={like} accessibilityLabel={t('إعجاب')} style={{ width: 48, height: 48, alignItems: 'center', justifyContent: 'center' }}><Heart size={28} color={liked ? C.pink : C.white} fill={liked ? C.pink : 'none'} /></Tap>
-            <Tap onPress={sendReply} accessibilityLabel={t('إرسال')} style={{ width: 48, height: 48, alignItems: 'center', justifyContent: 'center' }}><Send size={26} color={C.white} style={isAR ? { transform: [{ scaleX: -1 }] } : undefined} /></Tap>
-          </Row>
+          s?.meta?.noReplies ? null : <StoryReplyBar ref={bar2} liked={liked} busy={replying} onLike={like} onSend={sendReply} onReact={react} onFocusChange={onTyping} />
         )}
       </SafeAreaView>
       </KeyboardAvoidingView>
@@ -252,21 +278,8 @@ export default function StoryViewer() {
         </View>
       </Modal>
 
-      <Modal visible={showViewers} transparent animationType="slide" onRequestClose={() => { setShowViewers(false); resume(); }}>
-        <Pressable style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.4)' }} onPress={() => { setShowViewers(false); resume(); }} />
-        <Animated.View entering={FadeIn} style={{ backgroundColor: C.card, borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: 18, maxHeight: '60%', gap: 12 }}>
-          <T v="h3">{t('مين شاف قصتك')}</T>
-          <ScrollView contentContainerStyle={{ gap: 10, paddingBottom: 30 }}>
-            {viewers.length === 0 ? <T v="small" color={C.muted}>{t('ما حدا شافها لهلأ.')}</T> : viewers.map((v) => (
-              <Row key={v.viewer_id} gap={12}>
-                <Avatar id={v.viewer_id} name={v.p?.full_name} url={v.p?.avatar_url} size={42} />
-                <T v="bodyMd" style={{ flex: 1 }}>{v.p?.full_name}</T>
-                {v.liked && <Heart size={18} color={C.pink} fill={C.pink} />}
-              </Row>
-            ))}
-          </ScrollView>
-        </Animated.View>
-      </Modal>
+      <StoryActivitySheet open={activity} onClose={closeActivity} stories={items ?? []} index={i} me={profile?.id}
+        onPick={(k) => { if (k !== i) setI(k); }} />
     </View>
   );
 }

@@ -1,31 +1,42 @@
-import { AtSign, ChevronLeft, Clock, Crop, MapPin, Minus, Plus, Smile, Star, Trash2, Type, X } from 'lucide-react-native';
-import { useEffect, useState } from 'react';
-import { ActivityIndicator, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, Text, TextInput, useWindowDimensions, View } from 'react-native';
+import { Image } from 'expo-image';
+import { LinearGradient } from 'expo-linear-gradient';
+import {
+  AtSign, Brush, ChevronDown, ChevronLeft, ChevronUp, Download, MessageCircleOff, Palette, Scissors, Smile, Star, Trash2, Type, Wand2, X,
+} from 'lucide-react-native';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { ActivityIndicator, Alert, Image as RNImage, Platform, Pressable, ScrollView, Share, Text, TextInput, useWindowDimensions, View } from 'react-native';
 import { GestureDetector, GestureHandlerRootView, usePanGesture, usePinchGesture, useRotationGesture, useSimultaneousGestures, useTapGesture } from 'react-native-gesture-handler';
-import Animated, { FadeIn, runOnJS, useAnimatedStyle, useSharedValue } from 'react-native-reanimated';
+import Animated, { FadeIn, FadeOut, runOnJS, useAnimatedStyle, useSharedValue } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { FramedMedia } from './FramedMedia';
+import { TrimmedVideo } from './FramedMedia';
 import { MediaCropper } from './MediaCropper';
-import { OverlayBody } from './StoryOverlays';
-import { Avatar, T, Tap } from './ui';
+import { DrawTool } from './story/DrawTool';
+import { BACKGROUNDS, FILTERS, FilterLayer } from './story/filters';
+import { DrawLayer, StickerBody } from './story/StickerBody';
+import { StickerTray, type NewSticker } from './story/StickerTray';
+import { TextTool, type TextDraft } from './story/TextTool';
+import { Avatar } from './ui';
 import { useAuth } from '@/lib/auth';
-import { EMOJIS, newId, TEXT_COLORS, type Overlay } from '@/lib/storyOverlay';
-import { supabase } from '@/lib/supabase';
-import { C, F, R } from '@/lib/theme';
-import { isAR, LOCALE, nm, t } from '@/lib/i18n';
+import type { MediaMeta } from '@/lib/cropper';
+import { newId, type Overlay, type Stroke } from '@/lib/storyOverlay';
+import { toast } from '@/lib/toast';
+import { F } from '@/lib/theme';
+import { isAR, LOCALE, t } from '@/lib/i18n';
 import type { Picked } from '@/lib/upload';
 
-const glass = { backgroundColor: 'rgba(7,10,28,0.55)' } as const;
+const fill = { position: 'absolute', top: 0, bottom: 0, left: 0, right: 0 } as const;
+const glass = { backgroundColor: 'rgba(0,0,0,0.32)' } as const;
+const CALM = { duration: 200 } as const;
 
-function ToolButton({ label, onPress, children, active }: { label: string; onPress: () => void; children: React.ReactNode; active?: boolean }) {
-  return (
-    <Tap onPress={onPress} scale={0.88} accessibilityLabel={label}
-      style={[{ width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' }, glass, active && { backgroundColor: '#FFFFFF' }]}>
-      {children}
-    </Tap>
-  );
-}
+/** Toolbar side: right in English, left in Arabic (like Instagram); the close button sits opposite. */
+const toolSide = (n: number) => (Platform.OS === 'web' ? (isAR ? { left: n } : { right: n }) : { end: n });
+/** icon on the outer edge, its name inward. Web is laid out left-to-right here; native flips row/flex-start by itself in Arabic. */
+const WEB = Platform.OS === 'web';
+const TOOL_ROW = WEB && isAR ? 'row' as const : 'row-reverse' as const;
+const TOOL_ALIGN = WEB && isAR ? 'flex-start' as const : 'flex-end' as const;
+const LTR = WEB ? ({ direction: 'ltr' } as object) : {};
+const closeSide = (n: number) => (Platform.OS === 'web' ? (isAR ? { right: n } : { left: n }) : { start: n });
 
 /** One movable thing on the story: drag with one finger, pinch to resize, twist to rotate, tap to edit. */
 function Movable({ o, W, H, trashY, onTap, onChange, onDrag, onNear }: {
@@ -48,7 +59,7 @@ function Movable({ o, W, H, trashY, onTap, onChange, onDrag, onNear }: {
     onDeactivate: () => { 'worklet'; runOnJS(onDrag)(false, x.value, y.value); runOnJS(commit)(x.value, y.value, sc.value, rot.value); },
   });
   const pinch = usePinchGesture({
-    onUpdate: (e) => { 'worklet'; sc.value = Math.min(6, Math.max(0.3, sc.value * e.scaleChange)); },
+    onUpdate: (e) => { 'worklet'; sc.value = Math.min(8, Math.max(0.3, sc.value * e.scaleChange)); },
     onDeactivate: () => { 'worklet'; runOnJS(commit)(x.value, y.value, sc.value, rot.value); },
   });
   const rotate = useRotationGesture({
@@ -65,18 +76,27 @@ function Movable({ o, W, H, trashY, onTap, onChange, onDrag, onNear }: {
   return (
     <GestureDetector gesture={gesture}>
       <Animated.View style={[{ position: 'absolute', left: 0, top: 0 }, style]} onLayout={(e) => { w.value = e.nativeEvent.layout.width; h.value = e.nativeEvent.layout.height; }}>
-        <OverlayBody o={o} width={W} />
+        <View pointerEvents="none"><StickerBody o={o} width={W} /></View>
       </Animated.View>
     </GestureDetector>
   );
 }
 
-
-type Draft = { id?: string; text: string; color: string; bg: Overlay['bg']; font: Overlay['font']; size: number };
+function Tool({ label, show, onPress, children, active }: { label: string; show: boolean; onPress: () => void; children: ReactNode; active?: boolean }) {
+  return (
+    <Pressable onPress={onPress} accessibilityRole="button" accessibilityLabel={label}
+      style={({ pressed }) => ({ flexDirection: TOOL_ROW, alignItems: 'center', gap: 8, opacity: pressed ? 0.7 : 1 })}>
+      <View style={[{ width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' }, active ? { backgroundColor: '#FFFFFF' } : glass]}>{children}</View>
+      {show ? <Text style={{ fontFamily: F.bodyBold, fontSize: 13, color: '#FFFFFF', textShadowColor: 'rgba(0,0,0,0.5)', textShadowRadius: 4 }}>{label}</Text> : null}
+    </Pressable>
+  );
+}
 
 /**
- * Full-screen story editor, like Instagram: text, stickers, mentions, time and place, crop / rotate / flip for photos.
- * Everything placed is kept as data (overlays) and drawn crisp by the viewer.
+ * Instagram's story editor: move, pinch and turn the photo or video anywhere on the frame, a gradient or blurred background,
+ * text in six looks, stickers (place, mention, question, poll, emoji slider, countdown, hashtag, link, time, UniMate stickers),
+ * drawing, colour filters, caption, and share to your story or close friends. Everything is saved as data, so the viewer
+ * draws it exactly the same.
  */
 export function StoryEditor({ media, initial, onCancel, onDone, onShare, sharing }: {
   media: Picked; initial?: Overlay[]; onCancel: () => void; onDone: (media: Picked, overlays: Overlay[]) => void;
@@ -85,23 +105,63 @@ export function StoryEditor({ media, initial, onCancel, onDone, onShare, sharing
 }) {
   const { width: SW, height: SH } = useWindowDimensions();
   const insets = useSafeAreaInsets();
-  const { university, profile } = useAuth();
-  // the photo sits in a rounded card; the share bar is under it (positions are kept as fractions, so the viewer matches)
-  const BAR = 86;
-  const W = SW - 16, H = SH - insets.top - 8 - insets.bottom - BAR;
-  const [m, setM] = useState(media);
-  const [items, setItems] = useState<Overlay[]>(initial ?? []);
-  const [draft, setDraft] = useState<Draft | null>(null);
-  const [stickers, setStickers] = useState(false);
-  const [crop, setCrop] = useState(false);
+  const { profile } = useAuth();
+  // a 9:16 frame as big as the screen allows, with the share bar under it
+  const BAR = 64;
+  const top = insets.top + 4;
+  const availH = SH - top - insets.bottom - BAR - 10;
+  const H = Math.min(availH, (SW * 16) / 9), W = (H * 9) / 16;
+  const left = (SW - W) / 2;
+
+  const [m, setM] = useState<Picked>(media);
+  const [items, setItems] = useState<Overlay[]>(() => (initial ?? []).filter((o) => o.kind !== 'draw'));
+  const [strokes, setStrokes] = useState<Stroke[]>(() => (initial ?? []).filter((o) => o.kind === 'draw').flatMap((o) => o.data?.strokes ?? []));
+  const [draft, setDraft] = useState<TextDraft | null>(null);
+  const [tray, setTray] = useState<false | 'all' | 'mention' | 'place'>(false);
+  const [drawing, setDrawing] = useState(false);
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const [filter, setFilter] = useState<string>(media.meta?.filter ?? 'none');
+  const [bg, setBg] = useState<number>(() => {
+    const i = BACKGROUNDS.findIndex((b) => media.meta?.bg && b[0] === media.meta.bg[0] && b[1] === media.meta.bg[1]);
+    return i >= 0 ? i : media.kind === 'image' ? -1 : 0; // -1 = blurred copy of the photo
+  });
+  const [expanded, setExpanded] = useState(false);
+  const [noReplies, setNoReplies] = useState(!!media.meta?.noReplies);
+  const [caption, setCaption] = useState(media.meta?.caption ?? '');
   const [dragging, setDragging] = useState(false);
   const [overTrash, setOverTrash] = useState(false);
-  const [mention, setMention] = useState('');
-  const [mentionErr, setMentionErr] = useState<string | null>(null);
+  const [trim, setTrim] = useState(false);
 
-  const trashY = H - 60;
+  // the media's own shape (from the picker, or measured)
+  const [A, setA] = useState<number>(m.width && m.height ? m.width / m.height : 0);
+  useEffect(() => {
+    if (A || m.kind !== 'image') { if (!A) setA(9 / 16); return; }
+    RNImage.getSize(m.uri, (w, h) => setA(w && h ? w / h : 9 / 16), () => setA(9 / 16));
+  }, [m.uri, m.kind, A]);
+  const ratio = A || 9 / 16;
+  // starting size: taller photos fill the frame, wider ones fit the width (like Instagram)
+  const base = useMemo(() => (ratio <= (W / H) * 1.06 ? { w: Math.max(W, H * ratio), h: Math.max(W, H * ratio) / ratio } : { w: W, h: W / ratio }), [ratio, W, H]);
+
+  // free move / pinch / turn of the media
+  const tx = useSharedValue(0), ty = useSharedValue(0), sc = useSharedValue(1), rot = useSharedValue(0);
+  useEffect(() => {
+    const r = media.meta?.rect;
+    if (r && media.meta?.aspect) {
+      sc.value = (r.w * W) / base.w; tx.value = (r.l + r.w / 2) * W - W / 2; ty.value = (r.t + r.h / 2) * H - H / 2; rot.value = media.meta.rot ?? 0;
+    }
+    // only once the shape is known
+  }, [base.w]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const mpan = usePanGesture({ onUpdate: (e) => { 'worklet'; tx.value += e.changeX; ty.value += e.changeY; } });
+  const mpinch = usePinchGesture({ onUpdate: (e) => { 'worklet'; sc.value = Math.min(6, Math.max(0.25, sc.value * e.scaleChange)); } });
+  const mrot = useRotationGesture({ onUpdate: (e) => { 'worklet'; rot.value += e.rotationChange; } });
+  const cycleBg = () => setBg((b) => { const n = b + 1; return n >= BACKGROUNDS.length ? (m.kind === 'image' ? -1 : 0) : n; });
+  const mtap = useTapGesture({ onDeactivate: (e) => { 'worklet'; if (!e.canceled) runOnJS(cycleBg)(); } });
+  const mediaGesture = useSimultaneousGestures(mpan, mpinch, mrot, mtap);
+  const mstyle = useAnimatedStyle(() => ({ transform: [{ translateX: tx.value }, { translateY: ty.value }, { scale: sc.value }, { rotate: `${rot.value}rad` }] }));
+
+  const trashY = H - 64;
   const nearTrash = (x: number, y: number) => y > trashY - 50 && Math.abs(x - W / 2) < 70;
-
   function onDrag(id: string, d: boolean, x: number, y: number) {
     setDragging(d);
     if (d) { setOverTrash(false); return; }
@@ -113,164 +173,192 @@ export function StoryEditor({ media, initial, onCancel, onDone, onShare, sharing
     if (!draft) return;
     const text = draft.text.trim();
     if (!text) { if (draft.id) setItems((l) => l.filter((it) => it.id !== draft.id)); setDraft(null); return; }
-    if (draft.id) setItems((l) => l.map((it) => (it.id === draft.id ? { ...it, text, color: draft.color, bg: draft.bg, font: draft.font, size: draft.size } : it)));
-    else setItems((l) => [...l, { id: newId(), kind: 'text', text, x: 0.5, y: 0.4, size: draft.size, scale: 1, rotation: 0, color: draft.color, bg: draft.bg, font: draft.font }]);
+    const look = { text, color: draft.color, bg: draft.bg, style: draft.style, align: draft.align, size: draft.size };
+    if (draft.id) setItems((l) => l.map((it) => (it.id === draft.id ? { ...it, ...look } : it)));
+    else setItems((l) => [...l, { id: newId(), kind: 'text', x: 0.5, y: 0.42, scale: 1, rotation: 0, font: 'display', ...look }]);
     setDraft(null);
   }
 
-  function addSticker(kind: Overlay['kind'], text: string, extra: Partial<Overlay> = {}) {
-    setItems((l) => [...l, { id: newId(), kind, text, x: 0.5, y: 0.5, size: kind === 'emoji' ? 0.09 : 0.055, scale: 1, rotation: 0, color: '#FFFFFF', bg: 'none', font: 'display', ...extra }]);
-    setStickers(false); setMention(''); setMentionErr(null);
+  function addSticker(s: NewSticker) {
+    setItems((l) => [...l, { id: newId(), kind: s.kind, text: s.text, x: 0.5, y: [0.62, 0.3, 0.75, 0.2, 0.45][l.filter((o) => o.kind !== 'draw').length % 5], size: 0.055, scale: 1, rotation: 0, color: '#FFFFFF', bg: 'none', font: 'display', ...s.extra }]);
+    setTray(false);
   }
 
-  async function addMention() {
-    const u = mention.trim().replace(/^@/, '').toLowerCase();
-    if (!u) return;
-    const { data } = await supabase.from('profiles').select('id, username').ilike('username', u).maybeSingle();
-    if (!data) { setMentionErr(t('ما لقينا حد بهاليوزر')); return; }
-    addSticker('mention', data.username ?? u, { userId: data.id });
+  function tapItem(o: Overlay) {
+    if (o.kind === 'text') setDraft({ id: o.id, text: o.text, color: o.color, bg: o.bg, style: o.style ?? 'classic', align: o.align ?? 'center', size: o.size });
+    else if (o.kind === 'time') {
+      const next = { pill: 'digital', digital: 'mono', mono: 'pill' } as const;
+      setItems((l) => l.map((it) => (it.id === o.id ? { ...it, data: { ...it.data, clock: next[it.data?.clock ?? 'pill'] } } : it)));
+    }
   }
 
-  const timeText = new Date().toLocaleTimeString(LOCALE, { hour: 'numeric', minute: '2-digit' });
+  /** the framing, background, filter and caption, saved with the story */
+  function result(): { media: Picked; overlays: Overlay[] } {
+    const w = base.w * sc.value, h = base.h * sc.value;
+    const cx = W / 2 + tx.value, cy = H / 2 + ty.value;
+    const meta: MediaMeta = {
+      rect: { l: (cx - w / 2) / W, t: (cy - h / 2) / H, w: w / W, h: h / H },
+      aspect: W / H,
+      ...(Math.abs(rot.value) > 0.001 ? { rot: rot.value } : {}),
+      ...(m.meta?.trim ? { trim: m.meta.trim } : {}),
+      ...(bg < 0 ? { fit: 'blur' as const } : { bg: BACKGROUNDS[bg] }),
+      ...(filter !== 'none' ? { filter } : {}),
+      ...(caption.trim() ? { caption: caption.trim().slice(0, 200) } : {}),
+      ...(noReplies ? { noReplies: true } : {}),
+    };
+    const draw: Overlay[] = strokes.length ? [{ id: 'draw', kind: 'draw', text: '', x: 0.5, y: 0.5, size: 0.08, scale: 1, rotation: 0, color: '#FFFFFF', bg: 'none', font: 'display', data: { strokes } }] : [];
+    return { media: { ...m, meta, aspect: W / H }, overlays: [...items, ...draw] };
+  }
+
+  const changed = items.length > 0 || strokes.length > 0 || filter !== 'none' || caption.trim().length > 0;
+  function close() {
+    if (!changed) { onCancel(); return; }
+    Alert.alert(t('تتجاهل التعديلات؟'), t('إذا طلعت هلأ بتروح التعديلات على هالستوري.'), [
+      { text: t('كمّل تعديل'), style: 'cancel' },
+      { text: t('تجاهل'), style: 'destructive', onPress: onCancel },
+    ]);
+  }
+
+  async function save() {
+    try {
+      if (Platform.OS === 'web') {
+        const a = document.createElement('a'); a.href = m.uri; a.download = `unimate-story.${m.kind === 'video' ? 'mp4' : 'jpg'}`; document.body.appendChild(a); a.click(); a.remove();
+      } else await Share.share({ url: m.uri });
+      toast(t('انحفظت'));
+    } catch { /* cancelled */ }
+  }
+
+  const bgView = bg < 0 && m.kind === 'image'
+    ? (<><Image source={{ uri: m.uri }} style={fill} contentFit="cover" blurRadius={40} /><View style={[fill, { backgroundColor: 'rgba(0,0,0,0.18)' }]} /></>)
+    : <LinearGradient colors={BACKGROUNDS[Math.max(0, bg)]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={fill} />;
+  const busyUI = dragging || drawing;
 
   return (
     // a Modal is its own window, so gestures need their own root inside it
-    <GestureHandlerRootView style={{ flex: 1, backgroundColor: C.bg }}>
-      <View style={{ position: 'absolute', top: insets.top + 8, left: 8, width: W, height: H, borderRadius: 28, overflow: 'hidden', backgroundColor: '#000' }}>
-        {/* same framing as the story viewer, so what you place is where people see it */}
-        <FramedMedia key={m.uri + JSON.stringify(m.meta ?? {})} uri={m.uri} kind={m.kind} meta={m.meta} />
+    <GestureHandlerRootView style={{ flex: 1, backgroundColor: '#000' }}>
+      <View style={{ position: 'absolute', top, left, width: W, height: H, borderRadius: 18, overflow: 'hidden', backgroundColor: '#000' }}>
+        {bgView}
+        {/* the media: drag, pinch and turn it anywhere; tap the background to change its colour */}
+        <GestureDetector gesture={mediaGesture}>
+          <View style={[fill, { direction: 'ltr' }]}>
+            <Animated.View style={[{ position: 'absolute', left: W / 2 - base.w / 2, top: H / 2 - base.h / 2, width: base.w, height: base.h }, mstyle]}>
+              {m.kind === 'video'
+                ? <TrimmedVideo uri={m.uri} meta={m.meta} fit="cover" style={fill} />
+                : <Image source={{ uri: m.uri }} style={fill} contentFit="cover" />}
+            </Animated.View>
+          </View>
+        </GestureDetector>
+        <FilterLayer id={filter} />
 
-        {items.map((o) => (
-          <Movable key={o.id} o={o} W={W} H={H}
-            onTap={() => { if (o.kind === 'text') setDraft({ id: o.id, text: o.text, color: o.color, bg: o.bg, font: o.font, size: o.size }); }}
+        {drawing
+          ? <DrawTool W={W} H={H} strokes={strokes} onChange={setStrokes} onDone={() => setDrawing(false)} />
+          : <DrawLayer strokes={strokes} width={W} height={H} />}
+
+        {!drawing && items.map((o) => (
+          <Movable key={o.id} o={o} W={W} H={H} trashY={trashY} onNear={setOverTrash}
+            onTap={() => tapItem(o)}
             onChange={(n) => setItems((l) => l.map((it) => (it.id === n.id ? n : it)))}
-            trashY={trashY} onNear={setOverTrash}
             onDrag={(d, x, y) => onDrag(o.id, d, x, y)} />
         ))}
 
-        {/* top: close */}
-        {!dragging && (
-          <View style={{ position: 'absolute', top: 14, left: 14, right: 14, flexDirection: 'row', alignItems: 'center' }}>
-            <ToolButton label={t('إغلاق')} onPress={onCancel}><X size={20} color="#fff" /></ToolButton>
-          </View>
+        {/* close */}
+        {!busyUI && (
+          <Pressable onPress={close} accessibilityLabel={t('إغلاق')} style={[{ position: 'absolute', top: 10, width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' }, glass, closeSide(10)]}>
+            <X size={22} color="#fff" />
+          </Pressable>
         )}
 
-        {/* tools down the side */}
-        {!dragging && (
-          <View accessibilityLabel={t('أدوات التعديل')} style={{ position: 'absolute', top: 72, ...(Platform.OS === 'web' ? { right: 14 } : { start: 14 }), gap: 10 }}>
-            <ToolButton label={t('نص')} active={!!draft} onPress={() => setDraft({ text: '', color: '#FFFFFF', bg: 'none', font: 'display', size: 0.08 })}><Type size={20} color={draft ? '#0E1430' : '#fff'} /></ToolButton>
-            <ToolButton label={t('ملصقات')} active={stickers} onPress={() => setStickers(true)}><Smile size={20} color={stickers ? '#0E1430' : '#fff'} /></ToolButton>
-            <ToolButton label={t('إشارة')} onPress={() => setStickers(true)}><AtSign size={20} color="#fff" /></ToolButton>
-            <ToolButton label={m.kind === 'video' ? t('قص الفيديو') : t('قص وتدوير')} active={crop} onPress={() => setCrop(true)}><Crop size={20} color={crop ? '#0E1430' : '#fff'} /></ToolButton>
-          </View>
+        {/* the tools, down the side; the chevron shows their names and the extra tools */}
+        {!busyUI && (
+          <Animated.View entering={FadeIn.duration(180)} style={[{ position: 'absolute', top: 10, gap: 10, alignItems: TOOL_ALIGN }, LTR, toolSide(10)]}>
+            <Tool label={t('نص')} show={expanded} onPress={() => setDraft({ text: '', color: '#FFFFFF', bg: 'none', style: 'classic', align: 'center', size: 0.075 })}>
+              <Type size={20} color="#fff" />
+            </Tool>
+            <Tool label={t('ملصقات')} show={expanded} onPress={() => setTray('all')}><Smile size={20} color="#fff" /></Tool>
+            <Tool label={t('رسم')} show={expanded} onPress={() => { setDrawing(true); setFiltersOpen(false); }}><Brush size={20} color="#fff" /></Tool>
+            <Tool label={t('فلاتر')} show={expanded} active={filtersOpen} onPress={() => setFiltersOpen((f) => !f)}><Wand2 size={20} color={filtersOpen ? '#000' : '#fff'} /></Tool>
+            {expanded && (
+              <Animated.View entering={FadeIn.duration(180)} exiting={FadeOut.duration(140)} style={{ gap: 10, alignItems: TOOL_ALIGN }}>
+                <Tool label={t('منشن')} show onPress={() => setTray('mention')}><AtSign size={20} color="#fff" /></Tool>
+                <Tool label={t('الخلفية')} show onPress={cycleBg}><Palette size={20} color="#fff" /></Tool>
+                {m.kind === 'video' && <Tool label={t('قص الفيديو')} show onPress={() => setTrim(true)}><Scissors size={20} color="#fff" /></Tool>}
+                <Tool label={t('حفظ')} show onPress={save}><Download size={20} color="#fff" /></Tool>
+                <Tool label={noReplies ? t('الردود موقفة') : t('إيقاف الردود')} show active={noReplies} onPress={() => setNoReplies((v) => !v)}>
+                  <MessageCircleOff size={20} color={noReplies ? '#000' : '#fff'} />
+                </Tool>
+              </Animated.View>
+            )}
+            <Pressable onPress={() => setExpanded((e) => !e)} accessibilityLabel={expanded ? t('أقل') : t('المزيد')}
+              style={[{ width: 40, height: 28, borderRadius: 14, alignItems: 'center', justifyContent: 'center' }, glass]}>
+              {expanded ? <ChevronUp size={20} color="#fff" /> : <ChevronDown size={20} color="#fff" />}
+            </Pressable>
+          </Animated.View>
         )}
 
+        {/* filters along the bottom */}
+        {filtersOpen && !busyUI && (
+          <Animated.View entering={FadeIn.duration(180)} style={{ position: 'absolute', bottom: 54, left: 0, right: 0 }}>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingHorizontal: 12 }}>
+              {FILTERS.map((f) => (
+                <Pressable key={f.id} onPress={() => setFilter(f.id)} accessibilityState={{ selected: filter === f.id }} style={{ alignItems: 'center', gap: 4 }}>
+                  <View style={{ width: 54, height: 72, borderRadius: 10, overflow: 'hidden', borderWidth: 2, borderColor: filter === f.id ? '#FFFFFF' : 'transparent' }}>
+                    {m.kind === 'image' ? <Image source={{ uri: m.uri }} style={fill} contentFit="cover" /> : <View style={[fill, { backgroundColor: '#333' }]} />}
+                    <FilterLayer id={f.id} />
+                  </View>
+                  <Text style={{ fontFamily: F.bodyBold, fontSize: 11, color: '#fff', textShadowColor: 'rgba(0,0,0,0.6)', textShadowRadius: 3 }}>{f.name}</Text>
+                </Pressable>
+              ))}
+            </ScrollView>
+          </Animated.View>
+        )}
+
+        {/* caption, at the bottom of the frame */}
+        {!busyUI && (
+          <View style={{ position: 'absolute', bottom: 10, left: 12, right: 12 }}>
+            <TextInput value={caption} onChangeText={(v) => setCaption(v.slice(0, 200))} placeholder={t('أضف وصف…')} placeholderTextColor="rgba(255,255,255,0.75)" keyboardAppearance="dark"
+              style={{ minHeight: 36, color: '#fff', fontFamily: F.bodyMd, fontSize: 14, textAlign: isAR ? 'right' : 'left', textShadowColor: 'rgba(0,0,0,0.5)', textShadowRadius: 4, ...(Platform.OS === 'web' ? { outlineStyle: 'none' } as object : {}) }} />
+          </View>
+        )}
 
         {/* delete zone while dragging */}
         {dragging && (
-          <Animated.View entering={FadeIn} pointerEvents="none" style={[{ position: 'absolute', top: trashY - 28, left: W / 2 - 28, width: 56, height: 56, borderRadius: 28, alignItems: 'center', justifyContent: 'center' }, glass, overTrash && { backgroundColor: '#E0306B', transform: [{ scale: 1.2 }] }]}>
-            <Trash2 size={24} color="#fff" />
+          <Animated.View entering={FadeIn.duration(150)} pointerEvents="none" style={[{ position: 'absolute', top: trashY - 26, left: W / 2 - 26, width: 52, height: 52, borderRadius: 26, alignItems: 'center', justifyContent: 'center', borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.8)' }, glass, overTrash && { backgroundColor: '#E0306B', transform: [{ scale: 1.15 }] }]}>
+            <Trash2 size={22} color="#fff" />
           </Animated.View>
         )}
       </View>
 
-      {/* bottom: share to your story / close friends, or the arrow to go on */}
-      <View style={{ position: 'absolute', bottom: insets.bottom + 14, left: 16, right: 16, height: 56, flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-        <Tap onPress={() => (onShare ? onShare(m, items, 'friends') : onDone(m, items))} disabled={sharing} accessibilityLabel={t('شارك بقصتك')}
-          style={{ flex: 1, height: 56, borderRadius: 28, backgroundColor: C.card, borderWidth: 1, borderColor: C.line, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10 }}>
-          <View style={{ width: 30, height: 30, borderRadius: 15, borderWidth: 2, borderColor: C.primary, padding: 2 }}><Avatar id={profile?.id} name={profile?.full_name} url={profile?.avatar_url} size={22} /></View>
-          <T v="bold" style={{ fontSize: 15 }}>{t('قصتك')}</T>
-        </Tap>
-        <Tap onPress={() => (onShare ? onShare(m, items, 'close_friends') : onDone(m, items))} disabled={sharing} accessibilityLabel={t('شارك مع المقربين')}
-          style={{ flex: 1, height: 56, borderRadius: 28, backgroundColor: C.card, borderWidth: 1, borderColor: C.line, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10 }}>
-          <View style={{ width: 30, height: 30, borderRadius: 15, backgroundColor: C.inverse, alignItems: 'center', justifyContent: 'center' }}><Star size={15} color={C.onInverse} fill={C.onInverse} /></View>
-          <T v="bold" style={{ fontSize: 15 }}>{t('المقربين')}</T>
-        </Tap>
-        <Tap onPress={() => onDone(m, items)} disabled={sharing} scale={0.92} accessibilityLabel={t('التالي')}
-          style={{ width: 56, height: 56, borderRadius: 28, backgroundColor: C.primary, alignItems: 'center', justifyContent: 'center' }}>
-          {sharing ? <ActivityIndicator color={C.onPrimary} /> : <ChevronLeft size={24} color={C.onPrimary} strokeWidth={2.6} style={isAR ? undefined : { transform: [{ scaleX: -1 }] }} />}
-        </Tap>
+      {/* share: your story / close friends / go on */}
+      <View style={{ position: 'absolute', bottom: insets.bottom + 8, left: 12, right: 12, height: 52, flexDirection: 'row', alignItems: 'center', gap: 8, opacity: busyUI ? 0 : 1 }} pointerEvents={busyUI ? 'none' : 'auto'}>
+        <Pressable onPress={() => { const r = result(); (onShare ? onShare(r.media, r.overlays, 'friends') : onDone(r.media, r.overlays)); }} disabled={sharing} accessibilityLabel={t('شارك بقصتك')}
+          style={({ pressed }) => ({ flex: 1, height: 46, borderRadius: 23, backgroundColor: '#262626', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, opacity: pressed ? 0.8 : 1 })}>
+          <View style={{ width: 28, height: 28, borderRadius: 14, borderWidth: 2, borderColor: '#FF6B4A', padding: 1.5 }}><Avatar id={profile?.id} name={profile?.full_name} url={profile?.avatar_url} size={21} /></View>
+          <Text style={{ fontFamily: F.bodyBold, fontSize: 14, color: '#fff' }}>{t('قصتك')}</Text>
+        </Pressable>
+        <Pressable onPress={() => { const r = result(); (onShare ? onShare(r.media, r.overlays, 'close_friends') : onDone(r.media, r.overlays)); }} disabled={sharing} accessibilityLabel={t('شارك مع المقربين')}
+          style={({ pressed }) => ({ flex: 1, height: 46, borderRadius: 23, backgroundColor: '#262626', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, opacity: pressed ? 0.8 : 1 })}>
+          <View style={{ width: 26, height: 26, borderRadius: 13, backgroundColor: '#34C759', alignItems: 'center', justifyContent: 'center' }}><Star size={14} color="#fff" fill="#fff" /></View>
+          <Text style={{ fontFamily: F.bodyBold, fontSize: 14, color: '#fff' }}>{t('المقرّبين')}</Text>
+        </Pressable>
+        <Pressable onPress={() => { const r = result(); onDone(r.media, r.overlays); }} disabled={sharing} accessibilityLabel={t('التالي')}
+          style={({ pressed }) => ({ width: 46, height: 46, borderRadius: 23, backgroundColor: '#FF6B4A', alignItems: 'center', justifyContent: 'center', opacity: pressed ? 0.85 : 1 })}>
+          {sharing ? <ActivityIndicator color="#0E1430" /> : <ChevronLeft size={24} color="#0E1430" strokeWidth={2.6} style={isAR ? undefined : { transform: [{ scaleX: -1 }] }} />}
+        </Pressable>
       </View>
 
-      {/* text editor */}
-      <Modal visible={!!draft} transparent animationType="fade" onRequestClose={saveDraft}>
-        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.6)' }}>
-          {draft && (
-            <View style={{ flex: 1, paddingTop: insets.top + 8 }}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 12 }}>
-                <ToolButton label={t('الخلفية')} onPress={() => setDraft({ ...draft, bg: draft.bg === 'none' ? 'solid' : draft.bg === 'solid' ? 'soft' : 'none' })}>
-                  <Text style={{ fontFamily: F.title, fontSize: 16, color: '#fff' }}>{draft.bg === 'none' ? 'A' : draft.bg === 'solid' ? '▣' : '◪'}</Text>
-                </ToolButton>
-                <ToolButton label={t('أصغر')} onPress={() => setDraft({ ...draft, size: Math.max(0.04, draft.size - 0.01) })}><Minus size={18} color="#fff" /></ToolButton>
-                <ToolButton label={t('أكبر')} onPress={() => setDraft({ ...draft, size: Math.min(0.16, draft.size + 0.01) })}><Plus size={18} color="#fff" /></ToolButton>
-                <View style={{ flex: 1 }} />
-                <Tap onPress={saveDraft} style={{ minHeight: 44, paddingHorizontal: 20, borderRadius: 22, backgroundColor: C.primary, alignItems: 'center', justifyContent: 'center' }}><T v="bold" color={C.onPrimary}>{t('تم')}</T></Tap>
-              </View>
-              <View style={{ alignSelf: 'center', flexDirection: 'row', gap: 4, padding: 6, marginTop: 12, borderRadius: R.pill, ...glass }}>
-                {([['display', t('عريض')], ['body', t('عادي')], ['mono', t('آلة كاتبة')]] as [Overlay['font'], string][]).map(([f, l]) => (
-                  <Tap key={f} onPress={() => setDraft({ ...draft, font: f })} accessibilityState={{ selected: draft.font === f }}
-                    style={{ minHeight: 36, paddingHorizontal: 14, borderRadius: 18, alignItems: 'center', justifyContent: 'center', backgroundColor: draft.font === f ? C.primary : 'transparent' }}>
-                    <Text style={{ fontFamily: f === 'mono' ? 'Courier' : f === 'body' ? F.bodyBold : F.display, fontSize: 13, color: draft.font === f ? C.onPrimary : '#fff' }}>{l}</Text>
-                  </Tap>
-                ))}
-              </View>
-              <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 20 }}>
-                <View style={{ backgroundColor: draft.bg === 'solid' ? draft.color : draft.bg === 'soft' ? 'rgba(0,0,0,0.45)' : 'transparent', borderRadius: 12, paddingHorizontal: draft.bg === 'none' ? 0 : 12 }}>
-                  <TextInput autoFocus multiline value={draft.text} onChangeText={(v) => setDraft({ ...draft, text: v.slice(0, 200) })} placeholder={t('اكتب…')} placeholderTextColor="rgba(255,255,255,0.6)" keyboardAppearance="dark"
-                    style={{ minWidth: 120, maxWidth: W * 0.9, textAlign: 'center', fontFamily: draft.font === 'mono' ? 'Courier' : draft.font === 'body' ? F.bodyBold : F.display, fontSize: draft.size * W, color: draft.bg === 'solid' ? (draft.color === '#FFFFFF' || draft.color === '#FFB547' || draft.color === '#5EE3A1' ? '#0E1430' : '#FFFFFF') : draft.color }} />
-                </View>
-              </View>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} keyboardShouldPersistTaps="always" contentContainerStyle={{ gap: 10, paddingHorizontal: 16, paddingBottom: 14 }}>
-                {TEXT_COLORS.map((c) => (
-                  <Pressable key={c} onPress={() => setDraft({ ...draft, color: c })} accessibilityLabel={c}
-                    style={{ width: 34, height: 34, borderRadius: 17, backgroundColor: c, borderWidth: draft.color === c ? 3 : 2, borderColor: '#fff' }} />
-                ))}
-              </ScrollView>
-            </View>
-          )}
-        </KeyboardAvoidingView>
-      </Modal>
+      <TextTool draft={draft} width={W} onChange={setDraft} onDone={saveDraft}
+        onMention={() => { saveDraft(); setTray('mention'); }} onPlace={() => { saveDraft(); setTray('place'); }} />
+      <StickerTray open={!!tray} start={tray === 'mention' ? 'mention' : tray === 'place' ? 'place' : undefined} onClose={() => setTray(false)} onPick={addSticker} />
 
-      {/* stickers */}
-      <Modal visible={stickers} transparent animationType="slide" onRequestClose={() => setStickers(false)}>
-        <Pressable style={{ flex: 1 }} onPress={() => setStickers(false)} accessibilityLabel={t('إغلاق')} />
-        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-          <View style={{ backgroundColor: '#17204A', borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: 16, paddingBottom: insets.bottom + 16, gap: 14 }}>
-            <View style={{ alignSelf: 'center', width: 42, height: 5, borderRadius: 3, backgroundColor: 'rgba(255,255,255,0.3)' }} />
-            <View style={{ flexDirection: 'row', gap: 8 }}>
-              <Tap onPress={() => addSticker('time', timeText)} style={{ flex: 1, flexDirection: 'row', gap: 6, alignItems: 'center', justifyContent: 'center', minHeight: 44, borderRadius: 14, backgroundColor: '#fff' }}>
-                <Clock size={18} color="#FF4F7B" /><T v="bold" color="#0E1430">{timeText}</T>
-              </Tap>
-              <Tap onPress={() => addSticker('place', nm(university) ?? t('الجامعة'))} style={{ flex: 1.4, flexDirection: 'row', gap: 6, alignItems: 'center', justifyContent: 'center', minHeight: 44, borderRadius: 14, backgroundColor: '#fff' }}>
-                <MapPin size={18} color="#FF4F7B" /><T v="bold" color="#0E1430" numberOfLines={1}>{nm(university) ?? t('الجامعة')}</T>
-              </Tap>
-            </View>
-            <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
-              <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 44, borderRadius: 14, backgroundColor: 'rgba(255,255,255,0.1)', paddingHorizontal: 12 }}>
-                <AtSign size={18} color="#C9B6FF" />
-                <TextInput value={mention} onChangeText={(v) => { setMention(v); setMentionErr(null); }} onSubmitEditing={addMention} placeholder={t('منشن: اكتب اليوزر')} placeholderTextColor="rgba(255,255,255,0.5)"
-                  autoCapitalize="none" autoCorrect={false} keyboardAppearance="dark" style={{ flex: 1, color: '#fff', fontFamily: F.body, fontSize: 15, writingDirection: 'ltr', textAlign: 'left' }} />
-              </View>
-              <Tap onPress={addMention} disabled={!mention.trim()} style={{ minHeight: 44, paddingHorizontal: 14, borderRadius: 14, backgroundColor: mention.trim() ? C.primary : 'rgba(255,255,255,0.1)', alignItems: 'center', justifyContent: 'center' }}><T v="bold" color={mention.trim() ? C.onPrimary : '#fff'}>{t('ضيف')}</T></Tap>
-            </View>
-            {mentionErr && <T v="tiny" color="#FF8FB1">{mentionErr}</T>}
-            <ScrollView style={{ maxHeight: 220 }} contentContainerStyle={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 6 }}>
-              {EMOJIS.map((e) => (
-                <Pressable key={e} onPress={() => addSticker('emoji', e)} accessibilityLabel={e} style={{ width: 52, height: 52, alignItems: 'center', justifyContent: 'center' }}>
-                  <Text style={{ fontSize: 34 }}>{e}</Text>
-                </Pressable>
-              ))}
-            </ScrollView>
-          </View>
-        </KeyboardAvoidingView>
-      </Modal>
-      {/* Instagram-style crop: fixed 9:16, pinch / drag, zoom out over a blurred copy; videos can be framed and trimmed */}
-      {crop && (
-        <View style={{ position: 'absolute', top: 0, bottom: 0, left: 0, right: 0 }}>
-          <MediaCropper src={m} opts={{ mode: 'story', maxSec: 15 }} onCancel={() => setCrop(false)}
-            onDone={(r) => { setM({ ...r.media, aspect: r.aspect }); setCrop(false); }} />
+      {/* videos: choose the part to play (the framing stays the free one above) */}
+      {trim && (
+        <View style={fill}>
+          <MediaCropper src={m} opts={{ mode: 'story', maxSec: 15 }} onCancel={() => setTrim(false)}
+            onDone={(r) => { setM((cur) => ({ ...cur, meta: { ...cur.meta, trim: r.media.meta?.trim } })); setTrim(false); }} />
         </View>
       )}
     </GestureHandlerRootView>
   );
 }
+
+export const storyTimeText = () => new Date().toLocaleTimeString(LOCALE, { hour: 'numeric', minute: '2-digit' });

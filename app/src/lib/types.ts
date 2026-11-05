@@ -37,6 +37,7 @@ export type Post = {
 export type Conversation = {
   id: string; kind: 'direct' | 'group' | 'community'; title: string | null; context_label: string | null;
   vanish: VanishMode; block_screenshots: boolean; streak_days: number; last_message_at: string; community_id: string | null;
+  photo_url?: string | null; members_can_add?: boolean; approve_joins?: boolean; created_by?: string | null;
 };
 
 export type Message = {

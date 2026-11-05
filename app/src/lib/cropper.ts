@@ -14,6 +14,16 @@ export type MediaMeta = {
   fit?: 'blur';
   /** seconds of the video to play */
   trim?: { start: number; end: number };
+  /** stories: the photo / video turned (radians) around its centre */
+  rot?: number;
+  /** stories: what fills the frame behind the media — a blurred copy ('blur' fit) or a two-colour gradient */
+  bg?: [string, string];
+  /** stories: colour filter id (components/story/filters.ts) */
+  filter?: string;
+  /** stories: written in the editor's "add a caption" field */
+  caption?: string;
+  /** stories: the author turned replies off */
+  noReplies?: boolean;
 };
 
 /** post: feed photos / reels · story: fixed 9:16 · chat: free crop, "send" · avatar: square */

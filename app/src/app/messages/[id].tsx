@@ -2,7 +2,7 @@ import * as Haptics from 'expo-haptics';
 import { router, useLocalSearchParams } from 'expo-router';
 import * as ScreenCapture from 'expo-screen-capture';
 import { Image } from 'expo-image';
-import { BadgeCheck, Bookmark, Camera, Plus, Sticker, ChevronRight, EyeOff, Flame, Image as ImageIcon, MoreHorizontal, Phone, RotateCw, Send, ShieldCheck, Timer, Users, Video } from 'lucide-react-native';
+import { BadgeCheck, Bookmark, Camera, Clock, Plus, Sticker, ChevronRight, EyeOff, Flame, Image as ImageIcon, MoreHorizontal, Phone, RotateCw, Send, ShieldCheck, Timer, Users, Video } from 'lucide-react-native';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, FlatList, KeyboardAvoidingView, Modal, Platform, Pressable, TextInput, View } from 'react-native';
 import Animated, { FadeIn, FadeInUp, useAnimatedStyle, useSharedValue, withDelay, withRepeat, withSequence, withTiming } from 'react-native-reanimated';
@@ -109,6 +109,15 @@ function Dot({ d }: { d: number }) {
   return <Animated.View style={[{ width: 7, height: 7, borderRadius: 4, backgroundColor: C.muted }, a]} />;
 }
 function TypingDots() { return <Row gap={4}><Dot d={0} /><Dot d={150} /><Dot d={300} /></Row>; }
+
+/** "2 س 14 د" style remaining time */
+function left(ms: number) {
+  const m = Math.max(0, Math.ceil(ms / 60000));
+  if (m < 60) return t('{0} د', [String(m)]);
+  const h = Math.floor(m / 60), d = Math.floor(h / 24);
+  if (d >= 1) return t('{0} يوم و{1} س', [String(d), String(h % 24)]);
+  return t('{0} س و{1} د', [String(h), String(m % 60)]);
+}
 
 export default function Chat() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -305,11 +314,40 @@ export default function Chat() {
 
   const [attach, setAttach] = useState(false);
   const [stickers, setStickers] = useState(false);
+  const openInfo = () => router.push({ pathname: '/messages/info', params: { id } });
+  // bad words in groups: the message is hidden and the sender muted for a while (the ladder lives in the database)
+  const isGroup = conv?.kind === 'group' || conv?.kind === 'community';
+  const [mutedUntil, setMutedUntil] = useState<number | null>(null);
+  useEffect(() => {
+    if (!isGroup) return;
+    supabase.rpc('my_chat_mute').then(({ data }) => setMutedUntil(data ? new Date(data as string).getTime() : null), () => {});
+  }, [isGroup, id]);
+  const [clock, setClock] = useState(Date.now());
+  useEffect(() => {
+    if (!mutedUntil) return;
+    const i = setInterval(() => { const n = Date.now(); setClock(n); if (n >= mutedUntil) setMutedUntil(null); }, 1000);
+    return () => clearInterval(i);
+  }, [mutedUntil]);
+  /** true when the send failed because I'm muted (and shows it in the composer) */
+  function mutedError(error: { message?: string } | null) {
+    const m = /chat_muted:(\S+)/.exec(error?.message ?? '');
+    if (!m) return false;
+    setMutedUntil(new Date(m[1]).getTime());
+    return true;
+  }
+  function badWord(row: Message) {
+    if (!row.deleted_at || !isGroup) return false;
+    setMsgs((cur) => cur.filter((x) => x.id !== row.id));
+    supabase.rpc('my_chat_mute').then(({ data }) => setMutedUntil(data ? new Date(data as string).getTime() : null), () => {});
+    Alert.alert(t('ما انبعتت رسالتك'), t('فيها كلام مخالف لقواعد الجروبات، فانكتمت شوي. كل مرة بتتكرر المدة بتزيد.'));
+    return true;
+  }
   /** stickers, files, location, contacts and polls from the "+" sheet */
   async function sendOut(o: Outgoing) {
     if (!profile) return;
     const { data, error } = await supabase.from('messages').insert({ conversation_id: id, sender_id: profile.id, kind: o.kind, body: o.body ?? null, media_url: o.media ?? null, ref_id: o.ref ?? null }).select().single();
-    if (error) { Alert.alert(t('ما انبعتت'), myState === 'request' ? t('لازم تقبل الطلب أول.') : isRateLimited(error) ? friendly(error) : t('جرّب مرة ثانية.')); return; }
+    if (error) { if (mutedError(error)) return; Alert.alert(t('ما انبعتت'), myState === 'request' ? t('لازم تقبل الطلب أول.') : isRateLimited(error) ? friendly(error) : t('جرّب مرة ثانية.')); return; }
+    if (badWord(data as Message)) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
     setMsgs((cur) => [data as Message, ...cur.filter((x) => x.id !== data.id)]);
   }
@@ -322,9 +360,11 @@ export default function Chat() {
     const { data, error } = await supabase.from('messages').insert({ conversation_id: id, sender_id: (profile?.id ?? ''), kind, body, media_url: media ?? null }).select().single();
     if (error) {
       if (kind === 'text' && body) setDraft((d) => d || body); // give the text back
+      if (mutedError(error)) return false;
       if (kind === 'text' || kind === 'voice' || myState === 'request' || isRateLimited(error)) Alert.alert(t('ما انبعتت'), myState === 'request' ? t('لازم تقبل الطلب أول.') : isRateLimited(error) ? friendly(error) : t('جرّب مرة ثانية.'));
       return false;
     }
+    if (badWord(data as Message)) return false;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
     setMsgs((cur) => [data as Message, ...cur.filter((x) => x.id !== data.id)]);
     return true;
@@ -436,9 +476,9 @@ export default function Chat() {
       <SafeAreaView edges={['top']} style={{ backgroundColor: C.bg, borderBottomWidth: 1, borderBottomColor: C.line }}>
         <Row gap={6} style={{ height: 64, paddingHorizontal: 6 }}>
           <Tap onPress={() => (router.canGoBack() ? router.back() : router.replace('/messages'))} accessibilityLabel={t('رجوع')} style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}><ChevronRight size={24} color={C.ink} strokeWidth={2.2} style={flip} /></Tap>
-          <Tap onPress={() => other && conv?.kind === 'direct' && router.push({ pathname: '/user/[id]', params: { id: other.id } })} haptic={false} scale={0.98} style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 10, minHeight: 44 }}>
+          <Tap onPress={openInfo} haptic={false} scale={0.98} accessibilityLabel={t('تفاصيل المحادثة')} style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 10, minHeight: 44 }}>
             {conv?.kind === 'direct' ? <View><Avatar id={other?.id} name={title} url={other?.avatar_url} size={40} /><OnlineDot id={other?.id} size={12} /></View> :
-              <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: C.soft, alignItems: 'center', justifyContent: 'center' }}><Users size={19} color={C.ink} /></View>}
+              conv?.photo_url ? <Image source={{ uri: conv.photo_url }} style={{ width: 40, height: 40, borderRadius: 20 }} contentFit="cover" /> : <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: C.soft, alignItems: 'center', justifyContent: 'center' }}><Users size={19} color={C.ink} /></View>}
             <View style={{ flex: 1 }}>
               <Row gap={5}>
                 <T v="bodyMd" numberOfLines={1} style={{ flexShrink: 1, fontSize: 15, fontFamily: F.bodyBold }}>{title}</T>
@@ -455,7 +495,7 @@ export default function Chat() {
             <Tap onPress={() => call('voice')} accessibilityLabel={t('مكالمة صوتية')} style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}><Phone size={21} color={C.ink} strokeWidth={1.8} /></Tap>
             <Tap onPress={() => call('video')} accessibilityLabel={t('مكالمة فيديو')} style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}><Video size={23} color={C.ink} strokeWidth={1.8} /></Tap>
           </>}
-          <Tap onPress={() => setSheet(true)} accessibilityLabel={t('إعدادات المحادثة')} style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}><MoreHorizontal size={22} color={C.ink} /></Tap>
+          <Tap onPress={openInfo} accessibilityLabel={t('إعدادات المحادثة')} style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}><MoreHorizontal size={22} color={C.ink} /></Tap>
         </Row>
       </SafeAreaView>
 
@@ -584,6 +624,16 @@ export default function Chat() {
               <Tap onPress={() => answerHere(true)} disabled={answering} style={{ flex: 1, minHeight: 46, borderRadius: 23, backgroundColor: C.primary, alignItems: 'center', justifyContent: 'center' }}><T v="bold" color={C.onPrimary}>{t('قبول')}</T></Tap>
               <Tap onPress={() => answerHere(false)} disabled={answering} style={{ flex: 1, minHeight: 46, borderRadius: 23, backgroundColor: C.soft, alignItems: 'center', justifyContent: 'center' }}><T v="bold">{t('تجاهل')}</T></Tap>
             </Row>
+          </View>
+        ) : mutedUntil && mutedUntil > clock ? (
+          <View style={{ backgroundColor: C.bg, paddingHorizontal: 14, paddingTop: 10, paddingBottom: insets.bottom + 12 }}>
+            <View style={{ minHeight: 50, borderRadius: 25, backgroundColor: C.redSoft, paddingHorizontal: 16, paddingVertical: 10, flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+              <Clock size={18} color={C.danger} />
+              <View style={{ flex: 1 }}>
+                <T v="small" color={C.danger}>{t('مكتوم لحد {0} بسبب كلام مخالف', [new Date(mutedUntil).toLocaleString(isAR ? 'ar-JO' : 'en-GB', { weekday: 'short', hour: 'numeric', minute: '2-digit' })])}</T>
+                <T v="tiny" color={C.muted}>{t('ضايل {0}', [left(mutedUntil - clock)])}</T>
+              </View>
+            </View>
           </View>
         ) : (
           <Row gap={6} style={{ backgroundColor: C.bg, paddingHorizontal: 10, paddingTop: 8, paddingBottom: insets.bottom + 10 }}>

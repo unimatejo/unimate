@@ -25,6 +25,15 @@ export function UserDetail({ id, onChanged }: { id: string; onChanged?: () => vo
   const { data: acad, reload: reloadAcad } = useLoad<{ academic_title: string | null; title_verified: boolean; account_type: string }>(
     () => supabase.from('profiles').select('academic_title, title_verified, account_type').eq('id', id).single(), [id]);
   const [pickTitle, setPickTitle] = useState(false);
+  // bad words in group chats: strikes and the current mute
+  const { data: strikes, reload: reloadStrikes } = useLoad<{ count: number; until: string | null; level: number | null; recent: { word: string; at: string }[] }>(
+    () => supabase.rpc('admin_chat_strikes', { target: id }), [id]);
+  async function unmute(reset: boolean) {
+    const ok = await confirm(reset ? t('تصفّر مخالفاته؟') : t('تفك الكتم؟'), reset ? t('بيرجع يبلّش من أول درجة (10 دقائق).') : t('بيقدر يكتب بالجروبات هلأ، والمخالفات بتضل محسوبة.'), reset ? t('صفّر') : t('فك الكتم'));
+    if (!ok) return;
+    await supabase.rpc('admin_unmute', { target: id, p_reset: reset });
+    done(); reloadStrikes();
+  }
   async function setTitle(k: string | null) {
     const ok = await confirm(k ? t('توثيق كـ {0}؟', [titleLabel(k)]) : t('تشيل اللقب؟'),
       k ? t('بيظهر اللقب جنب اسم {0} للكل.', [u?.full_name ?? '']) : t('بيرجع حساب عادي بدون لقب.'), k ? t('وثّق') : t('شيله'));
@@ -80,6 +89,20 @@ export function UserDetail({ id, onChanged }: { id: string; onChanged?: () => vo
         }} />
         {u.avatar_url && <Act label={t('شيل الصورة')} onPress={removeAvatar} />}
       </Actions>
+      <Section title={t('مخالفات الجروبات')} />
+      <Panel>
+        <Row gap={8} style={{ flexWrap: 'wrap' }}>
+          <Pill label={t('{0} مخالفة', [fmtNum(strikes?.count ?? 0)])} tone={(strikes?.count ?? 0) > 0 ? 'orange' : ''} />
+          {strikes?.until ? <Pill label={t('مكتوم لحد {0}', [fmtDate(strikes.until)])} tone="red" /> : <Pill label={t('مش مكتوم')} tone="green" />}
+        </Row>
+        {(strikes?.recent ?? []).map((r, i) => <Muted key={i}>{`${fmtDate(r.at)} · ${r.word}`}</Muted>)}
+        {(strikes?.count ?? 0) > 0 && (
+          <Actions>
+            {strikes?.until ? <Act label={t('فك الكتم')} kind="primary" onPress={() => unmute(false)} /> : null}
+            <Act label={t('صفّر المخالفات')} onPress={() => unmute(true)} />
+          </Actions>
+        )}
+      </Panel>
       <Section title={t('اللقب الأكاديمي')} />
       <Panel>
         <Row gap={8}>

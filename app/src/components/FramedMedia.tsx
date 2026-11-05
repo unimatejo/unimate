@@ -1,7 +1,10 @@
 import { Image } from 'expo-image';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import { useEffect, useState } from 'react';
+import { LinearGradient } from 'expo-linear-gradient';
 import { View, type StyleProp, type ViewStyle } from 'react-native';
+
+import { FilterLayer } from './story/filters';
 
 import type { MediaMeta } from '@/lib/cropper';
 
@@ -65,9 +68,12 @@ export function FramedMedia({ uri, kind, meta, style, video, onImageLoad }: {
   video?: { loop?: boolean; muted?: boolean; onEnd?: () => void; onReady?: () => void; autoPlay?: boolean };
 }) {
   const [size, setSize] = useState({ w: 0, h: 0 });
-  const at = place(meta, size.w, size.h);
+  const placed = place(meta, size.w, size.h);
+  // stories: the media can be turned freely
+  const at = placed && meta?.rot ? { ...placed, transform: [{ rotate: `${meta.rot}rad` }] } : placed;
   return (
     <View style={[fill, { overflow: 'hidden', direction: 'ltr' }, style]} onLayout={(e) => setSize({ w: e.nativeEvent.layout.width, h: e.nativeEvent.layout.height })}>
+      {meta?.bg ? <LinearGradient colors={meta.bg} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={fill} /> : null}
       {kind === 'video' ? (
         <>
           {meta?.rect && !at ? null : (
@@ -82,6 +88,7 @@ export function FramedMedia({ uri, kind, meta, style, video, onImageLoad }: {
             : <Image source={{ uri }} style={fill} contentFit="cover" transition={120} onLoad={onImageLoad} onError={onImageLoad} />}
         </>
       )}
+      <FilterLayer id={meta?.filter} />
     </View>
   );
 }

@@ -105,7 +105,8 @@ export default function Create() {
         } else list = await Promise.all(ps.map((p) => autoCrop(p, aspect as number)));
         setItems((cur) => [...cur, ...list].slice(0, 10)); setActive(items.length);
       } else {
-        const m = await pickMedia({ video: true, videoOnly: mode === 'reel', maxSec, crop: cropMode, aspect: mode === 'reel' ? 9 / 16 : null });
+        // stories: photos go straight to the story editor (it frames them freely, like Instagram); videos are trimmed first
+        const m = isStory ? await storyPick(false) : await pickMedia({ video: true, videoOnly: mode === 'reel', maxSec, crop: cropMode, aspect: mode === 'reel' ? 9 / 16 : null });
         if (!m) return;
         if (mode === 'reel' && m.kind !== 'video') { Alert.alert(t('الريلز فيديو'), t('اختار فيديو لحد دقيقة.')); return; }
         setItems([m]); setActive(0);
@@ -113,9 +114,15 @@ export default function Create() {
       }
     } catch (e) { Alert.alert(t('ما زبط'), (e as Error).message); }
   }
+  async function storyPick(camera: boolean): Promise<Picked | null> {
+    const p = await pickMedia({ video: true, camera, maxSec: camera ? maxSec : 180 });
+    if (!p || p.kind !== 'video') return p;
+    const r = await openCropper(p, { mode: 'story', maxSec });
+    return r ? { ...r.media, aspect: r.aspect } : null;
+  }
   async function fromCamera() {
     try {
-      const m = await pickMedia({ camera: true, video: mode !== 'post', videoOnly: mode === 'reel', maxSec, crop: cropMode, aspect: mode === 'reel' ? 9 / 16 : mode === 'post' ? postAspect : null });
+      const m = isStory ? await storyPick(true) : await pickMedia({ camera: true, video: mode !== 'post', videoOnly: mode === 'reel', maxSec, crop: cropMode, aspect: mode === 'reel' ? 9 / 16 : mode === 'post' ? postAspect : null });
       if (!m) return;
       if (mode === 'post') { if (postAspect == null && m.aspect) setPostAspect(m.aspect); setItems((cur) => [...cur, m].slice(0, 10)); setActive(items.length); return; }
       setItems([m]); setActive(0);
@@ -164,7 +171,7 @@ export default function Create() {
         const path = await uploadFile('stories', profile.id, m);
         const { error } = await supabase.from('stories').insert({
           author_id: profile.id, university_id: profile.university_id, kind: m.kind, media_url: path,
-          duration_sec: playLength(m), caption: body.trim() || null,
+          duration_sec: playLength(m), caption: (m.meta?.caption ?? body.trim()) || null,
           audience: story?.audience ?? STORY_AUD[aud][0], overlays: story?.o ?? overlays, meta: m.meta ?? null,
         });
         if (error) throw error;

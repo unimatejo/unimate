@@ -3,12 +3,13 @@ import { Image } from 'expo-image';
 import * as Location from 'expo-location';
 import { router } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
-import { BadgeCheck, BarChart3, Camera, Check, FileText, Image as ImageIcon, MapPin, Plus, Smile, Sticker, UserRound, X } from 'lucide-react-native';
+import { BadgeCheck, BarChart3, Camera, Check, Clock3, FileText, Image as ImageIcon, MapPin, Plus, Search, Smile, Sparkles, Sticker, UserRound, X } from 'lucide-react-native';
 import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, FlatList, Linking, Modal, Platform, Pressable, ScrollView, TextInput, View } from 'react-native';
 import Animated, { SlideInDown } from 'react-native-reanimated';
 
 import { canCutBackground, cutBackground } from '@/lib/stickerCut';
+import { getPref, setPref } from '@/lib/prefs';
 import { AvatarCropper } from './AvatarCropper';
 import { Avatar, Button, Row, T, Tap } from './ui';
 import { useAuth } from '@/lib/auth';
@@ -155,15 +156,29 @@ function ContactPicker({ open, onClose, onPick }: { open: boolean; onClose: () =
 }
 
 /** Sticker drawer: my saved stickers (kept in my account) and big emoji. Make a sticker from any photo. */
+type RecentSticker = { url?: string; emoji?: string };
+function recentStickers(): RecentSticker[] {
+  try { return JSON.parse(getPref('recent_stickers') ?? '[]') as RecentSticker[]; } catch { return []; }
+}
+function pushRecent(x: RecentSticker): RecentSticker[] {
+  const key = x.url ?? x.emoji;
+  const list = [x, ...recentStickers().filter((r) => (r.url ?? r.emoji) !== key)].slice(0, 24);
+  setPref('recent_stickers', JSON.stringify(list));
+  return list;
+}
+
 export function StickerPanel({ open, onClose, send }: { open: boolean; onClose: () => void; send: Send }) {
   const { profile } = useAuth();
-  const [tab, setTab] = useState<'pack' | 'mine' | 'emoji'>('pack');
+  const [tab, setTab] = useState<'recent' | 'pack' | 'mine' | 'emoji'>(() => (recentStickers().length ? 'recent' : 'pack'));
+  const [q, setQ] = useState('');
+  const [peek, setPeek] = useState<{ url?: string; emoji?: string; mineId?: string } | null>(null);
+  const [recent, setRecent] = useState(recentStickers);
   const [mine, setMine] = useState<{ id: string; url: string }[] | null>(null);
-  const [pack, setPack] = useState<{ id: string; url: string; animated: boolean }[] | null>(null);
+  const [pack, setPack] = useState<{ id: string; url: string; animated: boolean; tags: string[] | null }[] | null>(null);
   const [lifted, setLifted] = useState<{ uri: string; original: { uri: string; width: number; height: number } } | null>(null);
   useEffect(() => {
     if (!open || pack) return;
-    supabase.from('pack_stickers').select('id, url, animated').order('position').then(({ data }) => setPack((data ?? []) as never), () => setPack([]));
+    supabase.from('pack_stickers').select('id, url, animated, tags').order('position').then(({ data }) => setPack((data ?? []) as never), () => setPack([]));
   }, [open, pack]);
   const [cropSrc, setCropSrc] = useState<{ uri: string; width: number; height: number } | null>(null);
   const [making, setMaking] = useState(false);
@@ -202,50 +217,89 @@ export function StickerPanel({ open, onClose, send }: { open: boolean; onClose: 
     await supabase.from('my_stickers').delete().eq('id', id);
   }
 
+  function pick(x: { url?: string; emoji?: string }) {
+    onClose();
+    setRecent(pushRecent(x));
+    send(x.url ? { kind: 'sticker', media: x.url } : { kind: 'sticker', body: x.emoji });
+  }
+  const s = q.trim().toLowerCase();
+  const packShown = (pack ?? []).filter((p) => !s || (p.tags ?? []).some((g) => g.toLowerCase().includes(s)));
+  const TABS = [
+    { k: 'recent' as const, icon: Clock3, label: t('الأخيرة') },
+    { k: 'pack' as const, icon: Sparkles, label: t('يونيميت') },
+    { k: 'mine' as const, icon: Sticker, label: t('ستيكراتي') },
+    { k: 'emoji' as const, icon: Smile, label: t('إيموجي كبير') },
+  ];
+  const tile = { width: '25%' as const, aspectRatio: 1, padding: 5 };
+  const soft = { flex: 1, borderRadius: 18, backgroundColor: C.soft, alignItems: 'center' as const, justifyContent: 'center' as const, overflow: 'hidden' as const };
+  const Tile = ({ x, mineId, k }: { x: { url?: string; emoji?: string }; mineId?: string; k: string }) => (
+    <Tap key={k} onPress={() => pick(x)} onLongPress={() => setPeek({ ...x, mineId })} scale={0.98} haptic={false} accessibilityLabel={x.emoji ?? t('ستيكر')} style={tile}>
+      <View style={soft}>
+        {x.url ? <Image source={{ uri: x.url }} style={{ width: '86%', height: '86%' }} contentFit="contain" autoplay cachePolicy="memory-disk" /> : <T style={{ fontSize: 40, lineHeight: 50 }}>{x.emoji}</T>}
+      </View>
+    </Tap>
+  );
+
   return (
-    <SheetModal open={open} onClose={onClose} dim={false} style={{ height: 400, paddingHorizontal: 0, paddingBottom: 0, gap: 0 }}>
-        <Row gap={8} style={{ paddingHorizontal: 14, paddingBottom: 8 }}>
-          <Tap onPress={() => setTab('pack')} style={{ paddingHorizontal: 14, minHeight: 36, borderRadius: 18, justifyContent: 'center', backgroundColor: tab === 'pack' ? C.inverse : C.soft }}><T v="small" color={tab === 'pack' ? C.onInverse : C.muted}>{t('يوني')}</T></Tap>
-          <Tap onPress={() => setTab('mine')} style={{ paddingHorizontal: 14, minHeight: 36, borderRadius: 18, justifyContent: 'center', backgroundColor: tab === 'mine' ? C.inverse : C.soft }}><Row gap={6}><Sticker size={17} color={tab === 'mine' ? C.onInverse : C.muted} /><T v="small" color={tab === 'mine' ? C.onInverse : C.muted}>{t('ستيكراتي')}</T></Row></Tap>
-          <Tap onPress={() => setTab('emoji')} style={{ paddingHorizontal: 14, minHeight: 36, borderRadius: 18, justifyContent: 'center', backgroundColor: tab === 'emoji' ? C.inverse : C.soft }}><Row gap={6}><Smile size={17} color={tab === 'emoji' ? C.onInverse : C.muted} /><T v="small" color={tab === 'emoji' ? C.onInverse : C.muted}>{t('إيموجي كبير')}</T></Row></Tap>
-          <View style={{ flex: 1 }} />
-          <Tap onPress={onClose} accessibilityLabel={t('إغلاق')}><X size={20} color={C.muted} /></Tap>
-        </Row>
-        {tab === 'pack' ? (
-          <ScrollView contentContainerStyle={{ flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: 8, paddingBottom: 30 }}>
-            {pack === null && Array.from({ length: 8 }, (_, i) => <View key={i} style={{ width: '25%', aspectRatio: 1, padding: 6 }}><View style={{ flex: 1, borderRadius: 16, backgroundColor: C.soft }} /></View>)}
-            {(pack ?? []).map((s) => (
-              <Tap key={s.id} onPress={() => { onClose(); send({ kind: 'sticker', media: s.url }); }} scale={0.88} style={{ width: '25%', aspectRatio: 1, padding: 4 }}>
-                <Image source={{ uri: s.url }} style={{ flex: 1 }} contentFit="contain" autoplay />
-              </Tap>
-            ))}
-          </ScrollView>
-        ) : tab === 'emoji' ? (
-          <ScrollView contentContainerStyle={{ flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: 8, paddingBottom: 30 }}>
-            {BIG_EMOJI.map((e) => (
-              <Tap key={e} onPress={() => { onClose(); send({ kind: 'sticker', body: e }); }} scale={0.85} style={{ width: '16.66%', aspectRatio: 1, alignItems: 'center', justifyContent: 'center' }}>
-                <T style={{ fontSize: 36, lineHeight: 44 }}>{e}</T>
-              </Tap>
-            ))}
-          </ScrollView>
-        ) : (
-          <ScrollView contentContainerStyle={{ flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: 8, paddingBottom: 30 }}>
-            <Tap onPress={make} disabled={making} style={{ width: '25%', aspectRatio: 1, padding: 6 }}>
-              <View style={{ flex: 1, borderRadius: 18, borderWidth: 1.5, borderStyle: 'dashed', borderColor: C.primary, alignItems: 'center', justifyContent: 'center', gap: 4 }}>
-                {making ? <ActivityIndicator color={C.primary} /> : <Plus size={24} color={C.primary} />}
-                {making && <T v="tiny" color={C.muted} style={{ fontSize: 9, textAlign: 'center' }}>{t('عم نشيل الخلفية…')}</T>}
-                <T v="tiny" color={C.primaryDark} style={{ fontSize: 10, textAlign: 'center' }}>{canCutBackground() ? t('من صورة (بنشيل الخلفية)') : t('من صورة')}</T>
-              </View>
+    <SheetModal open={open} onClose={onClose} dim={false} style={{ height: 470, paddingHorizontal: 0, paddingBottom: 0, gap: 0 }}>
+      {/* tabs: icon + short label, the selected one filled like Instagram */}
+      <Row gap={6} style={{ paddingHorizontal: 12, paddingBottom: 10 }}>
+        {TABS.map(({ k, icon: Icon, label }) => {
+          const on = tab === k;
+          return (
+            <Tap key={k} onPress={() => setTab(k)} haptic={false} accessibilityRole="tab" accessibilityLabel={label} accessibilityState={{ selected: on }}
+              style={{ flex: 1, minHeight: 44, borderRadius: 22, flexDirection: 'row', gap: 6, alignItems: 'center', justifyContent: 'center', backgroundColor: on ? C.inverse : C.soft }}>
+              <Icon size={17} color={on ? C.onInverse : C.muted} />
+              {on ? <T v="small" color={C.onInverse} numberOfLines={1}>{label}</T> : null}
             </Tap>
-            {(mine ?? []).map((s) => (
-              <Tap key={s.id} onPress={() => { onClose(); send({ kind: 'sticker', media: s.url }); }} onLongPress={() => Alert.alert(t('تشيل الستيكر؟'), '', [{ text: t('لا'), style: 'cancel' }, { text: t('شيله'), style: 'destructive', onPress: () => remove(s.id) }])}
-                style={{ width: '25%', aspectRatio: 1, padding: 6 }}>
-                <Image source={{ uri: s.url }} style={{ flex: 1, borderRadius: 14 }} contentFit="contain" />
-              </Tap>
-            ))}
-            {mine && mine.length === 0 && <T v="small" color={C.muted} style={{ width: '70%', padding: 14 }}>{t('اعمل ستيكر من أي صورة، أو اكبس مطوّل على ستيكر بالمحادثة واحفظه. بيضلوا بحسابك.')}</T>}
-          </ScrollView>
-        )}
+          );
+        })}
+        <Tap onPress={onClose} accessibilityLabel={t('إغلاق')} style={{ width: 40, height: 44, alignItems: 'center', justifyContent: 'center' }}><X size={20} color={C.muted} /></Tap>
+      </Row>
+      {tab === 'pack' && (
+        <Row gap={8} style={{ marginHorizontal: 14, marginBottom: 8, minHeight: 42, borderRadius: 21, backgroundColor: C.soft, paddingHorizontal: 14 }}>
+          <Search size={16} color={C.muted} />
+          <TextInput keyboardAppearance={isDark ? 'dark' : 'light'} value={q} onChangeText={setQ} placeholder={t('دوّر: ضحك، قهوة، امتحان…')} placeholderTextColor={C.muted}
+            style={{ flex: 1, fontFamily: F.body, fontSize: 14, color: C.ink, textAlign: ta }} />
+          {q ? <Tap onPress={() => setQ('')} accessibilityLabel={t('امسح')}><X size={16} color={C.muted} /></Tap> : null}
+        </Row>
+      )}
+      <ScrollView contentContainerStyle={{ flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: 9, paddingBottom: 34 }} keyboardShouldPersistTaps="handled">
+        {tab === 'recent' && (recent.length
+          ? recent.map((x, i) => <Tile key={`r${i}`} k={`r${i}`} x={x} />)
+          : <T v="small" color={C.muted} style={{ padding: 18 }}>{t('الستيكرات اللي بتبعتها بتطلع هون.')}</T>)}
+        {tab === 'pack' && <>
+          {pack === null && Array.from({ length: 12 }, (_, i) => <View key={i} style={tile}><View style={soft} /></View>)}
+          {packShown.map((p) => <Tile key={p.id} k={p.id} x={{ url: p.url }} />)}
+          {pack && s && !packShown.length ? <T v="small" color={C.muted} style={{ padding: 18 }}>{t('ما لقينا ستيكر بهالكلمة.')}</T> : null}
+        </>}
+        {tab === 'emoji' && BIG_EMOJI.map((e) => <Tile key={e} k={e} x={{ emoji: e }} />)}
+        {tab === 'mine' && <>
+          <Tap onPress={make} disabled={making} accessibilityLabel={t('اعمل ستيكر')} style={tile}>
+            <View style={{ flex: 1, borderRadius: 18, borderWidth: 1.5, borderStyle: 'dashed', borderColor: C.primary, backgroundColor: C.primarySoft, alignItems: 'center', justifyContent: 'center', gap: 4, padding: 4 }}>
+              {making ? <ActivityIndicator color={C.primaryDark} /> : <Plus size={24} color={C.primaryDark} />}
+              <T v="tiny" color={C.primaryDark} style={{ fontSize: 10, textAlign: 'center' }}>{making ? t('عم نشيل الخلفية…') : t('اعمل ستيكر')}</T>
+            </View>
+          </Tap>
+          {mine === null && Array.from({ length: 3 }, (_, i) => <View key={i} style={tile}><View style={soft} /></View>)}
+          {(mine ?? []).map((m) => <Tile key={m.id} k={m.id} x={{ url: m.url }} mineId={m.id} />)}
+          {mine && mine.length === 0 && <T v="small" color={C.muted} style={{ width: '70%', padding: 14 }}>{t('اعمل ستيكر من أي صورة (بنشيل الخلفية)، أو اكبس مطوّل على ستيكر بالمحادثة واحفظه. بيضلوا بحسابك.')}</T>}
+        </>}
+      </ScrollView>
+      {/* long press: see it big, then send / keep / delete */}
+      <Modal visible={!!peek} transparent animationType="fade" onRequestClose={() => setPeek(null)}>
+        <Pressable onPress={() => setPeek(null)} style={{ flex: 1, backgroundColor: 'rgba(5,8,24,0.72)', alignItems: 'center', justifyContent: 'center', padding: 24, gap: 18 }}>
+          <View style={{ width: 240, height: 240, alignItems: 'center', justifyContent: 'center' }}>
+            {peek?.url ? <Image source={{ uri: peek.url }} style={{ width: 230, height: 230 }} contentFit="contain" autoplay /> : <T style={{ fontSize: 140, lineHeight: 168 }}>{peek?.emoji}</T>}
+          </View>
+          <Row gap={10}>
+            <Button title={t('ابعت')} onPress={() => { const x = peek; setPeek(null); if (x) pick(x); }} style={{ minWidth: 110 }} />
+            {peek?.mineId
+              ? <Button kind="danger" title={t('شيله')} onPress={() => { const id = peek.mineId!; setPeek(null); remove(id); }} style={{ minWidth: 110 }} />
+              : peek?.url && profile ? <Button kind="white" title={t('احفظه عندي')} onPress={async () => { const u = peek.url!; setPeek(null); if (await saveSticker(profile.id, u)) { load(); } }} style={{ minWidth: 110 }} /> : null}
+          </Row>
+        </Pressable>
+      </Modal>
       <AvatarCropper src={cropSrc} onCancel={() => setCropSrc(null)} onDone={cropped} />
       <Modal visible={!!lifted} transparent animationType="fade" onRequestClose={() => setLifted(null)}>
         <View style={{ flex: 1, backgroundColor: 'rgba(10,14,30,0.85)', alignItems: 'center', justifyContent: 'center', padding: 24, gap: 18 }}>
