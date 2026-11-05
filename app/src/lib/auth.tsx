@@ -46,7 +46,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       for (let attempt = 0; attempt < 3; attempt++) {
         ({ data, error } = await supabase
           .from('profiles')
-          .select('*, university:universities(*), college:colleges(id, name_ar, name_en), major:majors(id, name_ar, name_en)')
+          .select('*, university:universities!profiles_university_id_fkey(*), college:colleges!profiles_college_id_fkey(id, name_ar, name_en), major:majors!profiles_major_id_fkey(id, name_ar, name_en)')
           .eq('id', uid)
           .maybeSingle());
         if (!error || uidRef.current !== uid) break;

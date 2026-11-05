@@ -28,7 +28,7 @@ export default function NewMessage() {
     if (!profile) return;
     const t = setTimeout(async () => {
       const s = q.trim().replace(/^@/, '').replace(/[,()]/g, ' ');
-      const sel = 'id, full_name, username, avatar_url, is_verified, major:majors(name_ar, name_en)';
+      const sel = 'id, full_name, username, avatar_url, is_verified, major:majors!profiles_major_id_fkey(name_ar, name_en)';
       if (!s) {
         const { data } = await supabase.from('follows').select(`p:profiles!follows_followee_id_fkey(${sel})`).eq('follower_id', profile.id).eq('status', 'accepted').limit(100);
         // eslint-disable-next-line @typescript-eslint/no-explicit-any

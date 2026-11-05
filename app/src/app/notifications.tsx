@@ -69,7 +69,7 @@ export default function Notifications() {
     setLoading(true);
     const [{ data: n }, { data: f }] = await Promise.all([
       supabase.from('notifications').select('*').eq('user_id', profile.id).order('created_at', { ascending: false }).limit(80),
-      supabase.from('follows').select('follower_id, profile:profiles!follows_follower_id_fkey(id, full_name, avatar_url, major:majors(name_ar, name_en))').eq('followee_id', profile.id).eq('status', 'pending'),
+      supabase.from('follows').select('follower_id, profile:profiles!follows_follower_id_fkey(id, full_name, avatar_url, major:majors!profiles_major_id_fkey(name_ar, name_en))').eq('followee_id', profile.id).eq('status', 'pending'),
     ]);
     const list = (n ?? []) as N[];
     const actors = [...new Set(list.map((x) => x.actor_id ?? x.data?.user_id).filter(Boolean) as string[])];

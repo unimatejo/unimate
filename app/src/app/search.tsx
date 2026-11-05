@@ -79,7 +79,7 @@ export default function Search() {
         const none = Promise.resolve({ data: [] as unknown[] });
         const [people, campus, posts, sums, courses] = await Promise.all([
           want('people')
-            ? supabase.from('profiles').select('id, full_name, username, is_verified, academic_title, title_verified, department, avatar_url, major:majors(name_ar, name_en)')
+            ? supabase.from('profiles').select('id, full_name, username, is_verified, academic_title, title_verified, department, avatar_url, major:majors!profiles_major_id_fkey(name_ar, name_en)')
               .or(`full_name.ilike.%${like}%,username.ilike.%${like.toLowerCase()}%`).neq('id', profile?.id ?? '').limit(kind === 'all' ? 8 : 30)
             : none,
           want('campus') ? supabase.rpc('campus_search', { q: s, lim: kind === 'all' ? 8 : 30 }) : none,

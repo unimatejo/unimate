@@ -28,8 +28,8 @@ export default function Follows() {
       setLoading(true);
       const followers = tab === 0;
       const sel = followers
-        ? 'p:profiles!follows_follower_id_fkey(id, full_name, avatar_url, username, academic_title, title_verified, major:majors(name_ar, name_en))'
-        : 'p:profiles!follows_followee_id_fkey(id, full_name, avatar_url, username, academic_title, title_verified, major:majors(name_ar, name_en))';
+        ? 'p:profiles!follows_follower_id_fkey(id, full_name, avatar_url, username, academic_title, title_verified, major:majors!profiles_major_id_fkey(name_ar, name_en))'
+        : 'p:profiles!follows_followee_id_fkey(id, full_name, avatar_url, username, academic_title, title_verified, major:majors!profiles_major_id_fkey(name_ar, name_en))';
       const { data } = await supabase.from('follows').select(sel).eq(followers ? 'followee_id' : 'follower_id', params.user).eq('status', 'accepted').limit(500);
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       setRows(((data ?? []) as any[]).map((x) => x.p).filter(Boolean));

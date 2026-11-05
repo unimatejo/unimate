@@ -20,7 +20,7 @@ export default function CloseFriends() {
 
   useEffect(() => {
     if (!profile) return;
-    supabase.from('follows').select('p:profiles!follows_follower_id_fkey(id, full_name, avatar_url, major:majors(name_ar, name_en))')
+    supabase.from('follows').select('p:profiles!follows_follower_id_fkey(id, full_name, avatar_url, major:majors!profiles_major_id_fkey(name_ar, name_en))')
       .eq('followee_id', (profile?.id ?? '')).eq('status', 'accepted')
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       .then(({ data }) => setPeople(((data ?? []) as any[]).map((x) => x.p).filter(Boolean)));

@@ -32,7 +32,7 @@ export default function Requests() {
       const convs = ((data ?? []) as any[]).map((r) => r.conversation).filter(Boolean);
       const ids = convs.map((c) => c.id); const senders = [...new Set(convs.map((c) => c.created_by).filter(Boolean))];
       const [{ data: from }, { data: msgs }] = ids.length ? await Promise.all([
-        supabase.from('profiles').select('id, full_name, avatar_url, is_verified, major:majors(name_ar, name_en)').in('id', senders),
+        supabase.from('profiles').select('id, full_name, avatar_url, is_verified, major:majors!profiles_major_id_fkey(name_ar, name_en)').in('id', senders),
         supabase.from('messages').select('conversation_id, body, created_at').in('conversation_id', ids).order('created_at'),
       ]) : [{ data: [] }, { data: [] }];
       setRows(convs.map((c) => ({

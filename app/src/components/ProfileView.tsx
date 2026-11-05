@@ -10,7 +10,6 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 
-import { BadgesRow } from './badges/BadgesRow';
 import { LikesSheet } from './LikesSheet';
 import { InstagramGlyph, SnapGlyph } from './SocialGlyphs';
 import { SuggestedPeople } from './SuggestedPeople';
@@ -199,7 +198,7 @@ export function ProfileView({ userId, onTitle, back }: { userId: string; onTitle
     if (!me) return;
     setLoading(true);
     try {
-    const { data, error } = await supabase.from('profiles').select('*, major:majors(name_ar, name_en), college:colleges(name_ar, name_en), university:universities(name_ar, name_en)').eq('id', userId).maybeSingle();
+    const { data, error } = await supabase.from('profiles').select('*, major:majors!profiles_major_id_fkey(name_ar, name_en), college:colleges!profiles_college_id_fkey(name_ar, name_en), university:universities!profiles_university_id_fkey(name_ar, name_en)').eq('id', userId).maybeSingle();
     if (error) { setFailed('error'); return; }
     if (!data) { setFailed('missing'); return; }
     setFailed('none');
@@ -419,7 +418,6 @@ export function ProfileView({ userId, onTitle, back }: { userId: string; onTitle
                 <Row gap={5}><Star size={14} color="#F59E0B" fill="#F59E0B" /><T v="tiny" color={C.muted}>{p.points} {t('نقطة مساعدة')}</T></Row>
               </Tap>
             )}
-            <BadgesRow userId={p.id} mine={mine} />
           </View>
 
           <Row gap={8}>

@@ -25,7 +25,7 @@ export function LikesSheet({ post, onClose }: { post: Post | null; onClose: () =
   useEffect(() => {
     if (!post || !profile) return;
     setRows([]); setLoading(true);
-    supabase.from('post_likes').select('user_id, profile:profiles(id, full_name, avatar_url, major:majors(name_ar, name_en))').eq('post_id', post.id).order('created_at', { ascending: false }).limit(200)
+    supabase.from('post_likes').select('user_id, profile:profiles(id, full_name, avatar_url, major:majors!profiles_major_id_fkey(name_ar, name_en))').eq('post_id', post.id).order('created_at', { ascending: false }).limit(200)
       .then(({ data }) => { setRows((data ?? []) as unknown as Liker[]); setLoading(false); }, () => setLoading(false));
     supabase.from('follows').select('followee_id, status').eq('follower_id', profile.id)
       .then(({ data }) => setFollowing(new Map((data ?? []).map((x) => [x.followee_id as string, x.status as string]))));

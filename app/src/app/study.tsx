@@ -49,7 +49,7 @@ export default function Study() {
 
   useEffect(() => {
     if (!course || !profile) return;
-    supabase.from('study_intents').select('*, p:profiles!study_intents_user_id_fkey(full_name, avatar_url, major:majors(name_ar, name_en))')
+    supabase.from('study_intents').select('*, p:profiles!study_intents_user_id_fkey(full_name, avatar_url, major:majors!profiles_major_id_fkey(name_ar, name_en))')
       .eq('course_id', course).eq('active', true).neq('user_id', (profile?.id ?? '')).limit(50)
       .then(({ data }) => setPeople((data ?? []) as unknown as Person[]));
   }, [course, profile]);
