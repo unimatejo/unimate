@@ -1,0 +1,1 @@
+These 3D emoji images are from Microsoft Fluent UI Emoji (https://github.com/microsoft/fluentui-emoji), MIT License, Copyright (c) Microsoft Corporation.

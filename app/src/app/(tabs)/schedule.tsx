@@ -1,7 +1,7 @@
 import { router } from 'expo-router';
 import { PullRefresh } from '@/components/PullRefresh';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Bell, BellOff, BookOpen, Calculator, CalendarPlus, CalendarX, ScanLine, Clock, FlaskConical, Hourglass, MapPin, MessagesSquare, UserX, Video, EyeOff } from 'lucide-react-native';
+import { Bell, BellOff, BookOpen, Calculator, Car, CalendarPlus, CalendarX, ScanLine, Clock, FlaskConical, Hourglass, MapPin, MessagesSquare, UserX, Video, EyeOff } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import { useEffect, useMemo, useState } from 'react';
 import { Alert, Linking, ScrollView, View } from 'react-native';
@@ -176,6 +176,7 @@ export default function Schedule() {
             [t('غياباتي'), CalendarX, GRAD.red, '/attendance'],
             [t('معدلي'), Calculator, GRAD.blue, '/gpa'],
             [t('امتحاناتي'), Hourglass, GRAD.orange, '/exams'],
+            [t('توصيلات'), Car, GRAD.green, '/rides'],
           ] as const).map(([label, Icon, g, to]) => (
             <Tap key={to} onPress={() => router.push(to)} scale={0.95} accessibilityRole="button" accessibilityLabel={label}
               style={[{ flex: 1, backgroundColor: C.card, borderRadius: 22, paddingVertical: 12, alignItems: 'center', gap: 8 }, shadow]}>

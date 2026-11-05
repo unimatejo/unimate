@@ -127,6 +127,7 @@ export default function Notifications() {
   /** Where each kind of notification takes you. */
   function open(n: N) {
     const d = n.data ?? {};
+    if (n.kind === 'ride') return router.push(d.ride_id ? { pathname: '/rides/[id]', params: { id: String(d.ride_id) } } as never : '/rides' as never);
     if (n.kind === 'announcement') return router.push('/announcements');
     if (n.kind === 'swap_match') return router.push('/swap');
     // app broke / content waiting for review: straight to the right admin screen
