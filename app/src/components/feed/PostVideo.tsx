@@ -1,5 +1,6 @@
 import { FramedMedia } from '@/components/media/FramedMedia';
 import { Play, Volume2, VolumeX , Heart } from 'lucide-react-native';
+import { useIsFocused } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { View } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withSequence, withTiming } from 'react-native-reanimated';
@@ -7,11 +8,15 @@ import Animated, { useAnimatedStyle, useSharedValue, withSequence, withTiming } 
 import { Tap } from '@/components/ui';
 import type { MediaMeta } from '@/lib/cropper';
 import { mediaUrl, supabase } from '@/lib/supabase';
+import { useOnScreen, useReelSound } from '@/lib/videoFocus';
 import { C } from '@/lib/theme';
 import { t } from '@/lib/i18n';
 
-function Player({ uri, meta, onDoubleTap }: { uri: string; meta?: MediaMeta | null; onDoubleTap?: () => void }) {
-  const [muted, setMuted] = useState(true);
+function Player({ uri, meta, postId, onDoubleTap }: { uri: string; meta?: MediaMeta | null; postId?: string; onDoubleTap?: () => void }) {
+  const [muted, setMuted] = useReelSound();
+  const onScreen = useOnScreen(postId);
+  const focused = useIsFocused();
+  const live = onScreen && focused;
   const last = useRef(0);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const burst = useSharedValue(0);
@@ -27,13 +32,13 @@ function Player({ uri, meta, onDoubleTap }: { uri: string; meta?: MediaMeta | nu
       return;
     }
     last.current = now;
-    timer.current = setTimeout(() => setMuted((m) => !m), 290);
+    timer.current = setTimeout(() => setMuted(!muted), 290);
   }
   return (
     <Tap haptic={false} scale={0.995} throttle={0} onPress={press} accessibilityLabel={muted ? t('شغّل الصوت') : t('اكتم الصوت')}
       style={{ marginHorizontal: 10, aspectRatio: 9 / 14, maxHeight: 520, borderRadius: 22, overflow: 'hidden', backgroundColor: '#000', alignItems: 'center', justifyContent: 'center' }}>
       {/* framed and trimmed the way it was set in the crop editor */}
-      <FramedMedia uri={uri} kind="video" meta={meta} video={{ loop: true, muted }} />
+      <FramedMedia uri={uri} kind="video" meta={meta} video={{ loop: true, muted: muted || !live, paused: !live }} />
       <Animated.View style={burstStyle} pointerEvents="none"><Heart size={90} color="#fff" fill="#fff" /></Animated.View>
       <View style={{ position: 'absolute', bottom: 12, left: 12, width: 34, height: 34, borderRadius: 17, backgroundColor: 'rgba(0,0,0,0.5)', alignItems: 'center', justifyContent: 'center' }}>
         {muted ? <VolumeX size={17} color="#fff" /> : <Volume2 size={17} color="#fff" />}
@@ -45,8 +50,8 @@ function Player({ uri, meta, onDoubleTap }: { uri: string; meta?: MediaMeta | nu
 // framing / trim of each reel (from the crop editor), looked up once per video
 const metaCache = new Map<string, MediaMeta | null>();
 
-/** A reel inside a post: plays muted on a loop, tap for sound, double tap likes. */
-export function PostVideo({ path, onDoubleTap }: { path: string; onDoubleTap?: () => void }) {
+/** A reel inside a post: plays on a loop while on screen, tap for sound (remembered for every reel), double tap likes. */
+export function PostVideo({ path, postId, onDoubleTap }: { path: string; postId?: string; onDoubleTap?: () => void }) {
   const [uri, setUri] = useState<string | null>(null);
   const [meta, setMeta] = useState<MediaMeta | null | undefined>(metaCache.get(path));
   useEffect(() => { mediaUrl('posts', path).then(setUri); }, [path]);
@@ -60,5 +65,5 @@ export function PostVideo({ path, onDoubleTap }: { path: string; onDoubleTap?: (
       <Play size={36} color={C.muted} />
     </View>
   );
-  return <Player uri={uri} meta={meta} onDoubleTap={onDoubleTap} />;
+  return <Player uri={uri} meta={meta} postId={postId} onDoubleTap={onDoubleTap} />;
 }

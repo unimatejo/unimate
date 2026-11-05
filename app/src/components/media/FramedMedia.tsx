@@ -1,6 +1,6 @@
 import { Image } from 'expo-image';
 import { useVideoPlayer, VideoView } from 'expo-video';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { LinearGradient } from 'expo-linear-gradient';
 import { View, type StyleProp, type ViewStyle } from 'react-native';
 
@@ -23,8 +23,8 @@ function place(meta: MediaMeta | null | undefined, W: number, H: number) {
 }
 
 /** A video that respects the crop editor's trim (start → end) and calls onEnd once it reaches the end. */
-export function TrimmedVideo({ uri, meta, loop = true, muted = true, autoPlay = true, onEnd, onReady, style, fit = 'cover' }: {
-  uri: string; meta?: MediaMeta | null; loop?: boolean; muted?: boolean; autoPlay?: boolean; onEnd?: () => void; onReady?: () => void;
+export function TrimmedVideo({ uri, meta, loop = true, muted = true, autoPlay = true, paused = false, onEnd, onReady, style, fit = 'cover' }: {
+  uri: string; meta?: MediaMeta | null; loop?: boolean; muted?: boolean; autoPlay?: boolean; paused?: boolean; onEnd?: () => void; onReady?: () => void;
   style?: StyleProp<ViewStyle>; fit?: 'cover' | 'fill' | 'contain';
 }) {
   const trim = meta?.trim;
@@ -33,9 +33,16 @@ export function TrimmedVideo({ uri, meta, loop = true, muted = true, autoPlay = 
     p.muted = muted;
     p.timeUpdateEventInterval = trim ? 0.1 : 0;
     if (trim) p.currentTime = trim.start;
-    if (autoPlay) p.play();
+    if (autoPlay && !paused) p.play();
   });
   useEffect(() => { player.muted = muted; }, [player, muted]);
+  // off screen or on another page: stop (and stay silent) until it's back
+  const started = useRef(false);
+  useEffect(() => {
+    if (paused) player.pause();
+    else if (autoPlay || started.current) player.play();
+    started.current = true;
+  }, [player, paused, autoPlay]);
   useEffect(() => {
     const subs = [
       player.addListener('statusChange', ({ status }) => {
@@ -65,7 +72,7 @@ export function TrimmedVideo({ uri, meta, loop = true, muted = true, autoPlay = 
  */
 export function FramedMedia({ uri, kind, meta, style, video, onImageLoad }: {
   uri: string; kind: 'image' | 'video' | string; meta?: MediaMeta | null; style?: StyleProp<ViewStyle>; onImageLoad?: () => void;
-  video?: { loop?: boolean; muted?: boolean; onEnd?: () => void; onReady?: () => void; autoPlay?: boolean };
+  video?: { loop?: boolean; muted?: boolean; paused?: boolean; onEnd?: () => void; onReady?: () => void; autoPlay?: boolean };
 }) {
   const [size, setSize] = useState({ w: 0, h: 0 });
   const placed = place(meta, size.w, size.h);

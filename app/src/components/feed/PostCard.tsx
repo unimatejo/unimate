@@ -188,7 +188,7 @@ export function PostCard({ post, onLikes, compact, detail }: { post: Post; onLik
         </Tap>
       </Row>
 
-      {video && <PostVideo path={video.url} onDoubleTap={() => { if (!p.liked) like(); }} />}
+      {video && <PostVideo path={video.url} postId={p.id} onDoubleTap={() => { if (!p.liked) like(); }} />}
       {images.length > 0 && <Photos paths={images.map((m) => m.url)} onDoubleTap={() => { if (!p.liked) like(); }} />}
       <Tap scale={0.99} haptic={false} disabled={detail} onPress={() => router.push({ pathname: '/post/[id]', params: { id: p.id } })}>
         <View style={{ paddingHorizontal: 16, paddingTop: 10, gap: 4 }}>

@@ -21,6 +21,7 @@ import type { Post } from '@/lib/types';
 import { nm, t } from '@/lib/i18n';
 import { ListSkeleton } from '@/components/ui/Skeleton';
 import { useScreenTimer } from '@/lib/perf';
+import { OnScreenProvider, useVisiblePosts } from '@/lib/videoFocus';
 
 const TABS: FeedFilter['tab'][] = ['university', 'college', 'following'];
 const CAT_ICON = {
@@ -30,6 +31,7 @@ const CAT_ICON = {
 } as const;
 
 export default function Community() {
+  const { visible, onViewableItemsChanged, viewabilityConfig } = useVisiblePosts(); // reels play only while on screen
   const { profile, university } = useAuth();
   const [tab, setTab] = useState(0);
   const [cat, setCat] = useState<string | null>(null);
@@ -77,7 +79,10 @@ export default function Community() {
 
   return (
     <Screen>
+      <OnScreenProvider value={visible}>
       <FlatList
+        onViewableItemsChanged={onViewableItemsChanged}
+        viewabilityConfig={viewabilityConfig}
         data={posts}
         keyExtractor={(p) => p.id}
         onEndReached={more}
@@ -139,6 +144,7 @@ export default function Community() {
           : <Empty icon={<Plus size={28} color={C.primary} />} title={tab === 2 ? t('تابع زملاءك عشان تشوف منشوراتهم') : t('كون أول واحد بينشر')}
             body={t('اسأل سؤال، شارك ملخص، أو بلّغ عن غرض ضايع.')} />}
       />
+      </OnScreenProvider>
       <Tap onPress={() => router.push('/post/new')} accessibilityLabel={t('منشور جديد')}
         scale={0.88} style={{ position: 'absolute', left: 18, bottom: 104, width: 60, height: 60, borderRadius: 22, shadowColor: C.primary, shadowOpacity: 0.4, shadowRadius: 16, shadowOffset: { width: 0, height: 10 }, elevation: 8 }}>
         <View style={{ flex: 1, borderRadius: 22, backgroundColor: C.primary, alignItems: 'center', justifyContent: 'center' }}>

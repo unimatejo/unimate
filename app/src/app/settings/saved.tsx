@@ -14,8 +14,10 @@ import { C } from '@/lib/theme';
 import type { Post } from '@/lib/types';
 import { t } from '@/lib/i18n';
 import { ListSkeleton } from '@/components/ui/Skeleton';
+import { OnScreenProvider, useVisiblePosts } from '@/lib/videoFocus';
 
 export default function Saved() {
+  const { visible, onViewableItemsChanged, viewabilityConfig } = useVisiblePosts(); // reels play only while on screen
   const { profile } = useAuth();
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
@@ -41,7 +43,10 @@ export default function Saved() {
   return (
     <Screen>
       <Header title={t('المحفوظات')} subtitle={t('إنت بس بتشوفها')} />
+      <OnScreenProvider value={visible}>
       <FlatList
+        onViewableItemsChanged={onViewableItemsChanged}
+        viewabilityConfig={viewabilityConfig}
         data={posts}
         keyExtractor={(p) => p.id}
         refreshControl={<PullRefresh onRefresh={load} />}
@@ -49,6 +54,7 @@ export default function Saved() {
         renderItem={({ item }) => <PostCard post={item} onLikes={setLikesOf} compact />}
         ListEmptyComponent={loading ? <ListSkeleton n={3} kind="post" /> : <Empty icon={<Bookmark size={28} color={C.primary} />} title={t('ما حفظت إشي')} body={t('اضغط علامة الحفظ على أي ملخص أو منشور وبيطلع هون.')} />}
       />
+      </OnScreenProvider>
       <LikesSheet post={likesOf} onClose={() => setLikesOf(null)} />
     </Screen>
   );

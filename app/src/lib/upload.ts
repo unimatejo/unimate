@@ -8,6 +8,7 @@ import { Alert, Linking, Platform } from 'react-native';
 import { openCropper, type CropMode, type MediaMeta } from './cropper';
 import { reportError } from './errors';
 import { supabase } from './supabase';
+import { shrinkVideo } from './videoShrink';
 import { t } from './i18n';
 
 export type Picked = {
@@ -117,13 +118,16 @@ async function readBytes(uri: string): Promise<ArrayBuffer> {
 }
 
 /** Upload to <bucket>/<folder>/<uuid>.<ext>; returns the storage path. Throws a readable Arabic error. */
-export async function uploadFile(bucket: string, folder: string, file: { uri: string; mime: string }): Promise<string> {
-  const ext = file.mime.split('/')[1]?.replace('quicktime', 'mov').replace('jpeg', 'jpg') ?? 'bin';
+export async function uploadFile(bucket: string, folder: string, file: { uri: string; mime: string; duration?: number | null; size?: number | null; width?: number; height?: number }): Promise<string> {
+  // videos are made light enough for every phone to play before they go up
+  const small = file.mime.startsWith('video/') ? await shrinkVideo(file) : null;
+  const mime = small?.mime ?? file.mime;
+  const ext = mime.split('/')[1]?.replace('quicktime', 'mov').replace('jpeg', 'jpg') ?? 'bin';
   const path = `${folder}/${Crypto.randomUUID()}.${ext}`;
   try {
-    const buf = await readBytes(file.uri);
+    const buf = small?.blob ?? await readBytes(small?.uri ?? file.uri);
     const timeout = new Promise<never>((_, rej) => setTimeout(() => rej(new Error('timeout')), 90000));
-    const { error } = await Promise.race([supabase.storage.from(bucket).upload(path, buf, { contentType: file.mime, upsert: false }), timeout]);
+    const { error } = await Promise.race([supabase.storage.from(bucket).upload(path, buf, { contentType: mime, upsert: false }), timeout]);
     if (error) throw error;
     return path;
   } catch (e) {

@@ -1,0 +1,74 @@
+import { NativeModules, Platform, TurboModuleRegistry } from 'react-native';
+
+import { reportError } from './errors';
+
+/**
+ * Phones record 1080p–4K at 10–20 Mbps: a 14 s clip can be 25 MB, slow to upload and too heavy for many phones
+ * and browsers to play. Before upload every video is brought down to at most 1280 px on its long side
+ * (H.264 + AAC in MP4, about 2.5 Mbps), like Instagram and WhatsApp do.
+ * Anything that can't be converted on this device is uploaded as it is, so posting never breaks.
+ */
+const LONG_SIDE = 1280;
+const VIDEO_BPS = 2_500_000;
+/** small, already-light MP4s are left alone */
+const KEEP_BPS = 4_000_000;
+
+type Shrunk = { uri: string; mime: 'video/mp4'; blob?: Blob };
+
+export async function shrinkVideo(file: { uri: string; mime: string; duration?: number | null; size?: number | null; width?: number; height?: number }): Promise<Shrunk | null> {
+  try {
+    return Platform.OS === 'web' ? await shrinkWeb(file) : await shrinkNative(file);
+  } catch (e) {
+    reportError(e);
+    return null;
+  }
+}
+
+// ---------- web: WebCodecs through mediabunny (loaded only when a video is posted) ----------
+async function shrinkWeb(file: { uri: string; mime: string }): Promise<Shrunk | null> {
+  if (typeof VideoEncoder === 'undefined') return null;
+  const blob = await (await fetch(file.uri)).blob();
+  const mb = await import('mediabunny');
+  const input = new mb.Input({ source: new mb.BlobSource(blob), formats: mb.ALL_FORMATS });
+  const video = await input.getPrimaryVideoTrack();
+  if (!video) return null;
+  const audio = await input.getPrimaryAudioTrack();
+  const w = video.displayWidth, h = video.displayHeight;
+  const secs = await input.computeDuration();
+  const bps = secs > 0 ? (blob.size * 8) / secs : Infinity;
+  if (Math.max(w, h) <= LONG_SIDE && bps <= KEEP_BPS && file.mime === 'video/mp4') return null;
+
+  const output = new mb.Output({ format: new mb.Mp4OutputFormat({ fastStart: 'in-memory' }), target: new mb.BufferTarget() });
+  const conversion = await mb.Conversion.init({
+    input, output,
+    video: { ...(w >= h ? { width: Math.min(w, LONG_SIDE) } : { height: Math.min(h, LONG_SIDE) }), codec: 'avc', bitrate: VIDEO_BPS, forceTranscode: true },
+    audio: { codec: 'aac' },
+    showWarnings: false,
+  });
+  // never trade the sound for a smaller file
+  if (!conversion.isValid || (audio && conversion.discardedTracks.some((d) => d.track === audio))) return null;
+  await conversion.execute();
+  const buf = output.target.buffer;
+  if (!buf || buf.byteLength >= blob.size) return null;
+  const out = new Blob([buf], { type: 'video/mp4' });
+  return { uri: URL.createObjectURL(out), mime: 'video/mp4', blob: out };
+}
+
+// ---------- phones: the system's own encoder (react-native-compressor) ----------
+function nativeCompressor(): typeof import('react-native-compressor') | null {
+  // older app builds updated over the air don't have the module yet: upload as is
+  const has = (TurboModuleRegistry.get('Compressor') ?? NativeModules.Compressor) != null;
+  if (!has) return null;
+  return require('react-native-compressor') as typeof import('react-native-compressor');
+}
+
+async function shrinkNative(file: { uri: string; mime: string; duration?: number | null; size?: number | null; width?: number; height?: number }): Promise<Shrunk | null> {
+  const c = nativeCompressor();
+  if (!c) return null;
+  const long = Math.max(file.width ?? 0, file.height ?? 0);
+  const secs = file.duration ? file.duration / 1000 : 0;
+  const bps = secs > 0 && file.size ? (file.size * 8) / secs : Infinity;
+  if (long && long <= LONG_SIDE && bps <= KEEP_BPS && file.mime === 'video/mp4') return null;
+  const uri = await c.Video.compress(file.uri, { compressionMethod: 'manual', maxSize: LONG_SIDE, bitrate: VIDEO_BPS, minimumFileSizeForCompress: 0 });
+  return uri ? { uri, mime: 'video/mp4' } : null;
+}
