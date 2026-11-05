@@ -1,8 +1,9 @@
 import { LinearGradient } from 'expo-linear-gradient';
+import { PullRefresh } from '@/components/PullRefresh';
 import { router, useFocusEffect } from 'expo-router';
 import { Briefcase, BookOpen, CircleAlert, Bus, Gift, GraduationCap, Image as ImageIcon, LayoutGrid, MessageSquare, NotebookPen, PartyPopper, Plus, Map as MapIcon, Search, SearchCheck, ShoppingBag } from 'lucide-react-native';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { FlatList, RefreshControl, ScrollView, View } from 'react-native';
+import { FlatList, ScrollView, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 
 import { AdBanner } from '@/components/AdBanner';
@@ -81,7 +82,7 @@ export default function Community() {
         keyExtractor={(p) => p.id}
         onEndReached={more}
         onEndReachedThreshold={0.4}
-        refreshControl={<RefreshControl refreshing={loading} onRefresh={load} />}
+        refreshControl={<PullRefresh onRefresh={load} />}
         contentContainerStyle={{ gap: 14, paddingBottom: 180 }}
         ListHeaderComponent={
           <View style={{ gap: 16, paddingTop: 6 }}>

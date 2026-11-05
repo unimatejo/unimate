@@ -2,7 +2,7 @@ import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { ArrowLeftRight, BookOpen, CalendarClock, CheckCircle2, Clock, Plus, Sparkles, Trash2, User, Users } from 'lucide-react-native';
 import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, Modal, Pressable, ScrollView, View } from 'react-native';
-import Animated, { FadeInDown, SlideInDown } from 'react-native-reanimated';
+import Animated, { FadeIn, SlideInDown } from 'react-native-reanimated';
 
 import { GlyphTile, GRAD } from '@/components/Glyph';
 import { ScheduleScan } from '@/components/ScheduleScan';
@@ -272,7 +272,7 @@ export default function Courses() {
         {rows === null ? <View style={{ marginTop: 10 }}><ListSkeleton n={3} /></View> : rows.length === 0 ? (
           <Empty icon={<BookOpen size={30} color={C.primary} />} title={t('ما في مواد لهلأ')} body={t('جيبهم من Teams، أو ضيف كل مادة مرة وحدة. زملاؤك بنفس الشعبة بياخذوا المادة ووقتها جاهزة.')} />
         ) : rows.map((s, i) => (
-          <Animated.View key={s.id} entering={FadeInDown.delay(i * 50)} style={{ backgroundColor: C.card, borderRadius: 24, padding: 14, gap: 10 }}>
+          <Animated.View key={s.id} entering={FadeIn.delay(i * 50).duration(220)} style={{ backgroundColor: C.card, borderRadius: 24, padding: 14, gap: 10 }}>
             <Row gap={12}>
               <GlyphTile icon={BookOpen} colors={[GRAD.blue, GRAD.pink, GRAD.green, GRAD.orange, GRAD.violet][i % 5]} size={44} />
               <View style={{ flex: 1 }}>
@@ -313,7 +313,7 @@ export default function Courses() {
 
       <Modal visible={adding} transparent animationType="fade" onRequestClose={() => setAdding(false)}>
         <Pressable style={{ flex: 1, backgroundColor: 'rgba(14,20,48,0.45)' }} onPress={() => setAdding(false)} />
-        <Animated.View entering={SlideInDown.springify().damping(18)} style={{ backgroundColor: C.bg, borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: 18, gap: 12, paddingBottom: 40 }}>
+        <Animated.View entering={SlideInDown.duration(240)} style={{ backgroundColor: C.bg, borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: 18, gap: 12, paddingBottom: 40 }}>
           <T v="h3">{t('ضيف مادة')}</T>
           <Field label={t('اسم المادة')} value={name} onChangeText={setName} placeholder={t('مثلاً تفاضل وتكامل 1')} maxLength={120} />
           <Field label={t('رقم الشعبة')} value={secNo} onChangeText={setSecNo} keyboardType="number-pad" placeholder="1" maxLength={4} />
@@ -323,7 +323,7 @@ export default function Courses() {
 
       <Modal visible={!!moveFor} transparent animationType="fade" onRequestClose={() => setMoveFor(null)}>
         <Pressable style={{ flex: 1, backgroundColor: 'rgba(14,20,48,0.45)' }} onPress={() => setMoveFor(null)} />
-        <Animated.View entering={SlideInDown.springify().damping(18)} style={{ backgroundColor: C.bg, borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: 18, gap: 12, paddingBottom: 40 }}>
+        <Animated.View entering={SlideInDown.duration(240)} style={{ backgroundColor: C.bg, borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: 18, gap: 12, paddingBottom: 40 }}>
           <T v="h3">{t('نقل لشعبة ثانية')}</T>
           <T v="small" color={C.muted}>{t('{0} · إنت هلأ بشعبة {1}. لما تنتقل بتاخد أوقات الشعبة الجديدة وجروبها.', [nm(moveFor?.course), moveFor?.section_no ?? ''])}</T>
           <Field label={t('رقم الشعبة الجديدة')} value={newSec} onChangeText={setNewSec} keyboardType="number-pad" placeholder="2" maxLength={6} autoFocus />
@@ -333,7 +333,7 @@ export default function Courses() {
 
       <Modal visible={!!once} transparent animationType="fade" onRequestClose={() => setOnce(null)}>
         <Pressable style={{ flex: 1, backgroundColor: 'rgba(14,20,48,0.45)' }} onPress={() => setOnce(null)} />
-        <Animated.View entering={SlideInDown.springify().damping(18)} style={{ backgroundColor: C.bg, borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: 18, gap: 12, paddingBottom: 40, maxHeight: '90%' }}>
+        <Animated.View entering={SlideInDown.duration(240)} style={{ backgroundColor: C.bg, borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: 18, gap: 12, paddingBottom: 40, maxHeight: '90%' }}>
           <ScrollView contentContainerStyle={{ gap: 12 }}>
             <T v="h3">{onceCancel ? t('محاضرة ألغيت') : t('محاضرة انتقل موعدها')} · {nm(once?.sec.course)}</T>
             <T v="tiny" color={C.muted}>{t('لمرة وحدة بس. الجدول الأسبوعي بيضل زي ما هو.')}</T>
@@ -364,7 +364,7 @@ export default function Courses() {
 
       <Modal visible={!!edit} transparent animationType="fade" onRequestClose={() => setEdit(null)}>
         <Pressable style={{ flex: 1, backgroundColor: 'rgba(14,20,48,0.45)' }} onPress={() => setEdit(null)} />
-        <Animated.View entering={SlideInDown.springify().damping(18)} style={{ backgroundColor: C.bg, borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: 18, gap: 12, paddingBottom: 40, maxHeight: '88%' }}>
+        <Animated.View entering={SlideInDown.duration(240)} style={{ backgroundColor: C.bg, borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: 18, gap: 12, paddingBottom: 40, maxHeight: '88%' }}>
           <ScrollView contentContainerStyle={{ gap: 12 }}>
             <T v="h3">{edit?.mode === 'me' ? t('وقتي أنا') : edit?.mode === 'all' ? t('تغيير وقت الشعبة') : t('وقت')} · {nm(edit?.sec.course)}</T>
             <T v="tiny" color={edit?.mode === 'me' ? C.violet : C.muted}>{edit?.mode === 'me' ? t('بيتغيّر بجدولك إنت بس (مثلاً نقل داخلي لمحاضرة)، وزملاؤك ما بيتأثروا.')

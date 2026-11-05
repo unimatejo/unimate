@@ -2,7 +2,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { BadgeCheck, Check, Search, UsersRound } from 'lucide-react-native';
 import { useEffect, useMemo, useState } from 'react';
 import { Alert, FlatList, TextInput, View } from 'react-native';
-import Animated, { ZoomIn } from 'react-native-reanimated';
+import Animated, { FadeIn } from 'react-native-reanimated';
 
 import { GlyphTile, GRAD } from '@/components/Glyph';
 import { Avatar, Button, Empty, Field, Header, Row, Screen, T, Tap } from '@/components/ui';
@@ -107,7 +107,7 @@ export default function NewMessage() {
             </View>
             {group && (
               <View style={{ width: 26, height: 26, borderRadius: 13, borderWidth: 2, borderColor: ids.has(item.id) ? C.primary : C.line, backgroundColor: ids.has(item.id) ? C.primary : C.card, alignItems: 'center', justifyContent: 'center' }}>
-                {ids.has(item.id) && <Animated.View entering={ZoomIn}><Check size={15} color={C.white} strokeWidth={3} /></Animated.View>}
+                {ids.has(item.id) && <Animated.View entering={FadeIn.duration(200)}><Check size={15} color={C.white} strokeWidth={3} /></Animated.View>}
               </View>
             )}
           </Tap>

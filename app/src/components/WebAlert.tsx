@@ -27,7 +27,7 @@ export function WebAlertHost() {
   return (
     <View style={{ position: 'absolute', top: 0, bottom: 0, left: 0, right: 0, backgroundColor: C.overlay, justifyContent: 'flex-end', alignItems: 'center', padding: 12, paddingBottom: 20 }}>
       <Pressable style={{ position: 'absolute', top: 0, bottom: 0, left: 0, right: 0 }} onPress={() => close(cancel)} accessibilityLabel={t('إلغاء')} />
-      <Animated.View entering={SlideInDown.springify().damping(22).stiffness(260)} style={{ width: '100%', maxWidth: 480, gap: 8 }}>
+      <Animated.View entering={SlideInDown.duration(240)} style={{ width: '100%', maxWidth: 480, gap: 8 }}>
         <View accessibilityRole="alert" style={{ backgroundColor: C.card, borderRadius: 24, overflow: 'hidden', borderWidth: 1, borderColor: C.line }}>
           {(item.title || item.message) ? (
             <View style={{ paddingHorizontal: 20, paddingVertical: 16, gap: 4, alignItems: 'center' }}>

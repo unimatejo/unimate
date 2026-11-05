@@ -3,7 +3,7 @@ import * as Haptics from 'expo-haptics';
 import { BadgeCheck, BookOpen, Camera, Inbox as InboxIcon, MessageCircle, PenSquare, Plus, Search, Users, UsersRound } from 'lucide-react-native';
 import { useCallback, useState } from 'react';
 import { FlatList, KeyboardAvoidingView, Modal, Platform, Pressable, RefreshControl, ScrollView, TextInput, View } from 'react-native';
-import Animated, { FadeInDown, FadeOutLeft, LinearTransition } from 'react-native-reanimated';
+import Animated, { FadeInDown, FadeOutLeft } from 'react-native-reanimated';
 
 import { TitleBadge } from '@/components/TitleBadge';
 import { PushNudge } from '@/components/PushNudge';
@@ -201,7 +201,7 @@ export function Inbox({ inTab }: { inTab?: boolean }) {
           </View>
         }
         renderItem={({ item, index }) => (
-          <Animated.View entering={FadeInDown.delay(Math.min(index, 8) * 35)} exiting={FadeOutLeft} layout={LinearTransition}>
+          <Animated.View entering={FadeInDown.delay(Math.min(index, 8) * 35)} exiting={FadeOutLeft}>
             <Tap scale={0.985} haptic={false} onPress={() => router.push({ pathname: '/messages/[id]', params: { id: item.id } })}
               style={{ flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 72, paddingVertical: 8 }}>
               {item.kind === 'direct' ? <View><Avatar id={item.other?.id} name={item.title} url={item.other?.avatar_url} size={54} /><OnlineDot id={item.other?.id} /></View>

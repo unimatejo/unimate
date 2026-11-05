@@ -2,7 +2,7 @@ import { router, useFocusEffect } from 'expo-router';
 import { Camera, Plus } from 'lucide-react-native';
 import { useCallback, useEffect, useState } from 'react';
 import { ScrollView, View } from 'react-native';
-import Animated, { Easing, useAnimatedStyle, useSharedValue, withRepeat, withTiming } from 'react-native-reanimated';
+import Animated from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
 
 import { Avatar, T, Tap } from './ui';
@@ -14,9 +14,8 @@ import { t } from '@/lib/i18n';
 type Group = { author_id: string; name: string; avatar_url: string | null; seen: boolean };
 
 function Ring({ seen, children }: { seen: boolean; children: React.ReactNode }) {
-  const r = useSharedValue(0);
-  useEffect(() => { if (!seen) r.value = withRepeat(withTiming(360, { duration: 6000, easing: Easing.linear }), -1, false); }, [seen, r]);
-  const s = useAnimatedStyle(() => ({ transform: [{ rotate: `${r.value}deg` }] }));
+  // a still gradient ring, like Instagram (it used to spin)
+  const s = {};
   return (
     <View style={{ width: 66, height: 66, alignItems: 'center', justifyContent: 'center' }}>
       {seen ? <View style={{ position: 'absolute', inset: 0, borderRadius: 24, backgroundColor: C.line }} /> : (

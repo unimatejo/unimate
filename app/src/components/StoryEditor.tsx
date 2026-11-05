@@ -1,13 +1,12 @@
-import { Image } from 'expo-image';
-import { ImageManipulator, SaveFormat } from 'expo-image-manipulator';
-import { useVideoPlayer, VideoView } from 'expo-video';
-import { AtSign, ChevronLeft, Clock, Crop, FlipHorizontal2, MapPin, Minus, Plus, RotateCw, Smile, Star, Trash2, Type, X } from 'lucide-react-native';
+import { AtSign, ChevronLeft, Clock, Crop, MapPin, Minus, Plus, Smile, Star, Trash2, Type, X } from 'lucide-react-native';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, Text, TextInput, useWindowDimensions, View } from 'react-native';
 import { GestureDetector, GestureHandlerRootView, usePanGesture, usePinchGesture, useRotationGesture, useSimultaneousGestures, useTapGesture } from 'react-native-gesture-handler';
 import Animated, { FadeIn, runOnJS, useAnimatedStyle, useSharedValue } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { FramedMedia } from './FramedMedia';
+import { MediaCropper } from './MediaCropper';
 import { OverlayBody } from './StoryOverlays';
 import { Avatar, T, Tap } from './ui';
 import { useAuth } from '@/lib/auth';
@@ -72,10 +71,6 @@ function Movable({ o, W, H, trashY, onTap, onChange, onDrag, onNear }: {
   );
 }
 
-function StoryVideoPreview({ uri }: { uri: string }) {
-  const player = useVideoPlayer(uri, (p) => { p.loop = true; p.muted = true; p.play(); });
-  return <VideoView player={player} style={{ position: 'absolute', top: 0, bottom: 0, left: 0, right: 0 }} contentFit="cover" nativeControls={false} />;
-}
 
 type Draft = { id?: string; text: string; color: string; bg: Overlay['bg']; font: Overlay['font']; size: number };
 
@@ -103,7 +98,6 @@ export function StoryEditor({ media, initial, onCancel, onDone, onShare, sharing
   const [overTrash, setOverTrash] = useState(false);
   const [mention, setMention] = useState('');
   const [mentionErr, setMentionErr] = useState<string | null>(null);
-  const [busy, setBusy] = useState(false);
 
   const trashY = H - 60;
   const nearTrash = (x: number, y: number) => y > trashY - 50 && Math.abs(x - W / 2) < 70;
@@ -137,37 +131,14 @@ export function StoryEditor({ media, initial, onCancel, onDone, onShare, sharing
     addSticker('mention', data.username ?? u, { userId: data.id });
   }
 
-  async function edit(op: 'rotate' | 'flip' | number) {
-    if (m.kind !== 'image' || busy) return;
-    setBusy(true);
-    try {
-      const ctx = ImageManipulator.manipulate(m.uri);
-      const iw = m.width ?? 1080, ih = m.height ?? 1920;
-      if (op === 'rotate') ctx.rotate(90);
-      else if (op === 'flip') ctx.flip('horizontal' as never);
-      else {
-        // crop to an aspect ratio (width / height), centered
-        const target = op; const cur = iw / ih;
-        const cw = cur > target ? Math.round(ih * target) : iw;
-        const ch = cur > target ? ih : Math.round(iw / target);
-        ctx.crop({ originX: Math.round((iw - cw) / 2), originY: Math.round((ih - ch) / 2), width: cw, height: ch });
-      }
-      const img = await ctx.renderAsync();
-      const out = await img.saveAsync({ compress: 0.85, format: SaveFormat.JPEG });
-      setM({ ...m, uri: out.uri, width: out.width, height: out.height, mime: 'image/jpeg' });
-    } catch { /* keep the photo as it was */ } finally { setBusy(false); }
-  }
-
   const timeText = new Date().toLocaleTimeString(LOCALE, { hour: 'numeric', minute: '2-digit' });
 
   return (
     // a Modal is its own window, so gestures need their own root inside it
     <GestureHandlerRootView style={{ flex: 1, backgroundColor: C.bg }}>
       <View style={{ position: 'absolute', top: insets.top + 8, left: 8, width: W, height: H, borderRadius: 28, overflow: 'hidden', backgroundColor: '#000' }}>
-        {m.kind === 'video' ? <StoryVideoPreview uri={m.uri} /> : (
-          // same framing as the story viewer, so what you place is where people see it
-          <Image source={{ uri: m.uri }} style={{ position: 'absolute', top: 0, bottom: 0, left: 0, right: 0 }} contentFit="cover" transition={120} />
-        )}
+        {/* same framing as the story viewer, so what you place is where people see it */}
+        <FramedMedia key={m.uri + JSON.stringify(m.meta ?? {})} uri={m.uri} kind={m.kind} meta={m.meta} />
 
         {items.map((o) => (
           <Movable key={o.id} o={o} W={W} H={H}
@@ -190,21 +161,10 @@ export function StoryEditor({ media, initial, onCancel, onDone, onShare, sharing
             <ToolButton label={t('نص')} active={!!draft} onPress={() => setDraft({ text: '', color: '#FFFFFF', bg: 'none', font: 'display', size: 0.08 })}><Type size={20} color={draft ? '#0E1430' : '#fff'} /></ToolButton>
             <ToolButton label={t('ملصقات')} active={stickers} onPress={() => setStickers(true)}><Smile size={20} color={stickers ? '#0E1430' : '#fff'} /></ToolButton>
             <ToolButton label={t('إشارة')} onPress={() => setStickers(true)}><AtSign size={20} color="#fff" /></ToolButton>
-            {m.kind === 'image' && <ToolButton label={t('قص وتدوير')} active={crop} onPress={() => setCrop((c) => !c)}><Crop size={20} color={crop ? '#0E1430' : '#fff'} /></ToolButton>}
+            <ToolButton label={m.kind === 'video' ? t('قص الفيديو') : t('قص وتدوير')} active={crop} onPress={() => setCrop(true)}><Crop size={20} color={crop ? '#0E1430' : '#fff'} /></ToolButton>
           </View>
         )}
 
-        {crop && !dragging && m.kind === 'image' && (
-          <Animated.View entering={FadeIn} style={[{ position: 'absolute', bottom: 18, alignSelf: 'center', flexDirection: 'row', gap: 4, padding: 6, borderRadius: R.pill }, glass]}>
-            {([[t('أصلي'), 0], ['9:16', 9 / 16], ['4:5', 4 / 5], ['1:1', 1]] as [string, number][]).map(([l, r]) => (
-              <Tap key={l} onPress={() => r && edit(r)} disabled={!r || busy} style={{ minHeight: 36, paddingHorizontal: 12, borderRadius: 18, alignItems: 'center', justifyContent: 'center' }}>
-                <T v="tiny" color="#fff">{l}</T>
-              </Tap>
-            ))}
-            <Tap onPress={() => edit('rotate')} disabled={busy} accessibilityLabel={t('تدوير')} style={{ width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' }}><RotateCw size={18} color="#fff" /></Tap>
-            <Tap onPress={() => edit('flip')} disabled={busy} accessibilityLabel={t('اقلب')} style={{ width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' }}><FlipHorizontal2 size={18} color="#fff" /></Tap>
-          </Animated.View>
-        )}
 
         {/* delete zone while dragging */}
         {dragging && (
@@ -304,6 +264,13 @@ export function StoryEditor({ media, initial, onCancel, onDone, onShare, sharing
           </View>
         </KeyboardAvoidingView>
       </Modal>
+      {/* Instagram-style crop: fixed 9:16, pinch / drag, zoom out over a blurred copy; videos can be framed and trimmed */}
+      {crop && (
+        <View style={{ position: 'absolute', top: 0, bottom: 0, left: 0, right: 0 }}>
+          <MediaCropper src={m} opts={{ mode: 'story', maxSec: 15 }} onCancel={() => setCrop(false)}
+            onDone={(r) => { setM({ ...r.media, aspect: r.aspect }); setCrop(false); }} />
+        </View>
+      )}
     </GestureHandlerRootView>
   );
 }

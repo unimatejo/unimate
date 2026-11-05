@@ -2,7 +2,7 @@ import { router } from 'expo-router';
 import { BadgeCheck, MessageCircle, ShieldCheck } from 'lucide-react-native';
 import { useCallback, useEffect, useState } from 'react';
 import { FlatList, RefreshControl, View } from 'react-native';
-import Animated, { FadeOutLeft, LinearTransition } from 'react-native-reanimated';
+import Animated, { FadeOutLeft } from 'react-native-reanimated';
 
 import { Avatar, Button, Card, Empty, Header, Row, Screen, T, Tag } from '@/components/ui';
 import { useAuth } from '@/lib/auth';
@@ -70,7 +70,7 @@ export default function Requests() {
           </Row>
         }
         renderItem={({ item }) => (
-          <Animated.View exiting={FadeOutLeft} layout={LinearTransition}>
+          <Animated.View exiting={FadeOutLeft}>
             <Card style={{ gap: 12 }}>
               <Row gap={12}>
                 <Avatar id={item.from?.id} name={item.from?.full_name} url={item.from?.avatar_url} size={50} />

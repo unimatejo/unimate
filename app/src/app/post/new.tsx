@@ -1,7 +1,6 @@
 import { Image } from 'expo-image';
 import { router, useLocalSearchParams } from 'expo-router';
-import { useVideoPlayer, VideoView } from 'expo-video';
-import { Camera, ChevronRight, FileText, Images, Plus, Radio, Wand2, X } from 'lucide-react-native';
+import { Camera, ChevronRight, Crop, FileText, Images, Plus, Radio, Wand2, X } from 'lucide-react-native';
 import { useEffect, useState } from 'react';
 import * as Haptics from 'expo-haptics';
 import { Alert, KeyboardAvoidingView, Modal, Platform, ScrollView, TextInput, useWindowDimensions, View } from 'react-native';
@@ -9,6 +8,7 @@ import Animated, { FadeIn, FadeInDown, useAnimatedStyle, useSharedValue, withSpr
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Avatar, Chip, Row, T, Tap } from '@/components/ui';
+import { FramedMedia } from '@/components/FramedMedia';
 import { StoryEditor } from '@/components/StoryEditor';
 import { StoryOverlays } from '@/components/StoryOverlays';
 import type { Overlay } from '@/lib/storyOverlay';
@@ -16,6 +16,7 @@ import { useAuth } from '@/lib/auth';
 import { reportError } from '@/lib/errors';
 import { supabase } from '@/lib/supabase';
 import { C, CATEGORY, F, isDark, R, SPRING } from '@/lib/theme';
+import { autoCrop, openCropper, playLength } from '@/lib/cropper';
 import { pickMedia, pickPdf, pickPhotos, uploadFile, type Picked } from '@/lib/upload';
 import { flip, rtlLayout, t, ta } from '@/lib/i18n';
 
@@ -26,9 +27,9 @@ type Mode = 'post' | 'story' | 'reel' | 'live';
 const MODES: [Mode, string][] = [['post', t('منشور')], ['story', t('ستوري')], ['reel', t('ريلز')], ['live', t('مباشر')]];
 const TITLES: Record<Mode, string> = { post: t('منشور جديد'), story: t('ستوري جديدة'), reel: t('ريلز جديد'), live: t('بث مباشر') };
 
-function VideoPreview({ uri }: { uri: string }) {
-  const player = useVideoPlayer(uri, (p) => { p.loop = true; p.muted = true; p.play(); });
-  return <VideoView player={player} style={{ position: 'absolute', top: 0, bottom: 0, left: 0, right: 0 }} contentFit="cover" nativeControls={false} />;
+/** a picked video, framed and trimmed the way it was set in the crop editor */
+function VideoPreview({ m }: { m: Picked }) {
+  return <FramedMedia uri={m.uri} kind="video" meta={m.meta} />;
 }
 
 /** The bottom pill: منشور / ستوري / ريلز / مباشر, with the selected one sliding (spring). */
@@ -76,20 +77,35 @@ export default function Create() {
   const [poll, setPoll] = useState<string[] | null>(null);
   const [overlays, setOverlays] = useState<Overlay[]>([]);
   const [editing, setEditing] = useState(false);
+  // like Instagram: the first photo's shape (1:1, 4:5, …) is used for every photo of the post
+  const [postAspect, setPostAspect] = useState<number | null>(null);
   const isStory = mode === 'story';
+  const maxSec = mode === 'reel' ? 60 : 15;
+  const cropMode = isStory ? 'story' : 'post';
   const media = items[active] ?? items[0] ?? null;
 
   function switchMode(m: Mode) {
-    setMode(m); setStep('pick'); setItems([]); setActive(0); setOverlays([]); setAud(0); setPdf(null); setPoll(null);
+    setMode(m); setStep('pick'); setItems([]); setActive(0); setOverlays([]); setAud(0); setPdf(null); setPoll(null); setPostAspect(null);
   }
 
   async function addFromGallery() {
     try {
       if (mode === 'post') {
         const ps = await pickPhotos(10 - items.length);
-        if (ps.length) { setItems((cur) => [...cur, ...ps].slice(0, 10)); setActive(items.length); }
+        if (!ps.length) return;
+        let aspect = postAspect;
+        let list: Picked[];
+        if (aspect == null) {
+          // the first photo opens the crop editor; its shape is used for the rest (each can be adjusted by tapping it)
+          const r = await openCropper(ps[0], { mode: 'post' });
+          if (!r) return;
+          aspect = r.aspect;
+          setPostAspect(aspect);
+          list = [r.media, ...(await Promise.all(ps.slice(1).map((p) => autoCrop(p, aspect as number))))];
+        } else list = await Promise.all(ps.map((p) => autoCrop(p, aspect as number)));
+        setItems((cur) => [...cur, ...list].slice(0, 10)); setActive(items.length);
       } else {
-        const m = await pickMedia({ video: true, videoOnly: mode === 'reel', maxSec: mode === 'reel' ? 60 : 15 });
+        const m = await pickMedia({ video: true, videoOnly: mode === 'reel', maxSec, crop: cropMode, aspect: mode === 'reel' ? 9 / 16 : null });
         if (!m) return;
         if (mode === 'reel' && m.kind !== 'video') { Alert.alert(t('الريلز فيديو'), t('اختار فيديو لحد دقيقة.')); return; }
         setItems([m]); setActive(0);
@@ -99,18 +115,34 @@ export default function Create() {
   }
   async function fromCamera() {
     try {
-      const m = await pickMedia({ camera: true, video: mode !== 'post', videoOnly: mode === 'reel', maxSec: mode === 'reel' ? 60 : 15 });
+      const m = await pickMedia({ camera: true, video: mode !== 'post', videoOnly: mode === 'reel', maxSec, crop: cropMode, aspect: mode === 'reel' ? 9 / 16 : mode === 'post' ? postAspect : null });
       if (!m) return;
-      if (mode === 'post') { setItems((cur) => [...cur, m].slice(0, 10)); setActive(items.length); return; }
+      if (mode === 'post') { if (postAspect == null && m.aspect) setPostAspect(m.aspect); setItems((cur) => [...cur, m].slice(0, 10)); setActive(items.length); return; }
       setItems([m]); setActive(0);
       if (isStory) { setOverlays([]); setEditing(true); }
     } catch (e) { Alert.alert(t('ما زبط'), (e as Error).message); }
   }
   function toggleItem(i: number) {
-    // tap a chosen photo to see it; tap it again to take it out (numbers re-order like Instagram)
+    // tap a chosen photo to see it; tap it again to crop it again (the × takes it out)
     if (i !== active) { setActive(i); return; }
+    recrop(i);
+  }
+  function removeItem(i: number) {
     Haptics.selectionAsync().catch(() => {});
-    setItems((cur) => cur.filter((_, j) => j !== i)); setActive(0);
+    setItems((cur) => { const n = cur.filter((_, j) => j !== i); if (!n.length) setPostAspect(null); return n; });
+    setActive(0);
+  }
+  /** open the crop editor again for one item (from the full original photo); with several photos the shape stays the same */
+  async function recrop(i: number) {
+    const it = items[i];
+    if (!it) return;
+    if (isStory) { setEditing(true); return; }
+    const r = await openCropper(it, { mode: 'post', aspect: mode === 'reel' ? 9 / 16 : items.length > 1 ? postAspect : null, maxSec });
+    if (!r) return;
+    let next = items.map((x, j) => (j === i ? r.media : x));
+    if (items.length === 1 && mode === 'post') setPostAspect(r.aspect);
+    else if (items.length > 1 && postAspect && Math.abs(r.aspect - postAspect) > 0.01) next = await Promise.all(next.map((x, j) => (j === i ? x : autoCrop(x, r.aspect))));
+    setItems(next);
   }
 
   function next() {
@@ -132,8 +164,8 @@ export default function Create() {
         const path = await uploadFile('stories', profile.id, m);
         const { error } = await supabase.from('stories').insert({
           author_id: profile.id, university_id: profile.university_id, kind: m.kind, media_url: path,
-          duration_sec: m.duration ? Math.ceil(m.duration / 1000) : null, caption: body.trim() || null,
-          audience: story?.audience ?? STORY_AUD[aud][0], overlays: story?.o ?? overlays,
+          duration_sec: playLength(m), caption: body.trim() || null,
+          audience: story?.audience ?? STORY_AUD[aud][0], overlays: story?.o ?? overlays, meta: m.meta ?? null,
         });
         if (error) throw error;
       } else {
@@ -156,8 +188,8 @@ export default function Create() {
         }).select('id').single();
         if (error) throw error;
         const rows = [
-          ...paths.map((url, i) => ({ post_id: post.id, kind: items[i].kind, url, position: i + 2, file_name: null as string | null, size_bytes: null as number | null })),
-          ...(pdfPath && pdf ? [{ post_id: post.id, kind: 'file', url: pdfPath, position: 1, file_name: pdf.name, size_bytes: pdf.size }] : []),
+          ...paths.map((url, i) => ({ post_id: post.id, kind: items[i].kind, url, position: i + 2, file_name: null as string | null, size_bytes: null as number | null, meta: items[i].meta ?? null })),
+          ...(pdfPath && pdf ? [{ post_id: post.id, kind: 'file', url: pdfPath, position: 1, file_name: pdf.name, size_bytes: pdf.size, meta: null }] : []),
         ];
         if (rows.length) {
           const { error: me } = await supabase.from('post_media').insert(rows);
@@ -193,7 +225,7 @@ export default function Create() {
             <Row gap={12} center={false}>
               {media ? (
                 <View style={{ width: 84, height: mode === 'reel' ? 130 : 84, borderRadius: 16, overflow: 'hidden', backgroundColor: C.soft }}>
-                  {media.kind === 'video' ? <VideoPreview uri={media.uri} /> : <Image source={{ uri: media.uri }} style={{ flex: 1 }} contentFit="cover" />}
+                  {media.kind === 'video' ? <VideoPreview m={media} /> : <Image source={{ uri: media.uri }} style={{ flex: 1 }} contentFit="cover" />}
                   {items.length > 1 && <View style={{ position: 'absolute', top: 6, left: 6, minWidth: 22, height: 22, borderRadius: 11, backgroundColor: 'rgba(0,0,0,0.5)', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 5 }}><T v="tiny" color="#fff">{items.length}</T></View>}
                 </View>
               ) : <Avatar id={profile?.id} name={profile?.full_name} url={profile?.avatar_url} size={44} />}
@@ -287,15 +319,20 @@ export default function Create() {
           {/* big preview of the chosen photo / video */}
           <Tap haptic={false} scale={0.99} onPress={media ? (isStory ? () => setEditing(true) : undefined) : addFromGallery}
             accessibilityLabel={media ? t('المعاينة') : t('اختار من الصور')}
-            style={{ marginHorizontal: 12, marginTop: 4, height: mode === 'post' ? Math.min(360, width - 24) : 420, borderRadius: 24, backgroundColor: C.card, borderWidth: media ? 0 : 1, borderColor: C.line, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' }}>
+            style={{ marginHorizontal: 12, marginTop: 4, height: mode === 'post' ? Math.min(420, (width - 24) / (postAspect ?? 1)) : 420, ...(mode === 'post' ? {} : { width: Math.min(width - 24, 420 * 9 / 16), alignSelf: 'center' }), borderRadius: 24, backgroundColor: C.card, borderWidth: media ? 0 : 1, borderColor: C.line, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' }}>
             {media ? (
               <>
-                {media.kind === 'video' ? <VideoPreview key={media.uri} uri={media.uri} /> : <Image source={{ uri: media.uri }} style={{ position: 'absolute', top: 0, bottom: 0, left: 0, right: 0 }} contentFit="cover" transition={150} />}
-                {isStory && overlays.length > 0 && <View pointerEvents="none" style={{ position: 'absolute', top: 0, bottom: 0, left: 0, right: 0 }}><StoryOverlays items={overlays} width={width - 24} height={420} /></View>}
+                <FramedMedia key={media.uri + JSON.stringify(media.meta ?? {})} uri={media.uri} kind={media.kind} meta={media.meta} />
+                {isStory && overlays.length > 0 && <View pointerEvents="none" style={{ position: 'absolute', top: 0, bottom: 0, left: 0, right: 0 }}><StoryOverlays items={overlays} width={Math.min(width - 24, 420 * 9 / 16)} height={420} /></View>}
                 {isStory && (
                   <View style={{ position: 'absolute', bottom: 12, alignSelf: 'center', flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 40, paddingHorizontal: 16, borderRadius: R.pill, backgroundColor: 'rgba(7,10,28,0.55)' }}>
                     <Wand2 size={16} color="#fff" /><T v="tiny" color="#fff">{t('عدّل')}</T>
                   </View>
+                )}
+                {!isStory && (
+                  <Tap onPress={() => recrop(active)} accessibilityLabel={t('قص')} style={{ position: 'absolute', bottom: 12, ...(Platform.OS === 'web' ? { left: 12 } : { start: 12 }), flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 40, paddingHorizontal: 14, borderRadius: R.pill, backgroundColor: 'rgba(7,10,28,0.6)' }}>
+                    <Crop size={16} color="#fff" /><T v="tiny" color="#fff">{t('قص')}</T>
+                  </Tap>
                 )}
               </>
             ) : (
@@ -323,6 +360,12 @@ export default function Create() {
                   <T v="tiny" color={C.onPrimary} style={{ fontFamily: F.bodyBold }}>{i + 1}</T>
                 </View>
                 {i === active && <View pointerEvents="none" style={{ position: 'absolute', top: 0, bottom: 0, left: 0, right: 0, borderWidth: 3, borderColor: C.primary }} />}
+                {i === active && (
+                  <Tap onPress={() => removeItem(i)} accessibilityLabel={t('شيل الصورة')} hitSlop={8}
+                    style={{ position: 'absolute', top: 4, right: 4, width: 28, height: 28, borderRadius: 14, backgroundColor: 'rgba(5,7,15,0.7)', alignItems: 'center', justifyContent: 'center' }}>
+                    <X size={15} color="#fff" />
+                  </Tap>
+                )}
               </Tap>
             ))}
             {(mode === 'post' ? items.length < 10 : items.length === 0) && (

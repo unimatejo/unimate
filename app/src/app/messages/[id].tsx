@@ -2,7 +2,7 @@ import * as Haptics from 'expo-haptics';
 import { router, useLocalSearchParams } from 'expo-router';
 import * as ScreenCapture from 'expo-screen-capture';
 import { Image } from 'expo-image';
-import { BadgeCheck, Bookmark, Camera, Plus, Sticker, ChevronRight, EyeOff, Flame, Image as ImageIcon, MoreHorizontal, Phone, Send, ShieldCheck, Timer, Users, Video } from 'lucide-react-native';
+import { BadgeCheck, Bookmark, Camera, Plus, Sticker, ChevronRight, EyeOff, Flame, Image as ImageIcon, MoreHorizontal, Phone, RotateCw, Send, ShieldCheck, Timer, Users, Video } from 'lucide-react-native';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, FlatList, KeyboardAvoidingView, Modal, Platform, Pressable, TextInput, View } from 'react-native';
 import Animated, { FadeIn, FadeInUp, useAnimatedStyle, useSharedValue, withDelay, withRepeat, withSequence, withTiming } from 'react-native-reanimated';
@@ -22,6 +22,8 @@ import { rtTopic } from '@/lib/realtime';
 import { C, F, isDark } from '@/lib/theme';
 import type { Conversation, Message, VanishMode } from '@/lib/types';
 import { pickMedia, uploadFile } from '@/lib/upload';
+import { ImageViewer } from '@/components/ImageViewer';
+import { aspectCache } from '@/components/ZoomPhoto';
 import { timeAgo } from '@/lib/util';
 import { flip, isAR, nm, t, ta } from '@/lib/i18n';
 import { friendly, isRateLimited, optimistic, run } from '@/lib/run';
@@ -57,12 +59,47 @@ function StoryReplyBubble({ m, mine }: { m: Message; mine: boolean }) {
   );
 }
 
+/** Photo bubble: keeps the photo's real shape (max 240 wide, 320 tall), soft placeholder while it loads. */
+export function photoBox(a: number) {
+  const W = 240, H = 320, MIN = 120;
+  if (a >= 1) return { width: W, height: Math.max(MIN, Math.round(W / a)) };
+  const h = Math.min(H, Math.round(W / a));
+  return { width: Math.max(MIN, Math.round(h * a)), height: h };
+}
 function ChatImage({ path, mine }: { path: string; mine: boolean }) {
   const [uri, setUri] = useState<string | null>(null);
-  useEffect(() => { mediaUrl('chat', path).then(setUri); }, [path]);
-  return <View style={[{ width: 220, height: 170, overflow: 'hidden' }, bubble(mine, C.card)]}>
-    {uri && <Image source={{ uri }} style={{ flex: 1 }} contentFit="cover" transition={150} />}
+  const [a, setA] = useState(() => aspectCache.get(`chat/${path}`) ?? 0.8);
+  const [failed, setFailed] = useState(false);
+  useEffect(() => { let on = true; mediaUrl('chat', path).then((u) => { if (on) { setUri(u); if (!u) setFailed(true); } }); return () => { on = false; }; }, [path]);
+  return <View style={[{ ...photoBox(a), overflow: 'hidden', alignItems: 'center', justifyContent: 'center' }, bubble(mine, C.soft)]}>
+    {uri && <Image source={{ uri, cacheKey: `chat/${path}` }} style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }} contentFit="cover" transition={180}
+      onLoad={(e) => { const r = e.source.width / Math.max(1, e.source.height); aspectCache.set(`chat/${path}`, r); setA(r); }} onError={() => setFailed(true)} />}
+    {!uri && !failed && <ActivityIndicator color={C.muted} />}
+    {failed && <T v="tiny" color={C.muted}>{t('ما قدرنا نحمّل الصورة')}</T>}
   </View>;
+}
+
+/** A photo I'm sending: shows right away from the phone, with progress, and a retry if it fails. */
+type Pending = { key: string; file: { uri: string; mime: string; width?: number; height?: number }; viewOnce: boolean; failed: boolean };
+function PendingPhoto({ p, onRetry, onDrop }: { p: Pending; onRetry: () => void; onDrop: () => void }) {
+  const a = p.file.width && p.file.height ? p.file.width / p.file.height : 0.8;
+  return (
+    <View style={{ alignSelf: 'flex-end', gap: 4, alignItems: 'flex-end' }}>
+      <View style={[{ ...photoBox(a), overflow: 'hidden', alignItems: 'center', justifyContent: 'center' }, bubble(true, C.soft)]}>
+        <Image source={{ uri: p.file.uri }} style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, opacity: p.failed ? 0.5 : 0.75 }} contentFit="cover" blurRadius={p.viewOnce ? 18 : 0} />
+        {p.failed ? (
+          <Tap onPress={onRetry} accessibilityLabel={t('جرّب كمان مرة')} style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 14, height: 40, borderRadius: 20, backgroundColor: 'rgba(0,0,0,0.6)' }}>
+            <RotateCw size={16} color="#fff" /><T v="bold" color="#fff" style={{ fontSize: 13 }}>{t('جرّب كمان مرة')}</T>
+          </Tap>
+        ) : (
+          <View style={{ width: 46, height: 46, borderRadius: 23, backgroundColor: 'rgba(0,0,0,0.45)', alignItems: 'center', justifyContent: 'center' }}><ActivityIndicator color="#fff" /></View>
+        )}
+      </View>
+      {p.failed
+        ? <Tap onPress={onDrop} accessibilityLabel={t('احذفها')}><T v="tiny" color={C.danger}>{t('ما انبعتت · احذفها')}</T></Tap>
+        : <T v="tiny" color={C.faint}>{t('عم تنبعت…')}</T>}
+    </View>
+  );
 }
 
 function Dot({ d }: { d: number }) {
@@ -83,6 +120,7 @@ export default function Chat() {
   const [draft, setDraft] = useState('');
   const [sheet, setSheet] = useState(false);
   const [viewer, setViewer] = useState<string | null>(null);
+  const [gallery, setGallery] = useState<{ list: string[]; index: number } | null>(null);
   const [myState, setMyState] = useState<string>('active');
   const [people, setPeople] = useState<Record<string, { full_name: string; avatar_url: string | null }>>({});
   const [otherRead, setOtherRead] = useState<string | null>(null);
@@ -284,23 +322,39 @@ export default function Chat() {
     const { data, error } = await supabase.from('messages').insert({ conversation_id: id, sender_id: (profile?.id ?? ''), kind, body, media_url: media ?? null }).select().single();
     if (error) {
       if (kind === 'text' && body) setDraft((d) => d || body); // give the text back
-      Alert.alert(t('ما انبعتت'), myState === 'request' ? t('لازم تقبل الطلب أول.') : isRateLimited(error) ? friendly(error) : t('جرّب مرة ثانية.')); return;
+      if (kind === 'text' || kind === 'voice' || myState === 'request' || isRateLimited(error)) Alert.alert(t('ما انبعتت'), myState === 'request' ? t('لازم تقبل الطلب أول.') : isRateLimited(error) ? friendly(error) : t('جرّب مرة ثانية.'));
+      return false;
     }
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
     setMsgs((cur) => [data as Message, ...cur.filter((x) => x.id !== data.id)]);
+    return true;
   }
 
   const [uploading, setUploading] = useState(false);
+  const [pending, setPending] = useState<Pending[]>([]);
+  async function upload(p: Pending) {
+    setPending((cur) => cur.map((x) => (x.key === p.key ? { ...x, failed: false } : x)));
+    try {
+      const path = await uploadFile('chat', id, p.file);
+      const ok = await send(p.viewOnce ? 'view_once' : 'image', path);
+      if (!ok) throw new Error('send');
+      if (!p.viewOnce && p.file.width && p.file.height) aspectCache.set(`chat/${path}`, p.file.width / p.file.height);
+      setPending((cur) => cur.filter((x) => x.key !== p.key));
+    } catch {
+      setPending((cur) => cur.map((x) => (x.key === p.key ? { ...x, failed: true } : x)));
+    }
+  }
   async function sendPhoto(viewOnce: boolean, camera = false) {
     if (uploading) return;
-    try {
-      const f = await pickMedia({ camera });
-      if (!f) return;
-      setUploading(true);
-      const path = await uploadFile('chat', id, f);
-      await send(viewOnce ? 'view_once' : 'image', path);
-    } catch (e) { Alert.alert(t('ما انبعتت الصورة'), (e as Error).message); }
-    finally { setUploading(false); }
+    setUploading(true);
+    let f: Awaited<ReturnType<typeof pickMedia>> = null;
+    try { f = await pickMedia({ camera, crop: 'chat' }); } catch (e) { Alert.alert(t('ما انبعتت الصورة'), (e as Error).message); }
+    setUploading(false);
+    if (!f) return;
+    const p: Pending = { key: `${Date.now()}-${Math.random()}`, file: f, viewOnce, failed: false };
+    setPending((cur) => [...cur, p]);
+    list.current?.scrollToOffset({ offset: 0, animated: true });
+    upload(p);
   }
 
   const [recording, setRecording] = useState(false);
@@ -331,6 +385,15 @@ export default function Chat() {
     setAnswering(false);
     if (!r.ok) return;
     if (accept) setMyState('active'); else if (router.canGoBack()) router.back();
+  }
+
+  /** Every (still visible) photo of this chat, oldest first, opened at the one tapped. */
+  async function openGallery(msgId: string) {
+    const photos = visible.filter((x) => x.kind === 'image' && x.media_url && !x.deleted_at).slice().reverse();
+    const urls = await Promise.all(photos.map((x) => mediaUrl('chat', x.media_url!)));
+    const list: string[] = []; let index = 0;
+    photos.forEach((x, k) => { if (urls[k]) { if (x.id === msgId) index = list.length; list.push(urls[k]!); } });
+    if (list.length) setGallery({ list, index });
   }
 
   async function openOnce(m: Message) {
@@ -406,10 +469,15 @@ export default function Chat() {
           removeClippedSubviews={Platform.OS === 'android'}
           onEndReached={loadOlder}
           onEndReachedThreshold={0.3}
-          ListHeaderComponent={typing !== null ? (
-            <Animated.View entering={FadeIn} accessibilityLabel={conv?.kind === 'direct' ? t('عم يكتب…') : t('{0} عم يكتب…', [typing])} style={{ alignSelf: 'flex-start', backgroundColor: C.soft, borderRadius: 20, paddingHorizontal: 16, paddingVertical: 13, marginTop: 6 }}>
-              <TypingDots />
-            </Animated.View>
+          ListHeaderComponent={typing !== null || pending.length ? (
+            <View style={{ gap: 6 }}>
+              {pending.map((p) => <PendingPhoto key={p.key} p={p} onRetry={() => upload(p)} onDrop={() => setPending((cur) => cur.filter((x) => x.key !== p.key))} />)}
+              {typing !== null && (
+                <Animated.View entering={FadeIn} accessibilityLabel={conv?.kind === 'direct' ? t('عم يكتب…') : t('{0} عم يكتب…', [typing])} style={{ alignSelf: 'flex-start', backgroundColor: C.soft, borderRadius: 20, paddingHorizontal: 16, paddingVertical: 13, marginTop: 6 }}>
+                  <TypingDots />
+                </Animated.View>
+              )}
+            </View>
           ) : undefined}
           data={visible}
           keyExtractor={(m) => m.id}
@@ -466,7 +534,7 @@ export default function Chat() {
                       <T v="tiny" color={C.muted}>{people[m.sender_id!].full_name}</T>
                     </Row>
                   )}
-                  <Pressable onPress={() => tapMessage(m, async () => { if (m.kind === 'image' && m.media_url) setViewer(await mediaUrl('chat', m.media_url)); })}
+                  <Pressable onPress={() => tapMessage(m, () => { if (m.kind === 'image' && m.media_url) openGallery(m.id); })}
                     onLongPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {}); messageMenu(m); }} delayLongPress={320}
                     accessibilityHint={t('اكبس مرتين للايك، ومطوّل للتفاعلات')}>
                     {m.kind === 'image' && m.media_url ? <ChatImage path={m.media_url} mine={mine} /> :
@@ -571,6 +639,8 @@ export default function Chat() {
       <ReactionsSheet list={reactSheet ? reactions[reactSheet] ?? [] : null} people={people} me={profile?.id} onClose={() => setReactSheet(null)}
         onRemove={() => { const m = msgs.find((x) => x.id === reactSheet); const mineR = reactSheet && (reactions[reactSheet] ?? []).find((r) => r.user_id === profile?.id); if (m && mineR) react(m, mineR.emoji); }} />
 
+      <ImageViewer images={gallery?.list} index={gallery?.index ?? 0} onClose={() => setGallery(null)} />
+      {/* view-once photo: shown once, no saving or sharing */}
       <Modal visible={!!viewer} transparent animationType="fade" onRequestClose={() => setViewer(null)}>
         <Pressable onPress={() => setViewer(null)} style={{ flex: 1, backgroundColor: '#000', justifyContent: 'center' }}>
           {viewer && <Image source={{ uri: viewer }} style={{ width: '100%', height: '80%' }} contentFit="contain" />}

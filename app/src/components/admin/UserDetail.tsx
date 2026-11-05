@@ -107,7 +107,7 @@ export function UserDetail({ id, onChanged }: { id: string; onChanged?: () => vo
       {open ? (
         <Panel>
           <T v="bold">{open.title ?? open.members.map((m) => m.name).join('، ')}</T>
-          <ChatViewer conversationId={open.id} members={open.members} />
+          <ChatViewer conversationId={open.id} members={open.members} rightId={id} />
         </Panel>
       ) : (
         <View style={{ gap: 8 }}>

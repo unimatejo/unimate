@@ -1,9 +1,10 @@
 import { router } from 'expo-router';
+import { PullRefresh } from '@/components/PullRefresh';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Bell, BellOff, BookOpen, CalendarPlus, ScanLine, Clock, FlaskConical, MapPin, MessagesSquare, Video, EyeOff } from 'lucide-react-native';
 import { useEffect, useMemo, useState } from 'react';
-import { Alert, Linking, RefreshControl, ScrollView, View } from 'react-native';
-import Animated, { FadeInDown, LinearTransition, useAnimatedStyle, useSharedValue, withRepeat, withTiming } from 'react-native-reanimated';
+import { Alert, Linking, ScrollView, View } from 'react-native';
+import Animated, { FadeIn, useAnimatedStyle, useSharedValue, withRepeat, withTiming } from 'react-native-reanimated';
 
 import { GlyphTile, GRAD } from '@/components/Glyph';
 
@@ -105,7 +106,7 @@ export default function Schedule() {
 
   return (
     <Screen>
-      <ScrollView contentContainerStyle={{ padding: 18, gap: 16, paddingBottom: 130 }} refreshControl={<RefreshControl refreshing={loading} onRefresh={reload} />}>
+      <ScrollView contentContainerStyle={{ padding: 18, gap: 16, paddingBottom: 130 }} refreshControl={<PullRefresh onRefresh={reload} />}>
         <Row style={{ justifyContent: 'space-between' }}>
           <View>
             <T v="h1">{t('جدولي')}</T>
@@ -119,7 +120,7 @@ export default function Schedule() {
           </Row>
         </Row>
 
-        <Animated.View entering={FadeInDown.duration(450)} style={{ borderRadius: 28, overflow: 'hidden' }}>
+        <Animated.View entering={FadeIn.duration(220)} style={{ borderRadius: 28, overflow: 'hidden' }}>
           <LinearGradient colors={[C.primary, C.primaryDark === '#C2412A' ? '#FF8E73' : '#FF9A80']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={{ padding: 18, gap: 12 }}>
             <View style={{ position: 'absolute', top: -60, left: -40, width: 180, height: 180, borderRadius: 90, backgroundColor: 'rgba(255,255,255,0.16)' }} />
             <Row gap={12}>
@@ -179,7 +180,7 @@ export default function Schedule() {
           const done = isToday && nowMin >= en;
           const pct = live ? (nowMin - st) / (en - st) : 0;
           return (
-            <Animated.View key={m.id} entering={FadeInDown.delay(i * 60).springify().damping(16)} layout={LinearTransition} style={{ opacity: done || m.changed === 'cancelled' ? 0.55 : 1 }}>
+            <Animated.View key={m.id} entering={FadeIn.delay(i * 60).duration(220)} style={{ opacity: done || m.changed === 'cancelled' ? 0.55 : 1 }}>
               <Row gap={10} center={false}>
                 <View style={{ width: 50, alignItems: 'center', paddingTop: 6 }}>
                   <T v="bold" style={{ fontSize: 15 }}>{clock(m.starts_at, false)}</T>

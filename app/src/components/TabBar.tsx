@@ -5,7 +5,7 @@ import { router } from 'expo-router';
 import { CalendarDays, House, MessageCircle, User, Users } from 'lucide-react-native';
 import { useEffect, useState } from 'react';
 import { Keyboard, Platform, Pressable, View } from 'react-native';
-import Animated, { interpolate, useAnimatedStyle, useSharedValue, withSequence, withSpring, withTiming } from 'react-native-reanimated';
+import Animated, { interpolate, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useAuth } from '@/lib/auth';
@@ -22,13 +22,11 @@ const COLORS: Record<string, [string, string]> = {
 
 function TabItem({ name, on, onPress, badge = 0 }: { name: string; on: boolean; onPress: () => void; badge?: number }) {
   const v = useSharedValue(on ? 1 : 0);
-  const jump = useSharedValue(0);
   useEffect(() => {
-    v.value = withSpring(on ? 1 : 0, { damping: 15, stiffness: 190 });
-    if (on) jump.value = withSequence(withTiming(1, { duration: 140 }), withSpring(0, { damping: 6, stiffness: 220 }));
-  }, [on, v, jump]);
-  const pill = useAnimatedStyle(() => ({ opacity: v.value, transform: [{ scale: interpolate(v.value, [0, 1], [0.5, 1]) }] }));
-  const icon = useAnimatedStyle(() => ({ transform: [{ translateY: -jump.value * 7 }, { scale: 1 + jump.value * 0.2 }, { rotate: `${jump.value * -10}deg` }] }));
+    v.value = withTiming(on ? 1 : 0, { duration: 200 }); // quiet pill fade, no jump
+  }, [on, v]);
+  const pill = useAnimatedStyle(() => ({ opacity: v.value, transform: [{ scale: interpolate(v.value, [0, 1], [0.92, 1]) }] }));
+  const icon = useAnimatedStyle(() => ({}));
   const label = useAnimatedStyle(() => ({ opacity: v.value, maxWidth: interpolate(v.value, [0, 1], [0, 90]), marginStart: interpolate(v.value, [0, 1], [0, 7]) }));
   const Icon = ICONS[name] ?? House;
   return (
@@ -46,7 +44,7 @@ function TabItem({ name, on, onPress, badge = 0 }: { name: string; on: boolean; 
   );
 }
 
-/** Floating glass tab bar; the active tab gets its own gradient color and the icon jumps. */
+/** Floating glass tab bar; the active tab gets a solid pill that fades in. */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function TabBar({ state, emitter, navigateToTab, navigation }: any) {
   const insets = useSafeAreaInsets();

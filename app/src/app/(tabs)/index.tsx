@@ -1,9 +1,10 @@
 import { router, useFocusEffect } from 'expo-router';
+import { PullRefresh } from '@/components/PullRefresh';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Bell, BookOpen, CalendarDays, GraduationCap, MapPin, Navigation, PartyPopper, Repeat, Search, SearchCheck, ShoppingBag, Sparkles, Users } from 'lucide-react-native';
 import { useCallback, useEffect, useState } from 'react';
-import { RefreshControl, ScrollView, View, Platform } from 'react-native';
-import Animated, { Easing, FadeInDown, useAnimatedStyle, useSharedValue, withRepeat, withTiming } from 'react-native-reanimated';
+import { ScrollView, View, Platform } from 'react-native';
+import Animated, { FadeIn, Easing, useAnimatedStyle, useSharedValue, withRepeat, withTiming } from 'react-native-reanimated';
 
 import { AdBanner } from '@/components/AdBanner';
 import { GlyphTile, GRAD, Wiggle } from '@/components/Glyph';
@@ -68,7 +69,7 @@ export default function Home() {
 
   return (
     <Screen>
-      <ScrollView contentContainerStyle={{ padding: 18, gap: 18, paddingBottom: 130 }} refreshControl={<RefreshControl refreshing={loading} onRefresh={reload} />}>
+      <ScrollView contentContainerStyle={{ padding: 18, gap: 18, paddingBottom: 130 }} refreshControl={<PullRefresh onRefresh={reload} />}>
         <Row gap={12}>
           <View accessibilityLabel={t('شعار {0}', [nm(university) ?? t('الجامعة')])} style={{ width: 48, height: 48, borderRadius: 24, padding: 3, backgroundColor: university?.brand_color ?? C.blue }}>
             <View style={{ flex: 1, borderRadius: 21, backgroundColor: C.card, alignItems: 'center', justifyContent: 'center' }}>
@@ -83,7 +84,7 @@ export default function Home() {
           <IconButton label={t('الإشعارات')} badge={unread} onPress={() => router.push('/notifications')}><Wiggle trigger={unread}><Bell size={21} color={C.ink} /></Wiggle></IconButton>
         </Row>
 
-        <Animated.View entering={FadeInDown.duration(500)}>
+        <Animated.View entering={FadeIn.duration(220)}>
           <View style={{ borderRadius: 30, backgroundColor: '#101633', padding: 20, overflow: 'hidden', gap: 14 }}>
             <Glow color={C.blue} size={260} style={{ top: -120, left: -90 }} dur={8000} />
             <Glow color={C.pink} size={200} style={{ bottom: -100, left: 40 }} dur={10000} />
@@ -132,7 +133,7 @@ export default function Home() {
 
         <AdBanner placement="home_banner" />
 
-        <Animated.View entering={FadeInDown.delay(160).duration(500)}>
+        <Animated.View entering={FadeIn.delay(160).duration(220)}>
           <Card>
             <Row style={{ justifyContent: 'space-between', marginBottom: 6 }}>
               <T v="h3">{t('اليوم')}</T>

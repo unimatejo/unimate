@@ -1,7 +1,8 @@
 import { router } from 'expo-router';
+import { PullRefresh } from '@/components/PullRefresh';
 import { BookOpen, Check, MessageCircle, UserPlus } from 'lucide-react-native';
 import { useCallback, useEffect, useState } from 'react';
-import { Alert, RefreshControl, ScrollView, View } from 'react-native';
+import { Alert, ScrollView, View } from 'react-native';
 
 import { Avatar, Button, Chip, Field, Header, Row, Screen, T, Tap, Toggle } from '@/components/ui';
 import { useAuth } from '@/lib/auth';
@@ -97,7 +98,7 @@ export default function Study() {
   return (
     <Screen>
       <Header title={t('ندرس سوا')} subtitle={t('لاقي حدا من مادتك يدرس معك')} />
-      <ScrollView refreshControl={<RefreshControl refreshing={loading} onRefresh={load} />} contentContainerStyle={{ padding: 18, paddingTop: 4, gap: 14, paddingBottom: 60 }}>
+      <ScrollView refreshControl={<PullRefresh onRefresh={load} />} contentContainerStyle={{ padding: 18, paddingTop: 4, gap: 14, paddingBottom: 60 }}>
         {incoming.map((r) => (
           <Row key={r.id} gap={10} style={{ backgroundColor: C.violetSoft, borderRadius: 20, padding: 12 }}>
             <UserPlus size={20} color={C.violet} />

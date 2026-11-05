@@ -356,7 +356,7 @@ export default function CampusMap() {
               <View style={{ width: 8, height: 4, borderRadius: 4, backgroundColor: 'rgba(0,0,0,0.3)' }} />
             </View>
           </View>
-          <Animated.View entering={SlideInDown.springify().damping(18)} style={[{ position: 'absolute', left: 12, right: 12, bottom: 28, backgroundColor: C.card, borderRadius: 28, padding: 16, gap: 10 }, shadow]}>
+          <Animated.View entering={SlideInDown.duration(240)} style={[{ position: 'absolute', left: 12, right: 12, bottom: 28, backgroundColor: C.card, borderRadius: 28, padding: 16, gap: 10 }, shadow]}>
             {suggest === 'pin' ? (
               <>
                 <T v="h3">{t('اقترح مكان ناقص')}</T>
@@ -443,7 +443,7 @@ export default function CampusMap() {
         const m = prev ? Math.round(distM(prev, s) * 1.25) : null;
         const btn = { width: 50, height: 50, borderRadius: 25, alignItems: 'center', justifyContent: 'center' } as const;
         return (
-          <Animated.View entering={SlideInDown.springify().damping(18)} style={[{ position: 'absolute', left: 12, right: 12, bottom: 28, backgroundColor: C.card, borderRadius: 30, padding: 16, paddingTop: 10, gap: 12 }, shadow]}>
+          <Animated.View entering={SlideInDown.duration(240)} style={[{ position: 'absolute', left: 12, right: 12, bottom: 28, backgroundColor: C.card, borderRadius: 30, padding: 16, paddingTop: 10, gap: 12 }, shadow]}>
             <View style={{ alignSelf: 'center', width: 42, height: 5, borderRadius: 3, backgroundColor: C.line }} />
             <Row gap={12}>
               <GlyphTile icon={k.icon} colors={k.g} size={50} />
@@ -482,7 +482,7 @@ export default function CampusMap() {
       })()}
 
       {sel && !tour && (
-        <Animated.View entering={SlideInDown.springify().damping(18)} style={[{ position: 'absolute', left: 12, right: 12, bottom: 28, backgroundColor: C.card, borderRadius: 30, padding: 18, paddingTop: 10, gap: 12 }, shadow]}>
+        <Animated.View entering={SlideInDown.duration(240)} style={[{ position: 'absolute', left: 12, right: 12, bottom: 28, backgroundColor: C.card, borderRadius: 30, padding: 18, paddingTop: 10, gap: 12 }, shadow]}>
           <View style={{ alignSelf: 'center', width: 42, height: 5, borderRadius: 3, backgroundColor: C.line }} />
           <Row gap={12}>
             <GlyphTile icon={kindOf(sel.kind).icon} colors={kindOf(sel.kind).g} size={56} pop />

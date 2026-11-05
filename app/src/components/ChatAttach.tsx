@@ -6,7 +6,7 @@ import * as WebBrowser from 'expo-web-browser';
 import { BadgeCheck, BarChart3, Camera, Check, FileText, Image as ImageIcon, MapPin, Plus, Smile, Sticker, UserRound, X } from 'lucide-react-native';
 import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, FlatList, Linking, Modal, Platform, Pressable, ScrollView, TextInput, View } from 'react-native';
-import Animated, { FadeIn, SlideInDown } from 'react-native-reanimated';
+import Animated, { SlideInDown } from 'react-native-reanimated';
 
 import { canCutBackground, cutBackground } from '@/lib/stickerCut';
 import { AvatarCropper } from './AvatarCropper';
@@ -37,10 +37,12 @@ export function AttachSheet({ open, onClose, conv, send, onStickers }: { open: b
     setBusy(key);
     try { await fn(); } catch (e) { Alert.alert(t('ما انبعت'), e instanceof Error ? e.message : t('جرّب كمان مرة.')); } finally { setBusy(null); }
   }
+  // like WhatsApp / Instagram: the sheet closes, you pick, crop freely in the editor, then "ابعت"
   const photo = (camera: boolean) => run(camera ? 'camera' : 'photos', async () => {
-    const f = await pickMedia({ camera });
-    if (!f) return;
     onClose();
+    await new Promise((r) => setTimeout(r, Platform.OS === 'ios' ? 420 : 60)); // let the sheet's window close first
+    const f = await pickMedia({ camera, crop: 'chat' });
+    if (!f) return;
     await send({ kind: 'image', media: await uploadFile('chat', conv, f) });
   });
   const doc = () => run('doc', async () => {
@@ -99,7 +101,7 @@ function PollComposer({ open, onClose, onSend }: { open: boolean; onClose: () =>
   return (
     <Modal visible={open} transparent animationType="fade" onRequestClose={onClose}>
       <Pressable style={{ flex: 1, backgroundColor: 'rgba(14,20,48,0.45)' }} onPress={onClose} />
-      <Animated.View entering={SlideInDown.springify().damping(18)} style={{ backgroundColor: C.bg, borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: 18, gap: 10, paddingBottom: 40, maxHeight: '85%' }}>
+      <Animated.View entering={SlideInDown.duration(240)} style={{ backgroundColor: C.bg, borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: 18, gap: 10, paddingBottom: 40, maxHeight: '85%' }}>
         <T v="h3">{t('استطلاع رأي')}</T>
         <ScrollView contentContainerStyle={{ gap: 10 }} keyboardShouldPersistTaps="handled">
           <TextInput value={q} onChangeText={setQ} placeholder={t('السؤال، مثلاً متى نعمل الدراسة؟')} placeholderTextColor={C.faint} maxLength={140} keyboardAppearance={isDark ? 'dark' : 'light'} style={input} />
@@ -137,7 +139,7 @@ function ContactPicker({ open, onClose, onPick }: { open: boolean; onClose: () =
   return (
     <Modal visible={open} transparent animationType="fade" onRequestClose={onClose}>
       <Pressable style={{ flex: 1, backgroundColor: 'rgba(14,20,48,0.45)' }} onPress={onClose} />
-      <Animated.View entering={SlideInDown.springify().damping(18)} style={{ backgroundColor: C.bg, borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: 18, gap: 10, height: '75%' }}>
+      <Animated.View entering={SlideInDown.duration(240)} style={{ backgroundColor: C.bg, borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: 18, gap: 10, height: '75%' }}>
         <T v="h3">{t('ابعت حساب حدا')}</T>
         <TextInput value={q} onChangeText={setQ} placeholder={t('دوّر بالاسم أو اليوزر')} placeholderTextColor={C.faint} keyboardAppearance={isDark ? 'dark' : 'light'}
           style={{ minHeight: 46, borderRadius: 14, backgroundColor: C.field, paddingHorizontal: 14, fontFamily: F.body, fontSize: 15, color: C.ink, textAlign: ta }} />

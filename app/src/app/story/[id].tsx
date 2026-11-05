@@ -1,6 +1,4 @@
-import { Image } from 'expo-image';
 import { router, useLocalSearchParams } from 'expo-router';
-import { useVideoPlayer, VideoView } from 'expo-video';
 import { Eye, Heart, Plus, Send, Star, Trash2, X } from 'lucide-react-native';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Alert, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, TextInput, useWindowDimensions, View } from 'react-native';
@@ -20,18 +18,15 @@ import { timeAgo } from '@/lib/util';
 import { isAR, t, ta, rtlLayout } from '@/lib/i18n';
 import { optimistic } from '@/lib/run';
 import { toast } from '@/lib/toast';
+import { FramedMedia } from '@/components/FramedMedia';
+import type { MediaMeta } from '@/lib/cropper';
 
-type S = { id: string; media_url: string; kind: string; caption: string | null; created_at: string; duration_sec: number | null; overlays?: unknown };
+type S = { id: string; media_url: string; kind: string; caption: string | null; created_at: string; duration_sec: number | null; overlays?: unknown; meta?: MediaMeta | null };
 type Viewer = { viewer_id: string; liked: boolean; p: { full_name: string; avatar_url: string | null } | null };
 
-function StoryVideo({ uri, onEnd, onReady }: { uri: string; onEnd: () => void; onReady: () => void }) {
-  const player = useVideoPlayer(uri, (p) => { p.loop = false; p.play(); });
-  useEffect(() => {
-    const sub = player.addListener('playToEnd', onEnd);
-    const st = player.addListener('statusChange', ({ status }) => { if (status === 'readyToPlay' || status === 'error') onReady(); });
-    return () => { sub.remove(); st.remove(); };
-  }, [player, onEnd, onReady]);
-  return <VideoView player={player} style={{ position: 'absolute', top: 0, bottom: 0, left: 0, right: 0 }} contentFit="cover" nativeControls={false} />;
+/** a story video, framed and trimmed the way it was set in the crop editor; plays once with sound */
+function StoryVideo({ uri, meta, onEnd, onReady }: { uri: string; meta?: MediaMeta | null; onEnd: () => void; onReady: () => void }) {
+  return <FramedMedia uri={uri} kind="video" meta={meta} video={{ loop: false, muted: false, onEnd, onReady }} />;
 }
 
 /** Instagram-style story viewer: tap sides to move, hold to pause, video plays to the end, your own story shows who viewed it. */
@@ -67,12 +62,12 @@ export default function StoryViewer() {
     supabase.from('profiles').select('full_name, avatar_url').eq('id', id).maybeSingle().then(({ data }) => setAuthor(data));
     if (highlight) {
       supabase.from('highlights').select('title').eq('id', highlight).single().then(({ data }) => setHlName(data?.title ?? null));
-      supabase.from('highlight_items').select('added_at, s:stories(id, media_url, kind, caption, created_at, duration_sec, overlays)').eq('highlight_id', highlight).order('added_at')
+      supabase.from('highlight_items').select('added_at, s:stories(id, media_url, kind, caption, created_at, duration_sec, overlays, meta)').eq('highlight_id', highlight).order('added_at')
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         .then(({ data }) => { const list = ((data ?? []) as any[]).map((x) => x.s).filter(Boolean) as S[]; setItems(list); if (list.length === 0) close(); });
       return;
     }
-    supabase.from('stories').select('id, media_url, kind, caption, created_at, duration_sec, overlays').eq('author_id', id).gt('expires_at', new Date().toISOString()).order('created_at')
+    supabase.from('stories').select('id, media_url, kind, caption, created_at, duration_sec, overlays, meta').eq('author_id', id).gt('expires_at', new Date().toISOString()).order('created_at')
       .then(({ data }) => { const list = (data ?? []) as S[]; setItems(list); if (list.length === 0) close(); });
   }, [id, highlight]);
 
@@ -107,6 +102,7 @@ export default function StoryViewer() {
   }, [items, close]);
 
   const s = items?.[i];
+  const markReady = useCallback(() => setReady(true), []);
 
   useEffect(() => {
     if (!s || !profile) return;
@@ -187,8 +183,8 @@ export default function StoryViewer() {
     <GestureDetector gesture={pull}>
     <Animated.View style={[{ flex: 1, overflow: 'hidden', backgroundColor: '#000' }, sheet]}>
       {!uri && <View style={{ position: 'absolute', top: 0, bottom: 0, left: 0, right: 0, padding: 8 }}><Bone h={H - 16} r={28} style={{ opacity: 0.25 }} /></View>}
-      {uri && s?.kind === 'video' ? <StoryVideo key={s.id} uri={uri} onEnd={next} onReady={() => setReady(true)} />
-        : uri ? <Image key={uri} source={{ uri }} style={{ position: 'absolute', top: 0, bottom: 0, left: 0, right: 0 }} contentFit="cover" transition={150} onLoad={() => setReady(true)} onError={() => setReady(true)} /> : null}
+      {uri && s?.kind === 'video' ? <StoryVideo key={s.id} uri={uri} meta={s.meta} onEnd={next} onReady={markReady} />
+        : uri ? <FramedMedia key={uri} uri={uri} kind="image" meta={s?.meta} onImageLoad={markReady} /> : null}
       <Pressable style={{ position: 'absolute', top: 110, bottom: 130, width: '40%', ...(Platform.OS === 'web' ? (rtlLayout() ? { left: 0 } : { right: 0 }) : { end: 0 }) }} onPress={next} onLongPress={pause} onPressOut={resume} delayLongPress={200} accessibilityLabel={t('التالي')} />
       <Pressable style={{ position: 'absolute', top: 110, bottom: 130, width: '40%', ...(Platform.OS === 'web' ? (rtlLayout() ? { right: 0 } : { left: 0 }) : { start: 0 }) }} onPress={() => setI((x) => Math.max(0, x - 1))} onLongPress={pause} onPressOut={resume} delayLongPress={200} accessibilityLabel={t('السابق')} />
       {s && ready && <StoryOverlays items={cleanOverlays(s.overlays)} width={W} height={H} onOpen={pause} />}

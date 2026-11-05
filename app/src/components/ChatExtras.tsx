@@ -74,7 +74,7 @@ export function SheetModal({ open, onClose, children, style, dim = true }: { ope
       <GestureHandlerRootView style={{ flex: 1 }}>
         <Pressable style={{ flex: 1, backgroundColor: dim ? C.overlay : 'transparent' }} onPress={onClose} accessibilityLabel={t('إغلاق')} />
         <GestureDetector gesture={pan}>
-          <Animated.View entering={SlideInDown.springify().damping(SPRING.damping).stiffness(SPRING.stiffness)}
+          <Animated.View entering={SlideInDown.duration(240)}
             style={[{ backgroundColor: C.card, borderTopLeftRadius: 28, borderTopRightRadius: 28, borderWidth: 1, borderBottomWidth: 0, borderColor: C.line, padding: 18, paddingTop: 10, paddingBottom: insets.bottom + 22, gap: 12 }, style, a]}>
             <View style={{ alignSelf: 'center', width: 42, height: 5, borderRadius: 3, backgroundColor: C.line, marginBottom: 4 }} />
             {children}
@@ -95,7 +95,7 @@ export function ReactionChips({ list, mine, me, onPress }: { list: Reaction[]; m
   const kinds = [...new Set(list.map((r) => r.emoji))].slice(0, 3);
   const minePicked = list.some((r) => r.user_id === me);
   return (
-    <Animated.View entering={ZoomIn.springify().damping(14)} style={{ alignSelf: mine ? 'flex-start' : 'flex-end', marginTop: -12, marginHorizontal: 10, zIndex: 2 }}>
+    <Animated.View entering={ZoomIn.duration(240)} style={{ alignSelf: mine ? 'flex-start' : 'flex-end', marginTop: -12, marginHorizontal: 10, zIndex: 2 }}>
       <Tap onPress={onPress} haptic={false} accessibilityLabel={t('مين تفاعل')} hitSlop={10}
         style={{ flexDirection: 'row', alignItems: 'center', gap: 2, paddingHorizontal: 7, height: 24, borderRadius: 12, backgroundColor: C.soft, borderWidth: 2, borderColor: minePicked ? C.primary : C.bg }}>
         <T style={{ fontSize: 13 }}>{kinds.join('')}</T>
@@ -113,9 +113,9 @@ export function MessageMenu({ open, onClose, picked, onReact, actions }: {
   return (
     <Modal visible={open} transparent animationType="fade" onRequestClose={onClose}>
       <Pressable onPress={onClose} style={{ flex: 1, backgroundColor: C.overlay, justifyContent: 'center', padding: 24, gap: 12 }}>
-        <Animated.View entering={ZoomIn.springify().damping(SPRING.damping).stiffness(SPRING.stiffness)} style={[{ alignSelf: 'center', flexDirection: 'row', gap: 4, backgroundColor: C.card, borderRadius: 32, padding: 6, borderWidth: 1, borderColor: C.line }, shadow]}>
+        <Animated.View entering={ZoomIn.duration(240)} style={[{ alignSelf: 'center', flexDirection: 'row', gap: 4, backgroundColor: C.card, borderRadius: 32, padding: 6, borderWidth: 1, borderColor: C.line }, shadow]}>
           {REACTIONS.map((e, i) => (
-            <Animated.View key={e} entering={ZoomIn.delay(i * 30).springify().damping(14)}>
+            <Animated.View key={e} entering={ZoomIn.delay(i * 30).duration(240)}>
             <Tap onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {}); onReact(e); onClose(); }} scale={0.8} haptic={false} accessibilityLabel={e}
               style={{ width: 46, height: 46, borderRadius: 23, alignItems: 'center', justifyContent: 'center', backgroundColor: picked === e ? C.soft : 'transparent' }}>
               <T style={{ fontSize: 28, lineHeight: 34 }}>{e}</T>

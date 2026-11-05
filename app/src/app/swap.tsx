@@ -1,8 +1,9 @@
 import { router } from 'expo-router';
+import { PullRefresh } from '@/components/PullRefresh';
 import { ArrowLeftRight, CheckCircle2, Clock, MessageCircle, X } from 'lucide-react-native';
 import { useCallback, useEffect, useState } from 'react';
-import { Alert, RefreshControl, ScrollView, View } from 'react-native';
-import Animated, { FadeInDown } from 'react-native-reanimated';
+import { Alert, ScrollView, View } from 'react-native';
+import Animated, { FadeIn } from 'react-native-reanimated';
 
 import { Button, Chip, Empty, Header, Row, Screen, T, Tap } from '@/components/ui';
 import { useAuth } from '@/lib/auth';
@@ -95,12 +96,12 @@ export default function Swap() {
   return (
     <Screen>
       <Header title={t('تبديل الشعب')} subtitle={t('بنلاقيلك حدا بدّه التبديل بالعكس')} />
-      <ScrollView refreshControl={<RefreshControl refreshing={loading} onRefresh={load} />} contentContainerStyle={{ padding: 18, paddingTop: 4, gap: 14, paddingBottom: 60 }}>
+      <ScrollView refreshControl={<PullRefresh onRefresh={load} />} contentContainerStyle={{ padding: 18, paddingTop: 4, gap: 14, paddingBottom: 60 }}>
         {reqs.length > 0 && <T v="h3">{t('طلباتك')}</T>}
         {reqs.map((r) => {
           const partner = r.matched_with ? partners[r.matched_with] : null;
           return (
-            <Animated.View key={r.id} entering={FadeInDown} style={{ gap: 10, backgroundColor: r.status === 'matched' ? C.greenSoft : C.card, borderRadius: 22, padding: 14 }}>
+            <Animated.View key={r.id} entering={FadeIn.duration(220)} style={{ gap: 10, backgroundColor: r.status === 'matched' ? C.greenSoft : C.card, borderRadius: 22, padding: 14 }}>
               <Row gap={10}>
                 {r.status === 'matched' ? <CheckCircle2 size={20} color={C.green} /> : <Clock size={20} color={C.orange} />}
                 <T v="bold" style={{ flex: 1 }}>{courseName(r.course_id)}</T>

@@ -4,7 +4,7 @@ import { BarChart3, Check, ChevronRight, Clapperboard, FileText, Grid3x3, Heart,
 import { useCallback, useEffect, useState } from 'react';
 import * as Haptics from 'expo-haptics';
 import { Alert, Linking, Modal, Pressable, RefreshControl, ScrollView, Share, TextInput, useWindowDimensions, View, Platform } from 'react-native';
-import Animated, { FadeIn, FadeInDown, useAnimatedStyle, useSharedValue, withSequence, withSpring, withTiming } from 'react-native-reanimated';
+import Animated, { FadeIn, useAnimatedStyle, useSharedValue, withSequence, withSpring, withTiming } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Image } from 'expo-image';
@@ -222,9 +222,11 @@ export function ProfileView({ userId, onTitle, back }: { userId: string; onTitle
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [me, userId, mine]);
 
-  useEffect(() => { load(); }, [load]);
-  // refresh when coming back from edit profile / privacy
+  // loads on first focus and quietly refreshes when coming back from edit profile / privacy
+  // (no spinner: a programmatic pull-to-refresh spinner made the whole page jump down and up)
   useFocusEffect(useCallback(() => { load(); }, [load]));
+  const [pulling, setPulling] = useState(false);
+  const pull = useCallback(async () => { setPulling(true); try { await load(); } finally { setPulling(false); } }, [load]);
 
   const bump = (d: number) => setP((x) => (x ? { ...x, follower_count: Math.max(0, (x.follower_count ?? 0) + d) } : x));
 
@@ -326,7 +328,7 @@ export function ProfileView({ userId, onTitle, back }: { userId: string; onTitle
 
   return (
     <>
-      <ScrollView contentContainerStyle={{ paddingBottom: 130 }} refreshControl={<RefreshControl refreshing={loading} onRefresh={load} tintColor={C.muted} />}>
+      <ScrollView contentContainerStyle={{ paddingBottom: 130 }} refreshControl={<RefreshControl refreshing={pulling} onRefresh={pull} tintColor={C.muted} />}>
         <View style={{ paddingHorizontal: 20, paddingTop: 6, gap: 12 }}>
           {/* top bar like Instagram: username + badge, then create / activity / menu (mine) or more (others) */}
           <Row gap={4} style={{ minHeight: 48, marginHorizontal: -6 }}>
@@ -413,7 +415,7 @@ export function ProfileView({ userId, onTitle, back }: { userId: string; onTitle
           </Row>
 
           {socialsVisible && (p.instagram || p.snapchat) && (
-            <Animated.View entering={FadeInDown} style={{ flexDirection: 'row', gap: 12 }}>
+            <Animated.View entering={FadeIn.duration(220)} style={{ flexDirection: 'row', gap: 12 }}>
               {p.instagram && (
                 <Tap onPress={() => openSocial('instagram', p.instagram!)} scale={0.9} accessibilityLabel={t('افتح إنستغرام {0}', [p.instagram])} style={{ alignItems: 'center', gap: 4 }}>
                   <InstagramGlyph size={44} />
@@ -430,7 +432,7 @@ export function ProfileView({ userId, onTitle, back }: { userId: string; onTitle
           )}
         </View>
 
-        {suggest && <Animated.View entering={FadeInDown.springify().damping(SPRING.damping)} style={{ paddingTop: 14 }}><SuggestedPeople /></Animated.View>}
+        {suggest && <Animated.View entering={FadeIn.duration(220)} style={{ paddingTop: 14 }}><SuggestedPeople /></Animated.View>}
 
         {canSee && (hls.length > 0 || mine) && (
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 12, paddingHorizontal: 18, paddingTop: 16, paddingBottom: 6 }}>

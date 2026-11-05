@@ -68,7 +68,12 @@ export default function Conversations() {
       <Sheet open={!!open} onClose={() => setOpen(null)} title={open ? label(open) : ''}>
         {open && (
           <View style={{ gap: 10 }}>
-            <Muted>{[open.context_label, (open.members ?? []).map((m) => `${m.name}${m.username ? ` (⁦@${m.username}⁩)` : ''}${m.state === 'request' ? ` · ${t('طلب')}` : m.state === 'left' ? ` · ${t('طلع')}` : ''}`).join('، ')].filter(Boolean).join(' · ')}</Muted>
+            {/* groups can have dozens of members: show the count and a few names, not a wall of text */}
+            <Muted>{[open.context_label,
+              (open.members ?? []).length > 3
+                ? t('{0} عضو: {1}…', [String((open.members ?? []).length), (open.members ?? []).slice(0, 3).map((m) => m.name).join('، ')])
+                : (open.members ?? []).map((m) => `${m.name}${m.username ? ` (\u2066@${m.username}\u2069)` : ''}${m.state === 'request' ? ` · ${t('طلب')}` : m.state === 'left' ? ` · ${t('طلع')}` : ''}`).join('، '),
+            ].filter(Boolean).join(' · ')}</Muted>
             <T v="tiny" color={C.muted}>{t('بتوصلك الرسائل الجديدة لحالها وإنت فاتح.')}</T>
             <ChatViewer conversationId={open.id} members={open.members ?? []} />
           </View>

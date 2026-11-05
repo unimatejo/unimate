@@ -9,7 +9,9 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { ToastHost } from '@/components/Toast';
+import { ZoomHost } from '@/components/ZoomPhoto';
 import { WebAlertHost } from '@/components/WebAlert';
+import { MediaCropperHost } from '@/components/MediaCropper';
 import { useOtaUpdates } from '@/lib/ota';
 import { useWebPush } from '@/lib/webpush';
 import { AuthProvider, useAuth } from '@/lib/auth';
@@ -131,8 +133,10 @@ export default function RootLayout() {
         <AuthProvider>
           <StatusBar style={isDark ? 'light' : 'dark'} />
           <Gate />
+          <ZoomHost />
           <ToastHost />
           <WebAlertHost />
+          <MediaCropperHost />
         </AuthProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>

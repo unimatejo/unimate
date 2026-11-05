@@ -98,7 +98,7 @@ export function ScheduleScan({ onDone, autoOpen }: { onDone: () => void; autoOpe
 
       <Modal visible={!!found} transparent animationType="fade" onRequestClose={() => setFound(null)}>
         <Pressable style={{ flex: 1, backgroundColor: 'rgba(14,20,48,0.45)' }} onPress={() => setFound(null)} />
-        <Animated.View entering={SlideInDown.springify().damping(18)} style={{ backgroundColor: C.bg, borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: 18, gap: 12, paddingBottom: 40, maxHeight: '88%' }}>
+        <Animated.View entering={SlideInDown.duration(240)} style={{ backgroundColor: C.bg, borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: 18, gap: 12, paddingBottom: 40, maxHeight: '88%' }}>
           <T v="h3">{t('هاد اللي قرأناه')}</T>
           <T v="tiny" color={C.muted}>{t('شيل العلامة عن أي مادة غلط. بعد الحفظ بتقدر تعدّل أي وقت.')}</T>
           <ScrollView contentContainerStyle={{ gap: 10 }}>

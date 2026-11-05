@@ -148,7 +148,7 @@ export default function Welcome() {
           </Row>
         </View>
         <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ flexGrow: 1, padding: 22, gap: 18 }}>
-          <Animated.View key={step} entering={FadeInLeft.springify().damping(18)} exiting={FadeOutRight} style={{ gap: 18 }}>
+          <Animated.View key={step} entering={FadeInLeft.duration(240)} exiting={FadeOutRight} style={{ gap: 18 }}>
             {step === 0 && (
               <>
                 <View style={{ alignItems: 'center', gap: 12 }}>
@@ -163,7 +163,7 @@ export default function Welcome() {
                   {autoRows.map(([k, v], i) => (
                     <Row key={k} gap={12} style={{ minHeight: 56 }}>
                       {i < auto ? (
-                        <Animated.View entering={ZoomIn.springify()} style={{ width: 28, height: 28, borderRadius: 10, backgroundColor: C.green, alignItems: 'center', justifyContent: 'center' }}>
+                        <Animated.View entering={ZoomIn.duration(240)} style={{ width: 28, height: 28, borderRadius: 10, backgroundColor: C.green, alignItems: 'center', justifyContent: 'center' }}>
                           <Check size={16} color={C.white} strokeWidth={3} />
                         </Animated.View>
                       ) : <ActivityIndicator color={C.primary} style={{ width: 28 }} />}

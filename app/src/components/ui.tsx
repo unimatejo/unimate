@@ -8,7 +8,7 @@ import {
   ActivityIndicator, Platform, Pressable, StyleSheet, Text, TextInput, View,
   type PressableProps, type StyleProp, type TextInputProps, type TextProps, type TextStyle, type ViewStyle,
 } from 'react-native';
-import Animated, { useAnimatedStyle, useSharedValue, withRepeat, withSequence, withSpring, withTiming } from 'react-native-reanimated';
+import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { SafeAreaView, type Edge } from 'react-native-safe-area-context';
 
 import { ListSkeleton } from './Skeleton';
@@ -50,17 +50,18 @@ export function Card({ children, style, pad = 16 }: { children: ReactNode; style
   return <View style={[{ backgroundColor: C.card, borderRadius: R.lg, padding: pad }, shadow, style]}>{children}</View>;
 }
 
-// ---------- press with a soft spring ----------
+// ---------- press: a quiet dim (Instagram-like), no bounce ----------
 const AP = Animated.createAnimatedComponent(Pressable);
 export function Tap({ children, style, onPress, haptic = true, scale = 0.96, throttle = 450, ...p }: PressableProps & { style?: StyleProp<ViewStyle>; haptic?: boolean; scale?: number; throttle?: number; children: ReactNode }) {
-  const s = useSharedValue(1);
+  const s = useSharedValue(0); // 0 = resting, 1 = pressed
   const last = useRef(0); // ignore double presses so a screen never opens twice
-  const a = useAnimatedStyle(() => ({ transform: [{ scale: s.value }] }));
+  const to = Math.max(scale, 0.98); // barely shrinks; the dim carries the feedback
+  const a = useAnimatedStyle(() => ({ transform: [{ scale: 1 - (1 - to) * s.value }], opacity: 1 - 0.28 * s.value }));
   return (
     <AP
       {...p}
-      onPressIn={() => { s.value = withTiming(scale, { duration: 90 }); }}
-      onPressOut={() => { s.value = withSpring(1, { damping: 14, stiffness: 260 }); }}
+      onPressIn={() => { s.value = withTiming(1, { duration: 80 }); }}
+      onPressOut={() => { s.value = withTiming(0, { duration: 160 }); }}
       onPress={(e) => {
         const now = Date.now();
         if (throttle && now - last.current < throttle) return;
@@ -145,7 +146,7 @@ export function Segmented({ items, value, onChange, dark }: { items: string[]; v
   const pill = useAnimatedStyle(() => ({ width: w.value, transform: [{ translateX: x.value }] }));
   // the first tab sits at the "start" edge: right in Arabic, left in English
   const dir = rtlLayout() ? -1 : 1;
-  useEffect(() => { if (w.value) x.value = withSpring(dir * value * w.value, { damping: 18, stiffness: 220 }); }, [value, dir, w, x]);
+  useEffect(() => { if (w.value) x.value = withTiming(dir * value * w.value, { duration: 220 }); }, [value, dir, w, x]);
   return (
     <View
       onLayout={(e) => { const cw = (e.nativeEvent.layout.width - 8) / items.length; w.value = cw; x.value = dir * value * cw; }}
@@ -218,7 +219,7 @@ export const Field = forwardRef<ComponentRef<typeof TextInput>, TextInputProps &
 export function Toggle({ value, onChange, label, hint, icon, a11yLabel }: { value: boolean; onChange: (v: boolean) => void; label: string; hint?: string; icon?: ReactNode; a11yLabel?: string }) {
   // knob starts at the "start" edge when off and slides to the end when on, mirrored like iOS in Arabic
   const end = rtlLayout() ? -20 : 20;
-  const x = useAnimatedStyle(() => ({ transform: [{ translateX: withSpring(value ? end : 0, { damping: 16, stiffness: 240 }) }] }), [value, end]);
+  const x = useAnimatedStyle(() => ({ transform: [{ translateX: withTiming(value ? end : 0, { duration: 180 }) }] }), [value, end]);
   return (
     <Pressable onPress={() => { Haptics.selectionAsync().catch(() => {}); onChange(!value); }} accessibilityRole="switch" accessibilityLabel={a11yLabel ?? label} accessibilityHint={hint} accessibilityState={{ checked: value }}
       style={{ flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 62 }}>
@@ -267,11 +268,9 @@ export function ListRow({ icon, label, value, onPress, danger }: { icon?: ReactN
 
 /** Empty-state icon: soft gradient bubble that floats gently. */
 function FloatIcon({ children }: { children: ReactNode }) {
-  const t = useSharedValue(0);
-  useEffect(() => { t.value = withRepeat(withSequence(withTiming(1, { duration: 1700 }), withTiming(0, { duration: 1700 })), -1); }, [t]);
-  const a = useAnimatedStyle(() => ({ transform: [{ translateY: -6 * t.value }, { rotate: `${(t.value - 0.5) * 8}deg` }] }));
+  // still, like Instagram's empty states (it used to float and swing)
   return (
-    <Animated.View style={[{ width: 76, height: 76, borderRadius: 26, backgroundColor: C.primarySoft, alignItems: 'center', justifyContent: 'center', borderWidth: 6, borderColor: C.primarySoft, marginBottom: 6 }, a]}>
+    <Animated.View style={[{ width: 76, height: 76, borderRadius: 26, backgroundColor: C.primarySoft, alignItems: 'center', justifyContent: 'center', borderWidth: 6, borderColor: C.primarySoft, marginBottom: 6 }]}>
       {children}
     </Animated.View>
   );

@@ -5,7 +5,7 @@ import { StatusBar } from 'expo-status-bar';
 import { BookOpen, CalendarDays, GraduationCap, Lock, Mail, MessageCircle, Users } from 'lucide-react-native';
 import { useEffect, useState, type ReactNode } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, View, Alert } from 'react-native';
-import Animated, { Easing, FadeInDown, useAnimatedStyle, useSharedValue, withDelay, withRepeat, withTiming } from 'react-native-reanimated';
+import Animated, { FadeIn, Easing, useAnimatedStyle, useSharedValue, withDelay, withRepeat, withTiming } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Button, Field, Row, T } from '@/components/ui';
@@ -95,7 +95,7 @@ export default function Login() {
           </LinearGradient>
 
           <SafeAreaView edges={['bottom']} style={{ flex: 1, paddingHorizontal: 24, paddingTop: 26, paddingBottom: 16, gap: 18 }}>
-            <Animated.View entering={FadeInDown.delay(100).duration(500)} style={{ gap: 8 }}>
+            <Animated.View entering={FadeIn.delay(100).duration(220)} style={{ gap: 8 }}>
               <T v="h1">{t('جامعتك كلها بجيبتك')}</T>
               <T v="body" color={C.muted}>{t('جدولك بيطلع لحاله، ومجتمع جامعتك كله بمكان واحد، ورسائل بدون رقم جوال.')}</T>
             </Animated.View>
@@ -107,7 +107,7 @@ export default function Login() {
                 <Button kind="white" title={t('انسخ الرابط')} onPress={() => { try { navigator.clipboard?.writeText('https://app.unimate.my'); } catch { /* */ } Alert.alert(t('انسخ الرابط ✓'), 'https://app.unimate.my'); }} style={{ minHeight: 40 }} />
               </View>
             )}
-            <Animated.View entering={FadeInDown.delay(200).duration(500)} style={{ gap: 10 }}>
+            <Animated.View entering={FadeIn.delay(200).duration(220)} style={{ gap: 10 }}>
               {MS_READY && (
                 <>
                   <Button title={t('ادخل بحساب الجامعة (مايكروسوفت)')} loading={msBusy} disabled={mailBusy} onPress={microsoft} icon={<GraduationCap size={20} color={C.white} />} />

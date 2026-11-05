@@ -1,7 +1,8 @@
 import { router, useLocalSearchParams } from 'expo-router';
+import { PullRefresh } from '@/components/PullRefresh';
 import { Plus } from 'lucide-react-native';
 import { useCallback, useEffect, useState } from 'react';
-import { FlatList, RefreshControl, View } from 'react-native';
+import { FlatList, View } from 'react-native';
 
 import { AdBanner } from '@/components/AdBanner';
 import { LikesSheet } from '@/components/LikesSheet';
@@ -39,7 +40,7 @@ export default function SectionScreen() {
       <FlatList
         data={shown}
         keyExtractor={(p) => p.id}
-        refreshControl={<RefreshControl refreshing={loading} onRefresh={load} />}
+        refreshControl={<PullRefresh onRefresh={load} />}
         contentContainerStyle={{ padding: 18, paddingTop: 4, gap: 14, paddingBottom: 110 }}
         ListHeaderComponent={
           <View style={{ gap: 12 }}>

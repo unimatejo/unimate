@@ -20,18 +20,21 @@ import { normalize, timeAgo } from '@/lib/util';
 import { isAR, t, ta } from '@/lib/i18n';
 import { run } from '@/lib/run';
 
+// posts opened before show instantly when you come back (then refresh quietly)
+const seen = new Map<string, Post>();
+
 type Comment = { id: string; author_id: string; parent_id: string | null; body: string; created_at: string; author: { full_name: string; avatar_url: string | null; academic_title?: string | null; title_verified?: boolean } | null };
 
 export default function PostScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { profile } = useAuth();
   const insets = useSafeAreaInsets();
-  const [post, setPost] = useState<Post | null>(null);
+  const [post, setPost] = useState<Post | null>(() => seen.get(id) ?? null);
   const [comments, setComments] = useState<Comment[]>([]);
   const [draft, setDraft] = useState('');
   const [replyTo, setReplyTo] = useState<Comment | null>(null);
   const [likesOf, setLikesOf] = useState<Post | null>(null);
-  const [state, setState] = useState<'loading' | 'ok' | 'missing' | 'error'>('loading');
+  const [state, setState] = useState<'loading' | 'ok' | 'missing' | 'error'>(() => (seen.has(id) ? 'ok' : 'loading'));
 
   const load = useCallback(async () => {
     try {
@@ -43,7 +46,9 @@ export default function PostScreen() {
       ]);
       if (error) { setState((s) => (s === 'ok' ? s : 'error')); return; }
       if (!data) { setState('missing'); return; }
-      setPost((await withMine([data as unknown as Post], profile?.id))[0]);
+      const full = (await withMine([data as unknown as Post], profile?.id))[0];
+      seen.set(id, full);
+      setPost(full);
       // hide comments with my hidden words, or from people I blocked (my own always show)
       const words = (hw ?? []).map((x) => normalize(x.word)).filter(Boolean);
       const blocked = new Set((bl ?? []).map((x) => x.blocked_id));

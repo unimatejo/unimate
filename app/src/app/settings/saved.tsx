@@ -1,6 +1,7 @@
 import { Bookmark } from 'lucide-react-native';
+import { PullRefresh } from '@/components/PullRefresh';
 import { useCallback, useEffect, useState } from 'react';
-import { FlatList, RefreshControl } from 'react-native';
+import { FlatList } from 'react-native';
 
 import { LikesSheet } from '@/components/LikesSheet';
 import { PostCard } from '@/components/PostCard';
@@ -43,7 +44,7 @@ export default function Saved() {
       <FlatList
         data={posts}
         keyExtractor={(p) => p.id}
-        refreshControl={<RefreshControl refreshing={loading} onRefresh={load} />}
+        refreshControl={<PullRefresh onRefresh={load} />}
         contentContainerStyle={{ padding: 18, paddingTop: 4, gap: 14, paddingBottom: 60 }}
         renderItem={({ item }) => <PostCard post={item} onLikes={setLikesOf} compact />}
         ListEmptyComponent={loading ? <ListSkeleton n={3} kind="post" /> : <Empty icon={<Bookmark size={28} color={C.primary} />} title={t('ما حفظت إشي')} body={t('اضغط علامة الحفظ على أي ملخص أو منشور وبيطلع هون.')} />}

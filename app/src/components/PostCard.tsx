@@ -5,9 +5,8 @@ import { useEffect, useState } from 'react';
 import * as WebBrowser from 'expo-web-browser';
 import { ActionSheetIOS, Alert, Platform, ScrollView, View } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withSequence, withSpring, withTiming } from 'react-native-reanimated';
-import { Image } from 'expo-image';
 
-import { ImageViewer } from './ImageViewer';
+import { ZoomableImage, aspectCache } from './ZoomPhoto';
 import { PostVideo } from './PostVideo';
 import { TitleBadge, titledName } from './TitleBadge';
 import { Avatar, Row, T, Tag, Tap } from './ui';
@@ -21,36 +20,13 @@ import type { Post } from '@/lib/types';
 import { timeAgo } from '@/lib/util';
 import { nm, t } from '@/lib/i18n';
 
-/** Post photo: one tap opens it full screen, double tap likes (like Instagram). */
-function Photo({ path, onDoubleTap, width }: { path: string; onDoubleTap: () => void; width?: number }) {
+/** One photo page: shows the signed URL, cached under its storage path so the same photo appears instantly elsewhere. */
+function Photo({ path, width, height, onDoubleTap, onAspect, radius }: { path: string; width: number; height: number; onDoubleTap: () => void; onAspect?: (a: number) => void; radius?: number }) {
   const [uri, setUri] = useState<string | null>(null);
-  const [open, setOpen] = useState(false);
-  const [lastTap, setLastTap] = useState(0);
-  const [tapTimer, setTapTimer] = useState<ReturnType<typeof setTimeout> | null>(null);
-  const burst = useSharedValue(0);
-  const burstStyle = useAnimatedStyle(() => ({ opacity: burst.value, transform: [{ scale: 0.6 + burst.value * 0.6 }] }));
-  useEffect(() => { mediaUrl('posts', path).then(setUri); }, [path]);
-  function press() {
-    const now = Date.now();
-    if (now - lastTap < 280) {
-      if (tapTimer) clearTimeout(tapTimer);
-      setTapTimer(null); setLastTap(0);
-      burst.value = withSequence(withTiming(1, { duration: 140 }), withTiming(1, { duration: 350 }), withTiming(0, { duration: 220 }));
-      onDoubleTap();
-      return;
-    }
-    setLastTap(now);
-    setTapTimer(setTimeout(() => setOpen(true), 290));
-  }
+  useEffect(() => { let on = true; mediaUrl('posts', path).then((u) => { if (on) setUri(u); }); return () => { on = false; }; }, [path]);
   return (
-    <>
-      <Tap haptic={false} scale={0.99} throttle={0} onPress={press} accessibilityLabel={t('افتح الصورة')}
-        style={width ? { width, height: 300, backgroundColor: C.primarySoft, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' } : { marginHorizontal: 10, height: 260, borderRadius: 20, backgroundColor: C.primarySoft, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' }}>
-        {uri && <Image source={{ uri }} style={{ position: 'absolute', top: 0, bottom: 0, left: 0, right: 0 }} contentFit="cover" transition={200} />}
-        <Animated.View style={burstStyle} pointerEvents="none"><Heart size={90} color="#fff" fill="#fff" /></Animated.View>
-      </Tap>
-      <ImageViewer uri={open ? uri : null} onClose={() => setOpen(false)} />
-    </>
+    <ZoomableImage uri={uri} cacheKey={`posts/${path}`} onDoubleTap={onDoubleTap} onAspect={onAspect} radius={radius}
+      style={{ width, height, backgroundColor: C.soft }} />
   );
 }
 
@@ -100,24 +76,38 @@ function Poll({ postId, options }: { postId: string; options: string[] }) {
   );
 }
 
-/** Several photos: swipe between them like Instagram, with dots and a 1/n counter. */
+/** Photos like Instagram: the first photo sets the shape (between 4:5 and 1.91:1), swipe between several with dots. */
 function Photos({ paths, onDoubleTap }: { paths: string[]; onDoubleTap: () => void }) {
   const [w, setW] = useState(0);
   const [i, setI] = useState(0);
-  if (paths.length === 1) return <Photo path={paths[0]} onDoubleTap={onDoubleTap} />;
+  const [aspect, setAspect] = useState(() => aspectCache.get(`posts/${paths[0]}`) ?? 1);
+  const h = useSharedValue(0);
+  const clampA = (a: number) => Math.min(1.91, Math.max(0.8, a));
+  useEffect(() => { if (w) h.value = h.value ? withTiming(w / clampA(aspect), { duration: 220 }) : w / clampA(aspect); }, [w, aspect, h]);
+  const box = useAnimatedStyle(() => ({ height: h.value }));
+  const height = w ? w / clampA(aspect) : 0;
   return (
-    <View style={{ marginHorizontal: 10, borderRadius: 20, overflow: 'hidden' }} onLayout={(e) => setW(e.nativeEvent.layout.width)}>
-      {w > 0 && (
-        <ScrollView horizontal pagingEnabled showsHorizontalScrollIndicator={false} onMomentumScrollEnd={(e) => setI(Math.round(Math.abs(e.nativeEvent.contentOffset.x) / w))}>
-          {paths.map((p) => <Photo key={p} path={p} onDoubleTap={onDoubleTap} width={w} />)}
-        </ScrollView>
+    <View style={{ marginHorizontal: 10, borderRadius: 20, overflow: 'hidden', backgroundColor: C.soft }} onLayout={(e) => setW(Math.round(e.nativeEvent.layout.width))}>
+      <Animated.View style={[{ minHeight: 120 }, box]}>
+        {w > 0 && (paths.length === 1
+          ? <Photo path={paths[0]} width={w} height={Math.max(height, 1)} onDoubleTap={onDoubleTap} onAspect={(a) => setAspect(a)} />
+          : (
+            <ScrollView horizontal pagingEnabled showsHorizontalScrollIndicator={false} scrollEventThrottle={16}
+              onScroll={(e) => setI(Math.round(Math.abs(e.nativeEvent.contentOffset.x) / w))}>
+              {paths.map((p, k) => <Photo key={p} path={p} width={w} height={Math.max(height, 1)} onDoubleTap={onDoubleTap} onAspect={k === 0 ? (a) => setAspect(a) : undefined} />)}
+            </ScrollView>
+          ))}
+      </Animated.View>
+      {paths.length > 1 && (
+        <>
+          <View pointerEvents="none" style={{ position: 'absolute', top: 10, right: 10, paddingHorizontal: 9, paddingVertical: 3, borderRadius: 10, backgroundColor: 'rgba(0,0,0,0.5)' }}>
+            <T v="tiny" color="#fff">{i + 1}/{paths.length}</T>
+          </View>
+          <View pointerEvents="none" style={{ position: 'absolute', bottom: 10, left: 0, right: 0, flexDirection: 'row', justifyContent: 'center', gap: 5 }}>
+            {paths.map((p, k) => <View key={p} style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: k === i ? '#fff' : 'rgba(255,255,255,0.5)' }} />)}
+          </View>
+        </>
       )}
-      <View style={{ position: 'absolute', top: 10, right: 10, paddingHorizontal: 9, paddingVertical: 3, borderRadius: 10, backgroundColor: 'rgba(0,0,0,0.5)' }}>
-        <T v="tiny" color="#fff">{i + 1}/{paths.length}</T>
-      </View>
-      <View style={{ position: 'absolute', bottom: 10, left: 0, right: 0, flexDirection: 'row', justifyContent: 'center', gap: 5 }}>
-        {paths.map((p, k) => <View key={p} style={{ width: k === i ? 16 : 6, height: 6, borderRadius: 3, backgroundColor: k === i ? '#fff' : 'rgba(255,255,255,0.55)' }} />)}
-      </View>
     </View>
   );
 }

@@ -4,7 +4,7 @@ import {
   BadgeCheck, Ban, Bell, KeyRound, Palette, Search, Bookmark, ChevronLeft, CircleHelp, EyeOff, FileText, Lock, LogOut, MessageCircle, Shield, Star, Trash2, UserPen, UserPlus, Users, Info, ShieldCheck, GraduationCap } from 'lucide-react-native';
 import { useEffect, useState, type ReactNode } from 'react';
 import { Alert, ScrollView, TextInput, View } from 'react-native';
-import Animated, { FadeInDown } from 'react-native-reanimated';
+import Animated, { FadeIn } from 'react-native-reanimated';
 
 import { titleLabel } from '@/components/TitleBadge';
 import { Avatar, Header, IconTile, Row, Screen, T, Tap } from '@/components/ui';
@@ -18,7 +18,7 @@ import { flip, isAR, nm, t, ta } from '@/lib/i18n';
 
 function Group({ title, children, delay = 0 }: { title: string; children: ReactNode; delay?: number }) {
   return (
-    <Animated.View entering={FadeInDown.delay(delay)} style={{ gap: 8 }}>
+    <Animated.View entering={FadeIn.delay(delay).duration(220)} style={{ gap: 8 }}>
       <T v="small" color={C.muted} style={{ paddingHorizontal: 6 }}>{title}</T>
       {/* shadow on the outer box, clipping on the inner one (iOS drops shadows on clipped views) */}
       <View style={[{ borderRadius: 22, backgroundColor: C.card }, shadow]}><View style={{ borderRadius: 22, overflow: 'hidden' }}>{children}</View></View>

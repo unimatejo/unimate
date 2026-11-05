@@ -116,7 +116,7 @@ export const C = { ...({ midnight: MIDNIGHT, black: BLACK, light: LIGHT }[themeP
 export const THEMES = { midnight: MIDNIGHT, black: BLACK, light: LIGHT };
 
 /** Soft spring for everything that moves (≈300ms, no bounce-back wobble). */
-export const SPRING = { damping: 22, stiffness: 260, mass: 0.9 };
+export const SPRING = { damping: 32, stiffness: 260, mass: 0.9 }; // critically damped: settles without overshoot
 
 export const F = {
   display: 'IBMPlexSansArabic_700Bold',

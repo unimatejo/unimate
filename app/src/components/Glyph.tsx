@@ -2,7 +2,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import type { LucideIcon } from 'lucide-react-native';
 import { useEffect } from 'react';
 import { View, type StyleProp, type ViewStyle } from 'react-native';
-import Animated, { Easing, useAnimatedStyle, useSharedValue, withDelay, withRepeat, withSequence, withSpring, withTiming } from 'react-native-reanimated';
+import Animated, { Easing, useAnimatedStyle, useSharedValue, withDelay, withSequence, withTiming } from 'react-native-reanimated';
 
 /** Gradient pairs for icon tiles (top-left -> bottom-right). */
 export const GRAD = {
@@ -26,13 +26,13 @@ export type GradName = keyof typeof GRAD;
 export function GlyphTile({ icon: Icon, colors = GRAD.blue, size = 48, live, pop, delay = 0, fill, style }: {
   icon: LucideIcon; colors?: readonly [string, string] | readonly string[]; size?: number; live?: boolean; pop?: boolean; delay?: number; fill?: boolean; style?: StyleProp<ViewStyle>;
 }) {
-  const t = useSharedValue(0);
-  const s = useSharedValue(pop ? 0.4 : 1);
+  // calm: no idle swinging; `pop` is a short fade-in without bounce. (`live` kept for API compatibility.)
+  void live;
+  const s = useSharedValue(pop ? 0 : 1);
   useEffect(() => {
-    if (pop) s.value = withDelay(delay, withSpring(1, { damping: 9, stiffness: 180 }));
-    if (live) t.value = withDelay(delay, withRepeat(withSequence(withTiming(1, { duration: 1600, easing: Easing.inOut(Easing.quad) }), withTiming(0, { duration: 1600, easing: Easing.inOut(Easing.quad) })), -1));
-  }, [live, pop, delay, s, t]);
-  const a = useAnimatedStyle(() => ({ transform: [{ translateY: -3 * t.value }, { rotate: `${(t.value - 0.5) * 6}deg` }, { scale: s.value }] }));
+    if (pop) s.value = withDelay(delay, withTiming(1, { duration: 220, easing: Easing.out(Easing.cubic) }));
+  }, [pop, delay, s]);
+  const a = useAnimatedStyle(() => ({ opacity: s.value, transform: [{ scale: 0.94 + 0.06 * s.value }] }));
   const r = Math.round(size * 0.32);
   return (
     <Animated.View style={[{ width: size, height: size, borderRadius: r, shadowColor: colors[1], shadowOpacity: 0.38, shadowRadius: size * 0.22, shadowOffset: { width: 0, height: size * 0.14 }, elevation: 6 }, a, style]}>
@@ -46,13 +46,13 @@ export function GlyphTile({ icon: Icon, colors = GRAD.blue, size = 48, live, pop
 
 /** One-shot wiggle for an icon (bell ring, heart pop...). Re-run by changing `trigger`. */
 export function Wiggle({ children, trigger, kind = 'ring' }: { children: React.ReactNode; trigger?: unknown; kind?: 'ring' | 'pop' }) {
+  // the bell no longer swings; a heart "pop" stays as a small, non-bouncy pulse
   const v = useSharedValue(0);
   useEffect(() => {
     v.value = 0;
-    v.value = kind === 'ring'
-      ? withSequence(withTiming(1, { duration: 80 }), withTiming(-1, { duration: 120 }), withTiming(0.7, { duration: 110 }), withTiming(-0.5, { duration: 100 }), withTiming(0, { duration: 120 }))
-      : withSequence(withTiming(1, { duration: 140 }), withSpring(0, { damping: 6 }));
+    if (kind === 'ring') return;
+    v.value = withSequence(withTiming(1, { duration: 120 }), withTiming(0, { duration: 180 }));
   }, [trigger, kind, v]);
-  const a = useAnimatedStyle(() => kind === 'ring' ? { transform: [{ rotate: `${v.value * 18}deg` }] } : { transform: [{ scale: 1 + v.value * 0.35 }] });
+  const a = useAnimatedStyle(() => kind === 'ring' ? {} : { transform: [{ scale: 1 + v.value * 0.2 }] });
   return <Animated.View style={a}>{children}</Animated.View>;
 }

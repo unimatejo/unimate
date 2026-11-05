@@ -2,7 +2,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { MailCheck } from 'lucide-react-native';
 import { useEffect, useRef, useState, type ComponentRef } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, Text, TextInput, View } from 'react-native';
-import Animated, { FadeInDown, useAnimatedStyle, useSharedValue, withSequence, withTiming } from 'react-native-reanimated';
+import Animated, { FadeIn, useAnimatedStyle, useSharedValue, withSequence, withTiming } from 'react-native-reanimated';
 
 import { Button, Header, Screen, T } from '@/components/ui';
 import { sendEmailCode, verifyEmailCode } from '@/lib/auth';
@@ -37,7 +37,7 @@ export default function Verify() {
     <Screen>
       <Header title="" />
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1, paddingHorizontal: 24, gap: 22 }}>
-        <Animated.View entering={FadeInDown.duration(500)} style={{ gap: 12 }}>
+        <Animated.View entering={FadeIn.duration(220)} style={{ gap: 12 }}>
           <View style={{ width: 64, height: 64, borderRadius: 22, backgroundColor: C.primarySoft, alignItems: 'center', justifyContent: 'center' }}>
             <MailCheck size={30} color={C.primary} />
           </View>
