@@ -120,7 +120,10 @@ export default function EditProfile() {
       full_name: name.trim(), ...(changingUser ? { username: u } : {}), bio: bio.trim().slice(0, 150), study_year: year,
       college_id: col, major_id: maj,
     }).eq('id', profile.id);
-    if (!error) await supabase.rpc('set_my_socials', { p_instagram: igH || null, p_snapchat: snH || null });
+    if (!error) {
+      const { error: se } = await supabase.rpc('set_my_socials', { p_instagram: igH || null, p_snapchat: snH || null });
+      if (se && /socials_blocked/.test(se.message)) Alert.alert(t('حسابات التواصل'), t('الإدارة منعت إضافة حسابات تواصل على بروفايلك. للاستفسار تواصل مع الدعم.'));
+    }
     setSaving(false);
     if (error) {
       reportError(new Error(`profile save: ${error.code} ${error.message}`));

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { View } from 'react-native';
+import { Alert, View } from 'react-native';
 
 import { Avatar, Field, Row, T } from '../ui';
 import { ChatViewer } from './ChatViewer';
@@ -25,6 +25,28 @@ export function UserDetail({ id, onChanged }: { id: string; onChanged?: () => vo
   const { data: acad, reload: reloadAcad } = useLoad<{ academic_title: string | null; title_verified: boolean; account_type: string }>(
     () => supabase.from('profiles').select('academic_title, title_verified, account_type').eq('id', id).single(), [id]);
   const [pickTitle, setPickTitle] = useState(false);
+  // Instagram / Snapchat on the profile (icons + bio): admins can remove them, and stop new ones
+  const { data: soc, reload: reloadSoc } = useLoad<{ instagram: string | null; snapchat: string | null; blocked: boolean }>(
+    () => supabase.rpc('admin_socials_state', { p_user: id }), [id]);
+  const [socBusy, setSocBusy] = useState(false);
+  async function clearSocials(block: boolean) {
+    const ok = await confirm(block ? t('تشيل حساباته وتمنعه يضيفها؟') : t('تشيل حسابات التواصل؟'),
+      block ? t('بتنشال حسابات إنستغرام وسناب من الأيقونات ومن النبذة، وما بيقدر يرجّعها. بيوصله إشعار.') : t('بتنشال حسابات إنستغرام وسناب من الأيقونات ومن النبذة. بيوصله إشعار.'),
+      t('شيلها'));
+    if (!ok) return;
+    setSocBusy(true);
+    const { data, error } = await supabase.rpc('admin_clear_socials', { p_user: id, p_block: block });
+    setSocBusy(false);
+    if (error) { Alert.alert(t('ما زبط'), error.message); return; }
+    done(); reloadSoc(); reload(); onChanged?.();
+    const d = data as { bio_changed: boolean } | null;
+    Alert.alert(t('انشالت ✓'), d?.bio_changed ? t('وكمان انشالت الحسابات من النبذة.') : t('النبذة ما كان فيها حسابات.'));
+  }
+  async function unblockSocials() {
+    if (!(await confirm(t('تسمحله يضيف حساباته؟'), t('بيرجع يقدر يحط إنستغرام وسناب.'), t('اسمح')))) return;
+    await supabase.rpc('admin_unblock_socials', { p_user: id });
+    done(); reloadSoc();
+  }
   // bad words in group chats: strikes and the current mute
   const { data: strikes, reload: reloadStrikes } = useLoad<{ count: number; until: string | null; level: number | null; recent: { word: string; at: string }[] }>(
     () => supabase.rpc('admin_chat_strikes', { target: id }), [id]);
@@ -89,6 +111,20 @@ export function UserDetail({ id, onChanged }: { id: string; onChanged?: () => vo
         }} />
         {u.avatar_url && <Act label={t('شيل الصورة')} onPress={removeAvatar} />}
       </Actions>
+      <Section title={t('حسابات التواصل')} />
+      <Panel>
+        <Row gap={8} style={{ flexWrap: 'wrap' }}>
+          <Pill label={soc?.instagram ? `Instagram: \u2066@${soc.instagram}\u2069` : t('ما في إنستغرام')} tone={soc?.instagram ? 'violet' : ''} />
+          <Pill label={soc?.snapchat ? `Snapchat: \u2066@${soc.snapchat}\u2069` : t('ما في سناب')} tone={soc?.snapchat ? 'orange' : ''} />
+          {soc?.blocked && <Pill label={t('ممنوع يضيف حسابات')} tone="red" />}
+        </Row>
+        <Muted>{t('بتنشال من أيقونات البروفايل ومن النبذة (روابط، @يوزر، «انستا: …»).')}</Muted>
+        <Actions>
+          <Act label={t('شيل الحسابات')} loading={socBusy} onPress={() => clearSocials(false)} />
+          {!soc?.blocked && <Act label={t('شيل وامنعه يضيفها')} kind="danger" onPress={() => clearSocials(true)} />}
+          {soc?.blocked && <Act label={t('اسمحله يضيفها')} kind="green" onPress={unblockSocials} />}
+        </Actions>
+      </Panel>
       <Section title={t('مخالفات الجروبات')} />
       <Panel>
         <Row gap={8} style={{ flexWrap: 'wrap' }}>
