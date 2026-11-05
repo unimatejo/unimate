@@ -1900,4 +1900,7 @@ export const EN: Record<string, string> = {
   "اللي بيشوف قصتك بيقدر يكبس عليه ويضيف صورته على نفس الموضوع.": "People who see your story can tap it and add their own photo on the same prompt.",
   "تاريخ ووقت العدّاد": "Countdown date and time",
   "وصلت للحد، احذف شي قبل ما تضيف": "You've hit the limit — remove something before adding more",
+  "الحساب خاص. تابعه عشان تشوف القائمة.": "This account is private. Follow it to see the list.",
+  "صاحب الحساب مخفي قائمة المتابعين.": "This account hides its followers list.",
+  "صاحب الحساب مخفي قائمة اللي بيتابعهم.": "This account hides who it follows.",
 };

@@ -35,7 +35,7 @@ export default function Privacy() {
         <Box title={t('الحساب')}>
           <Toggle icon={ic(<Lock size={18} color={C.violet} />)} label={t('حساب خاص')} hint={t('بس اللي بتقبلهم بيشوفوا منشوراتك بالساحة وستوريّاتك')} value={p.is_private} onChange={(v) => patch({ is_private: v })} />
           <Toggle icon={ic(<Users size={18} color={C.primary} />)} label={t('خبّي قائمة المتابِعين')} hint={t('الرقم بيضل ظاهر، الأسماء لا')} value={p.hide_followers} onChange={(v) => patch({ hide_followers: v })} />
-          <Toggle icon={ic(<Users size={18} color={C.green} />)} label={t('خبّي قائمة اللي بتتابعهم')} value={p.hide_following} onChange={(v) => patch({ hide_following: v })} />
+          <Toggle icon={ic(<Users size={18} color={C.green} />)} label={t('خبّي قائمة اللي بتتابعهم')} hint={t('الرقم بيضل ظاهر، الأسماء لا')} value={p.hide_following} onChange={(v) => patch({ hide_following: v })} />
           <Toggle icon={ic(<Heart size={18} color={C.pink} />)} label={t('خبّي عدد اللايكات')} hint={t('على منشوراتك، إنت بس بتشوفه')} value={p.hide_like_counts} onChange={(v) => patch({ hide_like_counts: v })} />
           <Toggle icon={ic(<Activity size={18} color={C.green} />)} label={t('إظهار حالة النشاط')} hint={t('صحابك بيشوفوا إذا إنت نشط هلأ أو آخر مرة كنت فيها. إذا سكّرتها، ما بتشوف حالة حدا كمان.')} value={p.show_activity !== false} onChange={(v) => patch({ show_activity: v })} />
         </Box>

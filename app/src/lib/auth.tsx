@@ -152,8 +152,30 @@ export async function signInWithMicrosoftAndCourses() {
   let r = await signInWithMicrosoft(TEAMS_SCOPES);
   if ('error' in r && r.error?.message === 'consent') r = await signInWithMicrosoft();
   const token = (r as { data?: { session?: { provider_token?: string | null } | null } }).data?.session?.provider_token;
-  if (token) importTeamsInBackground(token);
+  if (token) { importTeamsInBackground(token); importMsPhoto(token); }
   return r;
+}
+
+/**
+ * First Microsoft sign-in: use the university profile photo as the avatar (only if they have none, and only once —
+ * if they remove it later, it stays removed).
+ */
+export async function importMsPhoto(token?: string | null) {
+  if (!token) return;
+  try {
+    const res = await fetch('https://graph.microsoft.com/v1.0/me/photos/360x360/$value', { headers: { Authorization: `Bearer ${token}` } });
+    if (!res.ok) return; // no photo on the account
+    const { data: claimed } = await supabase.rpc('ms_photo_claim');
+    if (!claimed) return;
+    const buf = await res.arrayBuffer();
+    const { data: u } = await supabase.auth.getUser();
+    const uid = u.user?.id; if (!uid) return;
+    const path = `${uid}/ms-${Date.now()}.jpg`;
+    const { error } = await supabase.storage.from('avatars').upload(path, buf, { contentType: res.headers.get('content-type') ?? 'image/jpeg', upsert: true });
+    if (error) return;
+    const url = supabase.storage.from('avatars').getPublicUrl(path).data.publicUrl;
+    await supabase.from('profiles').update({ avatar_url: url }).eq('id', uid);
+  } catch { /* the photo is a nice-to-have */ }
 }
 
 /** Import Teams courses without making the student wait; tell them when it's done. */

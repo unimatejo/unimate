@@ -372,11 +372,17 @@ export function ProfileView({ userId, onTitle, back }: { userId: string; onTitle
               )}
             </View>
             <View style={{ flex: 1, flexDirection: 'row' }}>
-              {([[p.post_count, t('منشور'), true, null], [p.follower_count, t('متابِع'), mine || !p.hide_followers, 'followers'], [p.following_count, t('متابَع'), mine || !p.hide_following, 'following']] as [number, string, boolean, string | null][]).map(([n, l, vis, type]) => (
-                <Tap key={l} haptic={false} scale={0.95} disabled={!vis || !type || !canSee}
-                  onPress={() => router.push({ pathname: '/follows', params: { user: userId, type: type ?? 'followers', name: p.full_name } })}
+              {([[p.post_count, t('منشور'), true, null], [p.follower_count, t('متابِع'), mine || !p.hide_followers, 'followers'], [p.following_count, t('متابَع'), mine || !p.hide_following, 'following']] as [number, string, boolean, string | null][]).map(([n, l, open, type]) => (
+                // like Instagram: the number always shows; the list opens only if it isn't hidden and you can see the account
+                <Tap key={l} haptic={false} scale={0.98} disabled={!type}
+                  onPress={() => {
+                    if (!type) return;
+                    if (!canSee) { toast(t('الحساب خاص. تابعه عشان تشوف القائمة.')); return; }
+                    if (!open) { toast(type === 'followers' ? t('صاحب الحساب مخفي قائمة المتابعين.') : t('صاحب الحساب مخفي قائمة اللي بيتابعهم.')); return; }
+                    router.push({ pathname: '/follows', params: { user: userId, type, name: p.full_name } });
+                  }}
                   style={{ flex: 1, alignItems: 'center', minHeight: 48, justifyContent: 'center' }} accessibilityLabel={`${n} ${l}`}>
-                  {vis ? <T style={{ fontFamily: F.title, fontSize: 18 }}>{(n ?? 0).toLocaleString(LOCALE)}</T> : <Lock size={17} color={C.faint} style={{ height: 27 }} />}
+                  <T style={{ fontFamily: F.title, fontSize: 18 }}>{(n ?? 0).toLocaleString(LOCALE)}</T>
                   <T v="tiny" color={C.muted}>{l}</T>
                 </Tap>
               ))}

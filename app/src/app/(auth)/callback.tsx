@@ -4,7 +4,7 @@ import { ActivityIndicator, View } from 'react-native';
 
 import { Button, Screen, T } from '@/components/ui';
 import { supabase } from '@/lib/supabase';
-import { importTeamsInBackground, importTeamsWithToken, retryMicrosoftWithoutTeams, takePendingTeamsImport } from '@/lib/auth';
+import { importMsPhoto, importTeamsInBackground, importTeamsWithToken, retryMicrosoftWithoutTeams, takePendingTeamsImport } from '@/lib/auth';
 import { getPref, setPref } from '@/lib/prefs';
 import { C } from '@/lib/theme';
 import { t } from '@/lib/i18n';
@@ -34,6 +34,7 @@ export default function Callback() {
       if (r.error) { setError(t('ما زبط الدخول بهالرابط. افتح الرابط على نفس التلفون اللي طلبت منه، أو اطلب رابط جديد.')); return; }
       // web: coming back from "bring my courses from Teams"
       const fromLogin = getPref('ms_teams_login'); setPref('ms_teams_login', '');
+      importMsPhoto(r.data?.session?.provider_token);
       if (takePendingTeamsImport()) {
         const token = r.data?.session?.provider_token;
         if (fromLogin) { if (token) importTeamsInBackground(token); router.replace('/'); return; } // first sign-in: don't make them wait
