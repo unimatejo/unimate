@@ -2379,4 +2379,6 @@ export const EN: Record<string, string> = {
   "هالفصل": "This term",
   "معدلك {0} · من {1} طالب": "Your GPA {0} · out of {1} students",
   "رح يصير مشرف: البلاغات، فحص المحتوى، إيقاف الحسابات، توثيق الأساتذة والدعم. ما بيشوف المحادثات الخاصة غير المبلّغ عنها، وما بيعدّل الجامعات أو الإعلانات أو الإشعارات العامة.": "They'll be a moderator: reports, content checks, suspending accounts, professor titles and support. They only see private chats that were reported, and can't change universities, ads or broadcast notifications.",
+  "افتح المنشور": "Open post",
+  "المنشور مش متوفر، يمكن انحذف أو صاحبه خلّاه خاص.": "This post isn't available. It may have been deleted or made private.",
 };

@@ -9,6 +9,7 @@ import Animated, { FadeIn, FadeInUp, useAnimatedStyle, useSharedValue, withDelay
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { OnlineDot } from '@/components/chat/OnlineDot';
+import { PostShareBubble } from '@/components/chat/PostShareBubble';
 import { pingInboxTyping, useActivityLine } from '@/lib/presence';
 import { TitleBadge } from '@/components/profile/TitleBadge';
 import { AttachSheet, ContactBubble, FileBubble, LocationBubble, PollBubble, StickerBubble, StickerPanel, saveSticker, type Outgoing } from '@/components/chat/ChatAttach';
@@ -563,7 +564,7 @@ export default function Chat() {
             const endOfRun = !newer || newer.sender_id !== m.sender_id || new Date(newer.created_at).getTime() - new Date(m.created_at).getTime() > 5 * 60000;
             const seenDirect = otherRead && otherRead >= m.created_at;
             if (m.kind === 'system') return <View>{sep && <DateSep iso={m.created_at} />}<Animated.View entering={FadeIn} style={{ alignSelf: 'center', backgroundColor: C.soft, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 5 }}><T v="tiny" color={C.ink2}>{m.body}</T></Animated.View></View>;
-            const plain = !['image', 'voice', 'story_reply', 'sticker', 'file', 'location', 'contact', 'poll', 'view_once'].includes(m.kind) || ((m.kind === 'image' || m.kind === 'voice' || m.kind === 'file') && !m.media_url);
+            const plain = !['image', 'voice', 'story_reply', 'post_share', 'sticker', 'file', 'location', 'contact', 'poll', 'view_once'].includes(m.kind) || ((m.kind === 'image' || m.kind === 'voice' || m.kind === 'file') && !m.media_url);
             return (
               <View>
                 {sep && <DateSep iso={m.created_at} />}
@@ -580,6 +581,7 @@ export default function Chat() {
                     {m.kind === 'image' && m.media_url ? <ChatImage path={m.media_url} mine={mine} /> :
                      m.kind === 'voice' && m.media_url ? <VoiceBubble path={m.media_url} seconds={Number(m.body) || 0} mine={mine} /> :
                      m.kind === 'story_reply' ? <StoryReplyBubble m={m} mine={mine} /> :
+                     m.kind === 'post_share' ? <PostShareBubble m={m} mine={mine} /> :
                      m.kind === 'sticker' ? <StickerBubble m={m} /> :
                      m.kind === 'file' && m.media_url ? <FileBubble m={m} mine={mine} /> :
                      m.kind === 'location' ? <LocationBubble m={m} mine={mine} /> :

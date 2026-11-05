@@ -9,6 +9,7 @@ import { Act, Panel, confirm, promptText, Muted } from './kit';
 import { ContactBubble, FileBubble, LocationBubble, PollBubble, StickerBubble } from '@/components/chat/ChatAttach';
 import { bubble, DateSep, inkOn, ReactionChips, type Reaction } from '@/components/chat/ChatExtras';
 import { VoiceBubble } from '@/components/chat/Voice';
+import { PostShareBubble } from '@/components/chat/PostShareBubble';
 import { supabase } from '@/lib/supabase';
 import { C, F } from '@/lib/theme';
 import { t } from '@/lib/i18n';
@@ -134,7 +135,7 @@ export function ChatViewer({ conversationId, members, presetReason, rightId }: {
           </View>
         );
         const src = m.media_url ? (/^https?:/.test(m.media_url) ? m.media_url : media[m.media_url]) : undefined;
-        const plain = !['image', 'voice', 'sticker', 'file', 'location', 'contact', 'poll', 'view_once'].includes(m.kind) || ((m.kind === 'image' || m.kind === 'voice' || m.kind === 'file') && !m.media_url);
+        const plain = !['image', 'voice', 'post_share', 'sticker', 'file', 'location', 'contact', 'poll', 'view_once'].includes(m.kind) || ((m.kind === 'image' || m.kind === 'voice' || m.kind === 'file') && !m.media_url);
         return (
           <View key={m.id}>
             {sep && <DateSep iso={m.created_at} />}
@@ -154,6 +155,7 @@ export function ChatViewer({ conversationId, members, presetReason, rightId }: {
                  m.kind === 'location' ? <LocationBubble m={m} mine={mine} /> :
                  m.kind === 'contact' ? <ContactBubble m={m} mine={mine} /> :
                  m.kind === 'poll' ? <PollBubble m={m} mine={mine} /> :
+                 m.kind === 'post_share' ? <PostShareBubble m={m} mine={mine} /> :
                  plain ? (
                   <View style={[{ paddingHorizontal: 14, paddingVertical: 10 }, bubble(mine)]}>
                     {m.kind === 'story_reply' && <T v="tiny" color={inkOn(mine)} style={{ opacity: 0.7 }}>{t('ردّ على ستوري')}</T>}
