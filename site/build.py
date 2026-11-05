@@ -63,9 +63,9 @@ def page(path, title, body, desc, lang='ar'):
 def docpage(path, title, items, lang='ar'):
     s = ''.join(f'<section><h2>{html.escape(a)}</h2><p>{html.escape(b)}</p></section>' for a, b in items)
     if lang == 'en':
-        page(path, f'{title} · UniMate', f'<main class="doc"><h1>{title}</h1><p class="date">Last updated: November 2026</p>{s}</main>', f'UniMate {title.lower()}', 'en')
+        page(path, f'{title} · UniMate', f'<main class="doc"><h1>{title}</h1><p class="date">Last updated: 5 November 2026</p>{s}</main>', f'UniMate {title.lower()}', 'en')
     else:
-        page(path, f'{title} · يونيميت', f'<main class="doc"><h1>{title}</h1><p class="date">آخر تحديث: تشرين الثاني 2026</p>{s}</main>', f'{title} لتطبيق يونيميت')
+        page(path, f'{title} · يونيميت', f'<main class="doc"><h1>{title}</h1><p class="date">آخر تحديث: 5 تشرين الثاني 2026</p>{s}</main>', f'{title} لتطبيق يونيميت')
 
 page('', 'يونيميت · جامعتك كلها بتطبيق واحد', """<main><div class="hero"><h1>جامعتك كلها<br><span>بتطبيق واحد</span></h1>
 <p>جدولك بيرتّب حاله، زملاؤك بشعبتك ودفعتك، ملخصات وسوق ومفقودات، ورسائل وستوري. لطلاب الجامعات الأردنية بإيميل الجامعة.</p>
