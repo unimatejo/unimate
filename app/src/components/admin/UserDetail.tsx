@@ -29,23 +29,18 @@ export function UserDetail({ id, onChanged }: { id: string; onChanged?: () => vo
   const { data: soc, reload: reloadSoc } = useLoad<{ instagram: string | null; snapchat: string | null; blocked: boolean }>(
     () => supabase.rpc('admin_socials_state', { p_user: id }), [id]);
   const [socBusy, setSocBusy] = useState(false);
-  async function clearSocials(block: boolean) {
-    const ok = await confirm(block ? t('تشيل حساباته وتمنعه يضيفها؟') : t('تشيل حسابات التواصل؟'),
-      block ? t('بتنشال حسابات إنستغرام وسناب من الأيقونات ومن النبذة، وما بيقدر يرجّعها. بيوصله إشعار.') : t('بتنشال حسابات إنستغرام وسناب من الأيقونات ومن النبذة. بيوصله إشعار.'),
+  async function clearSocials() {
+    const ok = await confirm(t('تشيل حسابات التواصل؟'),
+      t('بتنشال حسابات إنستغرام وسناب من البروفايل ومن النبذة. إذا رجع دخل على حسابه بيقدر يضيفها عادي.'),
       t('شيلها'));
     if (!ok) return;
     setSocBusy(true);
-    const { data, error } = await supabase.rpc('admin_clear_socials', { p_user: id, p_block: block });
+    const { data, error } = await supabase.rpc('admin_clear_socials', { p_user: id });
     setSocBusy(false);
     if (error) { Alert.alert(t('ما زبط'), error.message); return; }
     done(); reloadSoc(); reload(); onChanged?.();
     const d = data as { bio_changed: boolean } | null;
     Alert.alert(t('انشالت ✓'), d?.bio_changed ? t('وكمان انشالت الحسابات من النبذة.') : t('النبذة ما كان فيها حسابات.'));
-  }
-  async function unblockSocials() {
-    if (!(await confirm(t('تسمحله يضيف حساباته؟'), t('بيرجع يقدر يحط إنستغرام وسناب.'), t('اسمح')))) return;
-    await supabase.rpc('admin_unblock_socials', { p_user: id });
-    done(); reloadSoc();
   }
   // bad words in group chats: strikes and the current mute
   const { data: strikes, reload: reloadStrikes } = useLoad<{ count: number; until: string | null; level: number | null; recent: { word: string; at: string }[] }>(
@@ -116,13 +111,10 @@ export function UserDetail({ id, onChanged }: { id: string; onChanged?: () => vo
         <Row gap={8} style={{ flexWrap: 'wrap' }}>
           <Pill label={soc?.instagram ? `Instagram: \u2066@${soc.instagram}\u2069` : t('ما في إنستغرام')} tone={soc?.instagram ? 'violet' : ''} />
           <Pill label={soc?.snapchat ? `Snapchat: \u2066@${soc.snapchat}\u2069` : t('ما في سناب')} tone={soc?.snapchat ? 'orange' : ''} />
-          {soc?.blocked && <Pill label={t('ممنوع يضيف حسابات')} tone="red" />}
         </Row>
-        <Muted>{t('بتنشال من أيقونات البروفايل ومن النبذة (روابط، @يوزر، «انستا: …»).')}</Muted>
+        <Muted>{t('للي ما بيقدر يدخل على حسابه: بتنشال من البروفايل ومن النبذة (روابط، @يوزر، «انستا: …»)، وبيقدر يرجّعها لما يدخل.')}</Muted>
         <Actions>
-          <Act label={t('شيل الحسابات')} loading={socBusy} onPress={() => clearSocials(false)} />
-          {!soc?.blocked && <Act label={t('شيل وامنعه يضيفها')} kind="danger" onPress={() => clearSocials(true)} />}
-          {soc?.blocked && <Act label={t('اسمحله يضيفها')} kind="green" onPress={unblockSocials} />}
+          <Act label={t('شيل الحسابات')} loading={socBusy} onPress={clearSocials} />
         </Actions>
       </Panel>
       <Section title={t('مخالفات الجروبات')} />

@@ -2291,4 +2291,6 @@ export const EN: Record<string, string> = {
   "ممنوع يضيف حسابات": "Blocked from adding accounts",
   "وكمان انشالت الحسابات من النبذة.": "Accounts were also removed from the bio.",
   "الإدارة منعت إضافة حسابات تواصل على بروفايلك. للاستفسار تواصل مع الدعم.": "The admins blocked adding social accounts to your profile. Contact support if you have questions.",
+  "بتنشال حسابات إنستغرام وسناب من البروفايل ومن النبذة. إذا رجع دخل على حسابه بيقدر يضيفها عادي.": "Instagram and Snapchat are removed from the profile and the bio. If they sign back in, they can add them again.",
+  "للي ما بيقدر يدخل على حسابه: بتنشال من البروفايل ومن النبذة (روابط، @يوزر، «انستا: …»)، وبيقدر يرجّعها لما يدخل.": "For someone who can't get into their account: removed from the profile and bio (links, @handles, \"insta: …\"); they can add them back when they sign in.",
 };
