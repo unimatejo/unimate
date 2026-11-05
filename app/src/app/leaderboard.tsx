@@ -58,7 +58,12 @@ export default function Leaderboard() {
 
   return (
     <Screen>
-      <Header title={t('لوحة الشرف')} subtitle={t('الأكثر مساعدة لزملائهم')} />
+      <Header title={t('لوحة الشرف')} subtitle={t('الأكثر مساعدة لزملائهم')}
+        right={<Tap onPress={() => router.push('/honor')} accessibilityRole="button" accessibilityLabel={t('المتفوقين')}
+          style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: C.card, borderRadius: 999, paddingHorizontal: 12, height: 40 }}>
+          <Image source={require('../../assets/emoji3d/trophy_3d.png')} style={{ width: 22, height: 22 }} contentFit="contain" />
+          <T v="small" style={{ fontFamily: F.bodyBold }}>{t('المتفوقين')}</T>
+        </Tap>} />
       <ScrollView contentContainerStyle={{ paddingHorizontal: 18, gap: 14, paddingBottom: insets.bottom + 120 }} refreshControl={<PullRefresh onRefresh={load} />}>
         <Segmented items={[t('كليتي'), t('الجامعة')]} value={scope} onChange={setScope} />
         <Row gap={8}>

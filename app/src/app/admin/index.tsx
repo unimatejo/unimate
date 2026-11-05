@@ -27,6 +27,7 @@ const SECTIONS: Sec[] = [
   { key: 'support', label: t('الدعم'), icon: LifeBuoy, color: C.green, badge: (s) => s.tickets_open },
   { key: 'ads', label: t('الإعلانات'), icon: Megaphone, color: C.orange },
   { key: 'study-rules', label: t('قواعد الدراسة'), icon: Calculator, color: C.blue },
+  { key: 'grades', label: t('علامات الجامعة'), icon: GraduationCap, color: '#F5A900' },
   { key: 'campus', label: t('الجامعات والخرائط'), icon: Map, color: C.green, badge: (s) => s.aliases_pending + s.places_pending },
   { key: 'offers', label: t('العروض'), icon: BadgePercent, color: C.pink },
   { key: 'notify', label: t('إرسال إشعار'), icon: Send, color: C.primary },

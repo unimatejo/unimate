@@ -1,7 +1,9 @@
 import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
-import { ChevronDown, Download, GraduationCap, Plus, Target } from 'lucide-react-native';
+import { ChevronDown, ChevronLeft, Download, GraduationCap, Plus, Target } from 'lucide-react-native';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Image } from 'expo-image';
+import { router } from 'expo-router';
 import { Alert, KeyboardAvoidingView, Platform, ScrollView, View } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
 
@@ -14,7 +16,7 @@ import { DEFAULT_SCALE, cumulative, gradeFor, neededAverage, round2, semesterGpa
 import { run } from '@/lib/run';
 import { supabase } from '@/lib/supabase';
 import { C, F } from '@/lib/theme';
-import { t } from '@/lib/i18n';
+import { flip, t } from '@/lib/i18n';
 
 const STANDING_LABEL = {
   excellent: [t('ممتاز'), GRAD.green], very_good: [t('جيد جداً'), GRAD.blue], good: [t('جيد'), GRAD.teal],
@@ -174,6 +176,16 @@ export default function Gpa() {
       <Header title={t('معدلي')} subtitle={t('بيضل إلك بس، ما حدا بيشوفه')} />
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
         <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ padding: 18, paddingTop: 4, gap: 14, paddingBottom: 120 }}>
+          {/* the honor board: official GPAs from the university */}
+          <Tap onPress={() => router.push('/honor')} scale={0.98} accessibilityRole="button" accessibilityLabel={t('شوف ترتيبك بين المتفوقين')}
+            style={{ flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: C.card, borderRadius: 22, padding: 12, borderWidth: 1, borderColor: '#F5A90055' }}>
+            <Image source={require('../../assets/emoji3d/trophy_3d.png')} style={{ width: 40, height: 40 }} contentFit="contain" />
+            <View style={{ flex: 1 }}>
+              <T v="bodyMd">{t('شوف ترتيبك بين المتفوقين')}</T>
+              <T v="tiny" color={C.muted}>{t('ترتيب المعدلات الرسمي على تخصصك وكليتك والجامعة')}</T>
+            </View>
+            <ChevronLeft size={18} color={C.muted} style={flip} />
+          </Tap>
           {/* hero */}
           <Animated.View entering={FadeIn.duration(220)} style={{ borderRadius: 28, overflow: 'hidden' }}>
             <LinearGradient colors={(st?.[1] ?? GRAD.indigo) as unknown as [string, string]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={{ padding: 20, gap: 14 }}>

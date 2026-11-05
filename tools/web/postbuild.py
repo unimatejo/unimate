@@ -27,6 +27,8 @@ ht += open(os.path.join(app, 'web/htaccess-extra')).read() + '\nAddType applicat
 spa = 'RewriteCond %{REQUEST_FILENAME} !-f\nRewriteCond %{REQUEST_FILENAME} !-d\nRewriteRule ^ index.html [L]'
 assert spa in ht, 'spa fallback not found'
 ht = ht.replace(spa, 'RewriteCond %{REQUEST_URI} ^/_expo/static/js/\nRewriteCond %{REQUEST_FILENAME} !-f\nRewriteRule ^ recover.js [L]\n' + spa, 1)
+# no one can put the app inside their own page (clickjacking); browsers stick to https
+ht += '<IfModule mod_headers.c>\n  Header always set Content-Security-Policy "frame-ancestors \'self\'"\n  Header always set Strict-Transport-Security "max-age=31536000"\n  Header always set Permissions-Policy "camera=(self), microphone=(self), geolocation=(self)"\n</IfModule>\n'
 ht += '<Files "recover.js">\n  Header set Cache-Control "no-store"\n</Files>\n'
 open(os.path.join(d, 'recover.js'), 'w').write(
   "try{var k='um_recover',n=+(sessionStorage.getItem(k)||0);"
