@@ -4,7 +4,7 @@
  * Results are rounded to 2 decimals, like a Jordanian transcript.
  */
 export type ScaleRow = { g: string; p: number };
-export type GradeRow = { credit_hours: number; grade: string | null; target_grade?: string | null };
+type GradeRow = { credit_hours: number; grade: string | null; target_grade?: string | null };
 export type Base = { hours: number; gpa: number };
 
 export const DEFAULT_SCALE: ScaleRow[] = [
@@ -14,7 +14,7 @@ export const DEFAULT_SCALE: ScaleRow[] = [
 ];
 
 /** Academic standing (typical Jordanian bands), highest first. */
-export const STANDING: { min: number; key: 'excellent' | 'very_good' | 'good' | 'pass' | 'warning' }[] = [
+const STANDING: { min: number; key: 'excellent' | 'very_good' | 'good' | 'pass' | 'warning' }[] = [
   { min: 3.65, key: 'excellent' },
   { min: 3.0, key: 'very_good' },
   { min: 2.5, key: 'good' },
@@ -23,7 +23,6 @@ export const STANDING: { min: number; key: 'excellent' | 'very_good' | 'good' | 
 ];
 
 export const round2 = (n: number) => Math.round((n + Number.EPSILON) * 100) / 100;
-export const GRADE_RE = /^[A-DF][+-]?$|^P$/;
 
 const pointsOf = (g: string | null | undefined, scale: ScaleRow[]) => (g && g !== 'P' ? scale.find((s) => s.g === g)?.p ?? null : null);
 

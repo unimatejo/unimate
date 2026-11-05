@@ -23,13 +23,13 @@ export type MeetingChange = {
 
 export const ymd = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 /** Sunday of the week the schedule shows (after Thursday it shows next week). */
-export function weekStart(now = new Date()) {
+function weekStart(now = new Date()) {
   const dow = now.getDay();
   const sun = new Date(now); sun.setHours(0, 0, 0, 0); sun.setDate(now.getDate() - dow + (dow > 4 ? 7 : 0));
   return sun;
 }
 
-export type AcademicEvent = {
+type AcademicEvent = {
   id: string; section_id: string | null; owner_id: string | null; kind: string; title: string;
   starts_at: string; location: string | null; course_name?: string | null;
 };

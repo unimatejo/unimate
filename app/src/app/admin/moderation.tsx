@@ -34,7 +34,7 @@ function Preview({ q }: { q: Q }) {
 }
 
 /**
- * Content the automatic checks held back (bad words, or a photo flagged by the AI).
+ * Content the automatic checks held back (bad words, or a photo flagged by the image check).
  * Approve = it goes live as if nothing happened. Remove = it stays hidden (and you can warn the author).
  */
 export default function Moderation() {

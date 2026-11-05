@@ -29,7 +29,7 @@ import { useScreenTimer } from '@/lib/perf';
 type Rel = 'none' | 'pending' | 'accepted';
 
 /** Open the Instagram / Snapchat app on that profile, or the website if the app isn't installed. */
-export function openSocial(site: 'instagram' | 'snapchat', handle: string) {
+function openSocial(site: 'instagram' | 'snapchat', handle: string) {
   // people paste "@name", full links or spaces — keep only the handle
   const clean = handle.trim().replace(/^https?:\/\/(www\.)?(instagram\.com|snapchat\.com\/add)\//i, '').replace(/^@/, '').split(/[/?#\s]/)[0];
   if (!clean) return;

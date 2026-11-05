@@ -22,7 +22,7 @@ export const inkOn = (mine: boolean) => (mine ? C.onPrimary : C.ink);
 export const subOn = (mine: boolean) => (mine ? 'rgba(14,20,48,0.68)' : C.muted);
 
 /** "Today", "Yesterday", weekday, or a date: the separator between days. */
-export function dayLabel(iso: string) {
+function dayLabel(iso: string) {
   const d = new Date(iso), now = new Date();
   const start = (x: Date) => new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime();
   const diff = Math.round((start(now) - start(d)) / 86400000);
@@ -85,7 +85,7 @@ export function SheetModal({ open, onClose, children, style, dim = true }: { ope
   );
 }
 
-export const REACTIONS = ['❤️', '😂', '😮', '😢', '😡', '👍'] as const;
+const REACTIONS = ['❤️', '😂', '😮', '😢', '😡', '👍'] as const;
 export type Reaction = { user_id: string; emoji: string };
 type Person = { full_name: string; avatar_url: string | null };
 

@@ -31,10 +31,6 @@ export function normalize(s: string | null | undefined): string {
     .replace(/\s+/g, ' ').trim();
 }
 
-/** Parse a number typed with Arabic or Latin digits ("١٥٫٥" → 15.5). */
-export function toNumber(s: string): number {
-  return Number(s.replace(/[٠-٩]/g, (d) => String('٠١٢٣٤٥٦٧٨٩'.indexOf(d))).replace(/[٫,]/g, '.').trim());
-}
 
 export const WEEKDAYS = [t('الأحد'), t('الاثنين'), t('الثلاثاء'), t('الأربعاء'), t('الخميس'), t('الجمعة'), t('السبت')];
 export const WEEKDAYS_SHORT = [t('أحد'), t('اثنين'), t('ثلاثاء'), t('أربعاء'), t('خميس'), t('جمعة'), t('سبت')];

@@ -136,7 +136,7 @@ export async function verifyEmailCode(email: string, token: string) {
 const TEAMS_SCOPES = 'User.Read Team.ReadBasic.All';
 
 /** Sign in with the university's Microsoft 365 account (Azure / Entra ID through Supabase). */
-export async function signInWithMicrosoft(extraScopes = '') {
+async function signInWithMicrosoft(extraScopes = '') {
   const redirectTo = Linking.createURL('callback');
   const scopes = `openid email profile offline_access ${extraScopes}`.trim();
   if (Platform.OS === 'web') {

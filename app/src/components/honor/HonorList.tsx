@@ -9,7 +9,7 @@ import { t } from '@/lib/i18n';
 
 import type { HonorRow } from './Podium';
 
-export function Move({ v, light }: { v: number | null; light?: boolean }) {
+function Move({ v, light }: { v: number | null; light?: boolean }) {
   if (!v) return <Minus size={14} color={light ? 'rgba(255,255,255,0.8)' : C.faint} />;
   const up = v > 0;
   const color = light ? C.onPrimary : up ? C.greenInk : C.red;

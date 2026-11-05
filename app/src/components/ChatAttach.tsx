@@ -357,7 +357,7 @@ export function FileBubble({ m, mine }: { m: Message; mine: boolean }) {
 }
 
 /** Body is "lat,lng" (my location) or "lat,lng,place name" (shared from the campus map). */
-export function parseLocation(body?: string | null) {
+function parseLocation(body?: string | null) {
   const [la, ln, ...rest] = (body ?? '').split(',');
   const lat = Number(la), lng = Number(ln);
   return { lat, lng, name: rest.join(',').trim() || null, ok: Number.isFinite(lat) && Number.isFinite(lng) };

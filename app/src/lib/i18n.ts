@@ -14,7 +14,7 @@ function deviceLang(): 'ar' | 'en' {
 }
 
 /** Active language for this run of the app (changing it reloads the app so layout direction flips too). */
-export const lang: 'ar' | 'en' = (() => { const p = langPref(); return p === 'system' ? deviceLang() : p; })();
+const lang: 'ar' | 'en' = (() => { const p = langPref(); return p === 'system' ? deviceLang() : p; })();
 export const isAR = lang === 'ar';
 export const LOCALE = isAR ? 'ar-JO' : 'en-GB';
 /** Text alignment at the reading start (right in Arabic, left in English). */

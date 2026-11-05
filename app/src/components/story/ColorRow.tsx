@@ -13,7 +13,7 @@ const hex = (n: number) => Math.round(n).toString(16).padStart(2, '0');
 const rgb = (h: string) => [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)];
 
 /** The colour at 0..1 along the spectrum bar. */
-export function colorAt(p: number) {
+function colorAt(p: number) {
   const f = Math.min(1, Math.max(0, p)) * (STOPS.length - 1);
   const i = Math.min(STOPS.length - 2, Math.floor(f)), k = f - i;
   const a = rgb(STOPS[i]), b = rgb(STOPS[i + 1]);

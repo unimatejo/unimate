@@ -7,7 +7,7 @@ import { t } from '@/lib/i18n';
  * Story colour filters. Drawn as tints and soft light over the photo / video, so the viewer reproduces them exactly
  * on every phone without touching the pixels.
  */
-export type StoryFilter = { id: string; name: string; tint?: string; top?: string; bottom?: string; vignette?: number };
+type StoryFilter = { id: string; name: string; tint?: string; top?: string; bottom?: string; vignette?: number };
 
 export const FILTERS: StoryFilter[] = [
   { id: 'none', name: t('عادي') },
@@ -23,7 +23,7 @@ export const FILTERS: StoryFilter[] = [
   { id: 'dusk', name: t('غروب'), top: 'rgba(120,60,200,0.22)', bottom: 'rgba(255,110,60,0.22)' },
 ];
 
-export const filterById = (id?: string | null) => FILTERS.find((f) => f.id === id && f.id !== 'none');
+const filterById = (id?: string | null) => FILTERS.find((f) => f.id === id && f.id !== 'none');
 
 const fill = { position: 'absolute', top: 0, bottom: 0, left: 0, right: 0 } as const;
 

@@ -33,7 +33,7 @@ async function pick(camera: boolean): Promise<string | null> {
   return out.base64 ?? null;
 }
 
-/** "Scan my timetable": a screenshot of the registration page or a photo, read by AI, checked by you, then saved. */
+/** "Scan my timetable": a screenshot of the registration page or a photo, read automatically, checked by you, then saved. */
 export function ScheduleScan({ onDone, autoOpen }: { onDone: () => void; autoOpen?: boolean }) {
   const [reading, setReading] = useState(false);
   const [found, setFound] = useState<Course[] | null>(null);
@@ -48,7 +48,7 @@ export function ScheduleScan({ onDone, autoOpen }: { onDone: () => void; autoOpe
       const { data, error } = await supabase.functions.invoke('schedule-import', { body: { image: b64, mime: 'image/jpeg' } });
       if ((error as { context?: { status?: number } } | null)?.context?.status === 429) { Alert.alert(t('وصلت الحد اليومي'), t('بتقدر تقرأ جدول بالصورة 15 مرة باليوم. جرّب بكرا، أو ضيف موادك بإيدك.')); return; }
       if (error || !data) throw new Error(data?.error ?? 'failed');
-      if (data.error === 'not_configured') { Alert.alert(t('القراءة بالذكاء الاصطناعي لسا مش مفعّلة'), t('جرّب كمان شوي، أو ضيف موادك بإيدك.')); return; }
+      if (data.error === 'not_configured') { Alert.alert(t('قراءة الجدول من الصورة لسا مش مفعّلة'), t('جرّب كمان شوي، أو ضيف موادك بإيدك.')); return; }
       if (!data.courses?.length) { Alert.alert(t('ما قدرنا نقرأ جدول بالصورة'), t('جرّب سكرين شوت أوضح لصفحة الجدول من بوابة الجامعة.')); return; }
       setSkip(new Set()); setFound(data.courses as Course[]);
     } catch { Alert.alert(t('ما زبطت القراءة'), t('تأكد من الإنترنت وجرّب كمان مرة.')); }
@@ -91,7 +91,7 @@ export function ScheduleScan({ onDone, autoOpen }: { onDone: () => void; autoOpe
       <Tap onPress={choose} disabled={reading} scale={0.98} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: C.card, borderRadius: 22, padding: 14 }}>
         <GlyphTile icon={ScanLine} colors={GRAD.pink} size={48} live />
         <View style={{ flex: 1 }}>
-          <T v="bold">{t('صوّر جدولك وخلّي الذكاء الاصطناعي يعبّيه')}</T>
+          <T v="bold">{t('صوّر جدولك وخلّي التطبيق يعبّيه')}</T>
           <T v="tiny" color={C.muted}>{t('سكرين شوت من بوابة الجامعة، وبنقرأ المواد والأيام والأوقات والقاعات.')}</T>
         </View>
         {reading && <ActivityIndicator color={C.primary} />}

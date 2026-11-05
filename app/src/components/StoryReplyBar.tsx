@@ -8,7 +8,7 @@ import { T, Tap } from './ui';
 import { C, F } from '@/lib/theme';
 import { isAR, t, ta } from '@/lib/i18n';
 
-export const QUICK_REACTIONS = ['😂', '😮', '😍', '😢', '👏', '🔥', '🎉', '💯'] as const;
+const QUICK_REACTIONS = ['😂', '😮', '😍', '😢', '👏', '🔥', '🎉', '💯'] as const;
 
 export type ReplyBarHandle = { blur: () => void };
 

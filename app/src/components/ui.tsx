@@ -255,16 +255,6 @@ export function IconTile({ color, children, size = 36 }: { color: string; childr
   );
 }
 
-export function ListRow({ icon, label, value, onPress, danger }: { icon?: ReactNode; label: string; value?: string; onPress?: () => void; danger?: boolean }) {
-  return (
-    <Tap onPress={onPress} scale={0.98} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 56, paddingHorizontal: 14, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: C.line }}>
-      {icon}
-      <T v="bodyMd" color={danger ? C.danger : C.ink} style={{ flex: 1 }}>{label}</T>
-      {value ? <T v="small" color={C.muted}>{value}</T> : null}
-      <ChevronRight size={18} color={C.faint} style={isAR ? { transform: [{ scaleX: -1 }] } : undefined} />
-    </Tap>
-  );
-}
 
 /** Empty-state icon: soft gradient bubble that floats gently. */
 function FloatIcon({ children }: { children: ReactNode }) {

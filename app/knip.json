@@ -1,0 +1,8 @@
+{
+  "$schema": "https://unpkg.com/knip@5/schema.json",
+  "entry": [
+    "metro.config.js",
+    "dev/maps-web-stub.js",
+    "web/sw.js"
+  ]
+}

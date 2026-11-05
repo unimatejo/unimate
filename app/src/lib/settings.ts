@@ -28,7 +28,7 @@ export function useProfilePatch() {
   return { value, patch };
 }
 
-export type Prefs = {
+type Prefs = {
   lectures: boolean; lecture_minutes: number; smart_leave: boolean; nightly_summary: boolean; summary_time: string;
   exams: boolean; messages: boolean; social: boolean; community: boolean; ads: boolean; email_offers: boolean; preview: boolean;
 };

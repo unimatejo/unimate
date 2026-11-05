@@ -1,4 +1,4 @@
-// Read a student's timetable from a screenshot or photo with Claude, and give back courses with their times.
+// Read a student's timetable from a screenshot or photo, and give back courses with their times.
 // The app shows the result for review before anything is saved.
 import { createClient } from 'npm:@supabase/supabase-js@2';
 
@@ -20,58 +20,35 @@ Deno.serve(async (req) => {
     const sb = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_ANON_KEY')!, { global: { headers: { Authorization: auth } } });
     const { data: { user } } = await sb.auth.getUser();
     if (!user) return json({ error: 'auth' }, 401);
-    // paid AI model: a daily limit per account so nobody can run up the bill
+    // paid reading service: a daily limit per account so nobody can run up the bill
     const { data: allowed } = await sb.rpc('take_ai_quota', { p_kind: 'schedule_import' });
     if (allowed === false) return json({ error: 'quota' }, 429);
     const gemini = Deno.env.get('GEMINI_API_KEY');
-    const key = Deno.env.get('ANTHROPIC_API_KEY');
-    if (!gemini && !key) return json({ error: 'not_configured' }, 503);
+    if (!gemini) return json({ error: 'not_configured' }, 503);
 
     const { image, mime } = await req.json();
     if (typeof image !== 'string' || image.length < 100) return json({ error: 'no_image' }, 400);
     if (image.length > 7_000_000) return json({ error: 'too_big' }, 413);
 
-    let text = '';
-    if (gemini) {
-      // Google Gemini (free tier from Google AI Studio); the model can be changed with GEMINI_MODEL
-      // try the newest Flash first; if Google is busy (503/429) or a name is gone (404), fall back to the next one
-      const models = [Deno.env.get('GEMINI_MODEL'), 'gemini-flash-latest', 'gemini-2.5-flash', 'gemini-flash-lite-latest', 'gemini-2.5-flash-lite'].filter(Boolean) as string[];
-      let g: Response | null = null; let last = '';
-      for (const model of [...new Set(models)]) {
-        g = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
-          method: 'POST',
-          headers: { 'content-type': 'application/json', 'x-goog-api-key': gemini },
-          body: JSON.stringify({
-            contents: [{ role: 'user', parts: [{ inline_data: { mime_type: mime === 'image/png' ? 'image/png' : 'image/jpeg', data: image } }, { text: PROMPT }] }],
-            generationConfig: { responseMimeType: 'application/json', temperature: 0 },
-          }),
-        });
-        if (g.ok) break;
-        const msg = (await g.text()).slice(0, 300);
-        console.error('gemini', model, g.status, msg);
-        try { last = `${g.status} ${JSON.parse(msg)?.error?.message ?? ''}`.slice(0, 160); } catch { last = String(g.status); }
-        if (![404, 429, 500, 503].includes(g.status)) break;
-      }
-      if (!g || !g.ok) return json({ error: g?.status === 429 ? 'busy' : 'ai_failed', detail: last }, 502);
-      const go = await g.json();
-      text = (go.candidates?.[0]?.content?.parts ?? []).map((x: { text?: string }) => x.text ?? '').join('');
-    } else {
-    const r = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: { 'x-api-key': key, 'anthropic-version': '2023-06-01', 'content-type': 'application/json' },
-      body: JSON.stringify({
-        model: Deno.env.get('SCHEDULE_MODEL') ?? 'claude-sonnet-5-5',
-        max_tokens: 4000,
-        messages: [{ role: 'user', content: [
-          { type: 'image', source: { type: 'base64', media_type: mime === 'image/png' ? 'image/png' : 'image/jpeg', data: image } },
-          { type: 'text', text: PROMPT },
-        ] }],
-      }),
-    });
-    if (!r.ok) { console.error('anthropic', r.status, (await r.text()).slice(0, 300)); return json({ error: 'ai_failed' }, 502); }
-    const out = await r.json();
-    text = (out.content ?? []).map((c: { text?: string }) => c.text ?? '').join('');
+    // GEMINI_MODEL can pick the model; try the newest Flash first; if Google is busy (503/429) or a name is gone (404), fall back to the next one
+    const models = [Deno.env.get('GEMINI_MODEL'), 'gemini-flash-latest', 'gemini-2.5-flash', 'gemini-flash-lite-latest', 'gemini-2.5-flash-lite'].filter(Boolean) as string[];
+    let g: Response | null = null;
+    for (const model of [...new Set(models)]) {
+      g = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', 'x-goog-api-key': gemini },
+        body: JSON.stringify({
+          contents: [{ role: 'user', parts: [{ inline_data: { mime_type: mime === 'image/png' ? 'image/png' : 'image/jpeg', data: image } }, { text: PROMPT }] }],
+          generationConfig: { responseMimeType: 'application/json', temperature: 0 },
+        }),
+      });
+      if (g.ok) break;
+      console.error('gemini', model, g.status, (await g.text()).slice(0, 300));
+      if (![404, 429, 500, 503].includes(g.status)) break;
     }
+    if (!g || !g.ok) return json({ error: g?.status === 429 ? 'busy' : 'read_failed' }, 502);
+    const go = await g.json();
+    const text: string = (go.candidates?.[0]?.content?.parts ?? []).map((x: { text?: string }) => x.text ?? '').join('');
     const m = text.match(/\{[\s\S]*\}/);
     if (!m) return json({ error: 'unreadable' }, 422);
     const parsed = JSON.parse(m[0]);

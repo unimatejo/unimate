@@ -9,7 +9,7 @@ import { F } from '@/lib/theme';
 import { t } from '@/lib/i18n';
 import type { Overlay, Stroke, TextStyle } from '@/lib/storyOverlay';
 
-export const isLight = (hex: string) => {
+const isLight = (hex: string) => {
   const n = parseInt(hex.slice(1), 16);
   return ((n >> 16) & 255) * 0.299 + ((n >> 8) & 255) * 0.587 + (n & 255) * 0.114 > 170;
 };
@@ -256,7 +256,7 @@ export const DrawLayer = memo(function DrawLayer({ strokes, width, height }: { s
 });
 
 /** Smooth path through the points (fractions) using midpoints, scaled to the frame. */
-export function strokePath(pts: number[], W: number, H: number) {
+function strokePath(pts: number[], W: number, H: number) {
   if (pts.length < 2) return '';
   const p = (k: number) => [pts[k] * W, pts[k + 1] * H];
   const [x0, y0] = p(0);

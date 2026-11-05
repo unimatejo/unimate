@@ -109,7 +109,7 @@ export const themePref = (): ThemePref => {
   if (v === 'light' || v === 'black' || v === 'midnight') return v;
   return v === 'dark' ? 'black' : 'midnight'; // older choices: dark → black, system → the new default
 };
-export const scheme: 'light' | 'dark' = themePref() === 'light' ? 'light' : 'dark';
+const scheme: 'light' | 'dark' = themePref() === 'light' ? 'light' : 'dark';
 export const isDark = scheme === 'dark';
 export const C = { ...({ midnight: MIDNIGHT, black: BLACK, light: LIGHT }[themePref()]) };
 /** The three looks, for the picker in Settings. */

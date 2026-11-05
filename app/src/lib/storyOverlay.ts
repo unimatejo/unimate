@@ -40,8 +40,6 @@ export const SLIDER_EMOJIS = ['😍', '🔥', '😂', '😮', '😢', '👏', '�
 
 export const newId = () => Math.random().toString(36).slice(2, 10);
 
-/** Stickers people can answer (stored answers live in the story_* tables). */
-export const INTERACTIVE: OverlayKind[] = ['poll', 'question', 'slider', 'countdown'];
 
 const KINDS: OverlayKind[] = ['text', 'emoji', 'mention', 'time', 'place', 'hashtag', 'link', 'poll', 'question', 'slider', 'countdown', 'sticker', 'draw', 'addyours', 'photo'];
 const STYLES: TextStyle[] = ['classic', 'poster', 'bubble', 'neon', 'typewriter', 'squeeze'];

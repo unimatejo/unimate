@@ -5,7 +5,7 @@ import { F } from '@/lib/theme';
 import { t } from '@/lib/i18n';
 
 /** A verified academic title (set by an admin). Students have none. */
-export type AcademicTitle =
+type AcademicTitle =
   | 'prof' | 'assoc_prof' | 'asst_prof' | 'doctor' | 'lecturer' | 'teacher_assistant'
   | 'dean' | 'vice_dean' | 'head' | 'president' | 'vice_president' | 'staff';
 

@@ -60,7 +60,7 @@ export const tap = () => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).
 export const done = () => Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
 
 // ---------- who is looking ----------
-export type Role = 'owner' | 'moderator';
+type Role = 'owner' | 'moderator';
 let roleCache: Role | null | undefined;
 export function useAdminRole() {
   const [role, setRole] = useState<Role | null | undefined>(roleCache);
@@ -197,7 +197,7 @@ const hosts: Ask[] = []; // one per open admin screen; the top one answers
 export function promptText(title: string, hint?: string, value?: string): Promise<string | null> {
   return new Promise((resolve) => { const h = hosts[hosts.length - 1]; if (h) h({ title, hint, value, resolve }); else resolve(null); });
 }
-export function PromptHost() {
+function PromptHost() {
   const [p, setP] = useState<{ title: string; hint?: string; value?: string; resolve: (v: string | null) => void } | null>(null);
   const [v, setV] = useState('');
   useEffect(() => {

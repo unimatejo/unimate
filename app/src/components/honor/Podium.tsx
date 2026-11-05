@@ -22,7 +22,7 @@ export const HONOR_EMOJI = {
 };
 
 // Instagram-style story rings, several stops so the metal looks lit
-export const RING = [
+const RING = [
   ['#FFF6C9', '#FFD34D', '#F5A900', '#C77D00', '#FFE58A'],
   ['#FFFFFF', '#DCE1EA', '#A9B1C1', '#7D8597', '#E9ECF2'],
   ['#FFE0C7', '#F0A46B', '#C9773A', '#8E4F22', '#F6C29A'],

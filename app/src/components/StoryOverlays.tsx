@@ -6,7 +6,7 @@ import { DrawLayer, StickerBody, type Live } from './story/StickerBody';
 import type { Overlay } from '@/lib/storyOverlay';
 
 /** How one overlay looks (no position). Shared by the editor and the viewer so they always match. */
-export function OverlayBody({ o, width, live }: { o: Overlay; width: number; live?: Live }) {
+function OverlayBody({ o, width, live }: { o: Overlay; width: number; live?: Live }) {
   return <StickerBody o={o} width={width} live={live} />;
 }
 

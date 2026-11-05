@@ -10,7 +10,7 @@ import { PullRefresh } from '@/components/PullRefresh';
 import { ListSkeleton } from '@/components/Skeleton';
 import { Avatar, Card, Chip, Empty, Header, Row, Screen, Segmented, T, Tap, Toggle } from '@/components/ui';
 import { useAuth } from '@/lib/auth';
-import { EMOJI, POINT_KIND, POINT_RULES } from '@/lib/badges';
+import { EMOJI, POINT_KIND, POINT_RULES } from '@/lib/points';
 import { run } from '@/lib/run';
 import { supabase } from '@/lib/supabase';
 import { C, F, shadow } from '@/lib/theme';

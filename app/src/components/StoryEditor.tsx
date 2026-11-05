@@ -469,4 +469,3 @@ export function StoryEditor({ media, initial, onCancel, onDone, onShare, sharing
   );
 }
 
-export const storyTimeText = () => new Date().toLocaleTimeString(LOCALE, { hour: 'numeric', minute: '2-digit' });

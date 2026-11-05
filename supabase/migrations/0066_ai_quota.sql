@@ -1,4 +1,4 @@
--- Schedule photo reading uses a paid AI model: one account can't run it without limit (15 per day; admins unlimited).
+-- Schedule photo reading uses a paid reading service: one account can't run it without limit (15 per day; admins unlimited).
 create table if not exists private.quota_log (
   user_id uuid not null, kind text not null, at timestamptz not null default now()
 );

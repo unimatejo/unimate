@@ -23,7 +23,7 @@ function flush() {
   }, () => {});
 }
 
-export function recordPerf(kind: Sample['kind'], name: string, ms: number) {
+function recordPerf(kind: Sample['kind'], name: string, ms: number) {
   if (!Number.isFinite(ms) || ms < 0 || ms > 600000) return;
   queue.push({ kind, name: name.slice(0, 80), ms: Math.round(ms), platform: Platform.OS, app_version: version });
   if (queue.length >= 10) flush();

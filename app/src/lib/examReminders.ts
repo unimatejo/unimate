@@ -4,7 +4,7 @@ import { Platform } from 'react-native';
 import { ensurePermission } from './notify';
 import { LOCALE, t } from './i18n';
 
-export type ExamLike = { id: string; kind: string; title: string; starts_at: string; course_name?: string | null; location?: string | null };
+type ExamLike = { id: string; kind: string; title: string; starts_at: string; course_name?: string | null; location?: string | null };
 
 const REMIND = new Set(['exam_first', 'exam_second', 'exam_mid', 'exam_final', 'quiz', 'assignment', 'project']);
 

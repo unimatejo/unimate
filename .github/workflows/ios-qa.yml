@@ -40,6 +40,8 @@ jobs:
             || { grep -E "error:" ../out/xcodebuild.log | head -40; exit 1; }
       - name: Walk every screen
         working-directory: .
+        env:
+          QA_TOKEN: ${{ secrets.QA_TOKEN }}
         run: |
           set +e
           APP=$(ls -d app/build/Build/Products/Release-iphonesimulator/*.app)
@@ -53,7 +55,8 @@ jobs:
           # first launch turns on right-to-left, second launch uses it
           xcrun simctl launch $UDID jo.unimate.app; sleep 15; xcrun simctl terminate $UDID jo.unimate.app; sleep 2
           xcrun simctl launch $UDID jo.unimate.app; shot 00-login 15
-          TOK=$(cat qa/token.txt)
+          TOK="$QA_TOKEN"   # a one-time sign-in link for the test account, kept as a repository secret
+          if [ -z "$TOK" ]; then echo "no QA_TOKEN secret: only the login screen was checked" | tee -a out/summary.txt; exit 0; fi
           go() { xcrun simctl terminate $UDID jo.unimate.app > /dev/null 2>&1; sleep 1; xcrun simctl launch $UDID jo.unimate.app -qaToken "$TOK" -qaRoute "$2" > /dev/null; shot "$1" 10; }
           go 01-home /
           i=2
