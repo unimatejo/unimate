@@ -1,6 +1,7 @@
 {
   "$schema": "https://unpkg.com/knip@5/schema.json",
   "entry": [
+    "src/app/**/*.tsx",
     "metro.config.js",
     "dev/maps-web-stub.js",
     "web/sw.js"
