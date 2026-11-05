@@ -126,4 +126,4 @@ docpage('en/delete-account', 'Delete your account', [
 ], 'en')
 open('robots.txt','w').write('User-agent: *\nAllow: /\nSitemap: https://unimate.my/sitemap.xml\n')
 open('sitemap.xml','w').write('<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">' + ''.join(f'<url><loc>https://unimate.my/{p}</loc></url>' for p in ['', 'privacy/', 'terms/', 'support/', 'delete-account/', 'en/', 'en/privacy/', 'en/terms/', 'en/support/', 'en/delete-account/']) + '</urlset>')
-open('.htaccess','w').write('RewriteEngine On\nRewriteCond %{HTTPS} off\nRewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]\nRewriteCond %{HTTP_HOST} ^www\\.(.*)$ [NC]\nRewriteRule ^ https://%1%{REQUEST_URI} [L,R=301]\n')
+open('.htaccess','w').write('RewriteEngine On\nRewriteCond %{HTTPS} off\nRewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]\nRewriteCond %{HTTP_HOST} ^www\\.(.*)$ [NC]\nRewriteRule ^ https://%1%{REQUEST_URI} [L,R=301]\n\nAddType application/vnd.android.package-archive .apk\n')

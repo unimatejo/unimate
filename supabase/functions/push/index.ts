@@ -52,7 +52,8 @@ async function forNotification(id: string): Promise<Push[]> {
   if (p && SOCIAL.has(n.kind) && p.social === false) return [];
   if (p && n.kind === 'offer' && p.ads === false) return [];
   const d = (n.data ?? {}) as Record<string, string>;
-  const url = d.conversation_id ? `/messages/${d.conversation_id}`
+  const url = n.kind === 'announcement' ? '/announcements'
+    : d.conversation_id ? `/messages/${d.conversation_id}`
     : d.post_id ? `/post/${d.post_id}`
     : d.user_id ? `/user/${d.user_id}`
     : n.actor_id && SOCIAL.has(n.kind) ? `/user/${n.actor_id}` : '/notifications';

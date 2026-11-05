@@ -127,6 +127,7 @@ export default function Notifications() {
   /** Where each kind of notification takes you. */
   function open(n: N) {
     const d = n.data ?? {};
+    if (n.kind === 'announcement') return router.push('/announcements');
     if (n.kind === 'swap_match') return router.push('/swap');
     // app broke / content waiting for review: straight to the right admin screen
     if (n.kind === 'admin_alert') return router.push((typeof d.url === 'string' && d.url.startsWith('/admin') ? d.url : '/admin/errors') as never);

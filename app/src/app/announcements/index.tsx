@@ -87,7 +87,7 @@ export default function Announcements() {
             </View>
             <Button title={t('انشر')} onPress={() => router.push('/announcements/new')} style={{ minHeight: 38, paddingHorizontal: 16 }} />
           </View>
-        ) : null}
+        ) : undefined}
         renderItem={({ item, index }) => (
           <AnnouncementCard a={item} index={index}
             onAuthor={() => router.push({ pathname: '/user/[id]', params: { id: item.author_id } })}
