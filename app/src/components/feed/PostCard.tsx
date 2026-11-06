@@ -14,7 +14,7 @@ import { useAuth } from '@/lib/auth';
 import { toggleLike, toggleSave } from '@/lib/posts';
 import { optimistic, run } from '@/lib/run';
 import { toast } from '@/lib/toast';
-import { mediaUrl, supabase } from '@/lib/supabase';
+import { mediaUrl, supabase, photoWidth } from '@/lib/supabase';
 import { CATEGORY, C, F, shadow } from '@/lib/theme';
 import type { Post } from '@/lib/types';
 import { timeAgo } from '@/lib/util';
@@ -23,9 +23,11 @@ import { nm, t } from '@/lib/i18n';
 /** One photo page: shows the signed URL, cached under its storage path so the same photo appears instantly elsewhere. */
 function Photo({ path, width, height, onDoubleTap, onAspect, radius }: { path: string; width: number; height: number; onDoubleTap: () => void; onAspect?: (a: number) => void; radius?: number }) {
   const [uri, setUri] = useState<string | null>(null);
-  useEffect(() => { let on = true; mediaUrl('posts', path).then((u) => { if (on) setUri(u); }); return () => { on = false; }; }, [path]);
+  // resized on the server to this screen's width (a fraction of the original's weight)
+  const w = photoWidth(width);
+  useEffect(() => { let on = true; mediaUrl('posts', path, w).then((u) => { if (on) setUri(u); }); return () => { on = false; }; }, [path, w]);
   return (
-    <ZoomableImage uri={uri} cacheKey={`posts/${path}`} onDoubleTap={onDoubleTap} onAspect={onAspect} radius={radius}
+    <ZoomableImage uri={uri} cacheKey={`posts/${path}@${w}`} onDoubleTap={onDoubleTap} onAspect={onAspect} radius={radius}
       style={{ width, height, backgroundColor: C.soft }} />
   );
 }
@@ -127,7 +129,7 @@ function PostCardView({ post, onLikes, compact, detail }: { post: Post; onLikes?
   useEffect(() => {
     if (!p.like_count) { setLikers([]); return; }
     if (p.like_count === firstCount.current && post.likers) { setLikers(post.likers); return; }
-    supabase.from('post_likes').select('p:profiles(id, full_name, avatar_url)').eq('post_id', p.id).order('created_at', { ascending: false }).limit(3)
+    supabase.from('post_likes').select('p:profiles!post_likes_user_id_fkey(id, full_name, avatar_url)').eq('post_id', p.id).order('created_at', { ascending: false }).limit(3)
       .then(({ data }) => setLikers(((data ?? []) as unknown as { p: { id: string; full_name: string; avatar_url: string | null } | null }[]).map((x) => x.p).filter((x): x is NonNullable<typeof x> => !!x)), () => {});
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [p.id, p.like_count]);

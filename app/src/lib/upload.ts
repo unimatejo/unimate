@@ -7,6 +7,7 @@ import { Alert, Linking, Platform } from 'react-native';
 
 import { openCropper, type CropMode, type MediaMeta } from './cropper';
 import { reportError } from './errors';
+import { UserError } from './run';
 import { supabase } from './supabase';
 import { shrinkVideo } from './videoShrink';
 import { t } from './i18n';
@@ -25,6 +26,13 @@ export type Picked = {
  * Pick a photo or short video. `square` opens the system crop (like Instagram's profile photo);
  * photos are resized and saved as JPEG so every phone (including HEIC iPhones) uploads the same way.
  */
+/** Shrinks a photo so its LONGER side is at most `max` (tall portrait photos too, not only wide ones). */
+export function fitLongSide(ctx: { resize: (s: { width?: number; height?: number }) => unknown }, w?: number | null, h?: number | null, max = 2400) {
+  const W = w ?? 0, H = h ?? 0;
+  if (Math.max(W, H) <= max) return;
+  if (W >= H) ctx.resize({ width: max }); else ctx.resize({ height: max });
+}
+
 export async function pickMedia(opts: { video?: boolean; videoOnly?: boolean; maxSec?: number; camera?: boolean; square?: boolean; maxWidth?: number; crop?: CropMode; aspect?: number | null } = {}): Promise<Picked | null> {
   const p = await pickRaw(opts);
   if (!p || !opts.crop) return p;
@@ -67,7 +75,7 @@ async function pickRaw(opts: { video?: boolean; videoOnly?: boolean; maxSec?: nu
   try {
     const ctx = ImageManipulator.manipulate(a.uri);
     const maxW = opts.crop ? 2400 : opts.maxWidth ?? (opts.square ? 720 : 1440);
-    if ((a.width ?? 0) > maxW) ctx.resize({ width: maxW });
+    fitLongSide(ctx, a.width, a.height, maxW);
     const img = await ctx.renderAsync();
     const out = await img.saveAsync({ compress: 0.82, format: SaveFormat.JPEG });
     return { uri: out.uri, mime: 'image/jpeg', kind: 'image', width: out.width, height: out.height };
@@ -101,7 +109,7 @@ export async function pickPhotos(max = 10): Promise<Picked[]> {
   for (const a of res.assets.slice(0, max)) {
     try {
       const ctx = ImageManipulator.manipulate(a.uri);
-      if ((a.width ?? 0) > 2400) ctx.resize({ width: 2400 });
+      fitLongSide(ctx, a.width, a.height, 2400);
       const img = await ctx.renderAsync();
       const o = await img.saveAsync({ compress: 0.82, format: SaveFormat.JPEG });
       out.push({ uri: o.uri, mime: 'image/jpeg', kind: 'image', width: o.width, height: o.height });
@@ -148,7 +156,7 @@ export async function uploadPicked<M extends { trim?: { start: number; end: numb
   } catch (e) {
     reportError(e);
     const msg = e instanceof Error && e.message === 'timeout' ? t('الإنترنت بطيء، جرّب كمان مرة.') : t('ما زبط رفع الملف، تأكد من الإنترنت وجرّب كمان مرة.');
-    throw new Error(msg);
+    throw new UserError(msg);
   }
 }
 

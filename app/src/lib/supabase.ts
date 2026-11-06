@@ -1,5 +1,5 @@
 import 'expo-sqlite/localStorage/install';
-import { AppState } from 'react-native';
+import { AppState, PixelRatio } from 'react-native';
 import { createClient } from '@supabase/supabase-js';
 
 const url = process.env.EXPO_PUBLIC_SUPABASE_URL!;
@@ -33,18 +33,31 @@ export async function primeMedia(bucket: string, paths: string[]) {
   } catch { /* each photo signs itself as before */ }
 }
 
-export async function mediaUrl(bucket: string, path?: string | null): Promise<string | null> {
+/**
+ * `width`: a photo resized on the server for where it's shown (feed, grid, thumbnail) — a fraction of the original's size.
+ * Only for photos; videos and files always use the original.
+ */
+export async function mediaUrl(bucket: string, path?: string | null, width?: number): Promise<string | null> {
   if (!path) return null;
   if (path.startsWith('http')) return path;
   if (bucket === 'avatars' || bucket === 'ads' || bucket === 'campus') {
     return supabase.storage.from(bucket).getPublicUrl(path).data.publicUrl;
   }
-  const k = bucket + '/' + path;
+  const sized = !!width && /\.(jpe?g|png|webp)$/i.test(path);
+  const k = bucket + '/' + path + (sized ? `@${width}` : '');
   const hit = signedCache.get(k);
   if (hit && hit.exp > Date.now()) return hit.url;
   let data: { signedUrl: string } | null = null;
-  try { ({ data } = await supabase.storage.from(bucket).createSignedUrl(path, 3600)); } catch { return null; }
+  try {
+    ({ data } = await supabase.storage.from(bucket).createSignedUrl(path, 3600, sized ? { transform: { width, quality: 75, resize: 'contain' } } : undefined));
+  } catch { return null; }
   if (!data) return null;
   signedCache.set(k, { url: data.signedUrl, exp: Date.now() + 50 * 60 * 1000 });
   return data.signedUrl;
+}
+
+/** The width (in pixels) a photo needs to look sharp at `points` wide on this screen, in a few fixed steps so caches are shared. */
+export function photoWidth(points: number) {
+  const px = points * Math.min(3, PixelRatio.get());
+  return [320, 480, 720, 1080, 1440].find((w) => w >= px) ?? 1440;
 }

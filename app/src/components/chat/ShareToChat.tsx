@@ -30,7 +30,7 @@ export function ShareToChat({ place, onClose }: { place: { lat: number; lng: num
       const convs = ((data ?? []) as any[]).map((r) => r.conversation).filter((c) => c && (c.kind === 'direct' || c.kind === 'group'));
       const direct = convs.filter((c) => c.kind === 'direct').map((c) => c.id);
       const { data: others } = direct.length
-        ? await supabase.from('conversation_members').select('conversation_id, user_id, profile:profiles(full_name, avatar_url)').in('conversation_id', direct).neq('user_id', profile.id)
+        ? await supabase.from('conversation_members').select('conversation_id, user_id, profile:profiles!conversation_members_user_id_fkey(full_name, avatar_url)').in('conversation_id', direct).neq('user_id', profile.id)
         : { data: [] };
        
       const by = Object.fromEntries(((others ?? []) as any[]).map((o) => [o.conversation_id, o]));

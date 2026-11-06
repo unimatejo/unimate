@@ -1,5 +1,5 @@
 import { Image } from 'expo-image';
-import { Check, ImageOff, Settings } from 'lucide-react-native';
+import { Camera, Check, ImageOff, Settings } from 'lucide-react-native';
 import { memo, useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, FlatList, Linking, Platform, View, useWindowDimensions } from 'react-native';
 
@@ -8,7 +8,6 @@ import { fmtDuration, galleryPage, galleryPermission, type GalleryAsset, type Ga
 import { C, R } from '@/lib/theme';
 import { t } from '@/lib/i18n';
 
-const COLS = 4;
 const GAP = 2;
 
 type Props = {
@@ -26,13 +25,17 @@ type Props = {
   onFirst?: (a: GalleryAsset | null) => void;
   /** rows tall enough that the grid scrolls inside a sheet */
   contentBottom?: number;
+  /** tiles per row: 4 for posts, 3 for stories (like Instagram) */
+  cols?: number;
+  /** a camera tile first in the grid (Instagram's "Add to story") */
+  onCamera?: () => void;
 };
 
-const Tile = memo(function Tile({ a, size, n, active, multi, busy, onPick }: { a: GalleryAsset; size: number; n: number; active: boolean; multi: boolean; busy: boolean; onPick: (a: GalleryAsset) => void }) {
+const Tile = memo(function Tile({ a, size, h, n, active, multi, busy, onPick }: { a: GalleryAsset; size: number; h: number; n: number; active: boolean; multi: boolean; busy: boolean; onPick: (a: GalleryAsset) => void }) {
   return (
     <Tap haptic={false} scale={1} onPress={() => onPick(a)} accessibilityLabel={a.mediaType === 'video' ? t('فيديو {0}', [fmtDuration(a.duration)]) : t('صورة')}
-      style={{ width: size, height: size, marginBottom: GAP, marginEnd: GAP, backgroundColor: C.soft }}>
-      <Image source={{ uri: a.uri }} style={{ width: size, height: size }} contentFit="cover" recyclingKey={a.id} cachePolicy="memory" transition={0} />
+      style={{ width: size, height: h, marginBottom: GAP, marginEnd: GAP, backgroundColor: C.soft }}>
+      <Image source={{ uri: a.uri }} style={{ width: size, height: h }} contentFit="cover" recyclingKey={a.id} cachePolicy="memory" transition={0} />
       {active && <View pointerEvents="none" style={{ position: 'absolute', top: 0, bottom: 0, left: 0, right: 0, backgroundColor: 'rgba(255,255,255,0.32)' }} />}
       {a.mediaType === 'video' && (
         <View pointerEvents="none" style={{ position: 'absolute', bottom: 5, right: 6 }}>
@@ -50,10 +53,15 @@ const Tile = memo(function Tile({ a, size, n, active, multi, busy, onPick }: { a
   );
 });
 
+// the camera tile's slot in the list
+const CAMERA = { id: '__camera__' } as GalleryAsset;
+
 /** The phone's photos and videos, newest first, 4 per row like Instagram, loading more as you scroll. */
-export function GalleryGrid({ kind, album, selected, multi, activeId, busyId, onPick, header, onFirst, contentBottom = 120 }: Props) {
+export function GalleryGrid({ kind, album, selected, multi, activeId, busyId, onPick, header, onFirst, contentBottom = 120, cols = 4, onCamera }: Props) {
   const { width } = useWindowDimensions();
+  const COLS = cols;
   const size = Math.floor((width - GAP * (COLS - 1)) / COLS);
+  const tall = COLS === 3 ? Math.round(size * 16 / 9) : size;
   const [perm, setPerm] = useState<'granted' | 'denied' | 'unavailable' | null>(null);
   const [assets, setAssets] = useState<GalleryAsset[]>([]);
   const [loading, setLoading] = useState(false);
@@ -96,13 +104,18 @@ export function GalleryGrid({ kind, album, selected, multi, activeId, busyId, on
 
   return (
     <FlatList
-      data={assets}
+      key={COLS}
+      data={onCamera ? [CAMERA, ...assets] : assets}
       keyExtractor={(a) => a.id}
       numColumns={COLS}
       ListHeaderComponent={header ?? undefined}
       renderItem={({ item, index }) => (
         <View style={(index + 1) % COLS === 0 ? { marginEnd: -GAP } : undefined}>
-          <Tile a={item} size={size} n={selected.indexOf(item.id) + 1} active={item.id === activeId} multi={multi} busy={busyId === item.id} onPick={onPick} />
+          {item === CAMERA
+            ? <Tap haptic onPress={onCamera} accessibilityLabel={t('الكاميرا')} style={{ width: size, height: tall, marginBottom: GAP, marginEnd: GAP, backgroundColor: '#1C1C22', alignItems: 'center', justifyContent: 'center' }}>
+                <Camera size={30} color="#fff" strokeWidth={1.8} />
+              </Tap>
+            : <Tile a={item} size={size} h={tall} n={selected.indexOf(item.id) + 1} active={item.id === activeId} multi={multi} busy={busyId === item.id} onPick={onPick} />}
         </View>
       )}
       onEndReached={() => load(false)}

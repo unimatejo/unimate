@@ -18,7 +18,7 @@ const sec = (ms: number) => `${(ms / 1000).toLocaleString(undefined, { maximumFr
 const tone = (ms: number) => (ms < 1500 ? 'green' : ms < 3000 ? 'orange' : 'red');
 
 function Errors() {
-  const { data, loading, error } = useLoad<E[]>(() => supabase.from('client_errors').select('*, user:profiles(full_name)').order('created_at', { ascending: false }).limit(200) as never, []);
+  const { data, loading, error } = useLoad<E[]>(() => supabase.from('client_errors').select('*, user:profiles!client_errors_user_id_fkey(full_name)').order('created_at', { ascending: false }).limit(200) as never, []);
   const [open, setOpen] = useState<number | null>(null);
   return (
     <State loading={loading} error={error} empty={data?.length === 0}>

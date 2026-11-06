@@ -10,8 +10,9 @@ const ACTION: Record<string, string> = {
   hide: t('خبّى محتوى'), unhide: t('رجّع محتوى'), notify: t('بعت إشعار'), ticket_reply: t('رد على دعم'), add_admin: t('ضاف مشرف'), remove_admin: t('شال مشرف'),
 };
 
+/** Admin › log: every action any admin took. */
 export default function Audit() {
-  const { data, loading, error } = useLoad<Row[]>(() => supabase.from('admin_audit_log').select('*, admin:profiles(full_name)').order('created_at', { ascending: false }).limit(300) as never, []);
+  const { data, loading, error } = useLoad<Row[]>(() => supabase.from('admin_audit_log').select('*, admin:profiles!admin_audit_log_admin_id_fkey(full_name)').order('created_at', { ascending: false }).limit(300) as never, []);
   return (
     <AdminScreen ownerOnly title={t('سجل الإدارة')} subtitle={t('كل إجراء بيعمله مشرف بينسجل هون، وما بينحذف')}>
       <State loading={loading} error={error} empty={data?.length === 0}>

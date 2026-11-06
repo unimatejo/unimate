@@ -12,6 +12,7 @@ import { t } from '@/lib/i18n';
 
 const REASONS = [t('تحرش أو إزعاج'), t('تنمر أو إهانة'), t('نشر صور أو معلومات خاصة'), t('حساب مزيف أو انتحال'), t('احتيال أو نصب'), t('محتوى غير لائق'), t('بيع واجبات أو غش'), t('سبام'), t('إشي تاني')];
 
+/** Report a post, message, story or account to the admins. */
 export default function Report() {
   const { type = 'user', id, user } = useLocalSearchParams<{ type?: string; id: string; user?: string }>();
   const { profile } = useAuth();

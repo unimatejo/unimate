@@ -18,7 +18,7 @@ import { Bone } from '@/components/ui/Skeleton';
 import { Avatar, Row, T, Tap, Toggle } from '@/components/ui';
 import { VoiceBubble, VoiceRecorder } from '@/components/chat/Voice';
 import { useAuth } from '@/lib/auth';
-import { mediaUrl, supabase } from '@/lib/supabase';
+import { mediaUrl, supabase, photoWidth } from '@/lib/supabase';
 import { rtTopic, sharedChannel } from '@/lib/realtime';
 import { C, F, isDark } from '@/lib/theme';
 import type { Conversation, Message, VanishMode } from '@/lib/types';
@@ -27,7 +27,7 @@ import { ImageViewer } from '@/components/media/ImageViewer';
 import { aspectCache } from '@/components/media/ZoomPhoto';
 import { timeAgo } from '@/lib/util';
 import { flip, isAR, nm, t, ta } from '@/lib/i18n';
-import { friendly, isRateLimited, optimistic, run } from '@/lib/run';
+import { friendly, isRateLimited, optimistic, run, userMessage } from '@/lib/run';
 import { useScreenTimer } from '@/lib/perf';
 
 const VANISH: { key: VanishMode; label: string; hint: string }[] = [
@@ -71,9 +71,9 @@ function ChatImage({ path, mine }: { path: string; mine: boolean }) {
   const [uri, setUri] = useState<string | null>(null);
   const [a, setA] = useState(() => aspectCache.get(`chat/${path}`) ?? 0.8);
   const [failed, setFailed] = useState(false);
-  useEffect(() => { let on = true; mediaUrl('chat', path).then((u) => { if (on) { setUri(u); if (!u) setFailed(true); } }); return () => { on = false; }; }, [path]);
+  useEffect(() => { let on = true; mediaUrl('chat', path, photoWidth(280)).then((u) => { if (on) { setUri(u); if (!u) setFailed(true); } }); return () => { on = false; }; }, [path]);
   return <View style={[{ ...photoBox(a), overflow: 'hidden', alignItems: 'center', justifyContent: 'center' }, bubble(mine, C.soft)]}>
-    {uri && <Image source={{ uri, cacheKey: `chat/${path}` }} style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }} contentFit="cover" transition={180}
+    {uri && <Image source={{ uri, cacheKey: `chat/${path}@s` }} style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }} contentFit="cover" transition={180}
       onLoad={(e) => { const r = e.source.width / Math.max(1, e.source.height); aspectCache.set(`chat/${path}`, r); setA(r); }} onError={() => setFailed(true)} />}
     {!uri && !failed && <ActivityIndicator color={C.muted} />}
     {failed && <T v="tiny" color={C.muted}>{t('ما قدرنا نحمّل الصورة')}</T>}
@@ -163,7 +163,7 @@ export default function Chat() {
     if (!profile) return;
     const { data: c } = await supabase.from('conversations').select('*').eq('id', id).single();
     setConv(c as Conversation);
-    const { data: mem } = await supabase.from('conversation_members').select('user_id, state, last_read_at, profile:profiles(id, full_name, avatar_url, username, is_verified, academic_title, title_verified, major:majors!profiles_major_id_fkey(name_ar, name_en))').eq('conversation_id', id);
+    const { data: mem } = await supabase.from('conversation_members').select('user_id, state, last_read_at, profile:profiles!conversation_members_user_id_fkey(id, full_name, avatar_url, username, is_verified, academic_title, title_verified, major:majors!profiles_major_id_fkey(name_ar, name_en))').eq('conversation_id', id);
      
     const rows = (mem ?? []) as any[];
     setPeople(Object.fromEntries(rows.filter((r) => r.profile).map((r) => [r.user_id, r.profile])));
@@ -390,7 +390,7 @@ export default function Chat() {
     if (uploading) return;
     setUploading(true);
     let f: Awaited<ReturnType<typeof pickMedia>> = null;
-    try { f = await pickMedia({ camera, crop: 'chat' }); } catch (e) { Alert.alert(t('ما انبعتت الصورة'), (e as Error).message); }
+    try { f = await pickMedia({ camera, crop: 'chat' }); } catch (e) { Alert.alert(t('ما انبعتت الصورة'), userMessage(e)); }
     setUploading(false);
     if (!f) return;
     const p: Pending = { key: `${Date.now()}-${Math.random()}`, file: f, viewOnce, failed: false };

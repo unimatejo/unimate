@@ -16,7 +16,7 @@ import { C, F } from '@/lib/theme';
 import { clock, greeting, isWebUrl } from '@/lib/util';
 import { nm, t } from '@/lib/i18n';
 import { useScreenTimer } from '@/lib/perf';
-import { QUICK } from '@/components/home/quick';
+import { DEFAULT_QUICK, QUICK } from '@/components/home/quick';
 import { featureOn, TONES, useAppContent } from '@/lib/appContent';
 
 function Glow({ color, size, style, dur }: { color: string; size: number; style: object; dur: number }) {
@@ -39,6 +39,7 @@ function Pulse() {
 }
 
 
+/** Home: greeting, today's classes, quick links, the owner's banner and notice. */
 export default function Home() {
   const { profile, university } = useAuth();
   const { meetings, next, reload, loading, now } = useSchedule(profile?.id);
@@ -49,7 +50,7 @@ export default function Home() {
   const content = useAppContent();
   const quick = (content.home?.quick?.length
     ? content.home.quick.map((k) => QUICK.find((q) => q.key === k)).filter((q): q is (typeof QUICK)[number] => !!q)
-    : [...QUICK]).filter((q) => !('feature' in q) || featureOn(content, q.feature));
+    : [...DEFAULT_QUICK]).filter((q) => !('feature' in q) || featureOn(content, q.feature));
   const first = profile?.full_name?.split(' ')[0] ?? '';
   const hello = content.home?.greeting?.trim() ? content.home.greeting.replace('{name}', first) : `${greeting(now)}${t('،')} ${first}`;
   const banner = content.home?.banner?.on && content.home.banner.title ? content.home.banner : null;
@@ -59,7 +60,7 @@ export default function Home() {
   // badge refreshes every time Home comes back into view (e.g. after reading notifications)
   useFocusEffect(useCallback(() => {
     if (!profile) return;
-    supabase.from('notifications').select('id', { count: 'exact', head: true }).eq('user_id', profile.id).is('read_at', null)
+    supabase.from('notifications').select('id', { count: 'exact', head: true }).eq('user_id', profile.id).neq('kind', 'admin_alert').is('read_at', null)
       .then(({ count }) => setUnread(count ?? 0), () => {});
   }, [profile]));
 

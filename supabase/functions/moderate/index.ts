@@ -31,18 +31,37 @@ async function load(bucket: string, path: string): Promise<{ data: string; mime:
   return { data: b64(buf), mime: mime === 'image/png' || mime === 'image/webp' ? mime : 'image/jpeg' };
 }
 
+// Google retires model names and is sometimes busy: a short list with a time limit on each, then the Flash models
+// this key has today (same approach as schedule-import).
+async function flashModels(key: string): Promise<string[]> {
+  try {
+    const r = await fetch('https://generativelanguage.googleapis.com/v1beta/models?pageSize=200', { headers: { 'x-goog-api-key': key }, signal: AbortSignal.timeout(6000) });
+    const d = await r.json() as { models?: { name: string; supportedGenerationMethods?: string[] }[] };
+    return (d.models ?? []).filter((m) => /flash/.test(m.name) && !/image|tts|audio|live|thinking|exp/.test(m.name) && (m.supportedGenerationMethods ?? []).includes('generateContent'))
+      .map((m) => m.name.replace(/^models\//, '')).sort((a, b) => b.localeCompare(a, 'en', { numeric: true })).slice(0, 3);
+  } catch { return []; }
+}
+
 async function judge(img: { data: string; mime: string }): Promise<{ flag: boolean; category?: string; reason?: string } | null> {
   const key = env('GEMINI_API_KEY'); if (!key) return null;
-  const models = [env('GEMINI_MODEL'), 'gemini-flash-latest', 'gemini-2.5-flash', 'gemini-flash-lite-latest', 'gemini-2.5-flash-lite'].filter(Boolean);
-  for (const model of [...new Set(models)]) {
+  const tried = new Set<string>();
+  const ask = async (model: string) => {
+    tried.add(model);
     const g = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
-      method: 'POST', headers: { 'content-type': 'application/json', 'x-goog-api-key': key },
+      method: 'POST', headers: { 'content-type': 'application/json', 'x-goog-api-key': key }, signal: AbortSignal.timeout(25000),
       body: JSON.stringify({ contents: [{ role: 'user', parts: [{ inline_data: { mime_type: img.mime, data: img.data } }, { text: PROMPT }] }], generationConfig: { responseMimeType: 'application/json', temperature: 0 } }),
-    });
-    if (!g.ok) { if ([404, 429, 500, 503].includes(g.status)) continue; return null; }
+    }).catch(() => null);
+    if (!g?.ok) { if (g) console.error('moderate', model, g.status); return undefined; }
     const j = await g.json();
     const text = (j.candidates?.[0]?.content?.parts ?? []).map((x: { text?: string }) => x.text ?? '').join('');
-    try { return JSON.parse(text); } catch { return null; }
+    try { return JSON.parse(text) as { flag: boolean; category?: string; reason?: string }; } catch { return null; }
+  };
+  for (const model of [env('GEMINI_MODEL'), 'gemini-flash-latest', 'gemini-flash-lite-latest'].filter(Boolean)) {
+    const v = await ask(model); if (v !== undefined) return v;
+  }
+  for (const model of await flashModels(key)) {
+    if (tried.has(model)) continue;
+    const v = await ask(model); if (v !== undefined) return v;
   }
   return null;
 }

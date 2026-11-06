@@ -20,6 +20,7 @@ type SR = { id: string; from_id: string; to_id: string; course_id: string; statu
 const PLACES = [t('المكتبة'), t('الكافتيريا'), t('قاعة فاضية'), t('أونلاين')];
 const TIMES = [t('الصبح'), t('بين المحاضرات'), t('العصر'), t('بالليل')];
 
+/** "Study together": classmates in the same course sections who want a study partner. */
 export default function Study() {
   const { profile } = useAuth();
   const [courses, setCourses] = useState<Course[]>([]);

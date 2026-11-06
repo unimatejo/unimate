@@ -19,6 +19,7 @@ import { C, F, isDark, shadow } from '@/lib/theme';
 import { bubble, SheetModal, subOn } from '@/components/chat/ChatExtras';
 import type { Message } from '@/lib/types';
 import { pickMedia, publicUrl, uploadFile } from '@/lib/upload';
+import { userMessage } from '@/lib/run';
 import { t, ta } from '@/lib/i18n';
 
 export type Outgoing = { kind: 'image' | 'view_once' | 'sticker' | 'file' | 'location' | 'contact' | 'poll'; media?: string | null; body?: string | null; ref?: string | null };
@@ -36,7 +37,7 @@ export function AttachSheet({ open, onClose, conv, send, onStickers }: { open: b
   async function run(key: string, fn: () => Promise<void>) {
     if (busy) return;
     setBusy(key);
-    try { await fn(); } catch (e) { Alert.alert(t('ما انبعت'), e instanceof Error ? e.message : t('جرّب كمان مرة.')); } finally { setBusy(null); }
+    try { await fn(); } catch (e) { Alert.alert(t('ما انبعت'), userMessage(e)); } finally { setBusy(null); }
   }
   // like WhatsApp / Instagram: the sheet closes, you pick, crop freely in the editor, then "ابعت"
   const photo = (camera: boolean) => run(camera ? 'camera' : 'photos', async () => {

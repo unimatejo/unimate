@@ -10,6 +10,7 @@ import { sendEmailCode, verifyEmailCode } from '@/lib/auth';
 import { C } from '@/lib/theme';
 import { t } from '@/lib/i18n';
 
+/** Second sign-in step: the 6-digit code sent to the university email. */
 export default function Verify() {
   const { email, uni } = useLocalSearchParams<{ email: string; uni: string }>();
   const [code, setCode] = useState('');

@@ -11,7 +11,8 @@ export async function withMine(posts: Post[], uid?: string): Promise<Post[]> {
     supabase.from('post_likes').select('post_id').eq('user_id', uid).in('post_id', ids),
     supabase.from('post_saves').select('post_id').eq('user_id', uid).in('post_id', ids),
     supabase.rpc('feed_likers', { p_ids: ids }),
-    primeMedia('posts', posts.flatMap((p) => (p.media ?? []).filter((m) => m.kind !== 'file').map((m) => m.url))),
+    // videos signed together; photos are signed one by one, resized for the screen
+    primeMedia('posts', posts.flatMap((p) => (p.media ?? []).filter((m) => m.kind === 'video').map((m) => m.url))),
   ]);
   const L = new Set((likes ?? []).map((x) => x.post_id));
   const S = new Set((saves ?? []).map((x) => x.post_id));

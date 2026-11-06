@@ -16,6 +16,7 @@ const KINDS: [string, string][] = [
 ];
 type Sec = { id: string; course: { name_ar: string } };
 
+/** Add a personal event (exam, deadline, meeting) to the timetable. */
 export default function NewEvent() {
   const { profile } = useAuth();
   const { id: editId } = useLocalSearchParams<{ id?: string }>();

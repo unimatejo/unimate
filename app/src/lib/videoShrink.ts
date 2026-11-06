@@ -57,7 +57,9 @@ const WEB_LIMIT_MS = 90_000;
 // ---------- web: WebCodecs through mediabunny (loaded only when a video is posted) ----------
 async function shrinkWeb(file: { uri: string; mime: string }, trim: Trim): Promise<Shrunk | null> {
   const cut = trim && trim.end > trim.start ? trim : null;
-  if (typeof VideoEncoder === 'undefined' || !webShrinkAllowed(!!cut && cut.end - cut.start <= 61)) return null;
+  // a browser camera clip (WebM) must become MP4: storage and iPhones only take MP4/MOV; those clips are short
+  const webm = /webm/.test(file.mime);
+  if (typeof VideoEncoder === 'undefined' || !webShrinkAllowed(webm || (!!cut && cut.end - cut.start <= 61))) return null;
   const blob = await (await fetch(file.uri)).blob();
   const mb = await import('mediabunny');
   const input = new mb.Input({ source: new mb.BlobSource(blob), formats: mb.ALL_FORMATS });
@@ -69,7 +71,7 @@ async function shrinkWeb(file: { uri: string; mime: string }, trim: Trim): Promi
   const bps = secs > 0 ? (blob.size * 8) / secs : Infinity;
   // a trimmed clip is always cut (only the chosen seconds go up), otherwise only heavy videos are converted
   const cutting = !!cut && (cut.start > 0.3 || cut.end < secs - 0.3);
-  if (!cutting && Math.max(w, h) <= LONG_SIDE && bps <= KEEP_BPS && file.mime === 'video/mp4') return null;
+  if (!cutting && !webm && Math.max(w, h) <= LONG_SIDE && bps <= KEEP_BPS && file.mime === 'video/mp4') return null;
 
   const output = new mb.Output({ format: new mb.Mp4OutputFormat({ fastStart: 'in-memory' }), target: new mb.BufferTarget() });
   const conversion = await mb.Conversion.init({
@@ -88,7 +90,7 @@ async function shrinkWeb(file: { uri: string; mime: string }, trim: Trim): Promi
     if ((await Promise.race([conversion.execute(), late])) === 'late') { await conversion.cancel(); return null; }
   } finally { clearTimeout(timer); store.del(RUNNING); }
   const buf = output.target.buffer;
-  if (!buf || (!cutting && buf.byteLength >= blob.size)) return null;
+  if (!buf || (!cutting && !webm && buf.byteLength >= blob.size)) return null;
   const out = new Blob([buf], { type: 'video/mp4' });
   return { uri: URL.createObjectURL(out), mime: 'video/mp4', blob: out, trimmed: cutting };
 }

@@ -1,3 +1,4 @@
+import { fitLongSide } from './upload';
 import { requireOptionalNativeModule } from 'expo';
 import { ImageManipulator, SaveFormat } from 'expo-image-manipulator';
 import { Platform } from 'react-native';
@@ -95,7 +96,7 @@ export async function assetToPicked(a: GalleryAsset): Promise<Picked> {
   }
   try {
     const ctx = ImageManipulator.manipulate(uri);
-    if (a.width > 2400) ctx.resize({ width: 2400 });
+    fitLongSide(ctx, a.width, a.height, 2400);
     const img = await ctx.renderAsync();
     const out = await img.saveAsync({ compress: 0.85, format: SaveFormat.JPEG });
     return { uri: out.uri, mime: 'image/jpeg', kind: 'image', width: out.width, height: out.height };
@@ -110,7 +111,7 @@ export async function captureToPicked(c: { uri: string; width?: number; height?:
   if (c.kind === 'video') return { uri: c.uri, mime: Platform.OS === 'web' ? 'video/webm' : 'video/mp4', kind: 'video', duration: c.durationMs ?? null, width: c.width, height: c.height };
   try {
     const ctx = ImageManipulator.manipulate(c.uri);
-    if ((c.width ?? 0) > 2160) ctx.resize({ width: 2160 });
+    fitLongSide(ctx, c.width, c.height, 2160);
     const img = await ctx.renderAsync();
     const out = await img.saveAsync({ compress: 0.88, format: SaveFormat.JPEG });
     return { uri: out.uri, mime: 'image/jpeg', kind: 'image', width: out.width, height: out.height };

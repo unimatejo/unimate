@@ -12,6 +12,7 @@ import { t } from '@/lib/i18n';
 
 type B = { blocked_id: string; created_at: string; p: { full_name: string; avatar_url: string | null } | null };
 
+/** Settings › blocked accounts. */
 export default function Blocked() {
   const { profile } = useAuth();
   const [rows, setRows] = useState<B[]>([]);

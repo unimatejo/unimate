@@ -71,6 +71,14 @@ export default function Permissions() {
     <Screen>
       <Header title={t('الصلاحيات')} subtitle={t('شو بيقدر يونيميت يستخدم على جهازك')} />
       <ScrollView contentContainerStyle={{ padding: 18, paddingTop: 4, gap: 14, paddingBottom: 60 }}>
+        {/* notifications off: one quiet note here (never a pop-up), with the way back on */}
+        {st.notif === 'denied' && (
+          <View style={{ gap: 10, backgroundColor: C.orangeSoft, borderRadius: 20, padding: 14 }}>
+            <T v="bodyMd">{t('الإشعارات موقوفة')}</T>
+            <T v="small" color={C.ink2}>{Platform.OS === 'web' ? t('فعّلها من إعدادات المتصفح (رمز القفل جنب الرابط)، عشان توصلك المحاضرات والامتحانات والرسائل.') : t('فعّلها من إعدادات جهازك، عشان توصلك تذكيرات المحاضرات والامتحانات.')}</T>
+            {Platform.OS !== 'web' && <Tap onPress={() => Linking.openSettings().catch(() => {})} accessibilityRole="button" style={{ alignSelf: 'flex-start', minHeight: 40, paddingHorizontal: 16, borderRadius: 999, backgroundColor: C.inverse, justifyContent: 'center' }}><T v="bold" color={C.onInverse}>{t('افتح إعدادات الجهاز')}</T></Tap>}
+          </View>
+        )}
         <View style={[{ backgroundColor: C.card, borderRadius: 22 }, shadow]}>
           <View style={{ borderRadius: 22, overflow: 'hidden' }}>
             {PERMS.map((p) => {

@@ -16,6 +16,7 @@ import { t } from '@/lib/i18n';
 import { ListSkeleton } from '@/components/ui/Skeleton';
 import { OnScreenProvider, useVisiblePosts } from '@/lib/videoFocus';
 
+/** Settings › saved posts. */
 export default function Saved() {
   const { visible, onViewableItemsChanged, viewabilityConfig } = useVisiblePosts(); // reels play only while on screen
   const { profile } = useAuth();

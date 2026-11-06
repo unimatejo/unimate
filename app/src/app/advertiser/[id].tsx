@@ -16,6 +16,7 @@ type Adv = {
 };
 const CAT: Record<string, string> = { restaurant: t('مطعم'), cafe: t('كافيه'), bookshop: t('مكتبة'), print: t('طباعة'), housing: t('سكن'), courses: t('دورات'), shop: t('محل'), other: t('خدمة') };
 
+/** An advertiser's public page with its current offers. */
 export default function Advertiser() {
   const { id, campaign } = useLocalSearchParams<{ id: string; campaign?: string }>();
   const [a, setA] = useState<Adv | null>(null);

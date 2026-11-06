@@ -5,7 +5,7 @@ import { Camera, ChevronDown, ChevronRight, Copy, Crop, Expand, FileText, Images
 import { useCallback, useEffect, useRef, useState } from 'react';
 import * as Haptics from 'expo-haptics';
 import { ActivityIndicator, Alert, FlatList, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, TextInput, useWindowDimensions, View } from 'react-native';
-import Animated, { FadeIn, FadeInDown, useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
+import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Avatar, Chip, Row, T, Tap } from '@/components/ui';
@@ -20,10 +20,11 @@ import { C, CATEGORY, F, isDark, R, SPRING } from '@/lib/theme';
 import { autoCrop, openCropper, playLength } from '@/lib/cropper';
 import { pickMedia, pickPdf, pickPhotos, uploadFile, uploadPicked, type Picked } from '@/lib/upload';
 import { GalleryGrid } from '@/components/create/GalleryGrid';
+import { userMessage } from '@/lib/run';
 import { takeStoryDraft } from '@/lib/storyDraft';
 import { StoryCamera } from '@/components/create/StoryCamera';
 import { assetToPicked, cameraModule, galleryAlbums, mediaLibrary, type GalleryAlbum, type GalleryAsset } from '@/lib/nativeMedia';
-import { flip, rtlLayout, t, ta } from '@/lib/i18n';
+import { flip, t, ta } from '@/lib/i18n';
 
 const POST_AUD = [['university', t('الجامعة')], ['college', t('كليتي')], ['major', t('تخصصي')], ['friends', t('أصدقائي')]] as const;
 const STORY_AUD = [['friends', t('أصدقائي')], ['close_friends', t('المقربين')], ['major', t('تخصصي')], ['university', t('الجامعة')]] as const;
@@ -37,22 +38,14 @@ function VideoPreview({ m }: { m: Picked }) {
   return <FramedMedia uri={m.uri} kind="video" meta={m.meta} />;
 }
 
-/** The bottom pill: منشور / ستوري / ريلز / مباشر, with the selected one sliding (spring). */
+/** Instagram's mode bar: the words on a dark rounded strip, the current one bright. */
 function ModeSwitch({ mode, onChange }: { mode: Mode; onChange: (m: Mode) => void }) {
-  const [w, setW] = useState(0);
-  const x = useSharedValue(0);
-  const idx = MODES.findIndex(([k]) => k === mode);
-  useEffect(() => { x.value = withSpring(idx * w, SPRING); }, [idx, w, x]);
-  const rtl = rtlLayout();
-  const pill = useAnimatedStyle(() => ({ transform: [{ translateX: rtl ? -x.value : x.value }] }));
   return (
-    <View accessibilityRole="tablist" style={{ alignSelf: 'center', flexDirection: 'row', padding: 5, borderRadius: R.pill, backgroundColor: C.card, borderWidth: 1, borderColor: C.line }}>
-      {w > 0 && <Animated.View style={[{ position: 'absolute', top: 5, bottom: 5, ...(Platform.OS === 'web' ? (rtl ? { right: 5 } : { left: 5 }) : { start: 5 }), width: w, borderRadius: R.pill, backgroundColor: C.inverse }, pill]} />}
+    <View accessibilityRole="tablist" style={{ alignSelf: 'center', flexDirection: 'row', gap: 2, paddingHorizontal: 8, paddingVertical: 4, borderRadius: R.pill, backgroundColor: 'rgba(18,18,22,0.88)' }}>
       {MODES.map(([k, label]) => (
-        <Tap key={k} haptic onPress={() => k !== mode && onChange(k)} accessibilityRole="tab" accessibilityState={{ selected: k === mode }}
-          onLayout={(e) => { if (!w) setW(e.nativeEvent.layout.width); }}
-          style={{ width: 76, minHeight: 40, borderRadius: R.pill, alignItems: 'center', justifyContent: 'center' }}>
-          <T v="bold" color={k === mode ? C.onInverse : C.muted} style={{ fontSize: 14 }}>{label}</T>
+        <Tap key={k} haptic onPress={() => k !== mode && onChange(k)} accessibilityRole="tab" accessibilityState={{ selected: k === mode }} scale={0.94}
+          style={{ minWidth: 64, minHeight: 38, paddingHorizontal: 10, alignItems: 'center', justifyContent: 'center' }}>
+          <T v="bold" color={k === mode ? '#FFFFFF' : 'rgba(255,255,255,0.5)'} style={{ fontSize: 14, letterSpacing: 0.2 }}>{label}</T>
         </Tap>
       ))}
     </View>
@@ -155,7 +148,7 @@ export default function Create() {
       } else {
         setItems([m]); setSel([a.id]); setActive(0); setPostAspect(null);
       }
-    } catch (e) { Alert.alert(t('ما زبط'), (e as Error).message); }
+    } catch (e) { Alert.alert(t('ما زبط'), userMessage(e)); }
     finally { if (seq === pickSeq.current) setLoadingId(null); }
   }, [mode, sel, multi, items, active]);
 
@@ -177,6 +170,14 @@ export default function Create() {
     const id = `cam-${Date.now()}`;
     if (multi && mode === 'post') { setItems((cur) => [...cur, m].slice(0, 10)); setSel((cur) => [...cur, id].slice(0, 10)); setActive(items.length); }
     else { setItems([m]); setSel([id]); setActive(0); setPostAspect(null); }
+  }
+  /** a photo or video tapped in "Add to story": photos straight to the editor, videos trimmed first */
+  async function storyFromGallery(a: GalleryAsset) {
+    if (loadingId) return;
+    setLoadingId(a.id);
+    try { const m = await assetToPicked(a); if (m) await storyShot(m); }
+    catch { Alert.alert(t('ما قدرنا نفتح هالملف'), t('جرّب صورة أو فيديو ثاني.')); }
+    finally { setLoadingId(null); }
   }
   /** story camera: photos go straight to the editor; videos are trimmed to 15s first */
   async function storyShot(m: Picked) {
@@ -210,7 +211,7 @@ export default function Create() {
         setItems([m]); setActive(0);
         if (isStory) { setOverlays([]); setEditing(true); }
       }
-    } catch (e) { Alert.alert(t('ما زبط'), (e as Error).message); }
+    } catch (e) { Alert.alert(t('ما زبط'), userMessage(e)); }
   }
   async function storyPick(camera: boolean): Promise<Picked | null> {
     const p = await pickMedia({ video: true, camera, maxSec: camera ? maxSec : 180 });
@@ -225,7 +226,7 @@ export default function Create() {
       if (mode === 'post') { if (postAspect == null && m.aspect) setPostAspect(m.aspect); setItems((cur) => [...cur, m].slice(0, 10)); setActive(items.length); return; }
       setItems([m]); setActive(0);
       if (isStory) { setOverlays([]); setEditing(true); }
-    } catch (e) { Alert.alert(t('ما زبط'), (e as Error).message); }
+    } catch (e) { Alert.alert(t('ما زبط'), userMessage(e)); }
   }
   function toggleItem(i: number) {
     // tap a chosen photo to see it; tap it again to crop it again (the × takes it out)
@@ -329,7 +330,7 @@ export default function Create() {
       if (router.canGoBack()) router.back(); else router.replace('/community');
     } catch (e) {
       reportError(e);
-      Alert.alert(t('ما انتشر'), (e as Error).message?.length < 120 && !/row-level|violates|JWT/i.test((e as Error).message) ? (e as Error).message : t('تأكد من الإنترنت وجرّب كمان مرة.'));
+      Alert.alert(t('ما انتشر'), userMessage(e));
     } finally { setBusy(false); }
   }
 
@@ -425,6 +426,26 @@ export default function Create() {
     );
   }
 
+  const albumSheet = (
+    <Modal visible={albumOpen} transparent animationType="fade" onRequestClose={() => setAlbumOpen(false)}>
+      <Pressable onPress={() => setAlbumOpen(false)} style={{ flex: 1, backgroundColor: C.overlay, justifyContent: 'flex-end' }}>
+        <Pressable style={{ maxHeight: '70%', backgroundColor: C.bg, borderTopLeftRadius: 24, borderTopRightRadius: 24, paddingTop: 10, paddingBottom: 28 }}>
+          <View style={{ alignSelf: 'center', width: 40, height: 4, borderRadius: 2, backgroundColor: C.line, marginBottom: 8 }} />
+          <T v="bold" style={{ textAlign: 'center', fontSize: 16, paddingBottom: 8 }}>{t('الألبومات')}</T>
+          {albums === null ? <ActivityIndicator color={C.muted} style={{ padding: 24 }} /> : (
+            <FlatList data={[{ id: '', title: t('الأحدث'), count: 0 }, ...albums]} keyExtractor={(a) => a.id || 'recent'}
+              renderItem={({ item }) => (
+                <Tap haptic onPress={() => { setAlbum(item.id ? item : null); setAlbumOpen(false); }}
+                  style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', minHeight: 50, paddingHorizontal: 20 }}>
+                  <T v={(album?.id ?? '') === item.id ? 'bold' : 'body'}>{item.title}</T>
+                  {item.count > 0 && <T v="small" color={C.muted}>{item.count}</T>}
+                </Tap>
+              )} />
+          )}
+        </Pressable>
+      </Pressable>
+    </Modal>
+  );
   const editorModal = (
     <Modal visible={editing && !!media} animationType="slide" onRequestClose={() => setEditing(false)} statusBarTranslucent>
       {media && <StoryEditor media={media} initial={overlays} sharing={busy}
@@ -447,7 +468,35 @@ export default function Create() {
     </SafeAreaView>
   );
 
-  // ---------- story: the camera opens straight away (Instagram); a pick or a shot goes to the story editor ----------
+  // ---------- story on the phone: "Add to story" like Instagram, the camera first and then the newest photos ----------
+  if (isStory && camera && gallery) {
+    return (
+      <View style={{ flex: 1, backgroundColor: '#000' }}>
+        <SafeAreaView edges={['top']} style={{ flex: 1 }}>
+          <Row style={{ paddingHorizontal: 8, minHeight: 52 }}>
+            <Tap onPress={() => (router.canGoBack() ? router.back() : router.replace('/community'))} accessibilityLabel={t('إغلاق')} style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}><X size={26} color="#fff" /></Tap>
+            <T style={{ flex: 1, textAlign: 'center', fontFamily: F.bodyBold, fontSize: 17 }} color="#fff">{t('ضيف للقصة')}</T>
+            <View style={{ width: 44 }} />
+          </Row>
+          <Tap onPress={openAlbums} accessibilityLabel={t('اختار ألبوم')} style={{ flexDirection: 'row', alignItems: 'center', gap: 4, minHeight: 44, paddingHorizontal: 14 }}>
+            <T v="bold" color="#fff" style={{ fontSize: 16 }}>{album?.title ?? t('الأحدث')}</T><ChevronDown size={18} color="#fff" />
+          </Tap>
+          <GalleryGrid key={`story|${album?.id ?? ''}`} kind="all" album={album?.id ?? null} selected={[]} multi={false} cols={3}
+            activeId={null} busyId={loadingId} onPick={storyFromGallery} onCamera={() => setCamOpen(true)} contentBottom={110} />
+        </SafeAreaView>
+        {modeBar}
+        {albumSheet}
+        <Modal visible={camOpen} animationType="slide" onRequestClose={() => setCamOpen(false)} statusBarTranslucent>
+          {camOpen && <StoryCamera maxSec={15} onPicked={(m) => { setCamOpen(false); storyShot(m); }} onClose={() => setCamOpen(false)}
+            onSystemPicker={() => { setCamOpen(false); addFromGallery(); }} footer={<ModeSwitch mode={mode} onChange={(m) => { setCamOpen(false); switchMode(m); }} />} />}
+        </Modal>
+        {editorModal}
+        {busyOverlay}
+      </View>
+    );
+  }
+
+  // ---------- story with the camera but without the gallery module (older app builds) ----------
   if (isStory && camera) {
     return (
       <View style={{ flex: 1, backgroundColor: '#000' }}>
@@ -512,32 +561,15 @@ export default function Create() {
           <Tap onPress={() => router.back()} accessibilityLabel={t('إغلاق')} style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}><X size={24} color={C.ink} /></Tap>
           <T style={{ flex: 1, textAlign: 'center', fontFamily: F.bodyBold, fontSize: 17 }}>{TITLES[mode]}</T>
           <Tap onPress={next} disabled={preparing || (mode === 'reel' && !media)} accessibilityLabel={t('التالي')}
-            style={{ minHeight: 38, minWidth: 76, paddingHorizontal: 18, borderRadius: R.pill, backgroundColor: C.primary, alignItems: 'center', justifyContent: 'center', opacity: preparing || (mode === 'reel' && !media) ? 0.5 : 1 }}>
-            {preparing ? <ActivityIndicator color={C.onPrimary} size="small" /> : <T v="bold" color={C.onPrimary}>{t('التالي')}</T>}
+            style={{ minHeight: 44, minWidth: 64, paddingHorizontal: 10, alignItems: 'center', justifyContent: 'center', opacity: preparing || (mode === 'reel' && !media) ? 0.4 : 1 }}>
+            {preparing ? <ActivityIndicator color={C.blue} size="small" /> : <T v="bold" color={C.blue} style={{ fontSize: 16 }}>{t('التالي')}</T>}
           </Tap>
         </Row>
         <GalleryGrid key={`${mode}|${album?.id ?? ''}`} kind={mode === 'reel' ? 'video' : 'all'} album={album?.id ?? null} selected={sel} multi={multi && mode === 'post'}
           activeId={sel[active] ?? null} busyId={loadingId} onPick={pickAsset} header={header} onFirst={onFirstAsset} contentBottom={110} />
         {modeBar}
 
-        <Modal visible={albumOpen} transparent animationType="fade" onRequestClose={() => setAlbumOpen(false)}>
-          <Pressable onPress={() => setAlbumOpen(false)} style={{ flex: 1, backgroundColor: C.overlay, justifyContent: 'flex-end' }}>
-            <Pressable style={{ maxHeight: '70%', backgroundColor: C.bg, borderTopLeftRadius: 24, borderTopRightRadius: 24, paddingTop: 10, paddingBottom: 28 }}>
-              <View style={{ alignSelf: 'center', width: 40, height: 4, borderRadius: 2, backgroundColor: C.line, marginBottom: 8 }} />
-              <T v="bold" style={{ textAlign: 'center', fontSize: 16, paddingBottom: 8 }}>{t('الألبومات')}</T>
-              {albums === null ? <ActivityIndicator color={C.muted} style={{ padding: 24 }} /> : (
-                <FlatList data={[{ id: '', title: t('الأحدث'), count: 0 }, ...albums]} keyExtractor={(a) => a.id || 'recent'}
-                  renderItem={({ item }) => (
-                    <Tap haptic onPress={() => { setAlbum(item.id ? item : null); setAlbumOpen(false); }}
-                      style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', minHeight: 50, paddingHorizontal: 20 }}>
-                      <T v={(album?.id ?? '') === item.id ? 'bold' : 'body'}>{item.title}</T>
-                      {item.count > 0 && <T v="small" color={C.muted}>{item.count}</T>}
-                    </Tap>
-                  )} />
-              )}
-            </Pressable>
-          </Pressable>
-        </Modal>
+        {albumSheet}
         <Modal visible={camOpen} animationType="slide" onRequestClose={() => setCamOpen(false)} statusBarTranslucent>
           {camOpen && <StoryCamera maxSec={maxSec} videoOnly={mode === 'reel'} onPicked={fromInAppCamera} onClose={() => setCamOpen(false)}
             onSystemPicker={() => { setCamOpen(false); addFromGallery(); }} />}

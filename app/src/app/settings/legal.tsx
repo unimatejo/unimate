@@ -37,6 +37,7 @@ const TERMS: Sec[] = [
   [t('التغييرات'), t('ممكن نحدّث هالشروط، وبنخبرك جوا التطبيق إذا صار تغيير مهم.')],
 ];
 
+/** Settings › terms and privacy policy. */
 export default function Legal() {
   const { doc } = useLocalSearchParams<{ doc?: string }>();
   const isTerms = doc === 'terms';

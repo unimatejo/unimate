@@ -15,10 +15,12 @@ import { C } from '@/lib/theme';
 import { AvatarCropper } from '@/components/profile/AvatarCropper';
 import { pickMedia, publicUrl, uploadFile } from '@/lib/upload';
 import { handleFrom } from '@/lib/util';
+import { userMessage } from '@/lib/run';
 import { t } from '@/lib/i18n';
 
 const validHandle = (s: string) => /^[A-Za-z0-9._-]{1,30}$/.test(s);
 
+/** Settings › edit profile: photo, name, username, bio, major and social accounts. */
 export default function EditProfile() {
   const { profile, university, refreshProfile } = useAuth();
   const [name, setName] = useState('');
@@ -80,7 +82,7 @@ export default function EditProfile() {
       await setPhoto(publicUrl('avatars', path));
     } catch (e) {
       setPreview(null);
-      Alert.alert(t('ما زبط تغيير الصورة'), e instanceof Error ? e.message : t('جرّب كمان مرة.'));
+      Alert.alert(t('ما زبط تغيير الصورة'), userMessage(e));
     }
     setUploading(false);
   }

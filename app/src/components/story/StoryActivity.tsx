@@ -7,7 +7,7 @@ import { ScrollView, View } from 'react-native';
 import { SheetModal } from '@/components/chat/ChatExtras';
 import { ListSkeleton } from '@/components/ui/Skeleton';
 import { Avatar, Row, T, Tap } from '@/components/ui';
-import { mediaUrl, supabase } from '@/lib/supabase';
+import { mediaUrl, supabase, photoWidth } from '@/lib/supabase';
 import { C, F } from '@/lib/theme';
 import { timeAgo } from '@/lib/util';
 import { t } from '@/lib/i18n';
@@ -59,7 +59,7 @@ export function StoryActivitySheet({ open, onClose, stories, index, onPick, me }
   useEffect(() => {
     if (!open) return;
     stories.filter((s) => s.kind !== 'video' && !thumbs[s.id]).forEach((s) => {
-      mediaUrl('stories', s.media_url).then((u) => { if (u) setThumbs((x) => ({ ...x, [s.id]: u })); }, () => {});
+      mediaUrl('stories', s.media_url, photoWidth(80)).then((u) => { if (u) setThumbs((x) => ({ ...x, [s.id]: u })); }, () => {});
     });
   }, [open, stories]); // eslint-disable-line react-hooks/exhaustive-deps
 

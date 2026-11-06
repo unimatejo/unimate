@@ -6,6 +6,7 @@ import { useAuth } from '@/lib/auth';
 import { C } from '@/lib/theme';
 import { t } from '@/lib/i18n';
 
+/** Shown when the signed-in email belongs to a university that is not on UniMate yet. */
 export default function Unsupported() {
   const { signOut } = useAuth();
   return (

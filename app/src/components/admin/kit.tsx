@@ -85,7 +85,7 @@ export function useAdminRole() {
 
 /** Badge counts for the menu (one shared copy, refreshed at most once a minute). */
 let countsCache: { at: number; c: AdminCounts } | null = null;
-export function useAdminCounts(enabled: boolean) {
+function useAdminCounts(enabled: boolean) {
   const [c, setC] = useState<AdminCounts | null>(countsCache?.c ?? null);
   useEffect(() => {
     if (!enabled || (countsCache && Date.now() - countsCache.at < 60000)) return;

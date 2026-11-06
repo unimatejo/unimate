@@ -13,6 +13,7 @@ import { t, ta } from '@/lib/i18n';
 
 type P = { id: string; full_name: string; avatar_url: string | null };
 
+/** Send a post to friends or groups in a chat. */
 export default function Share() {
   const { post } = useLocalSearchParams<{ post: string }>();
   const { profile } = useAuth();

@@ -8,13 +8,14 @@ import { t } from '@/lib/i18n';
 
 type Ticket = { id: string; user_id: string; subject: string; body: string; status: string; reply: string | null; created_at: string; user: { full_name: string } | null };
 
+/** Admin › support messages from students. */
 export default function Support() {
   const [filter, setFilter] = useState<'open' | 'answered' | 'closed' | 'all'>('open');
   const [sel, setSel] = useState<Ticket | null>(null);
   const [reply, setReply] = useState('');
   const [busy, setBusy] = useState(false);
   const { data, loading, error, reload } = useLoad<Ticket[]>(() => {
-    let q = supabase.from('support_tickets').select('*, user:profiles(full_name)').order('created_at', { ascending: false }).limit(200);
+    let q = supabase.from('support_tickets').select('*, user:profiles!support_tickets_user_id_fkey(full_name)').order('created_at', { ascending: false }).limit(200);
     if (filter !== 'all') q = q.eq('status', filter);
     return q as unknown as PromiseLike<{ data: Ticket[] | null; error: { message: string } | null }>;
   }, [filter]);

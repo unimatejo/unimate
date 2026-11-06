@@ -1,3 +1,4 @@
+/** Shapes of the main database rows used across the app. */
 export type University = {
   id: string; slug: string; name_ar: string; name_en: string; city: string | null;
   email_domains: string[]; brand_color: string; logo_url: string | null;

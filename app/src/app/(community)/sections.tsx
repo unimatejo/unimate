@@ -17,6 +17,7 @@ const DESC: Record<string, string> = {
   exchange: t('بدّل كتابك أو تبرع فيه'), transport_housing: t('توصيلة مشتركة وسكن'), events: t('نشاطات وأندية ورياضة'), opportunities: t('تدريب وشغل جزئي ومنح'),
 };
 
+/** Every community section in one grid. */
 export default function Sections() {
   return (
     <Screen>

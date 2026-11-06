@@ -14,6 +14,7 @@ import { nm, t } from '@/lib/i18n';
 
 type Liker = { user_id: string; profile: { id: string; full_name: string; avatar_url: string | null; major: { name_ar: string } | null } | null };
 
+/** Bottom sheet listing who liked a post. */
 export function LikesSheet({ post, onClose }: { post: Post | null; onClose: () => void }) {
   const { profile } = useAuth();
   const insets = useSafeAreaInsets();
@@ -25,7 +26,7 @@ export function LikesSheet({ post, onClose }: { post: Post | null; onClose: () =
   useEffect(() => {
     if (!post || !profile) return;
     setRows([]); setLoading(true);
-    supabase.from('post_likes').select('user_id, profile:profiles(id, full_name, avatar_url, major:majors!profiles_major_id_fkey(name_ar, name_en))').eq('post_id', post.id).order('created_at', { ascending: false }).limit(200)
+    supabase.from('post_likes').select('user_id, profile:profiles!post_likes_user_id_fkey(id, full_name, avatar_url, major:majors!profiles_major_id_fkey(name_ar, name_en))').eq('post_id', post.id).order('created_at', { ascending: false }).limit(200)
       .then(({ data }) => { setRows((data ?? []) as unknown as Liker[]); setLoading(false); }, () => setLoading(false));
     supabase.from('follows').select('followee_id, status').eq('follower_id', profile.id)
       .then(({ data }) => setFollowing(new Map((data ?? []).map((x) => [x.followee_id as string, x.status as string]))));

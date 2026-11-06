@@ -20,6 +20,7 @@ type Req = { id: string; course_id: string; from_section_id: string; to_section_
 
 const when = (s?: Sec) => s?.meetings?.length ? s.meetings.map((m) => `${WEEKDAYS_SHORT[m.weekday]} ${clock(m.starts_at)}`).join(' · ') : t('الوقت بيتحدد');
 
+/** Section swaps: offer your section of a course for another one, matched automatically. */
 export default function Swap() {
   const { profile } = useAuth();
   const [mine, setMine] = useState<Mine[]>([]);

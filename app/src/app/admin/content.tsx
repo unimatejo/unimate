@@ -15,6 +15,7 @@ type Comment = { id: string; body: string; is_hidden: boolean; created_at: strin
 type Story = { id: string; caption: string | null; media_url: string; is_hidden: boolean; created_at: string; expires_at: string; author: { full_name: string } | null };
 const CATS: Record<string, string> = { '': t('كل الأقسام'), square: t('الساحة'), summaries: t('ملخصات'), assignments: t('واجبات'), tutoring: t('تدريس'), lost_found: t('مفقودات'), market: t('سوق'), exchange: t('تبادل'), transport_housing: t('مواصلات وسكن'), events: t('فعاليات'), opportunities: t('فرص') };
 
+/** Admin › posts and stories: hide, pin or delete content. */
 export default function Content() {
   const [tab, setTab] = useState<'posts' | 'comments' | 'stories'>('posts');
   const [uni, setUni] = useState('');

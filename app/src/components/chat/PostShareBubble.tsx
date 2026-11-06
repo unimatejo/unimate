@@ -6,7 +6,7 @@ import { View } from 'react-native';
 
 import { bubble, inkOn } from '@/components/chat/ChatExtras';
 import { Avatar, Row, T, Tap } from '@/components/ui';
-import { mediaUrl, supabase } from '@/lib/supabase';
+import { mediaUrl, supabase, photoWidth } from '@/lib/supabase';
 import { C } from '@/lib/theme';
 import { t } from '@/lib/i18n';
 import type { Message } from '@/lib/types';
@@ -34,7 +34,7 @@ export function PostShareBubble({ m, mine }: { m: Message; mine: boolean }) {
       .then(({ data }) => { const p = (data ?? null) as unknown as Shared | null; cache.set(id, p); setPost(p); }, () => setPost(null));
   }, [id]);
   const first = post?.media?.filter((x) => x.kind === 'image' || x.kind === 'video').sort((a, b) => a.position - b.position)[0];
-  useEffect(() => { if (first?.kind === 'image') mediaUrl('posts', first.url).then(setThumb); }, [first?.kind, first?.url]);
+  useEffect(() => { if (first?.kind === 'image') mediaUrl('posts', first.url, photoWidth(240)).then(setThumb); }, [first?.kind, first?.url]);
 
   const note = m.body?.trim();
   return (

@@ -12,7 +12,7 @@ type A = { user_id: string; role: string; created_at: string; p: { full_name: st
 
 /** Owner only: add and remove moderators. Pick people by search instead of pasting ids. */
 export default function Admins() {
-  const { data, loading, error, reload } = useLoad<A[]>(() => supabase.from('admins').select('*, p:profiles(full_name)').order('created_at') as never, []);
+  const { data, loading, error, reload } = useLoad<A[]>(() => supabase.from('admins').select('*, p:profiles!admins_user_id_fkey(full_name)').order('created_at') as never, []);
   const [role, setRole] = useState<'moderator' | 'owner'>('moderator');
   const [q, setQ] = useState('');
   const [term, setTerm] = useState('');

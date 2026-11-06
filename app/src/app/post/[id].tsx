@@ -40,7 +40,7 @@ export default function PostScreen() {
     try {
       const [{ data, error }, { data: c }, { data: hw }, { data: bl }] = await Promise.all([
         supabase.from('posts').select(POST_SELECT).eq('id', id).maybeSingle(),
-        supabase.from('comments').select('id, author_id, parent_id, body, created_at, author:profiles(full_name, avatar_url, academic_title, title_verified)').eq('post_id', id).order('created_at'),
+        supabase.from('comments').select('id, author_id, parent_id, body, created_at, author:profiles!comments_author_id_fkey(full_name, avatar_url, academic_title, title_verified)').eq('post_id', id).order('created_at'),
         profile ? supabase.from('hidden_words').select('word').eq('user_id', profile.id) : Promise.resolve({ data: [] as { word: string }[] }),
         profile ? supabase.from('blocks').select('blocked_id').eq('blocker_id', profile.id) : Promise.resolve({ data: [] as { blocked_id: string }[] }),
       ]);
@@ -65,7 +65,7 @@ export default function PostScreen() {
     const body = draft.trim();
     setSending(true);
     const r = await run(supabase.from('comments').insert({ post_id: id, author_id: profile.id, body, parent_id: replyTo?.id ?? null })
-      .select('id, author_id, parent_id, body, created_at, author:profiles(full_name, avatar_url, academic_title, title_verified)').single(), { msg: t('ما انبعت التعليق، جرّب كمان مرة.') });
+      .select('id, author_id, parent_id, body, created_at, author:profiles!comments_author_id_fkey(full_name, avatar_url, academic_title, title_verified)').single(), { msg: t('ما انبعت التعليق، جرّب كمان مرة.') });
     setSending(false);
     if (!r.ok || !r.data) return; // the text stays in the box
     setDraft(''); setReplyTo(null);

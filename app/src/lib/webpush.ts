@@ -3,13 +3,12 @@ import { router } from 'expo-router';
 import { useEffect } from 'react';
 import { Platform } from 'react-native';
 
-import { getPref, setPref } from './prefs';
 import { supabase } from './supabase';
 
 // public half of the VAPID key pair (the private half is a secret of the `push` edge function)
 const VAPID = 'BMW-Dn_W4v-60lD-Uf-dWuaw5m2hZg2hKuuyVpTgxZoecrI757q2IXvd0McOjSgc93stLBgHsylHGEKM6nDDOtA';
 
-export type WebPushState = 'granted' | 'denied' | 'ask' | 'install' | 'unavailable';
+type WebPushState = 'granted' | 'denied' | 'ask' | 'install' | 'unavailable';
 
 const isWeb = Platform.OS === 'web' && typeof window !== 'undefined';
 const isIos = () => isWeb && /iPhone|iPad|iPod/.test(navigator.userAgent);
@@ -53,13 +52,11 @@ async function nativeToken(): Promise<string | null> {
   try { return (await Notifications.getDevicePushTokenAsync()).data as string; } catch { return null; }
 }
 
-async function nativeRegister(ask: boolean) {
+/** Android app: sign this phone up for push if notifications are already allowed (never asks by itself). */
+export async function registerNativePush() {
+  if (Platform.OS !== 'android') return;
   await Notifications.setNotificationChannelAsync('messages', { name: 'الرسائل والتفاعلات', importance: Notifications.AndroidImportance.HIGH, sound: 'default' }).catch(() => {});
-  let perm = await Notifications.getPermissionsAsync();
-  if (!perm.granted && ask && perm.canAskAgain && getPref('push_asked') !== '1') {
-    setPref('push_asked', '1');
-    perm = await Notifications.requestPermissionsAsync();
-  }
+  const perm = await Notifications.getPermissionsAsync();
   if (!perm.granted) return;
   const tok = await nativeToken();
   if (tok) await supabase.rpc('register_push', { p_token: tok, p_platform: 'android', p_keys: null });
@@ -91,7 +88,7 @@ export async function dropWebPush() {
 export function useWebPush(userId?: string) {
   useEffect(() => {
     if (Platform.OS !== 'android' || !userId) return;
-    nativeRegister(true).catch(() => {});
+    registerNativePush().catch(() => {});
     Notifications.getLastNotificationResponseAsync().then(openFrom, () => {});
     const sub = Notifications.addNotificationResponseReceivedListener(openFrom);
     return () => sub.remove();

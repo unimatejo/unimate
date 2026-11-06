@@ -16,6 +16,7 @@ import { nm, t } from '@/lib/i18n';
 
 type Req = { id: string; context: string | null; first: string | null; from: { id: string; full_name: string; avatar_url: string | null; is_verified?: boolean; major: { name_ar: string } | null } | null };
 
+/** Message requests from people you don't follow: accept to move them to the inbox, or ignore. */
 export default function Requests() {
   const { profile } = useAuth();
   const [rows, setRows] = useState<Req[]>([]);

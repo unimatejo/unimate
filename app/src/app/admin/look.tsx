@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { Alert, View } from 'react-native';
 
 import { Actions, AdminScreen, Muted, Panel, Section, done } from '@/components/admin/kit';
-import { QUICK } from '@/components/home/quick';
+import { DEFAULT_QUICK, QUICK } from '@/components/home/quick';
 import { Button, Chip, Field, Row, T, Tap, Toggle } from '@/components/ui';
 import { applyAppContent, refreshAppContent, TONES, useAppContent, type AppContent, type FeatureKey, type QuickKey, type Tone } from '@/lib/appContent';
 import { supabase } from '@/lib/supabase';
@@ -35,7 +35,7 @@ export default function Look() {
   const dirty = JSON.stringify(c) !== JSON.stringify(saved);
 
   const set = (f: (x: AppContent) => AppContent) => setC((x) => f(JSON.parse(JSON.stringify(x)) as AppContent));
-  const quick: QuickKey[] = c.home?.quick?.length ? c.home.quick : QUICK.map((q) => q.key);
+  const quick: QuickKey[] = c.home?.quick?.length ? c.home.quick : DEFAULT_QUICK.map((q) => q.key);
 
   async function save() {
     setBusy(true);

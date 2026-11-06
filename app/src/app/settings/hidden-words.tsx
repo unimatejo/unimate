@@ -9,6 +9,7 @@ import { run } from '@/lib/run';
 import { C, F, isDark } from '@/lib/theme';
 import { t, ta } from '@/lib/i18n';
 
+/** Settings › hidden words: comments with these words are hidden for you. */
 export default function HiddenWords() {
   const { profile } = useAuth();
   const [words, setWords] = useState<string[]>([]);

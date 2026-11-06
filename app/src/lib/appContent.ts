@@ -9,7 +9,7 @@ import { supabase } from './supabase';
  */
 export type Tone = 'blue' | 'green' | 'pink' | 'orange' | 'violet' | 'red';
 export type FeatureKey = 'rides' | 'honor' | 'leaderboard' | 'market' | 'study' | 'swap' | 'map' | 'attendance' | 'gpa' | 'exams';
-export type QuickKey = 'map' | 'swap' | 'summaries' | 'market' | 'study' | 'events' | 'lost_found' | 'sections';
+export type QuickKey = 'map' | 'swap' | 'summaries' | 'market' | 'study' | 'ranks' | 'events' | 'lost_found' | 'sections';
 
 export type AppContent = {
   notice?: { on?: boolean; text?: string; tone?: Tone };

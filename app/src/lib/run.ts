@@ -28,9 +28,19 @@ export async function run<T>(p: PromiseLike<Res<T>>, opts: { quiet?: boolean; ms
 
 export const isRateLimited = (e: { message?: string } | null | undefined) => /rate_limited/.test(e?.message ?? '');
 
+/** An error whose message was written for students (it is safe to show as it is). */
+export class UserError extends Error {}
+
+/** What to tell the student about any error: our own messages as they are, everything else in plain words. */
+export function userMessage(e: unknown): string {
+  if (e instanceof UserError) return e.message;
+  return friendly(e && typeof e === 'object' ? e as { message?: string; code?: string } : { message: String(e) });
+}
+
 export function friendly(e: { message?: string; code?: string } | null | undefined): string {
   const m = e?.message ?? '';
   if (isRateLimited(e)) return t('استنى شوي، بعتت كثير بوقت قصير.');
+  if (/username_not_allowed|name_not_allowed|bad_alias/.test(m)) return t('هالاسم فيه كلمة مش مسموحة. جرّب اسم ثاني.');
   if (/fetch|network|Failed to fetch|timeout/i.test(m)) return t('تأكد من الإنترنت وجرّب كمان مرة.');
   if (e?.code === '23505') return t('موجود من قبل.');
   if (e?.code === '42501' || /row-level security|permission/i.test(m)) return t('ما عندك صلاحية لهالإشي.');

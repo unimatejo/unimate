@@ -10,7 +10,7 @@ import { titledName } from '@/components/profile/TitleBadge';
 import { Avatar, Empty, Header, Screen, T, Tap } from '@/components/ui';
 import { ListSkeleton } from '@/components/ui/Skeleton';
 import { useAuth } from '@/lib/auth';
-import { mediaUrl, supabase } from '@/lib/supabase';
+import { mediaUrl, supabase, photoWidth } from '@/lib/supabase';
 import { C, F, R } from '@/lib/theme';
 import { timeAgo } from '@/lib/util';
 import { isAR, nm, t } from '@/lib/i18n';
@@ -49,7 +49,7 @@ function bucket(iso: string) {
 
 function Thumb({ path }: { path: string }) {
   const [uri, setUri] = useState<string | null>(null);
-  useEffect(() => { mediaUrl('posts', path).then(setUri); }, [path]);
+  useEffect(() => { mediaUrl('posts', path, photoWidth(46)).then(setUri); }, [path]);
   return <View style={{ width: 46, height: 46, borderRadius: 12, overflow: 'hidden', backgroundColor: C.soft }}>{uri && <Image source={{ uri }} style={{ width: 46, height: 46 }} contentFit="cover" transition={150} />}</View>;
 }
 
@@ -73,7 +73,8 @@ export default function Notifications() {
     if (!profile) return;
     if (!readCache(cacheKey)) setLoading(true);
     const [{ data: n }, { data: f }] = await Promise.all([
-      supabase.from('notifications').select('*').eq('user_id', profile.id).order('created_at', { ascending: false }).limit(80),
+      // app errors live in the admin panel (أخطاء التطبيق), never in the notifications list
+      supabase.from('notifications').select('*').eq('user_id', profile.id).neq('kind', 'admin_alert').order('created_at', { ascending: false }).limit(80),
       supabase.from('follows').select('follower_id, profile:profiles!follows_follower_id_fkey(id, full_name, avatar_url, major:majors!profiles_major_id_fkey(name_ar, name_en))').eq('followee_id', profile.id).eq('status', 'pending'),
     ]);
     const list = (n ?? []) as N[];

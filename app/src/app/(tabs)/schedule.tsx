@@ -49,6 +49,7 @@ function LiveDot() {
   );
 }
 
+/** The timetable tab: the week's classes, attendance, GPA and exams tools, and reading a timetable photo. */
 export default function Schedule() {
   const content = useAppContent(); // the owner can switch tools off
   const { profile } = useAuth();

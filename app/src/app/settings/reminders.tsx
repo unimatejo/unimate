@@ -19,6 +19,7 @@ const MINUTES = [5, 10, 15, 20, 30, 45, 60];
 
 type Rem = { meeting_id: string; minutes: number | null; enabled: boolean };
 
+/** Settings › reminders: lecture reminders (per lecture), exams and the evening summary. */
 export default function Reminders() {
   const { profile } = useAuth();
   const { prefs, set, loaded } = usePrefs();

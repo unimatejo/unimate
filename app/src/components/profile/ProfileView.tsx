@@ -19,7 +19,7 @@ import { useAuth } from '@/lib/auth';
 import { POST_SELECT, toggleLike, withMine } from '@/lib/posts';
 import { optimistic , run } from '@/lib/run';
 import { toast } from '@/lib/toast';
-import { mediaUrl, supabase } from '@/lib/supabase';
+import { mediaUrl, supabase, photoWidth } from '@/lib/supabase';
 import { C, F, isDark, R, SPRING } from '@/lib/theme';
 import type { Post, Profile } from '@/lib/types';
 import { flip, nm, t, ta, LOCALE } from '@/lib/i18n';
@@ -45,7 +45,7 @@ const TILE_G: [string, string][] = [['#2E5BFF', '#17204A'], ['#FF7A59', '#C0264A
 /** A highlight circle under the bio (opens its stories). */
 function HighlightBubble({ h, owner }: { h: { id: string; title: string; cover_url: string | null }; owner: string }) {
   const [uri, setUri] = useState<string | null>(null);
-  useEffect(() => { if (h.cover_url) mediaUrl('stories', h.cover_url).then(setUri); }, [h.cover_url]);
+  useEffect(() => { if (h.cover_url) mediaUrl('stories', h.cover_url, photoWidth(66)).then(setUri); }, [h.cover_url]);
   return (
     <Tap onPress={() => router.push({ pathname: '/story/[id]', params: { id: owner, highlight: h.id } })} style={{ alignItems: 'center', gap: 6, width: 66 }} accessibilityLabel={h.title}>
       <View style={{ width: 62, height: 62, borderRadius: 31, padding: 3, borderWidth: 1, borderColor: C.line }}>
@@ -64,7 +64,7 @@ export function GridTile({ post, i }: { post: Post; i: number }) {
   const file = (post.media ?? []).some((m) => m.kind === 'file');
   const [uri, setUri] = useState<string | null>(null);
   const [liked, setLiked] = useState(!!post.liked);
-  useEffect(() => { if (img) mediaUrl('posts', img.url).then(setUri); }, [img]);
+  useEffect(() => { if (img) mediaUrl('posts', img.url, photoWidth(140)).then(setUri); }, [img]);
   const burst = useSharedValue(0);
   const burstStyle = useAnimatedStyle(() => ({ opacity: burst.value, transform: [{ scale: 0.5 + burst.value * 0.7 }] }));
   const [last, setLast] = useState(0);

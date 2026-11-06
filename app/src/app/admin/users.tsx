@@ -7,6 +7,7 @@ import { Avatar } from '@/components/ui';
 import { supabase } from '@/lib/supabase';
 import { t } from '@/lib/i18n';
 
+/** Admin › users: search by name, @username, email or student number. */
 export default function UsersPage() {
   const [q, setQ] = useState('');
   const [term, setTerm] = useState('');

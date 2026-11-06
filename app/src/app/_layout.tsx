@@ -16,6 +16,7 @@ import { useOtaUpdates } from '@/lib/ota';
 import { useWebPush } from '@/lib/webpush';
 import { AuthProvider, useAuth } from '@/lib/auth';
 import { useTeamStatus } from '@/lib/team';
+import { useNotifIntroDue } from '@/lib/notifPermission';
 import { installGlobalErrorHandler, reportError, setScreen } from '@/lib/errors';
 import { isAR, syncDirection, t, ta } from '@/lib/i18n';
 import { C, F, isDark } from '@/lib/theme';
@@ -25,22 +26,26 @@ installGlobalErrorHandler();
 
 /** Shown instead of closing the app when a screen fails to draw. */
 export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
-  // a new version went live while this page was open: its old code files are gone, so load the new version once
-  const stale = typeof window !== 'undefined' && /Loading module|Failed to fetch dynamically imported module|ChunkLoadError/i.test(error.message);
+  // a new version went live while this page was open: its old code files are gone, so load the new version
+  // (once per version: the mark holds the page's own build, so the next deploy can reload again)
+  const stale = typeof window !== 'undefined' && /Loading module|Failed to fetch dynamically imported module|ChunkLoadError|Importing a module script failed/i.test(error.message);
   useEffect(() => {
     if (stale) {
-      try { if (sessionStorage.getItem('chunk_reload') !== '1') { sessionStorage.setItem('chunk_reload', '1'); window.location.replace(`${window.location.pathname}?v=${Date.now().toString(36)}`); return; } } catch { /* no storage */ }
+      try {
+        const build = (document.querySelector('script[src*="/entry-"]') as HTMLScriptElement | null)?.src ?? 'x';
+        if (sessionStorage.getItem('chunk_reload') !== build) { sessionStorage.setItem('chunk_reload', build); window.location.replace(`${window.location.pathname}?v=${Date.now().toString(36)}`); return; }
+      } catch { /* no storage */ }
     }
     reportError(error, true);
   }, [error, stale]);
+  // the technical details go to the team's error log only; the student sees a plain message
   return (
-    <View style={{ flex: 1, backgroundColor: C.bg, padding: 24, paddingTop: 90, gap: 14 }}>
-      <Text style={{ fontSize: 22, fontWeight: '700', color: C.ink, textAlign: ta }}>{t('صار خطأ بهالصفحة')}</Text>
-      <Text style={{ fontSize: 15, color: C.muted, textAlign: ta }}>{t('انبعت تقرير لفريق يونيميت تلقائياً.')}</Text>
-      <ScrollView style={{ maxHeight: 260, backgroundColor: C.card, borderRadius: 14, padding: 12 }}>
-        <Text selectable style={{ fontSize: 12, color: C.ink2, textAlign: 'left' }}>{error.message}</Text>
-      </ScrollView>
-      <Text onPress={retry} style={{ fontSize: 16, fontWeight: '700', color: C.onPrimary, backgroundColor: C.primary, textAlign: 'center', paddingVertical: 14, borderRadius: 16, overflow: 'hidden' }}>{t('جرّب كمان مرة')}</Text>
+    <View style={{ flex: 1, backgroundColor: C.bg, padding: 24, paddingTop: 110, gap: 14, alignItems: 'center' }}>
+      <Text style={{ fontSize: 44 }}>🛠️</Text>
+      <Text style={{ fontSize: 22, fontWeight: '700', color: C.ink, textAlign: 'center' }}>{stale ? t('في نسخة جديدة من يونيميت') : t('في إشي ما زبط هون')}</Text>
+      <Text style={{ fontSize: 15, color: C.muted, textAlign: 'center', maxWidth: 320 }}>{stale ? t('اكبس «حدّث» عشان تفتح النسخة الجديدة.') : t('جرّب كمان مرة. إذا ضلت، فريق يونيميت وصله خبر وعم يشتغل عليها.')}</Text>
+      <Text onPress={() => { if (stale && typeof window !== 'undefined') window.location.replace(`${window.location.pathname}?v=${Date.now().toString(36)}`); else retry(); }}
+        style={{ alignSelf: 'stretch', fontSize: 16, fontWeight: '700', color: C.onPrimary, backgroundColor: C.primary, textAlign: 'center', paddingVertical: 14, borderRadius: 16, overflow: 'hidden', marginTop: 8 }}>{stale ? t('حدّث') : t('جرّب كمان مرة')}</Text>
       <Text onPress={() => { retry(); router.replace('/(tabs)'); }} style={{ fontSize: 15, color: C.primary, textAlign: 'center', paddingVertical: 10 }}>{t('ارجع للرئيسية')}</Text>
     </View>
   );
@@ -58,6 +63,8 @@ function Gate() {
   const seg = useSegments() as string[];
   useWebPush(session?.user.id);
   const team = useTeamStatus(session);
+  // the one-time notifications screen, right after the first setup (never again once answered)
+  const notifDue = useNotifIntroDue(!!profile?.onboarded);
   useEffect(() => { setScreen(seg.join('/')); }, [seg]);
 
   // the splash stays until we know who is signed in
@@ -81,8 +88,10 @@ function Gate() {
     if (!profile.university_id) { if (seg[1] !== 'unsupported') router.replace('/(auth)/unsupported'); return; }
     // the one-time setup decides on onboarding only
     if (!profile.onboarded) { if (seg[1] !== 'welcome') router.replace('/(auth)/welcome'); return; }
+    if (notifDue === null) return;
+    if (notifDue) { if (seg[1] !== 'notify') router.replace('/(auth)/notify'); return; }
     if (inAuth) router.replace('/(tabs)');
-  }, [session, profile, loading, seg, team]);
+  }, [session, profile, loading, seg, team, notifDue]);
 
   // signed in but the profile couldn't load: never leave the user stuck on a blank screen
   const blocked = !loading && !!session && !profile;

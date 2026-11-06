@@ -13,6 +13,7 @@ import { t } from '@/lib/i18n';
 export type UserRow = { id: string; full_name: string; username: string | null; avatar_url: string | null; status: string; university: string | null; major: string | null; email: string | null; student_number: string | null; created_at: string; post_count: number; follower_count: number; is_admin: boolean };
 type Conv = { id: string; kind: string; title: string | null; context_label: string | null; last_message_at: string; members: { id: string; name: string; state: string }[]; message_count: number };
 
+/** One user in the admin panel: profile, status, blue check, title, chats (owner) and actions. */
 export function UserDetail({ id, onChanged }: { id: string; onChanged?: () => void }) {
   const { data: rows, reload } = useLoad<UserRow[]>(() => supabase.rpc('admin_find_users', { q: id, lim: 1 }), [id]);
   const u = rows?.[0];

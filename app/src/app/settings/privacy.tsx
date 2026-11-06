@@ -25,6 +25,7 @@ function Choice<K extends string>({ items, value, onChange }: { items: [K, strin
 
 const ic = (n: ReactNode) => <View style={{ width: 36, height: 36, borderRadius: 12, backgroundColor: C.bg, alignItems: 'center', justifyContent: 'center' }}>{n}</View>;
 
+/** Settings › privacy: private account, who can message, activity status, likes and followers. */
 export default function Privacy() {
   const { value: p, patch } = useProfilePatch();
 

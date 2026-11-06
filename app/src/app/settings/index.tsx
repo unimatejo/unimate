@@ -40,6 +40,7 @@ function Item({ icon, color, label, value, onPress, danger }: { icon: ReactNode;
 
 const ic = { size: 19, color: C.white };
 
+/** Settings: every option grouped, with search. */
 export default function Settings() {
   const content = useAppContent();
   const { profile, university, signOut, session } = useAuth();

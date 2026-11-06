@@ -181,8 +181,8 @@ function Buildings({ uni }: { uni: string }) {
 }
 
 function PendingQueue() {
-  const aliases = useLoad<Pending[]>(() => supabase.from('place_aliases').select('id, alias, state, created_at, by:profiles(full_name), building:buildings(name_ar), place:places(name_ar)').eq('state', 'pending').order('created_at') as never, []);
-  const places = useLoad<Pending[]>(() => supabase.from('places').select('id, name_ar, kind, state, created_at, lat, lng, by:profiles(full_name)').eq('state', 'pending').order('created_at') as never, []);
+  const aliases = useLoad<Pending[]>(() => supabase.from('place_aliases').select('id, alias, state, created_at, by:profiles!place_aliases_suggested_by_fkey(full_name), building:buildings(name_ar), place:places(name_ar)').eq('state', 'pending').order('created_at') as never, []);
+  const places = useLoad<Pending[]>(() => supabase.from('places').select('id, name_ar, kind, state, created_at, lat, lng, by:profiles!places_created_by_fkey(full_name)').eq('state', 'pending').order('created_at') as never, []);
   async function decide(table: string, id: string, state: string, reload: () => void) {
     await supabase.from(table).update({ state }).eq('id', id); await audit(`${state}_${table}`, table, id); done(); reload();
   }
@@ -213,6 +213,7 @@ function PendingQueue() {
   );
 }
 
+/** Admin › universities and maps: colleges, majors, buildings, rooms and suggested places (owner only). */
 export default function Campus() {
   const unis = useUnis();
   const [uni, setUni] = useState('');

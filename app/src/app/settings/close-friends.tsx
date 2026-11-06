@@ -12,6 +12,7 @@ import { nm, t, ta } from '@/lib/i18n';
 
 type P = { id: string; full_name: string; avatar_url: string | null; major: { name_ar: string } | null };
 
+/** Settings › close friends (who sees "close friends" stories). */
 export default function CloseFriends() {
   const { profile } = useAuth();
   const [people, setPeople] = useState<P[]>([]);

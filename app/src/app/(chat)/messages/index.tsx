@@ -5,7 +5,6 @@ import { memo, useCallback, useEffect, useRef, useState } from 'react';
 import { FlatList, KeyboardAvoidingView, Modal, Platform, Pressable, RefreshControl, ScrollView, TextInput, View } from 'react-native';
 
 import { TitleBadge } from '@/components/profile/TitleBadge';
-import { PushNudge } from '@/components/shell/PushNudge';
 import { OnlineDot } from '@/components/chat/OnlineDot';
 import { useInboxTyping } from '@/lib/presence';
 import { Avatar, Button, Empty, Header, Row, Screen, StateView, T, Tap } from '@/components/ui';
@@ -78,7 +77,7 @@ export function Inbox({ inTab }: { inTab?: boolean }) {
     const directIds = rows.filter((r) => r.conversation.kind === 'direct').map((r) => r.conversation.id);
     const [{ data: members }, { data: lasts }, { data: counts }] = ids.length ? await Promise.all([
       directIds.length
-        ? supabase.from('conversation_members').select('conversation_id, user_id, profile:profiles(id, full_name, avatar_url, is_verified, academic_title, title_verified)').in('conversation_id', directIds).neq('user_id', profile.id)
+        ? supabase.from('conversation_members').select('conversation_id, user_id, profile:profiles!conversation_members_user_id_fkey(id, full_name, avatar_url, is_verified, academic_title, title_verified)').in('conversation_id', directIds).neq('user_id', profile.id)
         : Promise.resolve({ data: [] }),
       supabase.rpc('inbox_last_messages', { conv_ids: ids }),
       supabase.rpc('unread_counts', { conv_ids: ids }),
@@ -176,7 +175,6 @@ export function Inbox({ inTab }: { inTab?: boolean }) {
         contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 120 }}
         ListHeaderComponent={
           <View style={{ gap: 12, marginBottom: 6 }}>
-            <PushNudge />
             <Row gap={8} style={{ minHeight: 46, borderRadius: R.sm, backgroundColor: C.card, borderWidth: 1, borderColor: C.line, paddingHorizontal: 14 }}>
               <Search size={18} color={C.muted} />
               <TextInput keyboardAppearance={isDark ? 'dark' : 'light'} value={q} onChangeText={setQ} placeholder={t('ابحث عن زميل أو مجموعة')} placeholderTextColor={C.muted} accessibilityLabel={t('بحث في الرسائل')} style={{ flex: 1, fontFamily: F.body, fontSize: 15, textAlign: ta, color: C.ink }} />

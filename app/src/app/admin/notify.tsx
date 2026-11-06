@@ -6,6 +6,7 @@ import { supabase } from '@/lib/supabase';
 import { C } from '@/lib/theme';
 import { t } from '@/lib/i18n';
 
+/** Admin › send a notification to everyone, one university or one college (owner only). */
 export default function Notify() {
   const unis = useUnis();
   const [title, setTitle] = useState('');

@@ -37,7 +37,7 @@ function Target({ r, onChanged }: { r: Report; onChanged: () => void }) {
       cid = (c as string | null) ?? null;
     }
     if (!cid) { setMiss(true); return; }
-    const { data: mem } = await supabase.from('conversation_members').select('user_id, p:profiles(full_name)').eq('conversation_id', cid);
+    const { data: mem } = await supabase.from('conversation_members').select('user_id, p:profiles!conversation_members_user_id_fkey(full_name)').eq('conversation_id', cid);
      
     setConv({ id: cid, members: ((mem ?? []) as any[]).map((x) => ({ id: x.user_id, name: x.p?.full_name ?? t('؟') })) });
   }
@@ -57,6 +57,7 @@ function Target({ r, onChanged }: { r: Report; onChanged: () => void }) {
   );
 }
 
+/** Admin › reports from students about posts, messages and accounts. */
 export default function Reports() {
   const [filter, setFilter] = useState<'open' | 'all'>('open');
   const [sel, setSel] = useState<Report | null>(null);

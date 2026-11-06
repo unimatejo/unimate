@@ -13,6 +13,7 @@ type Ticket = { id: string; subject: string; body: string; status: string; reply
 const TOPICS = [t('مشكلة بالجدول'), t('مشكلة بالدخول'), t('بلاغ عن شخص'), t('اقتراح'), t('إعلان لمحلي'), t('طلب نسخة من بياناتي'), t('إشي تاني')];
 const STATUS: Record<string, [string, string, string]> = { open: [t('مفتوح'), C.orangeSoft, C.orangeInk], answered: [t('انرد عليه'), C.greenSoft, C.greenInk], closed: [t('مسكّر'), C.soft, C.muted] };
 
+/** Settings › contact support. */
 export default function Support() {
   const { profile } = useAuth();
   const [topic, setTopic] = useState(TOPICS[0]);

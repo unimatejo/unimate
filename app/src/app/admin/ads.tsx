@@ -162,6 +162,7 @@ function AdvEditor({ initial, onClose }: { initial: Adv; onClose: () => void }) 
   );
 }
 
+/** Admin › ads: advertisers, their campaigns and results (owner only). */
 export default function Ads() {
   const [sel, setSel] = useState<Adv | null>(null);
   const { data, loading, error, reload } = useLoad<(Adv & { university: { name_ar: string } | null })[]>(

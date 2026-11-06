@@ -9,6 +9,7 @@ import { Avatar } from '@/components/ui';
 import { useAuth } from '@/lib/auth';
 import { EMOJIS, SLIDER_EMOJIS, type Overlay } from '@/lib/storyOverlay';
 import { supabase } from '@/lib/supabase';
+import { userMessage } from '@/lib/run';
 import { toast } from '@/lib/toast';
 import { pickMedia, publicUrl, uploadFile } from '@/lib/upload';
 import { F } from '@/lib/theme';
@@ -63,7 +64,7 @@ export function StickerTray({ open, start, onClose, onPick }: { open: boolean; s
       const path = await uploadFile('stickers', profile.id, { uri: p.uri, mime: p.mime === 'image/png' || p.mime === 'image/webp' ? p.mime : 'image/jpeg' });
       const ar = p.width && p.height ? p.width / p.height : 1;
       onPick({ kind: 'photo', text: '', extra: { size: 0.06, data: { img: publicUrl('stickers', path), ar } } });
-    } catch (e) { toast(e instanceof Error ? e.message : t('ما زبط رفع الصورة')); }
+    } catch (e) { toast(userMessage(e)); }
     setUploading(false);
   }
 
