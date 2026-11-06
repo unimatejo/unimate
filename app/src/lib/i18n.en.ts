@@ -2574,4 +2574,7 @@ export const EN: Record<string, string> = {
   "بتنشال وما بترجع لحالها، حتى لو عنده لقب عميد أو رئيس. بترجع بس إذا إنت أعطيته إياها.": "It's removed and won't come back by itself, even with a dean or president title. Only you can give it again.",
   "مؤسس يونيميت": "UniMate founder",
   "مسؤول يونيميت": "UniMate team",
+  "اسحب لفوق للشاشة كاملة": "Drag up for full screen",
+  "اكبس للصوت": "Tap for sound",
+  "شغّل الفيديو": "Play video",
 };

@@ -1,5 +1,5 @@
 import { router, useLocalSearchParams } from 'expo-router';
-import { Plus, Star, Trash2, X } from 'lucide-react-native';
+import { Plus, Star, Trash2, VolumeX, X } from 'lucide-react-native';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Alert, KeyboardAvoidingView, Modal, Platform, Pressable, TextInput, useWindowDimensions, View } from 'react-native';
 import * as Haptics from 'expo-haptics';
@@ -26,8 +26,8 @@ type S = { id: string; media_url: string; kind: string; caption: string | null; 
 type Viewer = StoryViewer;
 
 /** a story video, framed and trimmed the way it was set in the crop editor; plays once with sound */
-function StoryVideo({ uri, meta, onEnd, onReady, onError }: { uri: string; meta?: MediaMeta | null; onEnd: () => void; onReady: () => void; onError: () => void }) {
-  return <FramedMedia uri={uri} kind="video" meta={meta} video={{ loop: false, muted: false, onEnd, onReady, onError }} />;
+function StoryVideo({ uri, meta, muted, onEnd, onReady, onError, onSoundBlocked }: { uri: string; meta?: MediaMeta | null; muted: boolean; onEnd: () => void; onReady: () => void; onError: () => void; onSoundBlocked: () => void }) {
+  return <FramedMedia uri={uri} kind="video" meta={meta} video={{ loop: false, muted, onEnd, onReady, onError, onSoundBlocked }} />;
 }
 
 /** Instagram-style story viewer: tap sides to move, hold to pause, video plays to the end, your own story shows who viewed it. */
@@ -104,6 +104,9 @@ export default function StoryViewer() {
   const markReady = useCallback(() => setReady(true), []);
   // a video that can't be played (too heavy for this phone, or a slow connection) never leaves the viewer stuck
   const [failed, setFailed] = useState(false);
+  // story videos play with sound; a phone browser may need one tap first
+  const [muted, setMuted] = useState(false);
+  const [soundBlocked, setSoundBlocked] = useState(false);
   const markFailed = useCallback(() => { setFailed(true); setReady(true); }, []);
   const afterVideo = useCallback((sid: string) => {
     setTimeout(() => { if (items?.[iRef.current]?.id === sid) next(); }, 2000); // its own end usually comes first
@@ -224,7 +227,7 @@ export default function StoryViewer() {
     <GestureDetector gesture={pull}>
     <Animated.View style={[{ flex: 1, overflow: 'hidden', backgroundColor: '#000' }, sheet]}>
       {!uri && <View style={{ position: 'absolute', top: 0, bottom: 0, left: 0, right: 0, padding: 8 }}><Bone h={H - 16} r={28} style={{ opacity: 0.25 }} /></View>}
-      {uri && s?.kind === 'video' ? <StoryVideo key={s.id} uri={uri} meta={s.meta} onEnd={next} onReady={markReady} onError={markFailed} />
+      {uri && s?.kind === 'video' ? <StoryVideo key={s.id} uri={uri} meta={s.meta} muted={muted} onEnd={next} onReady={markReady} onError={markFailed} onSoundBlocked={() => { setSoundBlocked(true); setMuted(true); }} />
         : uri ? <FramedMedia key={uri} uri={uri} kind="image" meta={s?.meta} onImageLoad={markReady} /> : null}
       <Pressable style={{ position: 'absolute', top: 110, bottom: 130, width: '40%', ...(Platform.OS === 'web' ? (rtlLayout() ? { left: 0 } : { right: 0 }) : { end: 0 }) }} onPress={next} onLongPress={onHold} onPressOut={onRelease} delayLongPress={200} accessibilityLabel={t('التالي')} />
       <Pressable style={{ position: 'absolute', top: 110, bottom: 130, width: '40%', ...(Platform.OS === 'web' ? (rtlLayout() ? { right: 0 } : { left: 0 }) : { start: 0 }) }} onPress={prev} onLongPress={onHold} onPressOut={onRelease} delayLongPress={200} accessibilityLabel={t('السابق')} />
@@ -234,6 +237,12 @@ export default function StoryViewer() {
             <T v="bold" color="#fff">{t('ما قدرنا نشغّل هالفيديو')}</T>
           </View>
         </View>
+      )}
+      {s?.kind === 'video' && (soundBlocked || muted) && (
+        <Tap onPress={() => { setSoundBlocked(false); setMuted(false); }} accessibilityLabel={t('شغّل الصوت')}
+          style={{ position: 'absolute', bottom: 150, alignSelf: 'center', flexDirection: 'row', alignItems: 'center', gap: 8, minHeight: 44, paddingHorizontal: 18, borderRadius: 22, backgroundColor: 'rgba(0,0,0,0.6)' }}>
+          <VolumeX size={18} color="#fff" /><T v="bold" color="#fff">{t('اكبس للصوت')}</T>
+        </Tap>
       )}
       {s && ready && <StoryStickersLayer story={s} mine={mine} width={W} height={H} onPause={pause} onResume={resume} />}
       <SafeAreaView edges={['top']} pointerEvents={hold ? 'none' : 'box-none'} style={{ paddingHorizontal: 12, gap: 12, paddingBottom: 12, opacity: hold ? 0 : 1 }}>

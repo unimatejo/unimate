@@ -60,6 +60,15 @@ export function StoryCamera({ maxSec, onPicked, onClose, onSystemPicker, footer,
   const [mic, requestMic] = useMicrophonePermissions();
 
   useEffect(() => { if (perm && !perm.granted && perm.canAskAgain) requestPerm(); }, [perm?.granted]); // eslint-disable-line react-hooks/exhaustive-deps
+  // the microphone is asked together with the camera, so the first video already has sound
+  useEffect(() => { if (canRecord && perm?.granted && mic && !mic.granted && mic.canAskAgain) requestMic(); }, [perm?.granted, mic?.granted]); // eslint-disable-line react-hooks/exhaustive-deps
+  // seconds recorded, for the red "recording" bar
+  const [secs, setSecs] = useState(0);
+  useEffect(() => {
+    if (!recording) { setSecs(0); return; }
+    const iv = setInterval(() => setSecs(Math.floor((Date.now() - startedAt.current) / 1000)), 250);
+    return () => clearInterval(iv);
+  }, [recording]);
   useEffect(() => { if (mediaLibrary()) latestAsset().then(setThumb); }, []);
 
   const ringProps = useAnimatedProps(() => ({ strokeDashoffset: RING * (1 - progress.value) }));
@@ -112,7 +121,6 @@ export function StoryCamera({ maxSec, onPicked, onClose, onSystemPicker, footer,
 
   async function pickAsset(a: GalleryAsset) {
     if (pickBusy) return;
-    if (a.mediaType === 'video' && a.duration > 180) return;
     setPickBusy(a.id);
     try { const m = await assetToPicked(a); setSheet(false); onPicked(m); } finally { setPickBusy(null); }
   }
@@ -172,9 +180,12 @@ export function StoryCamera({ maxSec, onPicked, onClose, onSystemPicker, footer,
               onCameraReady={() => setReady(true)} />
           )}
           {top}
+          {/* recording: a red line across the top and a red pill with the time, like the phone's own camera */}
+          {recording && <View pointerEvents="none" style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 4, backgroundColor: '#FF3B30' }} />}
           {recording && (
-            <View style={{ position: 'absolute', top: 18, alignSelf: 'center', flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, height: 28, borderRadius: 14, backgroundColor: 'rgba(225,29,72,0.85)' }}>
-              <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: '#fff' }} /><T v="tiny" color="#fff">{t('عم نسجّل')}</T>
+            <View accessibilityLiveRegion="polite" accessibilityLabel={t('عم نسجّل')} style={{ position: 'absolute', top: 14, alignSelf: 'center', flexDirection: 'row', alignItems: 'center', gap: 7, paddingHorizontal: 12, height: 30, borderRadius: 15, backgroundColor: 'rgba(255,59,48,0.92)' }}>
+              <View style={{ width: 9, height: 9, borderRadius: 5, backgroundColor: '#fff' }} />
+              <T v="bold" color="#fff" style={{ fontSize: 13 }}>{`0:${String(Math.min(secs, maxSec)).padStart(2, '0')} / 0:${String(maxSec).padStart(2, '0')}`}</T>
             </View>
           )}
           {/* bottom controls over the viewfinder */}
@@ -211,19 +222,38 @@ export function StoryCamera({ maxSec, onPicked, onClose, onSystemPicker, footer,
   );
 }
 
-/** Recent photos sheet that slides up from the camera's gallery button. */
+/**
+ * The photos sheet that slides up from the camera's gallery button (Instagram): drag the handle up for the full
+ * screen, down to close. Three per row, newest first; a tap opens the photo or video full screen to frame it.
+ */
 function GallerySheet({ open, onClose, onPick, busyId, videoOnly }: { open: boolean; onClose: () => void; onPick: (a: GalleryAsset) => void; busyId: string | null; videoOnly?: boolean }) {
   const { height } = useWindowDimensions();
+  const low = height * 0.62, high = height * 0.94;
+  const h = useSharedValue(low);
+  const start = useSharedValue(low);
+  useEffect(() => { if (open) h.value = low; }, [open, low, h]);
+  const drag = Gesture.Pan()
+    .onStart(() => { start.value = h.value; })
+    .onUpdate((e) => { h.value = Math.max(low * 0.5, Math.min(high, start.value - e.translationY)); })
+    .onEnd((e) => {
+      if (e.translationY > 120 || e.velocityY > 900) { runOnJS(onClose)(); return; }
+      h.value = withTiming(h.value > (low + high) / 2 || e.velocityY < -700 ? high : low, { duration: 220 });
+    });
+  const panel = useAnimatedStyle(() => ({ height: h.value }));
   return (
     <Modal visible={open} transparent animationType="slide" onRequestClose={onClose} statusBarTranslucent>
-      <Pressable onPress={onClose} style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.45)' }} accessibilityLabel={t('إغلاق')} />
-      <View style={{ height: height * 0.78, backgroundColor: '#0B0F22', borderTopLeftRadius: 24, borderTopRightRadius: 24, overflow: 'hidden' }}>
-        <View style={{ alignItems: 'center', paddingTop: 8, paddingBottom: 10, gap: 8 }}>
-          <View style={{ width: 40, height: 5, borderRadius: 3, backgroundColor: 'rgba(255,255,255,0.3)' }} />
-          <T v="bold" color="#fff">{t('أضف للستوري')}</T>
-        </View>
-        {open && <GalleryGrid kind={videoOnly ? 'video' : 'all'} album={null} selected={[]} multi={false} activeId={null} busyId={busyId} onPick={onPick} contentBottom={40} />}
-      </View>
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <Pressable onPress={onClose} style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.45)' }} accessibilityLabel={t('إغلاق')} />
+        <Animated.View style={[{ backgroundColor: '#0B0F22', borderTopLeftRadius: 24, borderTopRightRadius: 24, overflow: 'hidden' }, panel]}>
+          <GestureDetector gesture={drag}>
+            <View style={{ alignItems: 'center', paddingTop: 8, paddingBottom: 10, gap: 8 }} accessibilityHint={t('اسحب لفوق للشاشة كاملة')}>
+              <View style={{ width: 40, height: 5, borderRadius: 3, backgroundColor: 'rgba(255,255,255,0.3)' }} />
+              <T v="bold" color="#fff">{t('ضيف للقصة')}</T>
+            </View>
+          </GestureDetector>
+          {open && <GalleryGrid kind={videoOnly ? 'video' : 'all'} album={null} selected={[]} multi={false} cols={3} activeId={null} busyId={busyId} onPick={onPick} contentBottom={40} />}
+        </Animated.View>
+      </GestureHandlerRootView>
     </Modal>
   );
 }

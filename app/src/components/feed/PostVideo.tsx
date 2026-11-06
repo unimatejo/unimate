@@ -16,7 +16,9 @@ function Player({ uri, meta, postId, onDoubleTap }: { uri: string; meta?: MediaM
   const [muted, setMuted] = useReelSound();
   const onScreen = useOnScreen(postId);
   const focused = useIsFocused();
-  const live = onScreen && focused;
+  // nothing plays by itself when the feed opens: a tap starts it (with sound), and it stops when it scrolls away
+  const [started, setStarted] = useState(false);
+  const live = started && onScreen && focused;
   const last = useRef(0);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const burst = useSharedValue(0);
@@ -32,17 +34,23 @@ function Player({ uri, meta, postId, onDoubleTap }: { uri: string; meta?: MediaM
       return;
     }
     last.current = now;
+    if (!started) { timer.current = setTimeout(() => { setStarted(true); setMuted(false); }, 290); return; }
     timer.current = setTimeout(() => setMuted(!muted), 290);
   }
   return (
-    <Tap haptic={false} scale={0.995} throttle={0} onPress={press} accessibilityLabel={muted ? t('شغّل الصوت') : t('اكتم الصوت')}
+    <Tap haptic={false} scale={0.995} throttle={0} onPress={press} accessibilityLabel={!started ? t('شغّل الفيديو') : muted ? t('شغّل الصوت') : t('اكتم الصوت')}
       style={{ marginHorizontal: 10, aspectRatio: 9 / 14, maxHeight: 520, borderRadius: 22, overflow: 'hidden', backgroundColor: '#000', alignItems: 'center', justifyContent: 'center' }}>
       {/* framed and trimmed the way it was set in the crop editor */}
       <FramedMedia uri={uri} kind="video" meta={meta} video={{ loop: true, muted: muted || !live, paused: !live }} />
+      {!started && (
+        <View pointerEvents="none" style={{ position: 'absolute', width: 68, height: 68, borderRadius: 34, backgroundColor: 'rgba(0,0,0,0.45)', alignItems: 'center', justifyContent: 'center' }}>
+          <Play size={30} color="#fff" fill="#fff" />
+        </View>
+      )}
       <Animated.View style={burstStyle} pointerEvents="none"><Heart size={90} color="#fff" fill="#fff" /></Animated.View>
-      <View style={{ position: 'absolute', bottom: 12, left: 12, width: 34, height: 34, borderRadius: 17, backgroundColor: 'rgba(0,0,0,0.5)', alignItems: 'center', justifyContent: 'center' }}>
+      {started && <View style={{ position: 'absolute', bottom: 12, left: 12, width: 34, height: 34, borderRadius: 17, backgroundColor: 'rgba(0,0,0,0.5)', alignItems: 'center', justifyContent: 'center' }}>
         {muted ? <VolumeX size={17} color="#fff" /> : <Volume2 size={17} color="#fff" />}
-      </View>
+      </View>}
     </Tap>
   );
 }

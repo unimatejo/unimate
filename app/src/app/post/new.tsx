@@ -175,14 +175,6 @@ export default function Create() {
     if (multi && mode === 'post') { setItems((cur) => [...cur, m].slice(0, 10)); setSel((cur) => [...cur, id].slice(0, 10)); setActive(items.length); }
     else { setItems([m]); setSel([id]); setActive(0); setPostAspect(null); }
   }
-  /** a photo or video tapped in "Add to story": photos straight to the editor, videos trimmed first */
-  async function storyFromGallery(a: GalleryAsset) {
-    if (loadingId) return;
-    setLoadingId(a.id);
-    try { const m = await assetToPicked(a); if (m) await storyShot(m); }
-    catch { Alert.alert(t('ما قدرنا نفتح هالملف'), t('جرّب صورة أو فيديو ثاني.')); }
-    finally { setLoadingId(null); }
-  }
   /** story camera: photos go straight to the editor; videos are trimmed to 15s first */
   async function storyShot(m: Picked) {
     let out: Picked | null = m;
@@ -472,35 +464,7 @@ export default function Create() {
     </SafeAreaView>
   );
 
-  // ---------- story on the phone: "Add to story" like Instagram, the camera first and then the newest photos ----------
-  if (isStory && camera && gallery) {
-    return (
-      <View style={{ flex: 1, backgroundColor: '#000' }}>
-        <SafeAreaView edges={['top']} style={{ flex: 1 }}>
-          <Row style={{ paddingHorizontal: 8, minHeight: 52 }}>
-            <Tap onPress={() => (router.canGoBack() ? router.back() : router.replace('/community'))} accessibilityLabel={t('إغلاق')} style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}><X size={26} color="#fff" /></Tap>
-            <T style={{ flex: 1, textAlign: 'center', fontFamily: F.bodyBold, fontSize: 17 }} color="#fff">{t('ضيف للقصة')}</T>
-            <View style={{ width: 44 }} />
-          </Row>
-          <Tap onPress={openAlbums} accessibilityLabel={t('اختار ألبوم')} style={{ flexDirection: 'row', alignItems: 'center', gap: 4, minHeight: 44, paddingHorizontal: 14 }}>
-            <T v="bold" color="#fff" style={{ fontSize: 16 }}>{album?.title ?? t('الأحدث')}</T><ChevronDown size={18} color="#fff" />
-          </Tap>
-          <GalleryGrid key={`story|${album?.id ?? ''}`} kind="all" album={album?.id ?? null} selected={[]} multi={false} cols={3}
-            activeId={null} busyId={loadingId} onPick={storyFromGallery} onCamera={() => setCamOpen(true)} contentBottom={110} />
-        </SafeAreaView>
-        {modeBar}
-        {albumSheet}
-        <Modal visible={camOpen} animationType="slide" onRequestClose={() => setCamOpen(false)} statusBarTranslucent>
-          {camOpen && <StoryCamera maxSec={15} onPicked={(m) => { setCamOpen(false); storyShot(m); }} onClose={() => setCamOpen(false)}
-            onSystemPicker={() => { setCamOpen(false); addFromGallery(); }} footer={<ModeSwitch mode={mode} onChange={(m) => { setCamOpen(false); switchMode(m); }} />} />}
-        </Modal>
-        {editorModal}
-        {busyOverlay}
-      </View>
-    );
-  }
-
-  // ---------- story with the camera but without the gallery module (older app builds) ----------
+  // ---------- story: the camera opens straight away (Instagram); its gallery button slides the photos up from below ----------
   if (isStory && camera) {
     return (
       <View style={{ flex: 1, backgroundColor: '#000' }}>

@@ -2,7 +2,7 @@ import { Image } from 'expo-image';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import { useEffect, useRef, useState } from 'react';
 import { LinearGradient } from 'expo-linear-gradient';
-import { View, type StyleProp, type ViewStyle } from 'react-native';
+import { View, type StyleProp, type ViewStyle, Platform } from 'react-native';
 
 import { FilterLayer } from '@/components/story/filters';
 
@@ -23,8 +23,10 @@ function place(meta: MediaMeta | null | undefined, W: number, H: number) {
 }
 
 /** A video that respects the crop editor's trim (start → end) and calls onEnd once it reaches the end. */
-export function TrimmedVideo({ uri, meta, loop = true, muted = true, autoPlay = true, paused = false, onEnd, onReady, onError, style, fit = 'cover' }: {
+export function TrimmedVideo({ uri, meta, loop = true, muted = true, autoPlay = true, paused = false, onEnd, onReady, onError, onSoundBlocked, style, fit = 'cover' }: {
   uri: string; meta?: MediaMeta | null; loop?: boolean; muted?: boolean; autoPlay?: boolean; paused?: boolean; onEnd?: () => void; onReady?: () => void; onError?: () => void;
+  /** the browser refused to start it with sound (needs a tap): it plays muted meanwhile */
+  onSoundBlocked?: () => void;
   style?: StyleProp<ViewStyle>; fit?: 'cover' | 'fill' | 'contain';
 }) {
   const trim = meta?.trim;
@@ -35,7 +37,15 @@ export function TrimmedVideo({ uri, meta, loop = true, muted = true, autoPlay = 
     if (trim) p.currentTime = trim.start;
     if (autoPlay && !paused) p.play();
   });
-  useEffect(() => { player.muted = muted; }, [player, muted]);
+  useEffect(() => { player.muted = muted; if (!muted && !paused && Platform.OS === 'web') player.play(); }, [player, muted]); // eslint-disable-line react-hooks/exhaustive-deps
+  // phone browsers only start a video WITH sound from a tap: if it didn't start, play it muted and say so
+  useEffect(() => {
+    if (Platform.OS !== 'web' || muted || paused || !autoPlay) return;
+    const tm = setTimeout(() => {
+      if (!player.playing) { player.muted = true; player.play(); onSoundBlocked?.(); }
+    }, 900);
+    return () => clearTimeout(tm);
+  }, [player, uri]); // eslint-disable-line react-hooks/exhaustive-deps
   // off screen or on another page: stop (and stay silent) until it's back
   const started = useRef(false);
   useEffect(() => {
@@ -73,7 +83,7 @@ export function TrimmedVideo({ uri, meta, loop = true, muted = true, autoPlay = 
  */
 export function FramedMedia({ uri, kind, meta, style, video, onImageLoad }: {
   uri: string; kind: 'image' | 'video' | string; meta?: MediaMeta | null; style?: StyleProp<ViewStyle>; onImageLoad?: () => void;
-  video?: { loop?: boolean; muted?: boolean; paused?: boolean; onEnd?: () => void; onReady?: () => void; onError?: () => void; autoPlay?: boolean };
+  video?: { loop?: boolean; muted?: boolean; paused?: boolean; onEnd?: () => void; onReady?: () => void; onError?: () => void; autoPlay?: boolean; onSoundBlocked?: () => void };
 }) {
   const [size, setSize] = useState({ w: 0, h: 0 });
   const placed = place(meta, size.w, size.h);
