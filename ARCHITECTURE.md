@@ -118,6 +118,12 @@ or JSON: `[{"student_number":"2620387","term_gpa":3.71,"cumulative_gpa":3.60,"cr
   stands in (or the nearest within 40 m) so the 3D building carries the **official Arabic name** and floors; a building OSM
   doesn't have gets an approximate box. New named points of interest on campus (kiosks, bus stops, cafés, ATMs, gates…) are
   added to `places` with their `osm_id`; nothing already there is changed or removed.
+  The campus outline is looked up by the university's name (Photon search, then the outline from the OSM API; the name
+  must match, word for word) so a rough saved centre still lands the map on the real campus; if the centre is outside
+  that outline it is moved into it.
+- **Admin.** Admin › خرائط الجامعات (`app/admin/maps.tsx`, RPCs `admin_campus_overview`, `admin_campus_rebuild`) lists
+  every university's map with how complete it is (ready / partial / sparse), opens it as its students see it
+  (`/map?uni=<id>`, admins only: RLS already lets admins read every campus's buildings and places), or rebuilds it now.
 - **Web.** `react-native-maps` is swapped for `components/map/webMaps.tsx` (metro.config.js): MapLibre GL, loaded on first
   use, with its own style (colours: `lib/campus/theme.ts`, one per app theme), extruded buildings with light and soft
   shadows, trees, a 3D route ribbon, the picked building highlighted, and markers placed from most to least important so

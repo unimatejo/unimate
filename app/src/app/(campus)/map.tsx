@@ -19,6 +19,7 @@ import { progress, walkRoute, type Route } from '@/lib/campus/route';
 import { mapTheme } from '@/lib/campus/theme';
 import { flip, nm, t, ta } from '@/lib/i18n';
 import { goBack } from '@/lib/nav';
+import type { University } from '@/lib/types';
 import { supabase } from '@/lib/supabase';
 import { C, F, isDark, shadow } from '@/lib/theme';
 
@@ -35,13 +36,30 @@ const theme = mapTheme();
  * Opened with ?building=…&go=1 (&room, &floor) from a lecture, it starts the route by itself.
  */
 export default function CampusMap() {
-  const { university, profile } = useAuth();
-  const params = useLocalSearchParams<{ building?: string; advertiser?: string; lat?: string; lng?: string; name?: string; go?: string; room?: string; floor?: string }>();
+  const { university: mine, profile } = useAuth();
+  const params = useLocalSearchParams<{ uni?: string; building?: string; advertiser?: string; lat?: string; lng?: string; name?: string; go?: string; room?: string; floor?: string }>();
   // a place someone shared in a chat ("lat,lng,name"): pinned and opened on arrival
   const shared = useMemo<Pin | null>(() => {
     const la = Number(params.lat), ln = Number(params.lng);
     return params.lat && params.lng && Number.isFinite(la) && Number.isFinite(ln) ? { id: 'shared', kind: 'shared', name: params.name || t('موقع مشارك'), sub: t('من محادثة'), lat: la, lng: ln } : null;
   }, [params.lat, params.lng, params.name]);
+  // an admin opens any campus with ?uni=<id> (admin › campus maps); the database only gives admins other campuses' places
+  const wanted = params.uni && params.uni !== mine?.id ? params.uni : null;
+  const [loaded, setLoaded] = useState<{ id: string; uni: University | null } | null>(null);
+  useEffect(() => {
+    if (!wanted) return;
+    let live = true;
+    (async () => {
+      const { data: me } = await supabase.auth.getUser();
+      const { data: a } = me.user ? await supabase.from('admins').select('role').eq('user_id', me.user.id).maybeSingle() : { data: null };
+      const { data: u } = a ? await supabase.from('universities').select('*').eq('id', wanted).maybeSingle() : { data: null };
+      if (live) setLoaded({ id: wanted, uni: (u as University | null) ?? null });
+    })().catch(() => { if (live) setLoaded({ id: wanted, uni: null }); });
+    return () => { live = false; };
+  }, [wanted]);
+  // undefined while an admin's preview is loading; null when it's the student's own campus (or not allowed)
+  const preview = !wanted ? null : loaded?.id === wanted ? loaded.uni : undefined;
+  const university = preview ?? mine;
   const [shareFor, setShareFor] = useState<Pin | null>(null);
   const map = useRef<MapView>(null);
   const [pins, setPins] = useState<Pin[]>([]);
@@ -277,6 +295,8 @@ export default function CampusMap() {
       focus(p);
     } } : {};
 
+  if (preview === undefined) return <View style={{ flex: 1, backgroundColor: C.bg, alignItems: 'center', justifyContent: 'center' }}><ActivityIndicator color={C.primary} /></View>;
+
   return (
     <View style={{ flex: 1, backgroundColor: C.bg, overflow: 'hidden' }}>
       <MapView ref={map} provider={PROVIDER_DEFAULT} style={{ flex: 1 }} showsUserLocation showsCompass={false} showsPointsOfInterests={false} showsBuildings pitchEnabled rotateEnabled
@@ -381,6 +401,11 @@ export default function CampusMap() {
             {FILTERS.filter((f) => f.key === 'all' || pins.some((p) => inGroup(f.key, p.kind))).map((f) => <Chip key={f.key} label={f.label} active={filter === f.key} onPress={() => setFilter(f.key)} style={shadow} />)}
           </ScrollView>
         ))}
+        {preview && (
+          <View pointerEvents="none" style={[{ alignSelf: 'flex-start', flexDirection: 'row', gap: 6, backgroundColor: C.primary, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 6 }, shadow]}>
+            <T v="tiny" color={C.onPrimary}>{t('معاينة المشرف · {0}', [nm(preview)])}</T>
+          </View>
+        )}
       </SafeAreaView>
 
       {suggest && university && <SuggestPlace universityId={university.id} userId={profile?.id} at={() => mid.current ?? { lat: center.latitude, lng: center.longitude }} onClose={() => setSuggest(false)} />}

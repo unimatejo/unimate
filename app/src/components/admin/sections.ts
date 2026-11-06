@@ -37,6 +37,7 @@ export const ADMIN_SECTIONS: AdminSection[] = [
   { key: 'offers', label: t('العروض'), hint: t('عروض الشركاء للطلاب'), icon: BadgePercent, color: C.pink, group: CONTENT, owner: true },
   { key: 'ads', label: t('الإعلانات'), hint: t('حملات المعلنين ونتائجها'), icon: Megaphone, color: C.orange, group: CONTENT, owner: true },
   { key: 'campus', label: t('الجامعات والخرائط'), hint: t('الجامعات، المباني والقاعات'), icon: Map, color: C.green, group: UNI, owner: true, badge: (c) => c.aliases_pending + c.places_pending },
+  { key: 'maps', label: t('خرائط الجامعات'), hint: t('خريطة كل جامعة وقدّيش جاهزة'), icon: Map, color: C.blue, group: UNI },
   { key: 'events', label: t('مواعيد رسمية'), hint: t('امتحان أو تسليم لشعبة أو مادة أو كلية'), icon: CalendarCheck, color: C.green, group: UNI },
   { key: 'study-rules', label: t('قواعد الدراسة'), hint: t('سلم العلامات ونسبة الحرمان'), icon: Calculator, color: C.blue, group: UNI, owner: true },
   { key: 'grades', label: t('علامات الجامعة'), hint: t('ملف المعدلات الرسمي للمتفوقين'), icon: GraduationCap, color: '#F5A900', group: UNI, owner: true },

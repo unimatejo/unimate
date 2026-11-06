@@ -148,7 +148,8 @@ async function osm(w: number, s: number, e: number, n: number): Promise<El[]> {
 const GENERIC = new Set(['university', 'college', 'univ', 'of', 'the', 'for', 'and', 'in', 'jordan', 'jordanian', 'amman', 'campus', 'branch', 'جامعة', 'جامعه', 'الجامعة', 'الجامعه', 'كلية', 'كليه', 'الكلية', 'الكليه', 'في', 'فرع', 'الأردن', 'الاردن', 'الأردنية', 'الاردنيه', 'الأردنيه', 'و', 'لل', 'للعلوم']);
 const plain = (x: string) => x.toLowerCase().replace(/[\u064B-\u0652\u0640]/g, '').replace(/[أإآ]/g, 'ا').replace(/ة/g, 'ه').replace(/ى/g, 'ي').replace(/[^\p{L}\p{N}]+/gu, ' ').trim();
 const words = (x: string) => plain(x).split(' ').filter((w) => w.length > 1 && !GENERIC.has(w));
-const sameName = (q: string, name: string) => { const a = words(q), b = new Set(words(name)); return a.length > 0 && a.every((w) => b.has(w)); };
+// a name made only of common words («الجامعة الأردنية», "The University of Jordan") must match whole
+const sameName = (q: string, name: string) => { const a = words(q), b = new Set(words(name)); return a.length ? a.every((w) => b.has(w)) : plain(q) === plain(name); };
 type Uni = { id: string; center_lat: number; center_lng: number; name_ar: string | null; name_en: string | null };
 async function outline(uni: Uni): Promise<{ ring: LL[]; center: { lat: number; lng: number } } | null> {
   // Photon finds the campus by name (Nominatim refuses cloud servers); the OSM API then gives its full outline
