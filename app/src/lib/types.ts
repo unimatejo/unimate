@@ -17,7 +17,7 @@ export type Profile = {
   /** blue check: important people only (founder, presidents, deans, picked by the owner) */
   is_verified?: boolean; ms_verified?: boolean; entry_year?: number | null; onboarded?: boolean;
   show_activity?: boolean; account_type?: 'student' | 'faculty' | 'staff'; academic_title?: string | null; title_verified?: boolean; department?: string | null; position_title?: string | null;
-  points: number; follower_count: number; following_count: number; post_count: number;
+  follower_count: number; following_count: number; post_count: number;
   university?: University | null;
   college?: { id: string; name_ar: string } | null;
   major?: { id: string; name_ar: string } | null;

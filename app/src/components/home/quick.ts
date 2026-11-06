@@ -11,7 +11,7 @@ export const QUICK = [
   { key: 'summaries', label: t('ملخصات'), icon: BookOpen, g: GRAD.violet, to: '/section/summaries' },
   { key: 'market', label: t('السوق'), icon: ShoppingBag, g: GRAD.pink, to: '/section/market', feature: 'market' },
   { key: 'study', label: t('ندرس سوا'), icon: GraduationCap, g: GRAD.indigo, to: '/study', feature: 'study' },
-  { key: 'ranks', label: t('الترتيب'), icon: Trophy, g: GRAD.red, to: '/leaderboard', feature: 'leaderboard' },
+  { key: 'ranks', label: t('الترتيب'), icon: Trophy, g: GRAD.red, to: '/honor', feature: 'honor' },
   { key: 'events', label: t('فعاليات'), icon: PartyPopper, g: GRAD.orange, to: '/section/events' },
   { key: 'lost_found', label: t('مفقودات'), icon: SearchCheck, g: GRAD.teal, to: '/section/lost_found' },
   { key: 'sections', label: t('كل الأقسام'), icon: Sparkles, g: GRAD.yellow, to: '/sections' },

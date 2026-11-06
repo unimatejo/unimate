@@ -1,7 +1,7 @@
 import { TitleBadge, titledName } from '@/components/profile/TitleBadge';
 import { router, useFocusEffect } from 'expo-router';
 import { readCache, writeCache } from '@/lib/cache';
-import { BarChart3, Check, ChevronRight, Clapperboard, FileText, Grid3x3, Heart, Lock, Menu, MoreHorizontal, Play, Plus, PlusSquare, Star, UserPlus, UserSquare2, UserX, WifiOff } from 'lucide-react-native';
+import { BarChart3, Check, ChevronRight, Clapperboard, FileText, Grid3x3, Heart, Lock, Menu, MoreHorizontal, Play, Plus, PlusSquare, UserPlus, UserSquare2, UserX, WifiOff } from 'lucide-react-native';
 import { useCallback, useEffect, useState } from 'react';
 import * as Haptics from 'expo-haptics';
 import { Alert, Linking, RefreshControl, ScrollView, View, Platform } from 'react-native';
@@ -24,10 +24,10 @@ import type { Post, Profile } from '@/lib/types';
 import { flip, nm, t, LOCALE } from '@/lib/i18n';
 import { Bone } from '@/components/ui/Skeleton';
 import { useScreenTimer } from '@/lib/perf';
-import { featureOn, useAppContent } from '@/lib/appContent';
 import { goBack } from '@/lib/nav';
 import { shareLink } from '@/lib/share';
 import { HighlightEditor, type HighlightRef } from '@/components/story/HighlightEditor';
+import { HonorChip } from '@/components/honor/HonorChip';
 
 type Rel = 'none' | 'pending' | 'accepted';
 
@@ -111,7 +111,6 @@ export function GridTile({ post, i }: { post: Post; i: number }) {
 export function ProfileView({ userId, onTitle, back }: { userId: string; onTitle?: (title: string) => void; back?: boolean }) {
   const { profile: me } = useAuth();
   const mine = me?.id === userId;
-  const content = useAppContent();
   const [p, setP] = useState<Profile | null>(null);
   const [rel, setRel] = useState<Rel>('none');
   const [followsMe, setFollowsMe] = useState(false);
@@ -364,6 +363,7 @@ export function ProfileView({ userId, onTitle, back }: { userId: string; onTitle
               {friends && <Animated.View entering={FadeIn}><View style={{ backgroundColor: C.greenSoft, borderRadius: 999, paddingHorizontal: 8, paddingVertical: 2 }}><T v="tiny" color={C.greenInk}>{t('أصدقاء')}</T></View></Animated.View>}
             </Row>
             <TitleBadge title={p.academic_title} verified={p.title_verified} size="md" label={p.position_title} />
+            <HonorChip id={p.id} />
             {!!badge && (
               <View style={{ alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 26, paddingHorizontal: 10, borderRadius: 13, backgroundColor: C.soft, maxWidth: '100%' }}>
                 <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: C.primary }} />
@@ -377,11 +377,6 @@ export function ProfileView({ userId, onTitle, back }: { userId: string; onTitle
               const full = p.birth_day ? new Date(`${p.birth_year}-${p.birth_day}T12:00:00`).toLocaleDateString(LOCALE, { day: 'numeric', month: 'long', year: 'numeric' }) : null;
               return <T v="small" color={isToday ? C.primary : C.ink2}>🎂 {isToday ? t('عيد ميلاده اليوم! 🎉') : full ? t('مواليد {0}', [full]) : t('مواليد {0}', [String(p.birth_year)])}</T>;
             })() : null}
-            {p.points > 0 && featureOn(content, 'leaderboard') && (
-              <Tap haptic={false} scale={0.97} onPress={() => router.push('/leaderboard')} accessibilityRole="button" style={{ alignSelf: 'flex-start' }}>
-                <Row gap={5}><Star size={14} color="#F59E0B" fill="#F59E0B" /><T v="tiny" color={C.muted}>{p.points} {t('نقطة مساعدة')}</T></Row>
-              </Tap>
-            )}
           </View>
 
           <Row gap={8}>

@@ -1,7 +1,7 @@
 import Constants from 'expo-constants';
 import { router } from 'expo-router';
 import {
-  BadgeCheck, Ban, Bell, KeyRound, Palette, Search, Bookmark, ChevronLeft, CircleHelp, EyeOff, FileText, Lock, LogOut, MessageCircle, Shield, Star, Trash2, UserPen, UserPlus, Users, Info, ShieldCheck, GraduationCap } from 'lucide-react-native';
+  BadgeCheck, Ban, Bell, KeyRound, Palette, Search, Bookmark, ChevronLeft, CircleHelp, EyeOff, FileText, Lock, LogOut, MessageCircle, Shield, Trash2, UserPen, UserPlus, Users, Info, ShieldCheck, GraduationCap } from 'lucide-react-native';
 import { useEffect, useState, type ReactNode } from 'react';
 import { Alert, ScrollView, TextInput, View } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
@@ -15,7 +15,6 @@ import { run } from '@/lib/run';
 import { C, F, isDark, shadow, themePref } from '@/lib/theme';
 import { isStaffEmail, normalize } from '@/lib/util';
 import { flip, isAR, nm, t, ta } from '@/lib/i18n';
-import { featureOn, useAppContent } from '@/lib/appContent';
 
 function Group({ title, children, delay = 0 }: { title: string; children: ReactNode; delay?: number }) {
   return (
@@ -42,7 +41,6 @@ const ic = { size: 19, color: C.white };
 
 /** Settings: every option grouped, with search. */
 export default function Settings() {
-  const content = useAppContent();
   const { profile, university, signOut, session } = useAuth();
   // only university staff addresses (not student numbers or student sub-domains) can ask for a title
   const staffEmail = isStaffEmail(session?.user?.email);
@@ -140,10 +138,6 @@ export default function Settings() {
               {profile?.username ? <T v="small" color={C.muted} style={{ writingDirection: 'ltr', textAlign: ta }}>@{profile.username}</T> : null}
               <T v="tiny" color={C.muted} numberOfLines={1}>{[nm(profile?.major), nm(university)].filter(Boolean).join(' · ')}</T>
             </View>
-            {featureOn(content, 'leaderboard') && <Tap onPress={() => router.push('/leaderboard')} accessibilityLabel={t('لوحة الشرف')} scale={0.94}
-              style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: C.orangeSoft, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 12 }}>
-              <Star size={15} color={C.orange} fill={C.orange} /><T v="bold" color={C.orange} style={{ fontSize: 13 }}>{profile?.points ?? 0}</T>
-            </Tap>}
           </Tap>
         )}
 

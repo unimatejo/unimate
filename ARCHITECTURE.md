@@ -62,12 +62,50 @@ Admin › أخطاء التطبيق (`app/admin/errors.tsx`). Stale web code aft
 | Stories | `components/story/StoriesRow.tsx`, `story/[id].tsx` | `stories`, `story_views`, `can_see_story` |
 | Chats | `(chat)/messages/*`, `components/chat/*`, `lib/unread.ts`, `lib/presence.ts` | `conversations`, `conversation_members`, `messages`, `inbox_last_messages`, `unread_counts` |
 | Timetable | `(tabs)/schedule.tsx`, `lib/schedule.ts`, `components/study/ScheduleScan.tsx` | `enrollments`, `sections`, `section_meetings`, `add_course`, Edge `schedule-import` (Gemini) |
-| Honor board / points | `(study)/honor.tsx`, `(community)/leaderboard.tsx` | `honor_board`, `private.honor_rows`, `private.official_grades`, `leaderboard`, `point_events` |
+| Honor board and frames | `(study)/honor.tsx`, `components/honor/*`, `lib/frames.ts`, `Avatar` in `components/ui`, `admin/grades.tsx` | `honor_board`, `honor_status`, `honor_frames_visible`, `honor_frames`, `private.honor_rows`, `private.official_grades`, `admin_import_grades`, `admin_set_frame` |
 | Titles and blue check | `settings/faculty.tsx`, `admin/titles.tsx`, `components/admin/UserDetail.tsx` | `request_title`, `admin_review_title`, `admin_set_title`, `admin_set_blue_check`, `private.is_vip_title`, guards on `profiles` |
 | Announcements | `(campus)/announcements/*` | `post_announcement`, `can_announce` |
 | Content checks | (automatic) | `moderation_words`, `private.mod_*` triggers, `moderation_queue`, Edge `moderate`; Admin › فحص المحتوى |
 | App look (owner) | `admin/look.tsx`, `lib/appContent.ts`, `components/home/quick.ts` | `app_content`, `admin_set_app_content` |
 | Admin panel | `app/admin/*`, `components/admin/kit.tsx`, `components/admin/sections.ts` | `admin_*` RPCs, `admin_stats`, `admin_series`, `admin_audit_log` |
+
+## 4a. Honor board and frames
+
+Ranks come **only** from the university's official grades (`private.official_grades`, never typed by students). The points
+system was removed (0108); `/honor` is the only ranking.
+
+- **Opt-in.** `profiles.hide_honor` is `true` by default. Nobody appears on the board or wears a frame until they turn on
+  «شارك بلوحة المتفوقين». A nickname (`honor_alias`) shows instead of name, photo and major, and means no frame.
+- **No GPAs for others.** `honor_board` returns `gpa` only on the caller's own row. The "your place" card never compares.
+- **Frames** (`honor_frames`, 0109): per term and scope (major / college / university) from the term GPA:
+  1st gold (glows), 2nd silver, 3rd bronze, 4th–10th small blue, nobody else. Scope `special` = given by the owner
+  (`admin_set_frame`, Admin › user › إطار التكريم). Worked out by `private.compute_honor_frames` after every import and in
+  the nightly `honor_snapshot` job (00:15), which also stamps «آخر تحديث». Owner switch: Admin › شكل التطبيق › إطارات التكريم
+  (`app_content.features.frames`).
+- **Client.** `lib/frames.ts` loads `honor_frames_visible()` once (3 h cache, cleared on sign-out); the shared `Avatar` reads
+  it by user id and draws the frame **inside** its size, so every screen (posts, comments, chats, stories, profile, board)
+  gets it with no layout change. `frame={null}` turns it off where a bigger frame is drawn (the podium).
+
+### Official grades file (Admin › علامات الجامعة, `admin_import_grades`, owner + team account only)
+
+One file per term. Students are matched by **university number** (`profile_private.student_number`); unmatched rows are kept
+and match later when that student signs up.
+
+CSV / TSV (comma, Arabic comma, semicolon or Tab; a header line is skipped; Arabic digits are fine):
+
+```
+student_number, term_gpa, cumulative_gpa, credit_hours, major
+2620387, 3.71, 3.60, 96, الهندسة المدنية
+2620707, 3.98, 3.90, 102, الهندسة المدنية
+```
+
+or JSON: `[{"student_number":"2620387","term_gpa":3.71,"cumulative_gpa":3.60,"credit_hours":96,"major":"الهندسة المدنية"}]`
+
+- `student_number` 5–12 digits; GPAs 0–4 (at least one of the two); `credit_hours` and `major` optional.
+- `major` is matched to `majors.name_ar` / `name_en` of that university (`private.major_key`); an unknown name groups on its
+  own, and with no major the student's profile major is used.
+- Re-uploading the same term updates rows in place. «اعتبره الفصل الحالي» makes it the term the board shows by default;
+  older terms stay selectable on the board.
 
 ## 5. Security model
 
@@ -75,7 +113,7 @@ Admin › أخطاء التطبيق (`app/admin/errors.tsx`). Stale web code aft
   `is_admin()` and `is_owner()` also require `admin_session_ok()`: a team account counts only after its authenticator code (aal2).
 - **Who may call what:** every `admin_*` function starts with `admin_require()` or `owner_require()`. Sensitive data lives in the
   `private` schema (not reachable from the API): official grades, staff list, team accounts, push config.
-- **Guards:** triggers on `profiles` reset fields a user may not set (status, points, counters, title, blue check).
+- **Guards:** triggers on `profiles` reset fields a user may not set (status, counters, title, blue check).
 - **Content:** word checks on posts, comments, stories, group/community chats and bios; photo checks by the `moderate` function.
 - **Changes that touch security are prepared in `supabase/review/` first** and moved to `supabase/migrations/` once reviewed and applied.
 

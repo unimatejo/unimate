@@ -13,6 +13,7 @@ import { SafeAreaView, type Edge } from 'react-native-safe-area-context';
 import { ListSkeleton } from '@/components/ui/Skeleton';
 import { C, F, R, avatarColors, isDark, shadow, glassStyle } from '@/lib/theme';
 import { flip, isAR, t, ta, rtlLayout } from '@/lib/i18n';
+import { FRAME_COLORS, FRAME_GLOW, useFrame, type FrameLevel } from '@/lib/frames';
 import { goBack } from '@/lib/nav';
 
 // ---------- text ----------
@@ -165,14 +166,33 @@ export function Segmented({ items, value, onChange, dark }: { items: string[]; v
 }
 
 // ---------- avatar ----------
-export function Avatar({ id, name, url, size = 44, ring, radius }: { id?: string | null; name?: string | null; url?: string | null; size?: number; ring?: boolean; radius?: number }) {
+/**
+ * Everyone's picture, everywhere. Wears the person's honor frame by itself (lib/frames) unless `frame` says otherwise
+ * (null = none, e.g. where a bigger frame is drawn around it). The frame sits inside `size`, so layouts never shift.
+ */
+export function Avatar({ id, name, url, size = 44, ring, radius, frame }: {
+  id?: string | null; name?: string | null; url?: string | null; size?: number; ring?: boolean; radius?: number; frame?: FrameLevel | null;
+}) {
+  const auto = useFrame(frame === undefined ? id : null);
+  const level = frame === undefined ? auto?.level : frame;
   const [bg, fg] = avatarColors(id);
   const r = radius ?? Math.round(size / 2);
-  const inner = (
-    <View style={{ width: size, height: size, borderRadius: r, backgroundColor: bg, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
-      {url ? <Image source={{ uri: url }} style={{ width: size, height: size }} contentFit="cover" transition={150} /> : (
-        <Text style={{ fontFamily: F.title, fontSize: size * 0.4, color: fg }}>{(name ?? t('؟')).trim().charAt(0)}</Text>
+  const th = !level ? 0 : level === 'blue' ? Math.max(1.5, size * 0.035) : Math.max(2, size * 0.055);
+  const gap = level ? Math.max(1, size * 0.028) : 0;
+  const s = Math.round(size - 2 * (th + gap));
+  const pic = (
+    <View style={{ width: s, height: s, borderRadius: r * (s / size), backgroundColor: bg, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+      {url ? <Image source={{ uri: url }} style={{ width: s, height: s }} contentFit="cover" transition={150} /> : (
+        <Text style={{ fontFamily: F.title, fontSize: s * 0.4, color: fg }}>{(name ?? t('؟')).trim().charAt(0)}</Text>
       )}
+    </View>
+  );
+  const inner = !level ? pic : (
+    <View style={level === 'gold' ? { borderRadius: r, shadowColor: FRAME_GLOW, shadowOpacity: 0.9, shadowRadius: Math.max(4, size * 0.16), shadowOffset: { width: 0, height: 0 } } : undefined}>
+      <LinearGradient colors={FRAME_COLORS[level]} start={{ x: 0.1, y: 0 }} end={{ x: 0.9, y: 1 }}
+        style={{ width: size, height: size, borderRadius: r, padding: th }}>
+        <View style={{ flex: 1, borderRadius: r, padding: gap, backgroundColor: C.card }}>{pic}</View>
+      </LinearGradient>
     </View>
   );
   if (!ring) return inner;

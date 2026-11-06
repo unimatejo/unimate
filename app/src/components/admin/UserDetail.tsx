@@ -6,11 +6,13 @@ import { Avatar, Field, Row, T } from '@/components/ui';
 import { ChatViewer } from './ChatViewer';
 import { TITLE_ORDER, TitleBadge, titleLabel } from '@/components/profile/TitleBadge';
 import { Act, Actions, Item, Muted, Panel, Pill, Section, Status, audit, confirm, done, fmtDate, fmtNum, promptText, useAdminRole, useLoad } from './kit';
+import { refreshFrames, useFrame, type FrameLevel } from '@/lib/frames';
 import { supabase } from '@/lib/supabase';
 import { C } from '@/lib/theme';
 import { t } from '@/lib/i18n';
 
 export type UserRow = { id: string; full_name: string; username: string | null; avatar_url: string | null; status: string; university: string | null; major: string | null; email: string | null; student_number: string | null; created_at: string; post_count: number; follower_count: number; is_admin: boolean };
+const FRAME_LEVELS: [FrameLevel, string][] = [['gold', t('ذهبي')], ['silver', t('فضي')], ['bronze', t('برونزي')], ['blue', t('أزرق')]];
 type Conv = { id: string; kind: string; title: string | null; context_label: string | null; last_message_at: string; members: { id: string; name: string; state: string }[]; message_count: number };
 
 /** One user in the admin panel: profile, status, blue check, title, chats (owner) and actions. */
@@ -19,6 +21,7 @@ export function UserDetail({ id, onChanged }: { id: string; onChanged?: () => vo
   const u = rows?.[0];
   // titles and someone's chat list are for the owner; moderators see reported chats from the reports screen
   const owner = useAdminRole() === 'owner';
+  const frame = useFrame(id);
   const { data: convs } = useLoad<Conv[]>(() => owner ? supabase.rpc('admin_user_conversations', { target: id }) as never : Promise.resolve({ data: [], error: null }), [id, owner]);
   const { data: posts } = useLoad<{ id: string; body: string; category: string; created_at: string; is_hidden: boolean }[]>(
     () => supabase.from('posts').select('id, body, category, created_at, is_hidden').eq('author_id', id).order('created_at', { ascending: false }).limit(20), [id]);
@@ -79,6 +82,15 @@ export function UserDetail({ id, onChanged }: { id: string; onChanged?: () => vo
     const { error } = await supabase.rpc('admin_set_username', { p_user: id, p_username: next });
     if (error) { Alert.alert(t('ما زبط'), /taken/.test(error.message) ? t('هاليوزر مأخوذ.') : /bad_username/.test(error.message) ? t('اليوزر حروف إنجليزية صغيرة وأرقام و . و _ بس (3 لـ 24).') : t('جرّب كمان مرة.')); return; }
     done(); setUname(null); reloadAcad(); onChanged?.();
+  }
+
+  // a special honor frame by hand (0109); the ones from official grades are worked out by themselves
+  async function setFrame(level: FrameLevel | null) {
+    const note = level ? await promptText(t('سبب الإطار'), t('بيبيّن تحت اسمه، مثلاً «بطل مسابقة البرمجة»'), '') : '';
+    if (note === null) return;
+    const { error } = await supabase.rpc('admin_set_frame', { p_user: id, p_level: level, p_note: note || null });
+    if (error) { Alert.alert(t('ما زبط'), error.message); return; }
+    done(); refreshFrames();
   }
 
   // the blue check is for important people only (presidents, deans, people the owner picks)
@@ -185,6 +197,15 @@ export function UserDetail({ id, onChanged }: { id: string; onChanged?: () => vo
           {acad?.is_verified
             ? <Act label={t('شيل العلامة')} kind="danger" onPress={() => setBlueCheck(false)} />
             : <Act label={t('أعطيه العلامة الزرقاء')} kind="primary" onPress={() => setBlueCheck(true)} />}
+        </Actions>
+      </Panel>}
+      {owner && <Section title={t('إطار التكريم')} />}
+      {owner && <Panel>
+        <Muted>{frame ? t('لابس إطار: {0}', [frame.label]) : t('بدون إطار. الإطارات بتيجي لحالها من علامات الجامعة لأول 10، وهون بتعطي إطار خاص لمناسبة.')}</Muted>
+        <Muted>{t('ما بيبيّن إلا إذا الطالب مشغّل «شارك بلوحة المتفوقين» وبدون اسم مستعار.')}</Muted>
+        <Actions>
+          {FRAME_LEVELS.map(([lv, label]) => <Act key={lv} label={label} onPress={() => setFrame(lv)} />)}
+          <Act label={t('شيل الإطار الخاص')} kind="danger" onPress={() => setFrame(null)} />
         </Actions>
       </Panel>}
       {owner && <Section title={t('اللقب الأكاديمي')} />}

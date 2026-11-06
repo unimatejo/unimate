@@ -9,19 +9,23 @@ import { HonorList, MyPlace } from '@/components/honor/HonorList';
 import { HONOR_EMOJI, Podium, type HonorRow } from '@/components/honor/Podium';
 import { PullRefresh } from '@/components/ui/PullRefresh';
 import { ListSkeleton } from '@/components/ui/Skeleton';
-import { Card, Chip, Header, Row, Screen, Segmented, T, Toggle, Field } from '@/components/ui';
+import { Card, Chip, Field, Header, Row, Screen, Segmented, T, Toggle } from '@/components/ui';
 import { useAuth } from '@/lib/auth';
 import { nm, t } from '@/lib/i18n';
 import { run } from '@/lib/run';
 import { supabase } from '@/lib/supabase';
 import { C, F, shadow } from '@/lib/theme';
 import { timeAgo } from '@/lib/util';
+import { refreshFrames } from '@/lib/frames';
 
-type Status = { term: string | null; updated_at: string | null; hidden: boolean | null; has_record: boolean };
+type Status = { term: string | null; terms: string[]; updated_at: string | null; hidden: boolean | null; has_record: boolean };
 const SCOPES = ['major', 'college', 'university'] as const;
 const PERIODS = ['term', 'cumulative'] as const;
 
-/** Honor board: students ranked by their official GPA (from the university's records, never typed in by students). */
+/**
+ * Honor board: students ranked by their official GPA (from the university's records, never typed in by students).
+ * Only people who opted in, top 10 per major / college / university, and nobody's GPA but my own (0109).
+ */
 export default function Honor() {
   const insets = useSafeAreaInsets();
   const { profile, university } = useAuth();
@@ -30,35 +34,34 @@ export default function Honor() {
   const [status, setStatus] = useState<Status | null>(null);
   const [rows, setRows] = useState<HonorRow[] | null>(null);
   const [hide, setHide] = useState(false);
+  const [term, setTerm] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
   const load = useCallback(async () => {
     const [{ data: st }, { data }] = await Promise.all([
       supabase.rpc('honor_status'),
-      supabase.rpc('honor_board', { p_scope: SCOPES[scope], p_period: PERIODS[period] }),
+      supabase.rpc('honor_board', { p_scope: SCOPES[scope], p_period: PERIODS[period], p_term: term }),
     ]);
     const s = (st ?? null) as Status | null;
-    setStatus(s ?? { term: null, updated_at: null, hidden: false, has_record: false });
+    setStatus(s ?? { term: null, terms: [], updated_at: null, hidden: false, has_record: false });
     setHide(!!s?.hidden);
     setRows(((data ?? []) as HonorRow[]).map((r) => ({ ...r, gpa: r.gpa == null ? null : Number(r.gpa) })));
-  }, [scope, period]);
+  }, [scope, period, term]);
   useEffect(() => { setRows(null); load().catch(() => setRows([])); }, [load]);
 
-  // taking part is a choice: off by default, an optional nickname, and the GPA shows only if allowed
+  // taking part is a choice: off by default, and an optional nickname (then no name, photo, major or frame)
   const [alias, setAlias] = useState('');
-  const [showGpa, setShowGpa] = useState(false);
   useEffect(() => {
     if (!profile) return;
-    supabase.from('profiles').select('honor_alias, honor_show_gpa').eq('id', profile.id).maybeSingle()
-      .then(({ data }) => { setAlias(data?.honor_alias ?? ''); setShowGpa(!!data?.honor_show_gpa); }, () => {});
+    supabase.from('profiles').select('honor_alias').eq('id', profile.id).maybeSingle()
+      .then(({ data }) => setAlias(data?.honor_alias ?? ''), () => {});
   }, [profile]);
-  async function saveOptions(next: { show?: boolean; alias?: string; gpa?: boolean }) {
-    const show = next.show ?? !hide, a = next.alias ?? alias, g = next.gpa ?? showGpa;
-    setHide(!show); setShowGpa(g); setBusy(true);
-    const r = await run(supabase.rpc('set_honor_options', { p_show: show, p_alias: a.trim() || null, p_show_gpa: g }));
+  async function saveOptions(next: { show?: boolean }) {
+    const show = next.show ?? !hide;
+    setHide(!show); setBusy(true);
+    await run(supabase.rpc('set_honor_options', { p_show: show, p_alias: alias.trim() || null, p_show_gpa: false }));
     setBusy(false);
-    if (!r.ok) { load(); return; }
-    load();
+    load(); refreshFrames();
   }
 
   const scopeName = useMemo(() => {
@@ -69,8 +72,6 @@ export default function Honor() {
 
   const list = rows ?? [];
   const me = list.find((r) => r.is_me) ?? null;
-  // the person right above me (better GPA), for the "gap" line
-  const above = me && me.gpa != null ? [...list].filter((r) => !r.is_me && r.gpa != null && r.gpa > me.gpa!).sort((a, b) => a.gpa! - b.gpa!)[0] ?? null : null;
   const top = list.filter((r) => r.rank <= 10).slice(0, 3);
   const rest = list.filter((r) => r.rank <= 10).slice(3);
   const meOutside = me && me.rank > 10 ? me : null;
@@ -81,11 +82,16 @@ export default function Honor() {
       <Header title={t('المتفوقين')}
         subtitle={status?.term ? [status.term, status.updated_at ? t('آخر تحديث {0}', [timeAgo(status.updated_at)]) : null].filter(Boolean).join(' · ') : t('الترتيب من سجل الجامعة الرسمي')} />
       <ScrollView contentContainerStyle={{ padding: 18, paddingTop: 4, gap: 14, paddingBottom: me ? 130 + insets.bottom : 40 }} refreshControl={<PullRefresh onRefresh={load} />}>
-        <Segmented items={[t('تخصصي'), t('كليتي'), t('الجامعة')]} value={scope} onChange={setScope} />
+        <Segmented items={[t('تخصصي'), t('كليتي'), t('جامعتي')]} value={scope} onChange={setScope} />
         <Row gap={8}>
-          <Chip label={t('هالفصل')} active={period === 0} onPress={() => setPeriod(0)} />
+          <Chip label={t('معدل الفصل')} active={period === 0} onPress={() => setPeriod(0)} />
           <Chip label={t('التراكمي')} active={period === 1} onPress={() => setPeriod(1)} />
         </Row>
+        {(status?.terms.length ?? 0) > 1 && (
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
+            {status!.terms.map((x) => <Chip key={x} label={x} active={(term ?? status!.term) === x} onPress={() => setTerm(x === status!.term ? null : x)} />)}
+          </ScrollView>
+        )}
 
         {rows === null || status === null ? <ListSkeleton n={6} />
         : noData ? (
@@ -117,14 +123,10 @@ export default function Honor() {
             <HonorList rows={meOutside ? [...rest, meOutside] : rest} />
             <View style={[{ backgroundColor: C.card, borderRadius: 22, padding: 14, gap: 10 }, shadow]}>
               <Toggle value={!hide} onChange={(v) => { if (!busy) saveOptions({ show: v }); }} label={t('شارك بلوحة المتفوقين')}
-                hint={t('بالأساس ما حدا بيظهر. اللوحة بتعرض أول 10 بس، ومعدلك ما بيطلع إلا إذا سمحت.')} />
+                hint={t('بالأساس ما حدا بيظهر. اللوحة بتعرض أول 10 بس، ومعدلك ما بيشوفه غيرك أبداً. إذا كنت من العشرة الأوائل بيطلع حوالين صورتك إطار تكريم.')} />
               {!hide && (
-                <>
-                  <Field label={t('اسم مستعار (اختياري)')} value={alias} maxLength={24} onChangeText={setAlias} onBlur={() => saveOptions({})}
-                    placeholder={t('بيطلع بدل اسمك وصورتك')} />
-                  <Toggle value={showGpa} onChange={(v) => { if (!busy) saveOptions({ gpa: v }); }} label={t('اظهر معدلي')}
-                    hint={t('إذا طفّيتها، بيطلع ترتيبك بس بدون الرقم.')} />
-                </>
+                <Field label={t('اسم مستعار (اختياري)')} value={alias} maxLength={24} onChangeText={setAlias} onBlur={() => saveOptions({})}
+                  placeholder={t('بيطلع بدل اسمك وصورتك، وبدون إطار')} />
               )}
             </View>
             <T v="tiny" color={C.faint} style={{ textAlign: 'center', fontFamily: F.body }}>{t('الترتيب بيتحدّث كل 24 ساعة من سجل الجامعة الرسمي.')}</T>
@@ -133,7 +135,7 @@ export default function Honor() {
       </ScrollView>
       {me && !noData && (
         <View style={{ position: 'absolute', left: 14, right: 14, bottom: 14 + insets.bottom }}>
-          <MyPlace me={me} above={above} />
+          <MyPlace me={me} />
         </View>
       )}
     </Screen>

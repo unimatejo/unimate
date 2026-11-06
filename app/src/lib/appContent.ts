@@ -8,7 +8,7 @@ import { supabase } from './supabase';
  * a notice for everyone, and which features are on. Anything not set keeps the app's normal look.
  */
 export type Tone = 'blue' | 'green' | 'pink' | 'orange' | 'violet' | 'red';
-export type FeatureKey = 'rides' | 'honor' | 'leaderboard' | 'market' | 'study' | 'swap' | 'map' | 'attendance' | 'gpa' | 'exams';
+export type FeatureKey = 'rides' | 'honor' | 'frames' | 'market' | 'study' | 'swap' | 'map' | 'attendance' | 'gpa' | 'exams';
 export type QuickKey = 'map' | 'swap' | 'summaries' | 'market' | 'study' | 'ranks' | 'events' | 'lost_found' | 'sections';
 
 export type AppContent = {
