@@ -1,7 +1,8 @@
 import { useMemo, useState } from 'react';
 import { View } from 'react-native';
 
-import { Act, AdminScreen, Filters, Muted, Panel, Pill, State, confirm, done, fmtDate, fmtNum, go, useLoad } from '@/components/admin/kit';
+import { Act, Actions, AdminScreen, Filters, Muted, Panel, Pill, Sheet, State, audit, confirm, done, fmtDate, fmtNum, go, useAdminRole, useLoad } from '@/components/admin/kit';
+import { kindOf } from '@/components/map/kinds';
 import { Row, T } from '@/components/ui';
 import { supabase } from '@/lib/supabase';
 import { C } from '@/lib/theme';
@@ -11,6 +12,38 @@ type Stats = { buildings?: number; approx?: number; paths?: number; trees?: numb
 type U = { id: string; name_ar: string; name_en: string | null; has_center: boolean; buildings: number; places: number; pending: number;
   stats: Stats | null; error: string | null; fetched_at: string | null; version: number };
 type Level = 'ready' | 'mid' | 'thin' | 'none';
+type Suggestion = { id: string; name_ar: string; kind: string; description: string | null; lat: number; lng: number; created_at: string; by: { full_name: string } | null };
+
+/** One university's places suggested by its students: look at each on its own map, then accept or reject (owner). */
+function Suggestions({ u, onChanged }: { u: U; onChanged: () => void }) {
+  const owner = useAdminRole() === 'owner';
+  const { data, loading, error, reload } = useLoad<Suggestion[]>(() => supabase.from('places').select('id, name_ar, kind, description, lat, lng, created_at, by:profiles!places_created_by_fkey(full_name)')
+    .eq('university_id', u.id).eq('state', 'pending').order('created_at') as never, [u.id]);
+  async function decide(id: string, state: 'approved' | 'rejected') {
+    const { error: e } = await supabase.from('places').update({ state }).eq('id', id);
+    if (e) return;
+    await audit(`${state}_places`, 'places', id, { university: u.id }); done(); reload(); onChanged();
+  }
+  return (
+    <State loading={loading} error={error} empty={!data?.length}>
+      <View style={{ gap: 10 }}>
+        {(data ?? []).map((p) => (
+          <Panel key={p.id}>
+            <Row gap={8}><T v="bold" style={{ flex: 1 }}>{p.name_ar}</T><Pill label={kindOf(p.kind).label} /></Row>
+            {p.description ? <T v="small" color={C.ink2}>{p.description}</T> : null}
+            <Muted>{[p.by?.full_name, fmtDate(p.created_at)].filter(Boolean).join(' · ')}</Muted>
+            <Actions>
+              <Act label={t('شوف عالخريطة')} onPress={() => go(`/map?uni=${u.id}&lat=${p.lat}&lng=${p.lng}&name=${encodeURIComponent(p.name_ar)}`)} />
+              {owner && <Act label={t('اقبل')} kind="green" onPress={() => decide(p.id, 'approved')} />}
+              {owner && <Act label={t('ارفض')} onPress={() => decide(p.id, 'rejected')} />}
+            </Actions>
+          </Panel>
+        ))}
+        {!owner && <Muted>{t('القبول والرفض للمالك بس.')}</Muted>}
+      </View>
+    </State>
+  );
+}
 
 /** How complete a campus map is, from what students will actually see: named buildings, real 3D outlines, places. */
 function level(u: U): Level {
@@ -29,6 +62,7 @@ export default function AdminMaps() {
   const { data, loading, error, reload } = useLoad<U[]>(() => supabase.rpc('admin_campus_overview') as never, []);
   const [f, setF] = useState<'all' | Level>('all');
   const [busy, setBusy] = useState<string | null>(null);
+  const [review, setReview] = useState<U | null>(null);
   const rows = useMemo(() => (data ?? []).map((u) => ({ ...u, lv: level(u) })), [data]);
   const count = (l: Level) => rows.filter((u) => u.lv === l).length;
   const shown = rows.filter((u) => f === 'all' || u.lv === f);
@@ -66,12 +100,13 @@ export default function AdminMaps() {
                 {u.lv !== 'none' && (
                   <Muted>
                     {[t('{0} ممر وطريق', [fmtNum(s.paths ?? 0)]), s.trees ? t('{0} شجرة', [fmtNum(s.trees)]) : null, s.outline ? t('حدود الحرم معروفة') : t('حدود الحرم مش معروفة'),
-                      u.pending ? t('{0} اقتراح بستنى', [fmtNum(u.pending)]) : null, t('آخر بناء {0}', [fmtDate(u.fetched_at)])].filter(Boolean).join(' · ')}
+                      t('آخر بناء {0}', [fmtDate(u.fetched_at)])].filter(Boolean).join(' · ')}
                   </Muted>
                 )}
                 {u.error ? <T v="tiny" color={C.red}>{t('آخر محاولة فشلت: {0}', [u.error])}</T> : null}
                 <Row gap={8} style={{ flexWrap: 'wrap' }}>
                   {u.lv !== 'none' && <Act label={t('افتح الخريطة')} kind="primary" onPress={() => go(`/map?uni=${u.id}`)} />}
+                  {u.pending > 0 && <Act label={t('اقتراحات الطلاب · {0}', [fmtNum(u.pending)])} kind="green" onPress={() => setReview(u)} />}
                   {u.has_center && <Act label={busy === u.id ? t('بيبني…') : t('ابنيها من جديد')} loading={busy === u.id} onPress={() => rebuild(u)} />}
                 </Row>
               </Panel>
@@ -79,6 +114,9 @@ export default function AdminMaps() {
           })}
         </View>
       </State>
+      <Sheet open={!!review} onClose={() => setReview(null)} title={review ? t('اقتراحات طلاب {0}', [nm(review)]) : undefined}>
+        {review && <Suggestions u={review} onChanged={reload} />}
+      </Sheet>
     </AdminScreen>
   );
 }

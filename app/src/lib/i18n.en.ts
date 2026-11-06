@@ -2810,7 +2810,6 @@ export const EN: Record<string, string> = {
   "وديني: {0}": "Take me: {0}",
   "وصلت {0}": "You've arrived at {0}",
   "وقف المتابعة": "Stop following",
-  "{0} اقتراح بستنى": "{0} suggestions waiting",
   "{0} شجرة": "{0} trees",
   "{0} مبنى بالاسم · {1} مبنى ثلاثي الأبعاد · {2} تقريبي · {3} مكان وخدمة": "{0} named buildings · {1} 3D buildings · {2} approximate · {3} places and services",
   "{0} ممر وطريق": "{0} paths and roads",
@@ -2839,4 +2838,7 @@ export const EN: Record<string, string> = {
   "معاينة المشرف · {0}": "Admin preview · {0}",
   "ناقصة": "Sparse",
   "ناقصة · {0}": "Sparse · {0}",
+  "اقتراحات الطلاب · {0}": "Student suggestions · {0}",
+  "اقتراحات طلاب {0}": "Suggestions from {0} students",
+  "القبول والرفض للمالك بس.": "Only the owner can accept or reject.",
 };
