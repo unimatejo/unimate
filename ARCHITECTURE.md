@@ -132,6 +132,10 @@ or JSON: `[{"student_number":"2620387","term_gpa":3.71,"cumulative_gpa":3.60,"cr
   25 m) are dropped; Arabic goes to `name_ar`, English to `name_en`, and a trailing "- the university's name" is cut.
   Footprints and heights come from the OSM map API in `campus-osm` (Overpass refuses cloud servers) and are cached per
   university in Storage (`campus/<id>.json`, versioned URL, browser cache).
+- **Another university's map.** The map opens on the student's own campus (`profile.university_id`). The school button
+  (`components/map/UniSwitcher.tsx`) opens any other campus: its 3D file is public, and its buildings and approved
+  places come from `campus_pins(university)` (0114: names, kinds and points only, signed-in users only; the tables'
+  RLS still limits direct reads to the student's own university). Suggesting a place is only offered on your own campus.
 - **Admin.** Admin › خرائط الجامعات (`app/admin/maps.tsx`, RPCs `admin_campus_overview`, `admin_campus_rebuild`) lists
   every university's map with how complete it is (ready / partial / sparse), opens it as its students see it
   (`/map?uni=<id>`, admins only: RLS already lets admins read every campus's buildings and places), rebuilds it now,
