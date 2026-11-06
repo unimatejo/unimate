@@ -9,6 +9,7 @@ import { FilterLayer } from '@/components/story/filters';
 import type { MediaMeta } from '@/lib/cropper';
 
 const fill = { position: 'absolute', top: 0, bottom: 0, left: 0, right: 0 } as const;
+const sized = { width: '100%', height: '100%' } as const;
 
 /** Where the media goes inside a frame of W×H, from the crop editor's rect (fractions of the frame). */
 function place(meta: MediaMeta | null | undefined, W: number, H: number) {
@@ -80,7 +81,8 @@ export function TrimmedVideo({ uri, meta, loop = true, muted = true, autoPlay = 
     }));
     return () => subs.forEach((s) => s.remove());
   }, [player, trim, loop, onEnd, onReady, onError, onSize]);
-  return <VideoView player={player} style={style ?? fill} contentFit={fit} nativeControls={false} playsInline allowsPictureInPicture={false} />;
+  // a browser draws a <video> at its own pixel size unless told otherwise: insets alone don't stretch it (that was the "zoom")
+  return <VideoView player={player} style={[sized, style ?? fill]} contentFit={fit} nativeControls={false} playsInline allowsPictureInPicture={false} />;
 }
 
 /**

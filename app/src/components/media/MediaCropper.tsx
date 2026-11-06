@@ -4,11 +4,13 @@ import { ImageManipulator, SaveFormat } from 'expo-image-manipulator';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import { FlipHorizontal2, RotateCw, X } from 'lucide-react-native';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, Image as RNImage, Modal, ScrollView, View } from 'react-native';
+import { ActivityIndicator, Image as RNImage, Modal, Platform, ScrollView, View } from 'react-native';
 import { GestureDetector, GestureHandlerRootView, usePanGesture, usePinchGesture, useSimultaneousGestures } from 'react-native-gesture-handler';
 import Animated, { Easing, runOnJS, useAnimatedStyle, useSharedValue, withTiming, type SharedValue } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { measureVideo } from '@/components/media/FramedMedia';
+import { useVideoThumbs, type Thumb } from '@/components/media/videoThumbs';
 import { T, Tap } from '@/components/ui';
 import { finishCropper, subscribeCropper, type CropMode, type CropOpts, type CropResult, type MediaMeta } from '@/lib/cropper';
 import { reportError } from '@/lib/errors';
@@ -75,19 +77,25 @@ function Corner({ corner, f, W, H, onMove, onEnd }: { corner: 'tl' | 'tr' | 'bl'
 }
 
 /** Trim a video: drag the two ends of the strip; the kept part can't be longer than maxSec. */
-function TrimBar({ duration, maxSec, start, end, onChange, onSeek }: { duration: number; maxSec: number; start: number; end: number; onChange: (s: number, e: number) => void; onSeek: (s: number) => void }) {
+function TrimBar({ duration, maxSec, start, end, onChange, onSeek, onScrub, thumbs }: {
+  duration: number; maxSec: number; start: number; end: number; onChange: (s: number, e: number) => void; onSeek: (s: number) => void;
+  /** while a handle moves: show that exact frame */
+  onScrub: (s: number) => void; thumbs: Thumb[];
+}) {
   const [w, setW] = useState(0);
   const px = (s: number) => (w ? (s / duration) * w : 0);
   const a = useSharedValue(0), b = useSharedValue(0);
   useEffect(() => { a.value = px(start); b.value = px(end); }, [w, start, end, duration]); // eslint-disable-line react-hooks/exhaustive-deps
   const minPx = w ? Math.max(12, (1 / duration) * w) : 12, maxPx = w ? (Math.min(maxSec, duration) / duration) * w : 0;
   const commit = (sa: number, sb: number, seek: number) => { if (!w) return; onChange((sa / w) * duration, (sb / w) * duration); onSeek((seek / w) * duration); };
+  const last = useRef(0);
+  const scrub = (x: number) => { const now = Date.now(); if (!w || now - last.current < 70) return; last.current = now; onScrub((x / w) * duration); };
   const left = usePanGesture({
-    onUpdate: (e) => { 'worklet'; a.value = Math.min(Math.max(0, a.value + e.changeX, b.value - maxPx), b.value - minPx); },
+    onUpdate: (e) => { 'worklet'; a.value = Math.min(Math.max(0, a.value + e.changeX, b.value - maxPx), b.value - minPx); runOnJS(scrub)(a.value); },
     onDeactivate: () => { 'worklet'; runOnJS(commit)(a.value, b.value, a.value); },
   });
   const right = usePanGesture({
-    onUpdate: (e) => { 'worklet'; b.value = Math.max(Math.min(w, b.value + e.changeX, a.value + maxPx), a.value + minPx); },
+    onUpdate: (e) => { 'worklet'; b.value = Math.max(Math.min(w, b.value + e.changeX, a.value + maxPx), a.value + minPx); runOnJS(scrub)(b.value); },
     onDeactivate: () => { 'worklet'; runOnJS(commit)(a.value, b.value, a.value); },
   });
   const kept = useAnimatedStyle(() => ({ left: a.value, width: Math.max(0, b.value - a.value) }));
@@ -101,7 +109,10 @@ function TrimBar({ duration, maxSec, start, end, onChange, onSeek }: { duration:
         <T v="tiny" color={INK} style={{ fontFamily: F.bodyBold }}>{t('{0} ث', [secs.toFixed(1)])}</T>
       </View>
       <View onLayout={(e) => setW(e.nativeEvent.layout.width)} style={{ height: 52, justifyContent: 'center', direction: 'ltr' }}>
-        <View style={{ height: 40, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.12)' }} />
+        {/* the video's frames under the handles, so you can see where you're cutting */}
+        <View style={{ height: 40, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.12)', overflow: 'hidden', flexDirection: 'row' }}>
+          {thumbs.map((th, i) => <Image key={i} source={th as never} style={{ flex: 1, height: 40 }} contentFit="cover" />)}
+        </View>
         <Animated.View pointerEvents="none" style={[{ position: 'absolute', top: 6, height: 40, borderRadius: 12, borderWidth: 3, borderColor: C.primary, backgroundColor: 'rgba(255,122,89,0.18)' }, kept]} />
         <GestureDetector gesture={left}>
           <Animated.View accessibilityLabel={t('بداية الفيديو')} style={[{ position: 'absolute', top: 0, width: 28, height: 52, alignItems: 'center', justifyContent: 'center' }, ha]}>
@@ -151,6 +162,7 @@ export function MediaCropper({ src, opts, onDone, onCancel }: { src: Picked; opt
   const [duration, setDuration] = useState(isVideo && cur.duration ? cur.duration / 1000 : 0);
   const [trim, setTrim] = useState<{ start: number; end: number }>(() => src.meta?.trim ?? { start: 0, end: Math.min(maxSec, cur.duration ? cur.duration / 1000 : maxSec) });
   const trimRef = useRef(trim);
+  const scrubbing = useRef(false);
   trimRef.current = trim;
   useEffect(() => {
     if (!isVideo) return;
@@ -161,7 +173,7 @@ export function MediaCropper({ src, opts, onDone, onCancel }: { src: Picked; opt
         if (s?.width && s?.height) setDims((cd) => cd ?? { w: s.width, h: s.height });
       }),
       player.addListener('videoTrackChange', ({ videoTrack }) => { const s = videoTrack?.size; if (s?.width && s?.height) setDims((cd) => cd ?? { w: s.width, h: s.height }); }),
-      player.addListener('timeUpdate', ({ currentTime }) => { const tr = trimRef.current; if (currentTime >= tr.end - 0.05 || currentTime < tr.start - 0.3) player.currentTime = tr.start; }),
+      player.addListener('timeUpdate', ({ currentTime }) => { const tr = trimRef.current; if (scrubbing.current) return; if (currentTime >= tr.end - 0.05 || currentTime < tr.start - 0.3) player.currentTime = tr.start; }),
     ];
     // duration: some players never send sourceLoad — read it once the video is ready
     const poll = setInterval(() => {
@@ -177,6 +189,22 @@ export function MediaCropper({ src, opts, onDone, onCancel }: { src: Picked; opt
     const fb = setTimeout(() => setDims((cd) => cd ?? { w: 1080, h: 1920 }), 2500);
     return () => { subs.forEach((s) => s.remove()); clearTimeout(fb); clearInterval(poll); };
   }, [player, isVideo, maxSec]);
+
+  // browsers never report a video's size through the player: read it from the file (fast, metadata only)
+  useEffect(() => {
+    if (!isVideo || Platform.OS !== 'web') return;
+    measureVideo(cur.uri).then((r) => { if (r) setDims((cd) => cd ?? r); });
+  }, [cur.uri, isVideo]);
+  // a browser only shows a video's picture once it plays, and the player can't start a <video> that isn't on screen yet
+  const shown = isVideo && !!dims && stage.w > 0;
+  useEffect(() => {
+    if (!shown) return;
+    player.currentTime = trimRef.current.start;
+    player.play();
+  }, [shown, player]);
+  const thumbs = useVideoThumbs(isVideo ? cur.uri : null, duration, player);
+  // dragging a handle: freeze on that frame; letting go plays the kept part again
+  const scrub = useCallback((sec: number) => { scrubbing.current = true; player.pause(); player.currentTime = sec; }, [player]);
 
   // photos without a known size (rare): ask the image
   useEffect(() => {
@@ -370,7 +398,7 @@ export function MediaCropper({ src, opts, onDone, onCancel }: { src: Picked; opt
               {dims && stage.w > 0 && (
                 // the photo itself never takes the touch (a browser would start dragging the image file)
                 <Animated.View pointerEvents="none" style={[{ position: 'absolute', left: 0, top: 0, width: dims.w * base, height: dims.h * base }, media]}>
-                  {isVideo ? <VideoView player={player} style={{ flex: 1 }} contentFit="fill" nativeControls={false} playsInline />
+                  {isVideo ? <VideoView player={player} style={{ width: '100%', height: '100%' }} contentFit="fill" nativeControls={false} playsInline />
                     : <Image source={{ uri: cur.uri }} style={{ flex: 1 }} contentFit="fill" />}
                 </Animated.View>
               )}
@@ -396,7 +424,7 @@ export function MediaCropper({ src, opts, onDone, onCancel }: { src: Picked; opt
         <View style={{ paddingTop: 12, paddingBottom: 16, gap: 14 }}>
           {isVideo && d > 0 && (
             <TrimBar duration={d} maxSec={maxSec} start={trim.start} end={Math.min(trim.end || d, d)}
-              onChange={(s, e) => setTrim({ start: s, end: e })} onSeek={(s) => { player.currentTime = s; }} />
+              onChange={(s, e) => setTrim({ start: s, end: e })} onSeek={(s) => { scrubbing.current = false; player.currentTime = s; player.play(); }} onScrub={scrub} thumbs={thumbs} />
           )}
           {story && <T v="tiny" color={MUTED} style={{ textAlign: 'center' }}>{t('حرّك وكبّر بإصبعين. صغّرها لتبيّن كاملة فوق خلفية مموّهة.')}</T>}
           {!story && !isVideo && locked && mode === 'post' && <T v="tiny" color={MUTED} style={{ textAlign: 'center' }}>{t('كل صور المنشور بنفس الشكل. حرّك الصورة لتختار شو يبيّن.')}</T>}
