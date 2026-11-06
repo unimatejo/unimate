@@ -50,7 +50,7 @@ const lite = writeLucideLite();
 
 const resolve = config.resolver.resolveRequest;
 config.resolver.resolveRequest = (ctx, name, platform) => {
-  if (platform === 'web' && name === 'react-native-maps') return { type: 'sourceFile', filePath: path.join(__dirname, 'dev/maps-web-stub.js') };
+  if (platform === 'web' && name === 'react-native-maps') return { type: 'sourceFile', filePath: path.join(__dirname, 'src/components/map/webMaps.tsx') };
   if (name === 'lucide-react-native' && lite && ctx.originModulePath !== LITE) return { type: 'sourceFile', filePath: LITE };
   if (name === 'lucide-react-native/full') return (resolve ?? ctx.resolveRequest)(ctx, 'lucide-react-native', platform);
   return (resolve ?? ctx.resolveRequest)(ctx, name, platform);

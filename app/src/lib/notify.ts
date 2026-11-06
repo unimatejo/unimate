@@ -1,7 +1,7 @@
 import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
 
-import type { Meeting } from './schedule';
+import { roomRoute, type Meeting } from './schedule';
 import { supabase } from './supabase';
 import { clock } from './util';
 import { t } from './i18n';
@@ -30,6 +30,8 @@ export function scheduleLectureReminders(meetings: Meeting[], off: Record<string
   scheduling = scheduling.catch(() => {}).then(() => doSchedule(meetings, off, userId, override));
   return scheduling;
 }
+
+const roomUrl = (m: Meeting) => { const r = roomRoute(m); return `${r.pathname}?${new URLSearchParams(r.params as Record<string, string>).toString()}`; };
 
 async function doSchedule(meetings: Meeting[], off: Record<string, boolean>, userId?: string, override?: Override) {
   if (Platform.OS === 'web') return; // the browser has no scheduled local notifications (web push covers messages)
@@ -72,8 +74,9 @@ async function doSchedule(meetings: Meeting[], off: Record<string, boolean>, use
       identifier: `lec-${m.id}`,
       content: {
         title: t('بعد {0} دقايق: {1}', [minutes, m.course_name]),
-        body: t('{0} · {1}', [where || t('شوف القاعة بالجدول'), clock(m.starts_at)]),
-        data: { kind: 'lecture', meeting: m.id, building: m.building_id },
+        body: m.building_id && m.kind !== 'online' ? t('{0} · {1} · اكبس وبوديك للقاعة', [where, clock(m.starts_at)]) : t('{0} · {1}', [where || t('شوف القاعة بالجدول'), clock(m.starts_at)]),
+        // tapping it opens the walk to the room (lib/webpush openFrom)
+        data: { kind: 'lecture', meeting: m.id, building: m.building_id, url: m.building_id && m.kind !== 'online' ? roomUrl(m) : '/(tabs)/schedule' },
       },
       trigger: {
         type: Notifications.SchedulableTriggerInputTypes.WEEKLY,

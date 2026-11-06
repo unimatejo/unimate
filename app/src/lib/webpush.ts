@@ -86,6 +86,13 @@ export async function dropWebPush() {
 
 /** Signed in: keep this browser's subscription fresh, and open the right screen when a notification is tapped. */
 export function useWebPush(userId?: string) {
+  // iPhone: no remote push yet, but a tapped lecture reminder (a local notification) still opens its screen
+  useEffect(() => {
+    if (Platform.OS !== 'ios' || !userId) return;
+    Notifications.getLastNotificationResponseAsync().then(openFrom, () => {});
+    const sub = Notifications.addNotificationResponseReceivedListener(openFrom);
+    return () => sub.remove();
+  }, [userId]);
   useEffect(() => {
     if (Platform.OS !== 'android' || !userId) return;
     registerNativePush().catch(() => {});

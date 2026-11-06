@@ -165,6 +165,12 @@ export function useSchedule(userId?: string) {
   return { meetings, events, loading, error, reload: load, next, now };
 }
 
+/** "وديني للقاعة": the map, walking to this lecture's building (with its room and floor) when we know it. */
+export function roomRoute(m: Pick<Meeting, 'building_id' | 'room_code' | 'room_floor'>) {
+  if (!m.building_id) return { pathname: '/map' as const, params: {} };
+  return { pathname: '/map' as const, params: { building: m.building_id, go: '1', ...(m.room_code ? { room: m.room_code } : {}), ...(m.room_floor != null ? { floor: String(m.room_floor) } : {}) } };
+}
+
 export function placeLine(m: Pick<Meeting, 'kind' | 'building_name' | 'room_floor' | 'room_code'> & { room_text?: string | null }): string {
   if (m.kind === 'online') return t('أونلاين على التيمز');
   const blended = m.kind === 'blended' ? t('مدمج: وجاهي وأونلاين') : null;

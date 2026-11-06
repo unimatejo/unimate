@@ -1,7 +1,7 @@
 import { router } from 'expo-router';
 import { PullRefresh } from '@/components/ui/PullRefresh';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Bell, BellOff, BookOpen, Calculator, Car, CalendarPlus, CalendarX, ScanLine, Clock, FlaskConical, Hourglass, MapPin, MessagesSquare, UserX, Video, EyeOff, MonitorSmartphone } from 'lucide-react-native';
+import { Bell, BellOff, BookOpen, Calculator, Car, CalendarPlus, CalendarX, ScanLine, Clock, FlaskConical, Hourglass, MapPin, MessagesSquare, Navigation, UserX, Video, EyeOff, MonitorSmartphone } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import { useEffect, useMemo, useState } from 'react';
 import { Alert, Linking, ScrollView, View } from 'react-native';
@@ -16,7 +16,7 @@ import { run } from '@/lib/run';
 import { ListSkeleton } from '@/components/ui/Skeleton';
 import { scheduleLectureReminders } from '@/lib/notify';
 import { SectionAsks } from '@/components/study/SectionAsks';
-import { placeLine, useSchedule, ymd, type Meeting } from '@/lib/schedule';
+import { placeLine, roomRoute, useSchedule, ymd, type Meeting } from '@/lib/schedule';
 import { sectionLabel } from '@/lib/sections';
 import { toast } from '@/lib/toast';
 import { supabase } from '@/lib/supabase';
@@ -269,8 +269,10 @@ export default function Schedule() {
                         <Video size={15} color={C.violet} /><T v="small" color={C.violet}>{t('ادخل المحاضرة')}</T>
                       </Tap>
                     ) : (
-                      <Tap onPress={() => router.push({ pathname: '/map', params: { building: m.building_id ?? '' } })} style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 38, paddingHorizontal: 12, borderRadius: 12, backgroundColor: C.primarySoft }}>
-                        <MapPin size={15} color={C.primary} /><T v="small" color={C.primary} numberOfLines={1} style={{ flexShrink: 1 }}>{placeLine(m)}</T>
+                      <Tap onPress={() => router.push(roomRoute(m))} accessibilityLabel={m.building_id ? t('وديني: {0}', [placeLine(m)]) : placeLine(m)}
+                        style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 38, paddingHorizontal: 12, borderRadius: 12, backgroundColor: C.primarySoft }}>
+                        {m.building_id ? <Navigation size={15} color={C.primary} /> : <MapPin size={15} color={C.primary} />}
+                        <T v="small" color={C.primary} numberOfLines={1} style={{ flexShrink: 1 }}>{m.building_id ? t('وديني · {0}', [placeLine(m)]) : placeLine(m)}</T>
                       </Tap>
                     )}
                     {done && m.changed !== 'cancelled' && (() => {

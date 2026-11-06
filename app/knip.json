@@ -3,7 +3,7 @@
   "entry": [
     "src/app/**/*.tsx",
     "metro.config.js",
-    "dev/maps-web-stub.js",
+    "src/components/map/webMaps.tsx",
     "web/sw.js"
   ]
 }

@@ -1,83 +1,42 @@
 import * as Location from 'expo-location';
 import { router, useLocalSearchParams } from 'expo-router';
-import {
-  BookOpen, Building2, MapPinPlus, Banknote, Bus, Car, ChevronRight, Coffee, Crosshair, DoorOpen, ExternalLink, Footprints, Landmark, Layers, MapPin, Maximize2, Moon, Navigation,
-  Pause, Pill, Play, Printer, Rotate3d, Search, Send, ShoppingBag, SkipBack, SkipForward, Stethoscope, Store, Trees, Trophy, UtensilsCrossed, X, type LucideIcon,
-} from 'lucide-react-native';
+import { ChevronRight, Crosshair, Footprints, Layers, MapPin, MapPinPlus, Maximize2, Navigation, Pause, Play, Search, Send, SkipBack, SkipForward, X } from 'lucide-react-native';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, FlatList, Keyboard, Linking, Platform, ScrollView, TextInput, View } from 'react-native';
 import MapView, { Marker, Polyline, PROVIDER_DEFAULT } from 'react-native-maps';
 import Animated, { FadeIn, SlideInDown } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { GlyphTile, GRAD } from '@/components/ui/Glyph';
 import { ShareToChat } from '@/components/chat/ShareToChat';
-import { Button, Chip, Field, Row, T, Tap } from '@/components/ui';
+import { FILTERS, inGroup, kindOf, localSearch, MINOR, TOUR_KINDS, type FilterKey, type Pin } from '@/components/map/kinds';
+import { DirectionBanner, NavCard } from '@/components/map/NavPanel';
+import { SuggestPlace } from '@/components/map/SuggestPlace';
+import { Button, Chip, Row, T, Tap } from '@/components/ui';
+import { GlyphTile } from '@/components/ui/Glyph';
 import { useAuth } from '@/lib/auth';
-import { supabase } from '@/lib/supabase';
-import { C, F, isDark, shadow } from '@/lib/theme';
+import { distM, findBuilding, loadCampus, type CampusData, type LL } from '@/lib/campus/data';
+import { progress, walkRoute, type Route } from '@/lib/campus/route';
+import { mapTheme } from '@/lib/campus/theme';
 import { flip, nm, t, ta } from '@/lib/i18n';
 import { goBack } from '@/lib/nav';
+import { supabase } from '@/lib/supabase';
+import { C, F, isDark, shadow } from '@/lib/theme';
 
-type Pin = { id: string; kind: string; name: string; sub?: string | null; lat: number; lng: number; advertiser_id?: string | null };
 type Hit = { kind: string; id: string; title: string; subtitle: string; lat: number | null; lng: number | null };
+type Nav = { dest: Pin; building: string | null; buildingId: string | null; outline: LL[] | null; floor: number | null; room: string | null; route: Route; from: 'me' | 'gate' };
 
-type G = readonly [string, string];
-const KIND: Record<string, { icon: LucideIcon; g: G; label: string }> = {
-  building: { icon: Building2, g: GRAD.blue, label: t('مبنى') },
-  cafeteria: { icon: Coffee, g: GRAD.orange, label: t('كافتيريا') },
-  restaurant: { icon: UtensilsCrossed, g: GRAD.orange, label: t('مطعم') },
-  kiosk: { icon: Store, g: GRAD.yellow, label: t('كشك') },
-  shop: { icon: ShoppingBag, g: GRAD.yellow, label: t('محل') },
-  print: { icon: Printer, g: GRAD.yellow, label: t('طباعة وقرطاسية') },
-  parking: { icon: Car, g: GRAD.slate, label: t('موقف سيارات') },
-  bus: { icon: Bus, g: GRAD.teal, label: t('موقف باص') },
-  gate: { icon: DoorOpen, g: GRAD.indigo, label: t('بوابة') },
-  mosque: { icon: Moon, g: GRAD.green, label: t('مسجد') },
-  library: { icon: BookOpen, g: GRAD.violet, label: t('مكتبة') },
-  bank: { icon: Landmark, g: GRAD.green, label: t('بنك') },
-  atm: { icon: Banknote, g: GRAD.green, label: t('صراف آلي') },
-  clinic: { icon: Stethoscope, g: GRAD.red, label: t('عيادة') },
-  pharmacy: { icon: Pill, g: GRAD.red, label: t('صيدلية') },
-  sports: { icon: Trophy, g: GRAD.pink, label: t('رياضة') },
-  garden: { icon: Trees, g: GRAD.green, label: t('حديقة') },
-};
-const kindOf = (k: string) => KIND[k] ?? { icon: MapPin, g: GRAD.green, label: t('خدمة') };
+const WEB = Platform.OS === 'web';
+const theme = mapTheme();
 
-const GROUPS: Record<string, string[]> = {
-  building: ['building'], food: ['cafeteria', 'restaurant'], shops: ['kiosk', 'shop', 'print'], parking: ['parking'], bus: ['bus'],
-};
-const FILTERS = [
-  { key: 'all', label: t('الكل') },
-  { key: 'building', label: t('المباني') },
-  { key: 'food', label: t('أكل وقهوة') },
-  { key: 'shops', label: t('أكشاك ومحلات') },
-  { key: 'parking', label: t('مواقف') },
-  { key: 'bus', label: t('باصات') },
-  { key: 'service', label: t('خدمات') },
-] as const;
-const inGroup = (f: string, k: string) => f === 'all' || (f === 'service' ? !Object.values(GROUPS).flat().includes(k) : (GROUPS[f] ?? []).includes(k));
-// what a virtual walk stops at: the places people actually look for, not every parking lot
-const MINOR = ['parking', 'bus', 'atm', 'shop', 'service', 'room', 'lab', 'other'];
-const TOUR_KINDS = ['gate', 'building', 'library', 'cafeteria', 'restaurant', 'kiosk', 'mosque', 'sports', 'garden', 'clinic', 'bank'];
-const streetView = (p: { lat: number; lng: number }) => `https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${p.lat},${p.lng}`;
-
-function bearing(a: { lat: number; lng: number }, b: { lat: number; lng: number }) {
-  const r = Math.PI / 180, y = Math.sin((b.lng - a.lng) * r) * Math.cos(b.lat * r);
-  const x = Math.cos(a.lat * r) * Math.sin(b.lat * r) - Math.sin(a.lat * r) * Math.cos(b.lat * r) * Math.cos((b.lng - a.lng) * r);
-  return (Math.atan2(y, x) / r + 360) % 360;
-}
-
-function distM(a: { lat: number; lng: number }, b: { lat: number; lng: number }) {
-  const R = 6371000, r = Math.PI / 180;
-  const dLat = (b.lat - a.lat) * r, dLng = (b.lng - a.lng) * r;
-  const x = Math.sin(dLat / 2) ** 2 + Math.cos(a.lat * r) * Math.cos(b.lat * r) * Math.sin(dLng / 2) ** 2;
-  return 2 * R * Math.asin(Math.sqrt(x));
-}
-
+/**
+ * The campus map, all inside the app. On the web: a real 3D campus (MapLibre: buildings with height, light and
+ * shadow, trees, green areas, paths) built from OpenStreetMap and our own buildings; on phones the platform map until
+ * the next app build brings the same 3D view. "وديني" walks you there on the campus paths with turn-by-turn directions.
+ * Opened with ?building=…&go=1 (&room, &floor) from a lecture, it starts the route by itself.
+ */
 export default function CampusMap() {
   const { university, profile } = useAuth();
-  const params = useLocalSearchParams<{ building?: string; advertiser?: string; lat?: string; lng?: string; name?: string }>();
+  const params = useLocalSearchParams<{ building?: string; advertiser?: string; lat?: string; lng?: string; name?: string; go?: string; room?: string; floor?: string }>();
   // a place someone shared in a chat ("lat,lng,name"): pinned and opened on arrival
   const shared = useMemo<Pin | null>(() => {
     const la = Number(params.lat), ln = Number(params.lng);
@@ -87,73 +46,61 @@ export default function CampusMap() {
   const map = useRef<MapView>(null);
   const [pins, setPins] = useState<Pin[]>([]);
   const [pinsState, setPinsState] = useState<'loading' | 'ok' | 'empty' | 'error'>('loading');
-  const [filter, setFilter] = useState<(typeof FILTERS)[number]['key']>('all');
+  const [campus, setCampus] = useState<CampusData | null>(null);
+  const [filter, setFilter] = useState<FilterKey>('all');
   const [q, setQ] = useState('');
   const [hits, setHits] = useState<Hit[]>([]);
   const [sel, setSel] = useState<Pin | null>(null);
   const [me, setMe] = useState<{ lat: number; lng: number } | null>(null);
-  const [routing, setRouting] = useState(false);
   const [sat, setSat] = useState(false);
   const [zoom, setZoom] = useState(16);
   const mid = useRef<{ lat: number; lng: number } | null>(null);
-  // "suggest a place": move the map under the pin, name it, and the team approves it
-  const [suggest, setSuggest] = useState<'pin' | 'form' | null>(null);
-  const [sName, setSName] = useState(''); const [sKind, setSKind] = useState('cafeteria'); const [sDesc, setSDesc] = useState('');
-  const [sBusy, setSBusy] = useState(false);
-  async function sendSuggestion() {
-    if (!university || !mid.current || sBusy) return;
-    if (sName.trim().length < 2) { Alert.alert(t('اكتب اسم المكان')); return; }
-    setSBusy(true);
-    const { error } = await supabase.from('places').insert({ university_id: university.id, kind: sKind, name_ar: sName.trim(), description: sDesc.trim() || null, lat: mid.current.lat, lng: mid.current.lng, state: 'pending', created_by: profile?.id });
-    setSBusy(false);
-    if (error) { Alert.alert(t('ما انبعت'), t('جرّب كمان مرة.')); return; }
-    setSuggest(null); setSName(''); setSDesc('');
-    Alert.alert(t('شكراً! ✓'), t('وصلنا اقتراحك، وبيطلع على الخريطة لكل طلاب جامعتك بعد ما نراجعه.'));
-  }
-  // virtual walk: the camera walks you from stop to stop without you moving
-  const [tour, setTour] = useState<{ stops: Pin[]; i: number; walk?: boolean } | null>(null);
+  const [suggest, setSuggest] = useState(false);
+  const [nav, setNav] = useState<Nav | null>(null);
+  const [follow, setFollow] = useState(true);
+  // virtual walk: the camera walks you along the paths without you moving (the campus tour, or a route preview)
+  const [tour, setTour] = useState<{ stops: Pin[]; i: number } | null>(null);
   const [auto, setAuto] = useState(false);
   const [walker, setWalker] = useState<{ lat: number; lng: number } | null>(null);
-  const [trail, setTrail] = useState<{ latitude: number; longitude: number }[]>([]);
   const anim = useRef<ReturnType<typeof setInterval> | null>(null);
   const next = useRef<ReturnType<typeof setTimeout> | null>(null);
   const stopAnim = () => { if (anim.current) clearInterval(anim.current); if (next.current) clearTimeout(next.current); anim.current = null; next.current = null; };
   useEffect(() => stopAnim, []);
 
-  useEffect(() => {
-    if (!university) return;
-    (async () => {
-      setPinsState('loading');
+  const center = university?.center_lat ? { latitude: university.center_lat, longitude: university.center_lng! } : { latitude: 31.95, longitude: 35.91 }; // Amman, until the university has a campus point
+
+  const loadPins = useCallback(async () => {
+    if (!university) { setPinsState('empty'); return; }
+    setPinsState('loading');
+    try {
       const [{ data: b, error: be }, { data: p, error: pe }] = await Promise.all([
         supabase.from('buildings').select('id, name_ar, name_en, code, lat, lng').eq('university_id', university.id).not('lat', 'is', null),
         supabase.from('places').select('id, kind, name_ar, name_en, description, lat, lng, advertiser_id').eq('university_id', university.id).eq('state', 'approved'),
       ]);
       if (be || pe) { setPinsState('error'); return; }
-      setPinsState(((b ?? []).length + (p ?? []).length) ? 'ok' : 'empty');
       setPins([
         ...(b ?? []).map((x) => ({ id: x.id, kind: 'building', name: nm(x), sub: x.code, lat: x.lat!, lng: x.lng! })),
         ...(p ?? []).map((x) => ({ id: x.id, kind: x.kind, name: nm(x), sub: x.description, lat: x.lat, lng: x.lng, advertiser_id: x.advertiser_id })),
       ]);
-    })();
+      setPinsState(((b ?? []).length + (p ?? []).length) ? 'ok' : 'empty');
+    } catch { setPinsState('error'); }
   }, [university]);
+  useEffect(() => { loadPins(); }, [loadPins]);
+  // the 3D campus: only this university's file, kept by the browser between visits
+  useEffect(() => { if (university) loadCampus(university.id).then(setCampus); }, [university]);
 
+  const near = useMemo(() => pins.filter((p) => distM({ lat: center.latitude, lng: center.longitude }, p) < 3000), [pins, center.latitude, center.longitude]);
   const fitAll = useCallback(() => {
     // the main campus only: colleges in other cities (Al-Balqa has many) would zoom the map out to all of Jordan
-    const c = university?.center_lat ? { lat: university.center_lat, lng: university.center_lng! } : null;
-    const near = c ? pins.filter((p) => distM(c, p) < 3000) : pins;
-    if (near.length < 2) return;
+    if (near.length < 2) { map.current?.animateCamera({ center, zoom: 16.4, pitch: WEB ? 52 : 0, heading: WEB ? -18 : 0 }, { duration: 700 }); return; }
     map.current?.fitToCoordinates(near.map((p) => ({ latitude: p.lat, longitude: p.lng })), { edgePadding: { top: 170, bottom: 80, left: 40, right: 40 }, animated: true });
-  }, [pins, university]);
-  useEffect(() => { if (pins.length && !params.building && !params.advertiser && !shared) setTimeout(fitAll, 400); }, [pins, fitAll, params.building, params.advertiser, shared]);
-  useEffect(() => { if (shared) { const tm = setTimeout(() => focus(shared), 500); return () => clearTimeout(tm); } }, [shared]); // eslint-disable-line react-hooks/exhaustive-deps
-
+  }, [near, center]);
+  const opened = useRef(false);
   useEffect(() => {
-    if ((params.building || params.advertiser) && pins.length) {
-      const p = pins.find((x) => (params.building && x.id === params.building) || (params.advertiser && x.advertiser_id === params.advertiser));
-      if (p) focus(p);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [params.building, params.advertiser, pins]);
+    if (!pins.length || opened.current || params.building || params.advertiser || shared) return;
+    opened.current = true;
+    setTimeout(fitAll, 400);
+  }, [pins, fitAll, params.building, params.advertiser, shared]);
 
   // follow the student's position while the map is open (stopped when leaving)
   const watch = useRef<Location.LocationSubscription | null>(null);
@@ -168,121 +115,188 @@ export default function CampusMap() {
         return false;
       }
       watch.current?.remove();
-      watch.current = await Location.watchPositionAsync({ accuracy: Location.Accuracy.Balanced, distanceInterval: 8 }, (pos) => setMe({ lat: pos.coords.latitude, lng: pos.coords.longitude }));
+      watch.current = await Location.watchPositionAsync({ accuracy: Location.Accuracy.High, distanceInterval: 4 }, (pos) => setMe({ lat: pos.coords.latitude, lng: pos.coords.longitude }));
       return true;
     } catch { return false; }
   }, []);
   useEffect(() => { startLocation(false); return () => { watch.current?.remove(); watch.current = null; }; }, [startLocation]);
 
+  // search: what's on the map answers instantly (names, and kinds like «كشك»), the server adds rooms and nicknames
+  const local = useMemo(() => localSearch(pins, q, me ?? mid.current), [pins, q, me]);
   useEffect(() => {
-    const t = setTimeout(async () => {
+    const tm = setTimeout(async () => {
       if (q.trim().length < 2) { setHits([]); return; }
       const { data } = await supabase.rpc('campus_search', { q: q.trim(), lim: 12 });
       setHits(((data ?? []) as Hit[]).filter((h) => h.lat != null));
     }, 250);
-    return () => clearTimeout(t);
+    return () => clearTimeout(tm);
   }, [q]);
+  const results = useMemo(() => {
+    const seen = new Set<string>();
+    const out: { key: string; pin: Pin; title: string; sub: string }[] = [];
+    for (const p of local) { if (seen.has(p.id)) continue; seen.add(p.id); out.push({ key: p.id, pin: p, title: p.name, sub: kindOf(p.kind).label }); }
+    for (const h of hits) {
+      if (h.kind !== 'room' && h.kind !== 'alias' && seen.has(h.id)) continue;
+      seen.add(h.id);
+      const kind = h.kind === 'place' ? h.subtitle : h.kind === 'room' || h.kind === 'alias' ? 'building' : h.kind;
+      out.push({ key: h.kind + h.id + h.title, pin: { id: h.id, kind, name: h.title, sub: h.subtitle, lat: h.lat!, lng: h.lng! },
+        title: h.title, sub: h.kind === 'alias' ? t('لقب لـ {0}', [h.subtitle]) : h.kind === 'place' ? kindOf(h.subtitle).label : h.subtitle || kindOf(kind).label });
+    }
+    return out.slice(0, 14);
+  }, [local, hits]);
 
   const focus = useCallback((p: Pin) => {
-    setSel(p); setRouting(false);
-    map.current?.animateCamera({ center: { latitude: p.lat - 0.0006, longitude: p.lng }, zoom: 18, pitch: 40 }, { duration: 700 });
+    setSel(p);
+    map.current?.animateCamera({ center: { latitude: p.lat - (WEB ? 0.0003 : 0.0006), longitude: p.lng }, zoom: 18, pitch: WEB ? 55 : 40 }, { duration: 800 });
   }, []);
+  useEffect(() => { if (shared) { const tm = setTimeout(() => focus(shared), 500); return () => clearTimeout(tm); } }, [shared, focus]);
 
-  // zoomed out, only the big landmarks; parking, bus stops and ATMs appear as you zoom in (or pick their filter)
-  const shown = useMemo(() => pins.filter((p) => inGroup(filter, p.kind) && (filter !== 'all' || zoom > 16.9 || !MINOR.includes(p.kind))), [pins, filter, zoom]);
+  // ---------- walking there ----------
+  const gate = useMemo(() => near.find((p) => p.kind === 'gate') ?? null, [near]);
+  const startNav = useCallback((dest: Pin, extra?: { floor?: number | null; room?: string | null }) => {
+    const b = campus ? findBuilding(campus, dest.kind === 'building' ? dest.id : null, dest) : null;
+    const fromMe = !!me && distM(me, dest) < 5000;
+    const origin = fromMe ? me! : gate ?? { lat: center.latitude, lng: center.longitude };
+    const route = walkRoute(campus, [origin.lng, origin.lat], [dest.lng, dest.lat], dest.name, b?.c ?? null);
+    stopAnim(); setTour(null); setWalker(null); setSel(null); setFollow(fromMe);
+    setNav({ dest, building: b?.n ?? null, buildingId: b?.b ?? (dest.kind === 'building' ? dest.id : null), outline: b?.c ?? null, floor: extra?.floor ?? b?.f ?? null,
+      room: extra?.room ?? null, route, from: fromMe ? 'me' : 'gate' });
+    map.current?.fitToCoordinates(route.line.map(([lng, lat]) => ({ latitude: lat, longitude: lng })), { edgePadding: { top: 190, bottom: 330, left: 50, right: 50 }, animated: true });
+  }, [campus, me, gate, center]);
 
-  /** Walk the little figure from where it is to stop i, with the camera following like you're there. */
-  const walkTo = useCallback((stops: Pin[], i: number, from?: { lat: number; lng: number } | null) => {
+  // where I am on the route; off it by more than 35 m → a new route from here (at most every 8 s)
+  const live = useMemo(() => (nav && me && nav.from === 'me' ? progress(nav.route, [me.lng, me.lat]) : null), [nav, me]);
+  const lastReroute = useRef(0);
+  useEffect(() => {
+    if (!nav || !me) return;
+    if (nav.from === 'gate' && distM(me, nav.dest) < 5000) { startNav(nav.dest, { floor: nav.floor, room: nav.room }); return; } // location came on: start from me
+    if (live?.off && Date.now() - lastReroute.current > 8000) { lastReroute.current = Date.now(); startNav(nav.dest, { floor: nav.floor, room: nav.room }); }
+  }, [me, live?.off]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (!nav || !me || !follow || walker) return;
+    const r = nav.route.line, i = Math.min(r.length - 1, 1);
+    const head = (Math.atan2((r[i][0] - me.lng) * Math.cos((me.lat * Math.PI) / 180), r[i][1] - me.lat) * 180) / Math.PI;
+    map.current?.animateCamera({ center: { latitude: me.lat, longitude: me.lng }, zoom: 18.6, pitch: 60, heading: live && live.left > 15 ? head : undefined }, { duration: 600 });
+  }, [me, follow, nav, walker]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  /** Walk the little figure along a line, with the camera following like you're there. */
+  const walkAlong = useCallback((line: LL[], done?: () => void) => {
     stopAnim();
-    const to = stops[i];
-    const a = from ?? stops[i - 1] ?? to;
-    const d = distM(a, to);
-    const head = d > 3 ? bearing(a, to) : 0;
-    const total = Math.min(6000, Math.max(900, d * 14)); // ~70 m a second, so long walks don't drag
+    const cum = [0];
+    for (let i = 1; i < line.length; i++) cum.push(cum[i - 1] + distM({ lat: line[i - 1][1], lng: line[i - 1][0] }, { lat: line[i][1], lng: line[i][0] }));
+    const total = cum[cum.length - 1];
+    const ms = Math.min(14000, Math.max(1200, total * 16)); // ~60 m a second, so long walks don't drag
     const t0 = Date.now();
-    if (i === 0 || !from) setTrail([{ latitude: a.lat, longitude: a.lng }]);
-    let last = 0;
+    let last = 0, seg = 1;
     anim.current = setInterval(() => {
-      const k = Math.min(1, (Date.now() - t0) / total);
-      const e = k < 0.5 ? 2 * k * k : 1 - (-2 * k + 2) ** 2 / 2;
-      const p = { lat: a.lat + (to.lat - a.lat) * e, lng: a.lng + (to.lng - a.lng) * e };
+      const k = Math.min(1, (Date.now() - t0) / ms);
+      const at = total * (k < 0.5 ? 2 * k * k : 1 - (-2 * k + 2) ** 2 / 2);
+      while (seg < line.length - 1 && cum[seg] < at) seg++;
+      const a = line[seg - 1], b = line[seg], u = cum[seg] > cum[seg - 1] ? (at - cum[seg - 1]) / (cum[seg] - cum[seg - 1]) : 1;
+      const p = { lat: a[1] + (b[1] - a[1]) * u, lng: a[0] + (b[0] - a[0]) * u };
       setWalker(p);
       if (Date.now() - last > 280 || k === 1) {
         last = Date.now();
-        setTrail((tr) => [...tr.slice(-200), { latitude: p.lat, longitude: p.lng }]);
-        map.current?.animateCamera({ center: { latitude: p.lat, longitude: p.lng }, zoom: k === 1 ? 18.6 : 18.2, pitch: 62, heading: head }, { duration: k === 1 ? 700 : 300 });
+        const head = (Math.atan2((b[0] - a[0]) * Math.cos((a[1] * Math.PI) / 180), b[1] - a[1]) * 180) / Math.PI;
+        map.current?.animateCamera({ center: { latitude: p.lat, longitude: p.lng }, zoom: k === 1 ? 18.6 : 18.3, pitch: 62, heading: head }, { duration: k === 1 ? 700 : 300 });
       }
-      if (k === 1) { if (anim.current) clearInterval(anim.current); anim.current = null; }
+      if (k === 1) { if (anim.current) clearInterval(anim.current); anim.current = null; done?.(); }
     }, 50);
   }, []);
 
+  const tourLine = useCallback((stops: Pin[], i: number, from?: { lat: number; lng: number } | null) => {
+    const a = from ?? stops[i - 1] ?? stops[i], b = stops[i];
+    return walkRoute(campus, [a.lng, a.lat], [b.lng, b.lat], b.name).line;
+  }, [campus]);
+
   const startTour = useCallback(() => {
-    const c = university?.center_lat ? { lat: university.center_lat, lng: university.center_lng! } : null;
-    const pool = pins.filter((p) => TOUR_KINDS.includes(p.kind) && (!c || distM(c, p) < 3000));
+    const pool = near.filter((p) => TOUR_KINDS.includes(p.kind));
     if (pool.length < 2) { Alert.alert(t('ما في أماكن كفاية'), t('لسا ما عنا أماكن كفاية بهاي الجامعة لجولة.')); return; }
     // start at a gate (or the southern-most place) and always go to the closest place not seen yet
     const left = [...pool];
-    let cur = left.find((p) => p.kind === 'gate') ?? left.reduce((m, p) => (p.lat < m.lat ? p : m));
+    let cur: Pin | undefined = left.find((p) => p.kind === 'gate') ?? left.reduce((m, p) => (p.lat < m.lat ? p : m));
     const order: Pin[] = [];
     while (cur && order.length < 30) {
       order.push(cur);
       const c0: Pin = cur;
       // drop anything right next to this stop (a gate and the gate building, say)
       for (let j = left.length - 1; j >= 0; j--) if (left[j] === c0 || distM(c0, left[j]) < 35) left.splice(j, 1);
-      const c: Pin = cur;
-      cur = left.reduce<Pin | undefined>((m, p) => (!m || distM(c, p) < distM(c, m) ? p : m), undefined)!;
+      cur = left.reduce<Pin | undefined>((m, p) => (!m || distM(c0, p) < distM(c0, m) ? p : m), undefined);
     }
-    setSel(null); setRouting(false); setSat(true); setAuto(true);
+    setSel(null); setNav(null); setAuto(true);
     setTour({ stops: order, i: 0 });
-    walkTo(order, 0, order[0]);
-  }, [pins, walkTo, university]);
-
-  const walkHere = useCallback((dest: Pin) => {
-    const gate = pins.find((p) => p.kind === 'gate');
-    const start: Pin = me ? { id: 'me', kind: 'me', name: t('مكانك'), lat: me.lat, lng: me.lng } : gate ?? pins.reduce((m, p) => (p.lat < m.lat ? p : m), pins[0]);
-    const stops = [start, dest];
-    setSel(null); setRouting(false); setSat(true); setAuto(false);
-    setTour({ stops, i: 1, walk: true });
-    setTrail([{ latitude: start.lat, longitude: start.lng }]);
-    walkTo(stops, 1, start);
-  }, [pins, me, walkTo]);
+    setWalker({ lat: order[0].lat, lng: order[0].lng });
+    map.current?.animateCamera({ center: { latitude: order[0].lat, longitude: order[0].lng }, zoom: 18.4, pitch: 62 }, { duration: 900 });
+  }, [near]);
 
   const go = useCallback((i: number) => {
     if (!tour || i < 0 || i >= tour.stops.length) return;
     setTour({ ...tour, i });
-    walkTo(tour.stops, i, walker);
-  }, [tour, walker, walkTo]);
-
-  const endTour = useCallback(() => { stopAnim(); setTour(null); setAuto(false); setWalker(null); setTrail([]); setSat(false); setTimeout(fitAll, 200); }, [fitAll]);
+    walkAlong(tourLine(tour.stops, i, walker));
+  }, [tour, walker, walkAlong, tourLine]);
+  const endTour = useCallback(() => { stopAnim(); setTour(null); setAuto(false); setWalker(null); setTimeout(fitAll, 200); }, [fitAll]);
 
   // auto-play: wait at each stop for a moment, then walk on
   useEffect(() => {
-    if (!tour || !auto || tour.walk) return;
+    if (!tour || !auto) return;
     if (tour.i >= tour.stops.length - 1) { setAuto(false); return; }
-    const d = distM(tour.stops[Math.max(0, tour.i - 1)], tour.stops[tour.i]);
-    next.current = setTimeout(() => go(tour.i + 1), Math.min(6000, Math.max(900, d * 14)) + 2600);
+    const d = tour.i === 0 ? 0 : distM(tour.stops[tour.i - 1], tour.stops[tour.i]);
+    next.current = setTimeout(() => go(tour.i + 1), Math.min(14000, Math.max(1200, d * 20)) + 2600);
     return () => { if (next.current) clearTimeout(next.current); };
   }, [tour, auto, go]);
 
+  // opened from a lecture, a search result or a shop page: show it (and with go=1, start walking there)
+  const handled = useRef('');
+  useEffect(() => {
+    const key = `${params.building}|${params.advertiser}|${params.go}`;
+    if (!(params.building || params.advertiser) || !pins.length || handled.current === key) return;
+    const p = pins.find((x) => (params.building && x.id === params.building) || (params.advertiser && x.advertiser_id === params.advertiser));
+    if (!p) return;
+    if (params.go === '1' && !campus && university) return; // wait for the campus paths so the first route is the real one
+    handled.current = key;
+    if (params.go === '1') startNav(p, { floor: params.floor ? Number(params.floor) : null, room: params.room || null });
+    else focus(p);
+  }, [params.building, params.advertiser, params.go, params.floor, params.room, pins, campus, university, startNav, focus]);
+  // the campus file never arrives (no file for this university yet): don't wait for it forever
+  useEffect(() => {
+    if (params.go !== '1' || campus) return;
+    const tm = setTimeout(() => setCampus((c) => c ?? { v: 0, at: '', bbox: [0, 0, 0, 0], center: [center.longitude, center.latitude], campus: null, buildings: [], green: [], parking: [], paths: [], trees: [] }), 6000);
+    return () => clearTimeout(tm);
+  }, [params.go, campus, center.latitude, center.longitude]);
+
+  // zoomed out, only the big landmarks; parking, bus stops and ATMs appear as you zoom in (or pick their filter)
+  const shown = useMemo(() => pins.filter((p) => inGroup(filter, p.kind) && (filter !== 'all' || zoom > 16.9 || !MINOR.includes(p.kind))), [pins, filter, zoom]);
+  const highlight = nav?.buildingId ?? (sel ? (sel.kind === 'building' ? sel.id : campus ? findBuilding(campus, null, sel)?.b ?? null : null) : null);
   const meters = sel && me ? Math.round(distM(me, sel) * 1.25) : null; // paths are ~25% longer than a straight line
-  const walk = meters != null ? Math.max(1, Math.round(meters / 75)) : null;
-  const center = university?.center_lat ? { latitude: university.center_lat, longitude: university.center_lng! } : { latitude: 31.95, longitude: 35.91 }; // Amman, until the university has a campus point
+  const walkMin = meters != null ? Math.max(1, Math.round(meters / 75)) : null;
+  const busy = !!(nav || tour || suggest);
+  const web3d = WEB ? { campus, theme, highlight, route: nav?.route.line ?? null,
+    onBuildingPress: (b: { b: string | null; n: string | null; at: { latitude: number; longitude: number } }) => {
+      if (busy) return;
+      const p = (b.b && pins.find((x) => x.id === b.b)) || { id: b.b ?? `osm-${b.at.latitude}`, kind: 'building', name: b.n ?? t('مبنى'), lat: b.at.latitude, lng: b.at.longitude };
+      focus(p);
+    } } : {};
 
   return (
-    <View style={{ flex: 1, backgroundColor: C.bg }}>
+    <View style={{ flex: 1, backgroundColor: C.bg, overflow: 'hidden' }}>
       <MapView ref={map} provider={PROVIDER_DEFAULT} style={{ flex: 1 }} showsUserLocation showsCompass={false} showsPointsOfInterests={false} showsBuildings pitchEnabled rotateEnabled
         mapType={sat ? (Platform.OS === 'ios' ? 'hybridFlyover' : 'hybrid') : Platform.OS === 'ios' ? 'mutedStandard' : 'standard'}
-        initialCamera={{ center, zoom: 16, heading: 0, pitch: 0 }} onPress={() => { Keyboard.dismiss(); }}
-        onRegionChangeComplete={(r) => { setZoom(Math.log2(360 / r.longitudeDelta)); mid.current = { lat: r.latitude, lng: r.longitude }; }}>
-        {shown.map((p) => {
+        initialCamera={{ center, zoom: 16, heading: WEB ? -18 : 0, pitch: WEB ? 52 : 0 }} onPress={() => { Keyboard.dismiss(); }}
+        onRegionChangeComplete={(r) => { setZoom((r as { zoom?: number }).zoom ?? Math.log2(360 / r.longitudeDelta)); mid.current = { lat: r.latitude, lng: r.longitude }; }}
+        {...web3d}>
+        {!nav && shown.map((p) => {
           const on = sel?.id === p.id;
           const { g, icon: Icon } = kindOf(p.kind);
           const small = MINOR.includes(p.kind) && !on;
+          // on the 3D campus a building is its own shape: just its name, once you're close enough to read it
+          const bare = WEB && !!campus && p.kind === 'building' && !on;
           const label = on || (p.kind === 'building' ? zoom > 16.6 : zoom > 17.6);
+          if (bare && !label) return null;
           return (
-            <Marker key={p.id + (on ? '-on' : '') + (label ? '-l' : '')} coordinate={{ latitude: p.lat, longitude: p.lng }} onPress={() => focus(p)} tracksViewChanges={false} anchor={{ x: 0.5, y: 0.5 }}>
+            <Marker key={p.id + (on ? '-on' : '') + (label ? '-l' : '')} coordinate={{ latitude: p.lat, longitude: p.lng }} onPress={() => focus(p)} tracksViewChanges={false} anchor={{ x: 0.5, y: 0.5 }}
+              {...(WEB ? { priority: on ? 100 : p.kind === 'building' ? 60 : MINOR.includes(p.kind) ? 20 : 40 } : {})}>
               <View style={{ alignItems: 'center', gap: 3 }}>
-                <GlyphTile icon={Icon} colors={on ? ['#2A2F4F', '#0E1430'] : g} size={on ? 40 : small ? 22 : 30} />
+                {!bare && <GlyphTile icon={Icon} colors={on ? ['#2A2F4F', '#0E1430'] : g} size={on ? 40 : small ? 22 : 30} />}
                 {label && (
                   <View style={[{ paddingHorizontal: 8, paddingVertical: 3, borderRadius: 9, backgroundColor: on ? C.inverse : C.glass, maxWidth: 150 }, shadow]}>
                     <T v="tiny" numberOfLines={1} color={on ? C.onInverse : C.ink} style={{ fontSize: 11 }}>{p.name}</T>
@@ -299,8 +313,19 @@ export default function CampusMap() {
             </View>
           </Marker>
         )}
-        {trail.length > 1 && <Polyline coordinates={trail} strokeColor="#FFFFFF" strokeWidth={6} />}
-        {trail.length > 1 && <Polyline coordinates={trail} strokeColor={C.primary} strokeWidth={3} />}
+        {/* phones draw the route as a line; the web draws it as a 3D ribbon (route prop above) */}
+        {!WEB && nav && <Polyline coordinates={nav.route.line.map(([lng, lat]) => ({ latitude: lat, longitude: lng }))} strokeColor="#FFFFFF" strokeWidth={9} />}
+        {!WEB && nav && <Polyline coordinates={nav.route.line.map(([lng, lat]) => ({ latitude: lat, longitude: lng }))} strokeColor={C.primary} strokeWidth={5} />}
+        {nav && (
+          <Marker key="dest" coordinate={{ latitude: nav.route.line[nav.route.line.length - 1][1], longitude: nav.route.line[nav.route.line.length - 1][0] }} anchor={{ x: 0.5, y: 1 }} tracksViewChanges={false} zIndex={997}>
+            <View style={{ alignItems: 'center' }}>
+              <View style={[{ paddingHorizontal: 10, paddingVertical: 5, borderRadius: 12, backgroundColor: C.inverse, maxWidth: 170 }, shadow]}>
+                <T v="tiny" numberOfLines={1} color={C.onInverse} style={{ fontFamily: F.bodyBold }}>{nav.dest.name}</T>
+              </View>
+              <MapPin size={30} color={C.primary} fill={C.primary} />
+            </View>
+          </Marker>
+        )}
         {walker && (
           <Marker key="walker" coordinate={{ latitude: walker.lat, longitude: walker.lng }} anchor={{ x: 0.5, y: 0.5 }} tracksViewChanges={false} zIndex={999}>
             <View style={[{ width: 34, height: 34, borderRadius: 17, backgroundColor: C.primary, borderWidth: 3, borderColor: '#FFFFFF', alignItems: 'center', justifyContent: 'center' }, shadow]}>
@@ -308,92 +333,65 @@ export default function CampusMap() {
             </View>
           </Marker>
         )}
-        {Platform.OS === 'web' && me && !walker && (
-          <Marker key="me" coordinate={{ latitude: me.lat, longitude: me.lng }} anchor={{ x: 0.5, y: 0.5 }}>
-            <View style={{ width: 18, height: 18, borderRadius: 9, backgroundColor: '#2E7BFF', borderWidth: 3, borderColor: '#FFFFFF' }} />
+        {WEB && me && !walker && (
+          <Marker key="me" coordinate={{ latitude: me.lat, longitude: me.lng }} anchor={{ x: 0.5, y: 0.5 }} zIndex={996}>
+            <View style={{ width: 20, height: 20, borderRadius: 10, backgroundColor: '#2E7BFF', borderWidth: 3, borderColor: '#FFFFFF', shadowColor: '#2E7BFF', shadowOpacity: 0.6, shadowRadius: 8 }} />
           </Marker>
-        )}
-        {routing && sel && me && (
-          <Polyline coordinates={[{ latitude: me.lat, longitude: me.lng }, { latitude: sel.lat, longitude: sel.lng }]} strokeColor={C.primary} strokeWidth={5} lineDashPattern={[12, 8]} />
         )}
       </MapView>
 
       <SafeAreaView edges={['top']} style={{ position: 'absolute', top: 0, left: 0, right: 0, paddingHorizontal: 16, gap: 10 }} pointerEvents="box-none">
         <Row gap={8} style={{ marginTop: 6 }}>
-        <Tap onPress={() => goBack('/')} accessibilityLabel={t('رجوع')}
-          style={[{ width: 52, height: 52, borderRadius: 18, backgroundColor: C.card, alignItems: 'center', justifyContent: 'center' }, shadow]}>
-          <ChevronRight size={22} color={C.ink} style={flip} />
-        </Tap>
-        <Row gap={8} style={[{ flex: 1, minHeight: 52, borderRadius: 18, backgroundColor: C.card, paddingHorizontal: 16 }, shadow]}>
-          <Search size={20} color={C.muted} />
-          <TextInput keyboardAppearance={isDark ? 'dark' : 'light'} value={q} onChangeText={setQ} placeholder={t('ابحث عن مبنى، قاعة، أو لقب زي «الكراج»')} placeholderTextColor={C.faint}
-            style={{ flex: 1, fontFamily: F.body, fontSize: 15, color: C.ink, textAlign: ta, minHeight: 48 }} accessibilityLabel={t('ابحث بالخريطة')} />
-          {q ? <Tap onPress={() => setQ('')} accessibilityLabel={t('مسح')}><X size={18} color={C.muted} /></Tap> : null}
+          <Tap onPress={() => (nav ? setNav(null) : goBack('/'))} accessibilityLabel={t('رجوع')}
+            style={[{ width: 52, height: 52, borderRadius: 18, backgroundColor: C.card, alignItems: 'center', justifyContent: 'center' }, shadow]}>
+            <ChevronRight size={22} color={C.ink} style={flip} />
+          </Tap>
+          {nav ? (
+            <View style={{ flex: 1 }}>
+              <DirectionBanner step={live?.next ?? nav.route.steps[Math.min(1, nav.route.steps.length - 1)]} toNext={live?.toNext ?? nav.route.steps[Math.min(1, nav.route.steps.length - 1)].at} from={nav.from} />
+            </View>
+          ) : (
+            <Row gap={8} style={[{ flex: 1, minHeight: 52, borderRadius: 18, backgroundColor: C.card, paddingHorizontal: 16 }, shadow]}>
+              <Search size={20} color={C.muted} />
+              <TextInput keyboardAppearance={isDark ? 'dark' : 'light'} value={q} onChangeText={setQ} placeholder={t('ابحث: كلية، مبنى، قاعة، مطعم، كشك، باص…')} placeholderTextColor={C.faint}
+                style={{ flex: 1, fontFamily: F.body, fontSize: 15, color: C.ink, textAlign: ta, minHeight: 48 }} accessibilityLabel={t('ابحث بالخريطة')} />
+              {q ? <Tap onPress={() => setQ('')} accessibilityLabel={t('مسح')}><X size={18} color={C.muted} /></Tap> : null}
+            </Row>
+          )}
         </Row>
-        </Row>
-        {hits.length > 0 ? (
-          <Animated.View entering={FadeIn} style={[{ backgroundColor: C.card, borderRadius: 18, maxHeight: 280 }, shadow]}>
-            <FlatList data={hits} keyExtractor={(h) => h.kind + h.id + h.title} keyboardShouldPersistTaps="handled"
-              renderItem={({ item }) => (
-                <Tap onPress={() => { setQ(''); setHits([]); Keyboard.dismiss(); focus({ id: item.id, kind: item.kind, name: item.title, sub: item.subtitle, lat: item.lat!, lng: item.lng! }); }}
-                  style={{ minHeight: 54, paddingHorizontal: 16, justifyContent: 'center', borderBottomWidth: 1, borderBottomColor: C.line }}>
-                  <T v="bodyMd">{item.title}</T>
-                  {item.subtitle ? <T v="tiny" color={C.muted}>{item.kind === 'alias' ? t('لقب لـ {0}', [item.subtitle]) : item.subtitle}</T> : null}
-                </Tap>
-              )} />
+        {!nav && (results.length > 0 ? (
+          <Animated.View entering={FadeIn} style={[{ backgroundColor: C.card, borderRadius: 18, maxHeight: 320 }, shadow]}>
+            <FlatList data={results} keyExtractor={(h) => h.key} keyboardShouldPersistTaps="handled"
+              renderItem={({ item }) => {
+                const k = kindOf(item.pin.kind);
+                return (
+                  <Tap onPress={() => { setQ(''); setHits([]); Keyboard.dismiss(); focus(item.pin); }}
+                    style={{ minHeight: 56, paddingHorizontal: 14, flexDirection: 'row', alignItems: 'center', gap: 12, borderBottomWidth: 1, borderBottomColor: C.line }}>
+                    <GlyphTile icon={k.icon} colors={k.g} size={32} />
+                    <View style={{ flex: 1 }}>
+                      <T v="bodyMd" numberOfLines={1}>{item.title}</T>
+                      {item.sub ? <T v="tiny" color={C.muted} numberOfLines={1}>{item.sub}</T> : null}
+                    </View>
+                  </Tap>
+                );
+              }} />
           </Animated.View>
-        ) : (
+        ) : q.trim().length < 2 && (
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
             {FILTERS.filter((f) => f.key === 'all' || pins.some((p) => inGroup(f.key, p.kind))).map((f) => <Chip key={f.key} label={f.label} active={filter === f.key} onPress={() => setFilter(f.key)} style={shadow} />)}
           </ScrollView>
-        )}
+        ))}
       </SafeAreaView>
 
-      {suggest && (
-        <>
-          <View pointerEvents="none" style={{ position: 'absolute', top: 0, bottom: 0, left: 0, right: 0, alignItems: 'center', justifyContent: 'center' }}>
-            <View style={{ alignItems: 'center', marginTop: -44 }}>
-              <MapPin size={44} color={C.red} fill={C.red} />
-              <View style={{ width: 8, height: 4, borderRadius: 4, backgroundColor: 'rgba(0,0,0,0.3)' }} />
-            </View>
-          </View>
-          <Animated.View entering={SlideInDown.duration(240)} style={[{ position: 'absolute', left: 12, right: 12, bottom: 28, backgroundColor: C.card, borderRadius: 28, padding: 16, gap: 10 }, shadow]}>
-            {suggest === 'pin' ? (
-              <>
-                <T v="h3">{t('اقترح مكان ناقص')}</T>
-                <T v="small" color={C.muted}>{t('حرّك الخريطة لحتى يصير الدبوس الأحمر فوق المكان بالضبط.')}</T>
-                <Row gap={8}>
-                  <Button kind="soft" title={t('إلغاء')} onPress={() => setSuggest(null)} style={{ flex: 1 }} />
-                  <Button title={t('هون بالضبط')} onPress={() => setSuggest('form')} style={{ flex: 1.4 }} />
-                </Row>
-              </>
-            ) : (
-              <>
-                <T v="h3">{t('شو هاد المكان؟')}</T>
-                <Field label={t('الاسم')} value={sName} onChangeText={setSName} placeholder={t('مثلاً كشك أبو أحمد، مدرج الحسن')} maxLength={70} autoFocus />
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 6 }}>
-                  {['building', 'cafeteria', 'restaurant', 'kiosk', 'print', 'shop', 'parking', 'bus', 'gate', 'mosque', 'library', 'atm', 'clinic', 'sports', 'garden', 'service'].map((k) => (
-                    <Chip key={k} label={kindOf(k).label} active={sKind === k} onPress={() => setSKind(k)} />
-                  ))}
-                </ScrollView>
-                <Field label={t('وصف قصير (اختياري)')} value={sDesc} onChangeText={setSDesc} placeholder={t('مثلاً جنب الباب الشمالي، بفتح من 8 لـ 4')} maxLength={160} />
-                <Row gap={8}>
-                  <Button kind="soft" title={t('رجوع')} onPress={() => setSuggest('pin')} style={{ flex: 1 }} />
-                  <Button title={t('ابعت الاقتراح')} loading={sBusy} disabled={sBusy} onPress={sendSuggestion} style={{ flex: 1.4 }} />
-                </Row>
-              </>
-            )}
-          </Animated.View>
-        </>
-      )}
+      {suggest && university && <SuggestPlace universityId={university.id} userId={profile?.id} at={() => mid.current ?? { lat: center.latitude, lng: center.longitude }} onClose={() => setSuggest(false)} />}
 
-      {!sel && !tour && !suggest && (
+      {!sel && !busy && (
         <View pointerEvents="none" style={{ position: 'absolute', left: 0, right: 0, bottom: 12, alignItems: 'center' }}>
-          <T v="tiny" color={C.muted} style={{ fontSize: 10, backgroundColor: C.glass, paddingHorizontal: 8, borderRadius: 6, overflow: 'hidden' }}>{t('الأماكن من OpenStreetMap وWikimapia')}</T>
+          <T v="tiny" color={C.muted} style={{ fontSize: 10, backgroundColor: C.glass, paddingHorizontal: 8, borderRadius: 6, overflow: 'hidden' }}>{t('الخريطة من OpenStreetMap')}</T>
         </View>
       )}
 
-      {!sel && !tour && !suggest && pinsState === 'ok' && pins.filter((p) => TOUR_KINDS.includes(p.kind)).length > 1 && (
+      {!sel && !busy && pinsState === 'ok' && near.filter((p) => TOUR_KINDS.includes(p.kind)).length > 1 && (
         <View pointerEvents="box-none" style={{ position: 'absolute', right: 16, bottom: 40 }}>
           <Tap onPress={startTour} accessibilityLabel={t('تمشّى بالجامعة')}
             style={[{ flexDirection: 'row', alignItems: 'center', gap: 8, height: 52, paddingHorizontal: 18, borderRadius: 26, backgroundColor: C.primary }, shadow]}>
@@ -403,13 +401,13 @@ export default function CampusMap() {
         </View>
       )}
 
-      {!sel && !tour && !suggest && (
+      {!sel && !busy && (
         <View style={{ position: 'absolute', left: 16, bottom: 40, gap: 10 }}>
-          <Tap onPress={() => setSat((x) => !x)} accessibilityLabel={t('غيّر شكل الخريطة')}
+          <Tap onPress={() => setSat((x) => !x)} accessibilityLabel={sat ? t('الخريطة المرسومة') : t('صور الأقمار الصناعية')}
             style={[{ width: 48, height: 48, borderRadius: 16, backgroundColor: sat ? C.inverse : C.card, alignItems: 'center', justifyContent: 'center' }, shadow]}>
             <Layers size={21} color={sat ? C.onInverse : C.ink} />
           </Tap>
-          <Tap onPress={() => { mid.current ??= { lat: center.latitude, lng: center.longitude }; setSuggest('pin'); }} accessibilityLabel={t('اقترح مكان ناقص')}
+          <Tap onPress={() => setSuggest(true)} accessibilityLabel={t('اقترح مكان ناقص')}
             style={[{ width: 48, height: 48, borderRadius: 16, backgroundColor: C.card, alignItems: 'center', justifyContent: 'center' }, shadow]}>
             <MapPinPlus size={21} color={C.ink} />
           </Tap>
@@ -418,7 +416,7 @@ export default function CampusMap() {
             <Maximize2 size={20} color={C.ink} />
           </Tap>
           {me && (
-            <Tap onPress={() => map.current?.animateCamera({ center: { latitude: me.lat, longitude: me.lng }, zoom: 17.5 }, { duration: 600 })} accessibilityLabel={t('موقعي')}
+            <Tap onPress={() => map.current?.animateCamera({ center: { latitude: me.lat, longitude: me.lng }, zoom: 17.8 }, { duration: 600 })} accessibilityLabel={t('موقعي')}
               style={[{ width: 48, height: 48, borderRadius: 16, backgroundColor: C.card, alignItems: 'center', justifyContent: 'center' }, shadow]}>
               <Crosshair size={22} color={C.primary} />
             </Tap>
@@ -426,13 +424,14 @@ export default function CampusMap() {
         </View>
       )}
 
-      {!sel && pinsState !== 'ok' && (
-        <View pointerEvents="box-none" style={{ position: 'absolute', left: 16, right: 16, bottom: 40, alignItems: 'center' }}>
-          <View style={[{ backgroundColor: C.card, borderRadius: 18, paddingHorizontal: 16, paddingVertical: 12, flexDirection: 'row', alignItems: 'center', gap: 10, maxWidth: 320 }, shadow]}>
+      {!sel && !busy && pinsState !== 'ok' && (
+        <View pointerEvents="box-none" style={{ position: 'absolute', left: 16, right: 16, bottom: 104, alignItems: 'center' }}>
+          <View style={[{ backgroundColor: C.card, borderRadius: 18, paddingHorizontal: 16, paddingVertical: 12, flexDirection: 'row', alignItems: 'center', gap: 10, maxWidth: 340 }, shadow]}>
             {pinsState === 'loading' ? <ActivityIndicator color={C.primary} /> : null}
             <T v="small" style={{ flexShrink: 1 }} color={pinsState === 'error' ? C.red : C.ink2}>
-              {pinsState === 'loading' ? t('عم نحمّل أماكن الجامعة…') : pinsState === 'error' ? t('ما قدرنا نحمّل الخريطة، تأكد من الإنترنت.') : t('أماكن جامعتك بتنضاف قريباً.')}
+              {pinsState === 'loading' ? t('عم نحمّل أماكن الجامعة…') : pinsState === 'error' ? t('ما قدرنا نحمّل الأماكن، تأكد من الإنترنت.') : t('أماكن جامعتك بتنضاف قريباً.')}
             </T>
+            {pinsState === 'error' && <Tap onPress={loadPins} style={{ paddingHorizontal: 8 }}><T v="small" color={C.primary} style={{ fontFamily: F.bodyBold }}>{t('جرّب كمان مرة')}</T></Tap>}
           </View>
         </View>
       )}
@@ -449,40 +448,39 @@ export default function CampusMap() {
             <Row gap={12}>
               <GlyphTile icon={k.icon} colors={k.g} size={50} />
               <View style={{ flex: 1 }}>
-                <T v="tiny" color={C.primary}>{tour.walk ? t('مشي افتراضي') : t('المحطة {0} من {1}', [String(tour.i + 1), String(tour.stops.length)])}</T>
+                <T v="tiny" color={C.primary}>{t('المحطة {0} من {1}', [String(tour.i + 1), String(tour.stops.length)])}</T>
                 <T v="h2" numberOfLines={2}>{s.name}</T>
                 <T v="small" color={C.muted}>{m != null ? t('{0} · {1} متر من {2}', [k.label, String(m), prev!.name]) : k.label}</T>
               </View>
               <Tap onPress={endTour} accessibilityLabel={t('إنهاء الجولة')}><X size={22} color={C.muted} /></Tap>
             </Row>
-            {tour.walk && m != null && (
-              <T v="small" color={C.ink2}>{t('بتوصل مشي بحوالي {0} دقايق.', [String(Math.max(1, Math.round(m / 75)))])}</T>
-            )}
             <Row gap={10} style={{ justifyContent: 'center' }}>
-              {!tour.walk && (
-                <>
-                  <Tap onPress={() => { setAuto(false); go(tour.i - 1); }} disabled={tour.i === 0} accessibilityLabel={t('اللي قبل')} style={[btn, { backgroundColor: C.soft, opacity: tour.i === 0 ? 0.4 : 1 }]}>
-                    <SkipBack size={20} color={C.ink} style={flip} />
-                  </Tap>
-                  <Tap onPress={() => { if (!auto && tour.i >= tour.stops.length - 1) { setAuto(true); go(0); } else setAuto((x) => !x); }} accessibilityLabel={auto ? t('وقّف') : t('كمّل')} style={[btn, { width: 62, height: 62, borderRadius: 31, backgroundColor: C.primary }]}>
-                    {auto ? <Pause size={24} color={C.onPrimary} fill={C.white} /> : <Play size={24} color={C.onPrimary} fill={C.white} />}
-                  </Tap>
-                  <Tap onPress={() => { setAuto(false); go(tour.i + 1); }} disabled={tour.i >= tour.stops.length - 1} accessibilityLabel={t('اللي بعد')} style={[btn, { backgroundColor: C.soft, opacity: tour.i >= tour.stops.length - 1 ? 0.4 : 1 }]}>
-                    <SkipForward size={20} color={C.ink} style={flip} />
-                  </Tap>
-                </>
-              )}
-              <Tap onPress={() => Linking.openURL(streetView(s)).catch(() => {})} accessibilityLabel={t('صور 360° للمكان')}
-                style={[btn, { width: undefined, paddingHorizontal: 14, flexDirection: 'row', gap: 6, backgroundColor: C.primarySoft }]}>
-                <Rotate3d size={19} color={C.primary} />
-                <T v="small" color={C.primary}>{t('360°')}</T>
+              <Tap onPress={() => { setAuto(false); go(tour.i - 1); }} disabled={tour.i === 0} accessibilityLabel={t('اللي قبل')} style={[btn, { backgroundColor: C.soft, opacity: tour.i === 0 ? 0.4 : 1 }]}>
+                <SkipBack size={20} color={C.ink} style={flip} />
+              </Tap>
+              <Tap onPress={() => { if (!auto && tour.i >= tour.stops.length - 1) { setAuto(true); go(0); } else setAuto((x) => !x); }} accessibilityLabel={auto ? t('وقّف') : t('كمّل')} style={[btn, { width: 62, height: 62, borderRadius: 31, backgroundColor: C.primary }]}>
+                {auto ? <Pause size={24} color={C.onPrimary} fill={C.white} /> : <Play size={24} color={C.onPrimary} fill={C.white} />}
+              </Tap>
+              <Tap onPress={() => { setAuto(false); go(tour.i + 1); }} disabled={tour.i >= tour.stops.length - 1} accessibilityLabel={t('اللي بعد')} style={[btn, { backgroundColor: C.soft, opacity: tour.i >= tour.stops.length - 1 ? 0.4 : 1 }]}>
+                <SkipForward size={20} color={C.ink} style={flip} />
+              </Tap>
+              <Tap onPress={() => { endTour(); startNav(s); }} accessibilityLabel={t('وديني لهون')} style={[btn, { width: undefined, paddingHorizontal: 14, flexDirection: 'row', gap: 6, backgroundColor: C.primarySoft }]}>
+                <Navigation size={18} color={C.primary} /><T v="small" color={C.primary}>{t('وديني')}</T>
               </Tap>
             </Row>
           </Animated.View>
         );
       })()}
 
-      {sel && !tour && (
+      {nav && !tour && (
+        <NavCard name={nav.dest.name} kind={nav.dest.kind} building={nav.building} floor={nav.floor} room={nav.room}
+          left={live?.left ?? nav.route.meters} minutes={live?.minutes ?? nav.route.minutes} straight={nav.route.straight}
+          following={nav.from === 'me' ? follow : null} onFollow={() => setFollow((f) => !f)}
+          onPreview={() => { setFollow(false); walkAlong(nav.route.line, () => setTimeout(() => setWalker(null), 1500)); }}
+          onEnd={() => { stopAnim(); setWalker(null); setNav(null); }} />
+      )}
+
+      {sel && !busy && (
         <Animated.View entering={SlideInDown.duration(240)} style={[{ position: 'absolute', left: 12, right: 12, bottom: 28, backgroundColor: C.card, borderRadius: 30, padding: 18, paddingTop: 10, gap: 12 }, shadow]}>
           <View style={{ alignSelf: 'center', width: 42, height: 5, borderRadius: 3, backgroundColor: C.line }} />
           <Row gap={12}>
@@ -491,12 +489,12 @@ export default function CampusMap() {
               <T v="h2">{sel.name}</T>
               <T v="small" color={C.muted}>{sel.sub ? `${kindOf(sel.kind).label} · ${sel.sub}` : kindOf(sel.kind).label}</T>
             </View>
-            <Tap onPress={() => { setSel(null); setRouting(false); }} accessibilityLabel={t('إغلاق')}><X size={22} color={C.muted} /></Tap>
+            <Tap onPress={() => setSel(null)} accessibilityLabel={t('إغلاق')}><X size={22} color={C.muted} /></Tap>
           </Row>
-          {walk != null && (
+          {walkMin != null && (
             <Row gap={10}>
               <View style={{ flex: 1, alignItems: 'center', backgroundColor: C.primarySoft, borderRadius: 16, padding: 10 }}>
-                <T style={{ fontFamily: F.display, fontSize: 20 }} color={C.primary}>{walk}</T><T v="tiny" color={C.ink2}>{t('دقايق مشي (تقريباً)')}</T>
+                <T style={{ fontFamily: F.display, fontSize: 20 }} color={C.primary}>{walkMin}</T><T v="tiny" color={C.ink2}>{t('دقايق مشي (تقريباً)')}</T>
               </View>
               <View style={{ flex: 1, alignItems: 'center', backgroundColor: C.bg, borderRadius: 16, padding: 10 }}>
                 <T style={{ fontFamily: F.display, fontSize: 20 }}>{meters}</T><T v="tiny" color={C.ink2}>{t('متر')}</T>
@@ -504,42 +502,20 @@ export default function CampusMap() {
             </Row>
           )}
           <Row gap={8}>
-            <Tap onPress={() => walkHere(sel)} accessibilityLabel={t('امشي لهون من مكانك')}
+            <Tap onPress={() => setShareFor(sel)} accessibilityLabel={t('شارك بالمحادثة')}
               style={{ flex: 1, flexDirection: 'row', gap: 8, minHeight: 46, borderRadius: 16, backgroundColor: C.soft, alignItems: 'center', justifyContent: 'center' }}>
-              <Footprints size={18} color={C.ink} />
-              <T v="bodyMd">{t('امشي لهون')}</T>
+              <Send size={17} color={C.ink} style={flip ? undefined : { transform: [{ scaleX: -1 }] }} />
+              <T v="bodyMd">{t('شارك بالمحادثة')}</T>
             </Tap>
-            <Tap onPress={() => Linking.openURL(streetView(sel)).catch(() => {})} accessibilityLabel={t('صور 360° للمكان')}
-              style={{ flex: 1, flexDirection: 'row', gap: 8, minHeight: 46, borderRadius: 16, backgroundColor: C.soft, alignItems: 'center', justifyContent: 'center' }}>
-              <Rotate3d size={18} color={C.ink} />
-              <T v="bodyMd">{t('صور 360°')}</T>
-            </Tap>
+            {sel.advertiser_id && (
+              <Tap onPress={() => router.push({ pathname: '/advertiser/[id]', params: { id: sel.advertiser_id! } })}
+                style={{ flex: 1, minHeight: 46, borderRadius: 16, backgroundColor: C.soft, alignItems: 'center', justifyContent: 'center' }}>
+                <T v="bodyMd">{t('صفحة المحل')}</T>
+              </Tap>
+            )}
           </Row>
-          <Tap onPress={() => setShareFor(sel)} accessibilityLabel={t('شارك بالمحادثة')}
-            style={{ flexDirection: 'row', gap: 8, minHeight: 46, borderRadius: 23, backgroundColor: C.soft, alignItems: 'center', justifyContent: 'center' }}>
-            <Send size={17} color={C.ink} style={flip ? undefined : { transform: [{ scaleX: -1 }] }} />
-            <T v="bodyMd">{t('شارك بالمحادثة')}</T>
-          </Tap>
-          {sel.advertiser_id && (
-            <Button kind="soft" title={t('شوف صفحة المحل')} onPress={() => router.push({ pathname: '/advertiser/[id]', params: { id: sel.advertiser_id! } })} style={{ minHeight: 46 }} />
-          )}
-          <Row gap={8}>
-          <View style={{ flex: 1 }}>
-          <Button kind={routing ? 'dark' : 'primary'} title={routing ? t('إيقاف') : me ? t('وريني الطريق') : t('فعّل الموقع')}
-            icon={<Navigation size={19} color={routing ? C.onInverse : C.onPrimary} />}
-            onPress={async () => {
-              if (!me) { await startLocation(true); return; }
-              setRouting((r) => !r);
-              if (!routing) map.current?.fitToCoordinates([{ latitude: me.lat, longitude: me.lng }, { latitude: sel.lat, longitude: sel.lng }], { edgePadding: { top: 160, bottom: 380, left: 60, right: 60 }, animated: true });
-            }} />
-          </View>
-          <Tap onPress={() => {
-            const url = Platform.OS === 'ios' ? `maps://?daddr=${sel.lat},${sel.lng}&dirflg=w` : `https://www.google.com/maps/dir/?api=1&destination=${sel.lat},${sel.lng}&travelmode=walking`;
-            Linking.openURL(url).catch(() => Linking.openURL(`https://www.google.com/maps/dir/?api=1&destination=${sel.lat},${sel.lng}&travelmode=walking`));
-          }} accessibilityLabel={t('افتح بالخرائط')} style={{ width: 54, minHeight: 54, borderRadius: 18, backgroundColor: C.primarySoft, alignItems: 'center', justifyContent: 'center' }}>
-            <ExternalLink size={20} color={C.primary} />
-          </Tap>
-          </Row>
+          <Button title={t('وديني')} icon={<Navigation size={19} color={C.onPrimary} />}
+            onPress={async () => { if (!me) await startLocation(true); startNav(sel); }} />
         </Animated.View>
       )}
       <ShareToChat place={shareFor} onClose={() => setShareFor(null)} />

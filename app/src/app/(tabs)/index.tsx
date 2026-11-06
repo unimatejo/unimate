@@ -10,7 +10,7 @@ import { AdBanner } from '@/components/feed/AdBanner';
 import { GlyphTile, Wiggle } from '@/components/ui/Glyph';
 import { Card, IconButton, Row, Screen, T, Tap } from '@/components/ui';
 import { useAuth } from '@/lib/auth';
-import { placeLine, useSchedule } from '@/lib/schedule';
+import { placeLine, roomRoute, useSchedule } from '@/lib/schedule';
 import { supabase } from '@/lib/supabase';
 import { C, F } from '@/lib/theme';
 import { clock, greeting, isWebUrl } from '@/lib/util';
@@ -108,7 +108,7 @@ export default function Home() {
                   <T v="small" color="#C9D1F0">{placeLine(nxt)} · {clock(nxt.starts_at)}</T>
                 </View>
                 <Row gap={8}>
-                  <Tap onPress={() => router.push({ pathname: '/map', params: { building: nxt.building_id ?? '' } })}
+                  <Tap onPress={() => router.push(roomRoute(nxt))}
                     style={{ flex: 1, minHeight: 48, borderRadius: 16, backgroundColor: '#FFFFFF', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
                     <Navigation size={18} color="#0E1430" /><T v="bold" color="#0E1430">{t('وديني عالقاعة')}</T>
                   </Tap>

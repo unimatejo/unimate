@@ -67,6 +67,7 @@ Admin › أخطاء التطبيق (`app/admin/errors.tsx`). Stale web code aft
 | Announcements | `(campus)/announcements/*` | `post_announcement`, `can_announce` |
 | Content checks | (automatic) | `moderation_words`, `private.mod_*` triggers, `moderation_queue`, Edge `moderate`; Admin › فحص المحتوى |
 | App look (owner) | `admin/look.tsx`, `lib/appContent.ts`, `components/home/quick.ts` | `app_content`, `admin_set_app_content` |
+| Campus map | `(campus)/map.tsx`, `components/map/*`, `lib/campus/*` | `campus_maps`, Storage `campus`, Edge `campus-osm`, `buildings`, `places`, `campus_search` |
 | Admin panel | `app/admin/*`, `components/admin/kit.tsx`, `components/admin/sections.ts` | `admin_*` RPCs, `admin_stats`, `admin_series`, `admin_audit_log` |
 
 ## 4a. Honor board and frames
@@ -106,6 +107,29 @@ or JSON: `[{"student_number":"2620387","term_gpa":3.71,"cumulative_gpa":3.60,"cr
   own, and with no major the student's profile major is used.
 - Re-uploading the same term updates rows in place. «اعتبره الفصل الحالي» makes it the term the board shows by default;
   older terms stay selectable on the board.
+
+## 4b. Campus map (3D) and "وديني"
+
+- **Data.** Edge function `campus-osm` (fired by pg_cron every 3 h for the campus with the oldest file, or by hand
+  `private.campus_osm_fire(<university>)`) reads the campus box from the **OSM map API** (Overpass mirrors refuse or time
+  out from cloud servers), and writes `campus/<university>.json` to Storage plus a row in `campus_maps` (version, stats).
+  The file holds building outlines with heights (`height` / `building:levels`, else our `floors`, else a default by type),
+  green areas, water, parking, every walkable path and road, and trees. Each of our `buildings` is linked to the outline it
+  stands in (or the nearest within 40 m) so the 3D building carries the **official Arabic name** and floors; a building OSM
+  doesn't have gets an approximate box. New named points of interest on campus (kiosks, bus stops, cafés, ATMs, gates…) are
+  added to `places` with their `osm_id`; nothing already there is changed or removed.
+- **Web.** `react-native-maps` is swapped for `components/map/webMaps.tsx` (metro.config.js): MapLibre GL, loaded on first
+  use, with its own style (colours: `lib/campus/theme.ts`, one per app theme), extruded buildings with light and soft
+  shadows, trees, a 3D route ribbon, the picked building highlighted, and markers placed from most to least important so
+  labels never overlap. Base context tiles: OpenFreeMap; satellite: Esri. Everything stays in the app.
+- **Phones.** The platform map (react-native-maps) with the same route and directions; the 3D view needs MapLibre native
+  in the next store build. A later "عرض واقعي" can add Google Photorealistic 3D Tiles (needs a Google Maps key with billing).
+- **Routes.** `lib/campus/route.ts`: snap both ends to the nearest path, A* over the path network, turns → steps
+  («بعد 40 م، لِف يمين»), live progress and a new route when you wander 35 m off. No path nearby → a straight line, labelled.
+- **Entry points.** `/map?building=<id>&go=1&room=<code>&floor=<n>` starts walking there: the lecture card on Home and
+  Schedule (`roomRoute` in `lib/schedule.ts`) and the lecture reminder (tapping it opens the route).
+- **Search.** What's on the map answers instantly (names, and kind words like «كشك», «باص», «صراف», Arabic spelling
+  variants ignored); `campus_search` adds rooms and nicknames.
 
 ## 5. Security model
 
