@@ -48,11 +48,13 @@ async function forMessage(id: string): Promise<Push[]> {
 async function forNotification(id: string): Promise<Push[]> {
   const { data: n } = await db.from('notifications').select('id, user_id, kind, actor_id, title, body, data').eq('id', id).maybeSingle();
   if (!n) return [];
-  const { data: p } = await db.from('notification_prefs').select('social, community, ads').eq('user_id', n.user_id).maybeSingle();
+  const { data: p } = await db.from('notification_prefs').select('social, community, ads, exams').eq('user_id', n.user_id).maybeSingle();
   if (p && SOCIAL.has(n.kind) && p.social === false) return [];
   if (p && n.kind === 'offer' && p.ads === false) return [];
+  if (p && n.kind === 'section_event' && p.exams === false) return [];
   const d = (n.data ?? {}) as Record<string, string>;
   const url = n.kind === 'announcement' ? '/announcements'
+    : n.kind === 'section_event' ? '/exams'
     : n.kind === 'ride' ? (d.ride_id ? `/rides/${d.ride_id}` : '/rides')
     : d.conversation_id ? `/messages/${d.conversation_id}`
     : d.post_id ? `/post/${d.post_id}`

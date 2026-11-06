@@ -4,6 +4,7 @@ import { BookOpen, Check, MessageCircle, UserPlus } from 'lucide-react-native';
 import { useCallback, useEffect, useState } from 'react';
 import { Alert, ScrollView, View } from 'react-native';
 
+import { ChoiceField } from '@/components/ui/Choices';
 import { Avatar, Button, Chip, Field, Header, Row, Screen, T, Tap, Toggle } from '@/components/ui';
 import { useAuth } from '@/lib/auth';
 import { supabase } from '@/lib/supabase';
@@ -120,9 +121,9 @@ export default function Study() {
             {my?.active && (
               <>
                 <T v="small" color={C.muted}>{t('وين؟')}</T>
-                <Row gap={8} style={{ flexWrap: 'wrap' }}>{PLACES.map((x) => <Chip key={x} label={x} active={my.place_pref === x} onPress={() => saveIntent({ place_pref: x })} />)}</Row>
+                <ChoiceField key={`p-${course}`} value={my.place_pref} onChange={(v) => saveIntent({ place_pref: v })} options={PLACES} placeholder={t('مثلاً: مختبر الحاسوب')} maxLength={40} commitOnBlur />
                 <T v="small" color={C.muted}>{t('إمتى؟')}</T>
-                <Row gap={8} style={{ flexWrap: 'wrap' }}>{TIMES.map((x) => <Chip key={x} label={x} active={my.time_pref === x} onPress={() => saveIntent({ time_pref: x })} />)}</Row>
+                <ChoiceField key={`t-${course}`} value={my.time_pref} onChange={(v) => saveIntent({ time_pref: v })} options={TIMES} placeholder={t('مثلاً: الأحد بعد الساعة 2')} maxLength={40} commitOnBlur />
                 <Field value={my.note ?? ''} onChangeText={(t) => setMine((m) => ({ ...m, [course]: { ...my, note: t } }))} onEndEditing={() => saveIntent({ note: my.note?.slice(0, 200) ?? null })} placeholder={t('ملاحظة (مثلاً: بدي أراجع الفصل 3 قبل الفيرست)')} maxLength={200} />
               </>
             )}

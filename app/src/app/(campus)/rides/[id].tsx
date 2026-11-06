@@ -1,9 +1,9 @@
 import * as Haptics from 'expo-haptics';
 import { Image } from 'expo-image';
 import { router, useLocalSearchParams } from 'expo-router';
-import { BadgeCheck, Check, Flag, MessageCircle, X } from 'lucide-react-native';
+import { BadgeCheck, Check, Flag, MessageCircle, Phone, X } from 'lucide-react-native';
 import { useCallback, useEffect, useState } from 'react';
-import { Alert, ScrollView, View } from 'react-native';
+import { Alert, Linking, ScrollView, View } from 'react-native';
 
 import { AskSeatSheet } from '@/components/rides/AskSeatSheet';
 import { SeatIcons } from '@/components/rides/RideCard';
@@ -13,7 +13,7 @@ import { TitleBadge, titledName } from '@/components/profile/TitleBadge';
 import { Avatar, Button, Card, Empty, Header, IconButton, Row, Screen, T, Tap } from '@/components/ui';
 import { useAuth } from '@/lib/auth';
 import { run } from '@/lib/run';
-import { EMOJI, dayLabel, directionLabel, priceLabel, rideError, seatsLeft, timeLabel, type MyStatus, type Ride, type RideRequest } from '@/lib/rides';
+import { EMOJI, dayLabel, directionLabel, priceLabel, rideError, routeLabel, seatsLeft, timeLabel, type MyStatus, type Ride, type RideRequest } from '@/lib/rides';
 import { supabase } from '@/lib/supabase';
 import { C, F, shadow } from '@/lib/theme';
 import { toast } from '@/lib/toast';
@@ -30,11 +30,12 @@ export default function RideDetail() {
   const [reqs, setReqs] = useState<RideRequest[]>([]);
   const [busy, setBusy] = useState<string | null>(null);
   const [ask, setAsk] = useState(false);
+  const [phones, setPhones] = useState<Record<string, string>>({});
 
   const load = useCallback(async () => {
     if (!id || !profile) return;
     const { data, error } = await supabase.from('rides')
-      .select('id, driver_id, direction, area, meet_point, depart_at, seats_total, seats_taken, price_jod, notes, status, driver:profiles!rides_driver_id_fkey(id, full_name, username, avatar_url, is_verified, academic_title, title_verified)')
+      .select('id, driver_id, kind, direction, area, stops, meet_point, campus_spot, depart_at, seats_total, seats_taken, price_jod, notes, status, driver:profiles!rides_driver_id_fkey(id, full_name, username, avatar_url, is_verified, academic_title, title_verified)')
       .eq('id', id).maybeSingle();
     if (error || !data || (data as { status: string }).status !== 'open') { setMissing(true); return; }
     const d = (data as unknown as { driver: Driver }).driver;
@@ -47,6 +48,9 @@ export default function RideDetail() {
       const { data: rq } = await supabase.rpc('ride_requests_for', { p_ride: id });
       setReqs((rq ?? []) as RideRequest[]);
     }
+    // phones show only between the two sides of an accepted seat (the server decides)
+    const { data: ph } = await supabase.rpc('ride_phones_for', { p_ride: id });
+    setPhones(Object.fromEntries(((ph ?? []) as { user_id: string; phone: string }[]).map((x) => [x.user_id, x.phone])));
     setMissing(false);
     setRide({
       ...(data as unknown as Ride), driver_name: d?.full_name ?? '', driver_username: d?.username ?? null, driver_avatar: d?.avatar_url ?? null,
@@ -57,6 +61,8 @@ export default function RideDetail() {
   useEffect(() => { load(); }, [load]);
 
   const mine = !!ride && ride.driver_id === profile?.id;
+  const need = ride?.kind === 'need';
+  const call = (n: string) => Linking.openURL(`tel:${n}`).catch(() => toast.error(t('ما قدرنا نفتح الاتصال')));
 
   async function message(target: string) {
     if (busy) return;
@@ -69,7 +75,7 @@ export default function RideDetail() {
 
   function answer(q: RideRequest, accept: boolean) {
     Alert.alert(accept ? t('تقبل {0}؟', [q.name]) : t('تعتذر من {0}؟', [q.name]),
-      accept ? t('بيتحجزله {0} مقعد وبيوصله إشعار.', [String(q.seats)]) : t('بيوصله إشعار إنك اعتذرت.'), [
+      accept ? (need ? t('هو اللي رح يوصلك، والباقي بيوصلهم إنك لقيت حدا.') : t('بيتحجزله {0} مقعد وبيوصله إشعار.', [String(q.seats)])) : t('بيوصله إشعار إنك اعتذرت.'), [
         { text: t('لا'), style: 'cancel' },
         { text: accept ? t('اقبل') : t('اعتذر'), style: accept ? 'default' : 'destructive', onPress: async () => {
           setBusy(q.id);
@@ -141,14 +147,19 @@ export default function RideDetail() {
           <Row gap={10} style={{ backgroundColor: C.soft, borderRadius: 18, padding: 12 }}>
             <Image source={EMOJI.pin} style={{ width: 28, height: 28 }} contentFit="contain" />
             <View style={{ flex: 1 }}>
-              <T v="bold">{ride.area}</T>
+              <T v="bold">{routeLabel(ride)}</T>
+              {ride.campus_spot ? <T v="small" color={C.ink2}>{t('بالجامعة: {0}', [ride.campus_spot])}</T> : null}
               {ride.meet_point ? <T v="small" color={C.ink2}>{t('نقطة التجمّع: {0}', [ride.meet_point])}</T> : null}
             </View>
           </Row>
-          <Row gap={10} style={{ justifyContent: 'space-between' }}>
-            <SeatIcons total={ride.seats_total} taken={ride.seats_taken} size={20} />
-            <T v="small" color={free ? C.greenInk : C.muted}>{free ? t('{0} مقاعد فاضية', [String(free)]) : t('مليانة')}</T>
-          </Row>
+          {need ? (
+            <T v="small" color={free ? C.orangeInk : C.greenInk}>{free ? t('{0} أشخاص بدهم توصيلة', [String(ride.seats_total)]) : t('لقى حدا يوصله ✓')}</T>
+          ) : (
+            <Row gap={10} style={{ justifyContent: 'space-between' }}>
+              <SeatIcons total={ride.seats_total} taken={ride.seats_taken} size={20} />
+              <T v="small" color={free ? C.greenInk : C.muted}>{free ? t('{0} مقاعد فاضية', [String(free)]) : t('مليانة')}</T>
+            </Row>
+          )}
           {ride.notes ? <T v="body" color={C.ink2}>{ride.notes}</T> : null}
         </View>
 
@@ -162,24 +173,25 @@ export default function RideDetail() {
                   {ride.driver_verified && <BadgeCheck size={15} color={C.white} fill={C.verified} />}
                   <TitleBadge title={ride.driver_title} verified={ride.driver_title_verified} />
                 </Row>
-                <T v="tiny" color={C.muted}>{t('السائق')}{ride.driver_username ? ` · ⁦@${ride.driver_username}⁩` : ''}</T>
+                <T v="tiny" color={C.muted}>{need ? t('بده توصيلة') : t('السائق')}{ride.driver_username ? ` · ⁦@${ride.driver_username}⁩` : ''}</T>
               </View>
             </Tap>
             <View style={{ gap: 10, marginTop: 14 }}>
               {ride.my_status === 'accepted' || ride.my_status === 'pending' ? (
                 <View style={{ backgroundColor: ride.my_status === 'accepted' ? C.greenSoft : C.orangeSoft, borderRadius: 16, padding: 12 }}>
                   <T v="bold" color={ride.my_status === 'accepted' ? C.greenInk : C.orangeInk}>
-                    {ride.my_status === 'accepted' ? t('انقبلت بهالتوصيلة ✓') : t('طلبك بانتظار رد السائق')}
+                    {ride.my_status === 'accepted' ? (need ? t('انقبل عرضك، رح توصله ✓') : t('انقبلت بهالتوصيلة ✓')) : need ? t('عرضك بانتظار رده') : t('طلبك بانتظار رد السائق')}
                   </T>
                 </View>
               ) : ride.my_status === 'declined' ? (
-                <T v="small" color={C.muted}>{t('السائق اعتذر عن هالتوصيلة.')}</T>
+                <T v="small" color={C.muted}>{need ? t('لقى حدا ثاني يوصله.') : t('السائق اعتذر عن هالتوصيلة.')}</T>
               ) : null}
+              {phones[ride.driver_id] ? <Button kind="soft" title={phones[ride.driver_id]} icon={<Phone size={17} color={C.primary} />} onPress={() => call(phones[ride.driver_id])} /> : null}
               <Row gap={8}>
-                <Button kind="soft" title={t('راسل السائق')} icon={<MessageCircle size={17} color={C.primary} />} onPress={() => message(ride.driver_id)} loading={busy === `m-${ride.driver_id}`} style={{ flex: 1 }} />
+                <Button kind="soft" title={need ? t('راسله') : t('راسل السائق')} icon={<MessageCircle size={17} color={C.primary} />} onPress={() => message(ride.driver_id)} loading={busy === `m-${ride.driver_id}`} style={{ flex: 1 }} />
                 {ride.my_status === 'accepted' || ride.my_status === 'pending'
-                  ? <Button kind="soft" title={t('الغي طلبي')} onPress={leave} loading={busy === 'leave'} style={{ flex: 1 }} />
-                  : ride.my_status !== 'declined' && free > 0 ? <Button title={t('اطلب مقعد')} onPress={() => setAsk(true)} style={{ flex: 1 }} /> : null}
+                  ? <Button kind="soft" title={need ? t('الغي عرضي') : t('الغي طلبي')} onPress={leave} loading={busy === 'leave'} style={{ flex: 1 }} />
+                  : ride.my_status !== 'declined' && free > 0 ? <Button title={need ? t('بوصلك') : t('اطلب مقعد')} onPress={() => setAsk(true)} style={{ flex: 1 }} /> : null}
               </Row>
             </View>
           </Card>
@@ -187,9 +199,9 @@ export default function RideDetail() {
 
         {mine && (
           <>
-            <T v="h3">{t('الطلبات')}</T>
+            <T v="h3">{need ? t('مين عرض يوصلك') : t('الطلبات')}</T>
             {!pending.length && !accepted.length ? (
-              <Card><T v="small" color={C.muted}>{t('لسا ما حدا طلب مقعد. بيوصلك إشعار أول ما حدا يطلب.')}</T></Card>
+              <Card><T v="small" color={C.muted}>{need ? t('لسا ما حدا عرض. بيوصلك إشعار أول ما حدا يعرض يوصلك.') : t('لسا ما حدا طلب مقعد. بيوصلك إشعار أول ما حدا يطلب.')}</T></Card>
             ) : null}
             {[...pending, ...accepted].map((q) => (
               <View key={q.id} style={[{ backgroundColor: C.card, borderRadius: 22, padding: 12, gap: 10 }, shadow]}>
@@ -199,8 +211,9 @@ export default function RideDetail() {
                   </Tap>
                   <View style={{ flex: 1 }}>
                     <T v="bold" numberOfLines={1}>{q.name}</T>
-                    <T v="tiny" color={C.muted}>{t('{0} مقعد', [String(q.seats)])}{q.status === 'accepted' ? ` · ${t('مقبول')}` : ''}</T>
+                    <T v="tiny" color={C.muted}>{need ? t('عنده سيارة') : t('{0} مقعد', [String(q.seats)])}{q.status === 'accepted' ? ` · ${t('مقبول')}` : ''}</T>
                   </View>
+                  {phones[q.rider_id] ? <IconButton label={t('اتصل {0}', [phones[q.rider_id]])} onPress={() => call(phones[q.rider_id])}><Phone size={19} color={C.ink} /></IconButton> : null}
                   <IconButton label={t('راسل')} onPress={() => message(q.rider_id)}><MessageCircle size={19} color={C.ink} /></IconButton>
                 </Row>
                 {q.note ? <T v="small" color={C.ink2} style={{ backgroundColor: C.soft, borderRadius: 12, padding: 10 }}>{q.note}</T> : null}
@@ -213,10 +226,10 @@ export default function RideDetail() {
                 {q.status === 'pending' && q.seats > free ? <T v="tiny" color={C.red}>{t('ما في مقاعد كفاية لهالطلب.')}</T> : null}
               </View>
             ))}
-            <Button kind="soft" title={t('الغي التوصيلة')} onPress={cancelRide} loading={busy === 'cancel'} style={{ marginTop: 6 }} />
+            <Button kind="soft" title={need ? t('الغي الطلب') : t('الغي التوصيلة')} onPress={cancelRide} loading={busy === 'cancel'} style={{ marginTop: 6 }} />
           </>
         )}
-        <T v="tiny" color={C.faint} style={{ textAlign: 'center' }}>{t('لا تشارك رقمك، تواصل من داخل يونيميت.')}</T>
+        <T v="tiny" color={C.faint} style={{ textAlign: 'center' }}>{t('الرقم بيبيّن بس بين السائق والراكب بعد القبول.')}</T>
       </ScrollView>
       <AskSeatSheet ride={ask ? ride : null} onClose={() => setAsk(false)} onDone={() => { setAsk(false); load(); }} />
     </Screen>

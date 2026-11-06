@@ -25,6 +25,7 @@ export default function FacultyTitle() {
   const [title, setTitle] = useState<string | null>(null);
   const [dept, setDept] = useState(profile?.department ?? '');
   const [note, setNote] = useState('');
+  const [position, setPosition] = useState('');
   const [busy, setBusy] = useState(false);
 
   const load = useCallback(async () => {
@@ -37,7 +38,7 @@ export default function FacultyTitle() {
   async function send() {
     if (!title || busy) return;
     setBusy(true);
-    const r = await run(supabase.rpc('request_title', { p_title: title, p_department: dept, p_note: note }), { msg: t('ما زبط إرسال الطلب. الطلب بس لإيميل الموظفين بالجامعة.') });
+    const r = await run(supabase.rpc('request_title', { p_title: title, p_department: dept, p_note: note, p_position: position.trim() || null }), { msg: t('ما زبط إرسال الطلب. الطلب بس لإيميل الموظفين بالجامعة.') });
     setBusy(false);
     if (!r.ok) return;
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
@@ -92,6 +93,7 @@ export default function FacultyTitle() {
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
                 {TITLE_ORDER.filter((k) => !TOP.includes(k)).map((k) => <Chip key={k} label={titleLabel(k)} active={title === k} onPress={() => setTitle(k)} />)}
               </View>
+              <Field label={t('منصبك بالكامل (اختياري)')} value={position} onChangeText={setPosition} maxLength={80} placeholder={t('مثلاً: عميد شؤون الطلبة، مدير مركز الحاسوب')} />
               <Field label={t('القسم أو الكلية')} value={dept} onChangeText={setDept} maxLength={80} placeholder={t('مثلاً قسم الهندسة المدنية')} />
               <Field label={t('ملاحظة (اختياري)')} value={note} onChangeText={setNote} maxLength={300} multiline placeholder={t('رقم مكتبك، رابط صفحتك بالجامعة، أو أي إشي بيساعدنا نتأكد')} style={{ minHeight: 90, textAlignVertical: 'top', paddingTop: 14 }} />
               <Button title={t('ابعت الطلب')} onPress={send} loading={busy} disabled={!title} />

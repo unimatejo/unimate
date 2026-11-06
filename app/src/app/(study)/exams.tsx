@@ -12,19 +12,19 @@ import { Avatar, Button, Card, Chip, Empty, Header, IconButton, Row, Screen, T, 
 import { useAuth } from '@/lib/auth';
 import { scheduleExamReminders } from '@/lib/examReminders';
 import { reportError } from '@/lib/errors';
+import { MoodleImport } from '@/components/study/MoodleImport';
+import { SectionAsks } from '@/components/study/SectionAsks';
+import { EVENT_KIND } from '@/lib/events';
 import { supabase } from '@/lib/supabase';
 import { C, F, shadow } from '@/lib/theme';
 import { LOCALE, t } from '@/lib/i18n';
 
-type Ev = { id: string; section_id: string | null; owner_id: string | null; kind: string; title: string; starts_at: string; location: string | null; course_name: string | null };
+type Ev = { id: string; section_id: string | null; owner_id: string | null; kind: string; title: string; starts_at: string; location: string | null; course_name: string | null; confirmations: number; shared_ask: boolean };
 type Sec = { id: string; name: string; section_no: string };
 type Mine = { section_id: string; place: string | null; until: string };
 type Mate = { user_id: string; full_name: string; username: string | null; avatar_url: string | null; place: string | null; until: string };
 
-const KIND: Record<string, string> = {
-  exam_first: t('امتحان أول'), exam_second: t('امتحان ثاني'), exam_mid: t('امتحان نصفي'), exam_final: t('امتحان نهائي'),
-  quiz: t('كويز'), assignment: t('تسليم واجب'), project: t('مشروع'), custom: t('موعد'),
-};
+const KIND = EVENT_KIND;
 const isExam = (k: string) => k.startsWith('exam') || k === 'quiz';
 const PLACES = [t('المكتبة'), t('الكافتيريا'), t('قاعة دراسة'), t('أونلاين'), t('البيت')];
 const DAY = 86400000;
@@ -60,18 +60,14 @@ export default function Exams() {
     try {
       const [{ data: enr }, { data: ev }, { data: st }] = await Promise.all([
         supabase.from('enrollments').select('section:sections(id, section_no, course:courses(name_ar))').eq('user_id', profile.id),
-        supabase.from('academic_events')
-          .select('id, section_id, owner_id, kind, title, starts_at, location, section:sections(course:courses(name_ar))')
-          .gte('starts_at', new Date(Date.now() - 14 * DAY).toISOString())
-          .lte('starts_at', new Date(Date.now() + 120 * DAY).toISOString())
-          .order('starts_at').limit(200),
+        supabase.rpc('my_events', { p_from: new Date(Date.now() - 14 * DAY).toISOString(), p_to: new Date(Date.now() + 120 * DAY).toISOString() }),
         supabase.from('studying_now').select('section_id, place, until, user_id').gt('until', new Date().toISOString()),
       ]);
        
       const s: Sec[] = ((enr ?? []) as any[]).map((e) => e.section).filter(Boolean).map((x) => ({ id: x.id, name: x.course?.name_ar ?? '', section_no: x.section_no }));
       setSecs(s);
        
-      const list: Ev[] = ((ev ?? []) as any[]).map((x) => ({ ...x, course_name: x.section?.course?.name_ar ?? null }));
+      const list = (ev ?? []) as Ev[];
       setEvents(list);
        
       setMine(((st ?? []) as any[]).find((r) => r.user_id === profile.id) ?? null);
@@ -146,9 +142,11 @@ export default function Exams() {
       <Header title={t('امتحاناتي')} subtitle={t('العد التنازلي ومين عم يدرس معك')}
         right={<IconButton label={t('أضف امتحان أو موعد')} onPress={() => router.push('/event/new')}><CalendarPlus size={21} color={C.ink} /></IconButton>} />
       <ScrollView contentContainerStyle={{ paddingHorizontal: 18, paddingBottom: 120, gap: 16 }} refreshControl={<PullRefresh onRefresh={load} />}>
+        <SectionAsks onChange={load} />
+        <MoodleImport onImported={load} />
         {events === null ? <ListSkeleton n={4} /> : !next ? (
           <Empty icon={<GraduationCap size={28} color={C.primary} />} title={t('ما في امتحانات قريبة')}
-            body={t('ضيف امتحاناتك ومواعيد التسليم، وبنذكّرك قبلها بيوم وقبلها بساعة. اللي بتضيفه لشعبتك بيطلع لزملائك كمان.')}
+            body={t('ضيف امتحاناتك ومواعيد التسليم، وبنذكّرك قبلها بيوم وقبلها بساعة. ولما كم واحد من شعبتك يضيفوا نفس الموعد بيصير عند الكل.')}
             action={<Button title={t('أضف امتحان')} icon={<CalendarPlus size={18} color={C.white} />} onPress={() => router.push('/event/new')} style={{ paddingHorizontal: 22, marginTop: 8 }} />} />
         ) : (
           <>
@@ -301,7 +299,7 @@ function Row1({ e, now, onPress, past }: { e: Ev; now: number; onPress: () => vo
       <View style={{ flex: 1, gap: 2 }}>
         <T v="bold" numberOfLines={1}>{e.course_name ?? e.title}</T>
         <T v="tiny" color={C.muted} numberOfLines={1}>
-          {[KIND[e.kind] ?? e.title, date.toLocaleTimeString(LOCALE, { hour: 'numeric', minute: '2-digit' }), e.location, e.owner_id ? t('خاص فيك') : null].filter(Boolean).join(' · ')}
+          {[KIND[e.kind] ?? e.title, date.toLocaleTimeString(LOCALE, { hour: 'numeric', minute: '2-digit' }), e.location, e.owner_id ? (e.shared_ask ? t('بانتظار زملاءك يأكدوه') : t('خاص فيك')) : e.confirmations > 1 ? t('أكّده {0}', [String(e.confirmations)]) : null].filter(Boolean).join(' · ')}
         </T>
       </View>
       {!past && (

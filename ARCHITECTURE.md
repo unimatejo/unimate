@@ -109,7 +109,7 @@ Admin › أخطاء التطبيق (`app/admin/errors.tsx`). Stale web code aft
 | `/map` | `app/(campus)/map.tsx` | what a virtual walk stops at: the places people actually look for, not every parking lot |
 | `/rides/[id]` | `app/(campus)/rides/[id].tsx` | One ride: the details, and for the driver the requests to accept or decline. |
 | `/rides` | `app/(campus)/rides/index.tsx` | Rides to and from campus, offered by students of the same university. |
-| `/rides/new` | `app/(campus)/rides/new.tsx` | Offer a ride: where from / to, when, how many seats, how much (or free). Same limits as the server. |
+| `/rides/new` | `app/(campus)/rides/new.tsx` | Offer a ride, or ask for one ("بدي توصيلة"): the areas it passes through, where on campus, when, seats, price, and optionally a phone that only the… |
 | `/join/[code]` | `app/(chat)/join/[code].tsx` | Group invite link: app.unimate.my/join/<code> → join and open the chat. |
 | `/messages/[id]` | `app/(chat)/messages/[id].tsx` | Photo bubble: keeps the photo's real shape (max 240 wide, 320 tall), soft placeholder while it loads. |
 | `/messages` | `app/(chat)/messages/index.tsx` | Inbox like Instagram: chats with people you know, message requests, and groups (auto groups for your college, major and cohort). |
@@ -158,7 +158,7 @@ Admin › أخطاء التطبيق (`app/admin/errors.tsx`). Stale web code aft
 | `/admin/users` | `app/admin/users.tsx` | Admin › users: search by name, @username, email or student number. |
 | `/advertiser/[id]` | `app/advertiser/[id].tsx` | An advertiser's public page with its current offers. |
 | `/call/[id]` | `app/call/[id].tsx` | Call screen. Signalling (ringing / answered / ended) runs live through the database. Audio and video need a real-time media service and a development… |
-| `/event/new` | `app/event/new.tsx` | Add a personal event (exam, deadline, meeting) to the timetable. |
+| `/event/new` | `app/event/new.tsx` | Add an exam, deadline or reminder to my timetable. Ticking "for my section" doesn't push it to everyone: it counts as one classmate saying so, and… |
 | `/post/[id]` | `app/post/[id].tsx` | posts opened before show instantly when you come back (then refresh quietly) |
 | `/post/new` | `app/post/new.tsx` | Create, like Instagram: pick what to make at the bottom (post / story / reel / live), choose the photos or video, then "التالي" to write the caption… |
 | `/report` | `app/report.tsx` | Report a post, message, story or account to the admins. |
@@ -240,7 +240,7 @@ Admin › أخطاء التطبيق (`app/admin/errors.tsx`). Stale web code aft
 
 **rides/**
 
-- `AskSeatSheet.tsx` — Ask the driver for 1–3 seats (never more than are free), with an optional short note.
+- `AskSeatSheet.tsx` — Ask the driver for 1–3 seats (never more than are free), or on a "بدي توصيلة" answer "بوصلك". A short note and a phone are optional; the phone only shows to…
 - `DepartPicker.tsx` — Date + time of departure: today up to `max`, never in the past. Native pickers on phones, inputs on the web.
 - `RideCard.tsx` — Filled seats in the app's ink, free ones in the brand colour: "how full is it" at a glance.
 - `RideSheet.tsx` — Bottom sheet frame (drag handle, dimmed background, safe area).
@@ -269,13 +269,16 @@ Admin › أخطاء التطبيق (`app/admin/errors.tsx`). Stale web code aft
 
 **study/**
 
+- `MoodleImport.tsx` — Deadlines straight from Moodle: paste your calendar export link once, and assignments and quizzes land in your timetable (and count toward your section).…
 - `ScheduleScan.tsx` — "Scan my timetable": a screenshot of the registration page or a photo, read automatically, checked by you, then saved.
+- `SectionAsks.tsx` — "3 من شعبتك ضافوا امتحان أول الأحد 10:00": things classmates added that I haven't, before they become official. "صح، عندي" adds mine (one more toward the…
 - `attendance-date.tsx` — Which day was the absence: today by default, never in the future, at most 240 days back (same rule as the server).
 - `attendance-sheets.tsx` — "+ سجّل غياب": pick the day, absent or with an excuse, an optional note.
 - `gpa-course.tsx` — One course: hours stepper, the grade (or "still studying" + the grade you're aiming for).
 
 **ui/**
 
+- `Choices.tsx` — Quick-pick chips plus "غير" to type anything else — the same pattern everywhere a list can't cover everyone. Single choice: tapping the active chip again…
 - `CodeBoxes.tsx` — Six boxes for a 6-digit code (from an email or an authenticator app); calls onComplete when all are typed.
 - `DateField.tsx` — A date picker that works on iPhone, Android and in the browser.
 - `Glyph.tsx` — Gradient pairs for icon tiles (top-left -> bottom-right).
@@ -291,6 +294,7 @@ Admin › أخطاء التطبيق (`app/admin/errors.tsx`). Stale web code aft
 - `cache.ts` — What a screen showed last time, so it opens instantly and refreshes quietly in the background (like Instagram). Kept in memory and on the device; every key includes the…
 - `cropper.ts` — How a photo / video sits in its frame after the crop editor (saved with the post / story).
 - `errors.ts` — Send an error report to the database so problems on real phones can be fixed. Never throws.
+- `events.ts` — Exams, deadlines and reminders: the kinds the database knows (event_kind), in plain words.
 - `examReminders.ts` — Phone-only local reminders for exams and deadlines: one the day before and one an hour before. Replaces any earlier "exam-" reminders, so calling it again after a change…
 - `gpa.ts` — GPA maths, kept pure so it can be tested on its own. A planned course (grade null) and a pass/fail one ("P") never count toward the GPA; 0-hour courses neither. Results…
 - `i18n.en.ts` — English UI strings. Keys are the Arabic source text (see t() in i18n.ts).
@@ -306,7 +310,7 @@ Admin › أخطاء التطبيق (`app/admin/errors.tsx`). Stale web code aft
 - `prefs.ts` — Tiny synchronous key-value store for app preferences (theme, language). Read at startup before the first render.
 - `presence.ts` — Activity status like Instagram: one app-wide realtime presence channel says who is open right now, and last_seen_at (written at most every 2 minutes) says "active 5 m…
 - `realtime.ts` — A unique topic for a channel that only listens to database changes (postgres_changes). supabase-js hands back the SAME channel object for a repeated topic, so a second…
-- `rides.ts` — One row of rides_feed(): the ride, the driver's public card and where I stand with it.
+- `rides.ts` — offer: I have seats · need: I'm looking for a ride and someone with a car answers
 - `run.ts` — Run a Supabase call and never fail silently: returns { ok, data, error }, reports the error, and (unless quiet) shows a clear message to the user.
 - `schedule.ts` — Sunday of the week the schedule shows (after Thursday it shows next week).
 - `settings.ts` — Update a field on my profile with an optimistic UI and refresh the session copy.
@@ -328,6 +332,7 @@ Admin › أخطاء التطبيق (`app/admin/errors.tsx`). Stale web code aft
 ### Edge functions (`supabase/functions`)
 
 - `moderate` — Checks a new photo (post photo, story, profile photo) with Gemini. If it shows nudity, sexual content,
+- `moodle-import` — iCal date → Date. "…Z" is UTC; a TZID or floating time is Jordan time (UTC+3 all year since 2022).
 - `ms-role` — Microsoft job title (Arabic or English) → the app's title. Most specific first.
 - `push` — Sends a push to every device of the people a new notification / message is for.
 - `schedule-import` — Read a student's timetable from a screenshot or photo, and give back courses with their times.
@@ -434,3 +439,7 @@ Admin › أخطاء التطبيق (`app/admin/errors.tsx`). Stale web code aft
 - `0097_blue_check_leaders_only.sql` — UniMate · 0097 the blue check is for the owner and the university's leaders only (president, vice president, dean,
 - `0098_blue_check_off.sql` — UniMate · 0098 the owner can take the blue check from anyone — a president or dean too — and it stays off:
 - `0099_founder_title.sql` — UniMate · 0099 two titles only the owner can give: "مؤسس يونيميت" (founder) and "مسؤول يونيميت" (UniMate team).
+- `0100_rides_more.sql` — UniMate · 0100 rides that fit real trips.
+- `0101_free_choices.sql` — UniMate · 0101 "غير": wherever the app offers quick picks, people can also type their own.
+- `0102_section_events_crowd.sql` — UniMate · 0102 exams and assignments the whole section agrees on.
+- `0103_moodle_links.sql` — UniMate · 0103 Moodle calendar import.

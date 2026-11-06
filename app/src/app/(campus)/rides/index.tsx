@@ -12,7 +12,7 @@ import { ListSkeleton } from '@/components/ui/Skeleton';
 import { Button, Chip, Empty, Header, Row, Screen, Segmented, T, Tap } from '@/components/ui';
 import { useAuth } from '@/lib/auth';
 import { run } from '@/lib/run';
-import { EMOJI, dayKey, dayLabel, rideError, seatsLeft, type Direction, type Ride } from '@/lib/rides';
+import { EMOJI, allAreas, dayKey, dayLabel, rideError, seatsLeft, type Direction, type Ride } from '@/lib/rides';
 import { supabase } from '@/lib/supabase';
 import { C, F, shadow } from '@/lib/theme';
 import { toast } from '@/lib/toast';
@@ -25,6 +25,7 @@ export default function Rides() {
   const { profile } = useAuth();
   const [dir, setDir] = useState(0);
   const [area, setArea] = useState<string | null>(null);
+  const [kind, setKind] = useState<'offer' | 'need'>('offer');
   const [rows, setRows] = useState<Ride[] | null>(null);
   const [failed, setFailed] = useState(false);
   const [ask, setAsk] = useState<Ride | null>(null);
@@ -37,8 +38,11 @@ export default function Rides() {
   }, [dir]);
   useFocusEffect(useCallback(() => { load(); }, [load]));
 
-  const areas = useMemo(() => [...new Set((rows ?? []).map((r) => r.area))].sort((a, b) => a.localeCompare(b, 'ar')), [rows]);
-  const shown = useMemo(() => (rows ?? []).filter((r) => !area || r.area === area), [rows, area]);
+  const ofKind = useMemo(() => (rows ?? []).filter((r) => r.kind === kind), [rows, kind]);
+  const areas = useMemo(() => [...new Set(ofKind.flatMap(allAreas))].sort((a, b) => a.localeCompare(b, 'ar')), [ofKind]);
+  // a ride passing through my area counts, not only the ones that start there
+  const shown = useMemo(() => ofKind.filter((r) => !area || allAreas(r).includes(area)), [ofKind, area]);
+  const needCount = useMemo(() => (rows ?? []).filter((r) => r.kind === 'need' && seatsLeft(r) > 0 && r.driver_id !== profile?.id).length, [rows, profile?.id]);
   const days = useMemo(() => {
     const m = new Map<string, Ride[]>();
     for (const r of shown) { const k = dayKey(r.depart_at); if (!m.has(k)) m.set(k, []); m.get(k)!.push(r); }
@@ -73,7 +77,7 @@ export default function Rides() {
       return (
         <Row gap={6}>
           <View style={{ backgroundColor: ok ? C.greenSoft : C.orangeSoft, borderRadius: 999, paddingHorizontal: 10, height: 30, justifyContent: 'center' }}>
-            <T v="tiny" color={ok ? C.greenInk : C.orangeInk} style={{ fontFamily: F.bodyBold }}>{ok ? t('انقبلت ✓') : t('بانتظار السائق')}</T>
+            <T v="tiny" color={ok ? C.greenInk : C.orangeInk} style={{ fontFamily: F.bodyBold }}>{ok ? t('انقبلت ✓') : r.kind === 'need' ? t('بانتظار رده') : t('بانتظار السائق')}</T>
           </View>
           <Tap onPress={() => leave(r)} disabled={busy === r.id} accessibilityLabel={t('الغي طلبي')} style={{ paddingHorizontal: 8, height: 30, justifyContent: 'center' }}>
             <T v="tiny" color={C.red}>{t('الغي')}</T>
@@ -81,11 +85,12 @@ export default function Rides() {
         </Row>
       );
     }
-    if (r.my_status === 'declined') return <T v="tiny" color={C.muted}>{t('اعتذر السائق')}</T>;
-    if (!seatsLeft(r)) return <T v="tiny" color={C.muted}>{t('مليانة')}</T>;
+    const need = r.kind === 'need';
+    if (r.my_status === 'declined') return <T v="tiny" color={C.muted}>{need ? t('لقى حدا ثاني') : t('اعتذر السائق')}</T>;
+    if (!seatsLeft(r)) return <T v="tiny" color={C.muted}>{need ? t('لقى حدا') : t('مليانة')}</T>;
     return (
       <Tap onPress={() => setAsk(r)} style={{ backgroundColor: C.primary, borderRadius: 999, paddingHorizontal: 14, height: 34, justifyContent: 'center' }} accessibilityRole="button">
-        <T v="tiny" color={C.onPrimary} style={{ fontFamily: F.bodyBold }}>{t('اطلب مقعد')}</T>
+        <T v="tiny" color={C.onPrimary} style={{ fontFamily: F.bodyBold }}>{need ? t('بوصلك') : t('اطلب مقعد')}</T>
       </Tap>
     );
   }
@@ -100,10 +105,17 @@ export default function Rides() {
           <View style={{ flex: 1, gap: 2 }}>
             <T v="bold">{t('وفّر وقتك ومصاريك')}</T>
             <T v="small" color={C.muted}>{t('شارك سيارتك مع زملاءك أو لاقي مقعد لمحاضرتك، والكل من جامعتك.')}</T>
+            <Tap onPress={() => router.push({ pathname: '/rides/new', params: { kind: 'need' } })} accessibilityRole="button" style={{ alignSelf: 'flex-start', marginTop: 6, backgroundColor: C.primarySoft, borderRadius: 999, paddingHorizontal: 12, height: 32, justifyContent: 'center' }}>
+              <T v="tiny" color={C.primary} style={{ fontFamily: F.bodyBold }}>{t('ما عندي سيارة؟ اطلب توصيلة')}</T>
+            </Tap>
           </View>
         </Animated.View>
 
         <Segmented items={[t('للجامعة'), t('من الجامعة'), t('الكل')]} value={dir} onChange={(i) => { setDir(i); setArea(null); setRows(null); }} />
+        <Row gap={8}>
+          <Chip label={t('سيارات فيها مكان')} active={kind === 'offer'} onPress={() => { setKind('offer'); setArea(null); }} />
+          <Chip label={needCount ? t('بدهم توصيلة ({0})', [String(needCount)]) : t('بدهم توصيلة')} active={kind === 'need'} onPress={() => { setKind('need'); setArea(null); }} />
+        </Row>
 
         {areas.length > 1 && (
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
@@ -115,9 +127,15 @@ export default function Rides() {
         {rows === null ? <ListSkeleton n={4} />
           : failed && !rows.length ? <Empty title={t('ما قدرنا نحمّل التوصيلات')} body={t('تأكد من الإنترنت وجرّب كمان مرة.')} action={<Button kind="soft" title={t('جرّب مرة ثانية')} onPress={load} />} />
           : !shown.length ? (
-            <Empty icon={<Image source={EMOJI.oncoming} style={{ width: 72, height: 72 }} contentFit="contain" />} title={t('ما في توصيلات لهلأ')}
-              body={t('كون أول واحد بيعرض توصيلة، وزملاءك من منطقتك بيشوفوها.')}
-              action={<Button title={t('اعرض توصيلة')} onPress={() => router.push('/rides/new')} style={{ marginTop: 8, paddingHorizontal: 22 }} />} />
+            kind === 'need' ? (
+              <Empty icon={<Image source={EMOJI.oncoming} style={{ width: 72, height: 72 }} contentFit="contain" />} title={t('ما حدا طالب توصيلة هلأ')}
+                body={t('إذا إنت بدك توصيلة، نزّل طلبك وزملاءك اللي عندهم سيارة بيشوفوه.')}
+                action={<Button title={t('بدي توصيلة')} onPress={() => router.push({ pathname: '/rides/new', params: { kind: 'need' } })} style={{ marginTop: 8, paddingHorizontal: 22 }} />} />
+            ) : (
+              <Empty icon={<Image source={EMOJI.oncoming} style={{ width: 72, height: 72 }} contentFit="contain" />} title={t('ما في توصيلات لهلأ')}
+                body={t('كون أول واحد بيعرض توصيلة، أو نزّل طلب إنك بدك توصيلة.')}
+                action={<Button title={t('اعرض توصيلة')} onPress={() => router.push('/rides/new')} style={{ marginTop: 8, paddingHorizontal: 22 }} />} />
+            )
           ) : days.map(([k, list]) => (
             <View key={k} style={{ gap: 10 }}>
               <T v="h3">{dayLabel(list[0].depart_at)}</T>
@@ -127,7 +145,7 @@ export default function Rides() {
               ))}
             </View>
           ))}
-        <T v="tiny" color={C.faint} style={{ textAlign: 'center' }}>{t('لا تشارك رقمك، تواصل من داخل يونيميت.')}</T>
+        <T v="tiny" color={C.faint} style={{ textAlign: 'center' }}>{t('الرقم بيبيّن بس بين السائق والراكب بعد القبول.')}</T>
       </ScrollView>
       <AskSeatSheet ride={ask} onClose={() => setAsk(null)} onDone={() => { setAsk(null); load(); }} />
     </Screen>

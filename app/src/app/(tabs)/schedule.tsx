@@ -15,6 +15,7 @@ import { reportError } from '@/lib/errors';
 import { run } from '@/lib/run';
 import { ListSkeleton } from '@/components/ui/Skeleton';
 import { scheduleLectureReminders } from '@/lib/notify';
+import { SectionAsks } from '@/components/study/SectionAsks';
 import { placeLine, useSchedule, ymd, type Meeting } from '@/lib/schedule';
 import { toast } from '@/lib/toast';
 import { supabase } from '@/lib/supabase';
@@ -174,6 +175,8 @@ export default function Schedule() {
             )}
           </LinearGradient>
         </Animated.View>
+
+        <SectionAsks onChange={reload} />
 
         <Row gap={10}>
           {([

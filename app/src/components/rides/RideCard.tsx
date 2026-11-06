@@ -4,7 +4,7 @@ import { View } from 'react-native';
 
 import { TitleBadge, titledName } from '@/components/profile/TitleBadge';
 import { Avatar, Row, T, Tap } from '@/components/ui';
-import { EMOJI, priceLabel, seatsLeft, timeLabel, type Ride } from '@/lib/rides';
+import { EMOJI, priceLabel, routeLabel, seatsLeft, timeLabel, type Ride } from '@/lib/rides';
 import { C, F, shadow } from '@/lib/theme';
 import { flip, t } from '@/lib/i18n';
 
@@ -19,25 +19,30 @@ export function SeatIcons({ total, taken, size = 16 }: { total: number; taken: n
   );
 }
 
-/** A ride in the feed. `action` is the button / status on the right edge (ask, pending, my requests…). */
+/** A ride in the feed (or a "بدي توصيلة" ask). `action` is the button / status on the right edge (ask, pending, my requests…). */
 export function RideCard({ ride, mine, onPress, action }: { ride: Ride; mine: boolean; onPress: () => void; action?: React.ReactNode }) {
+  const need = ride.kind === 'need';
   const free = seatsLeft(ride);
+  const route = routeLabel(ride);
   return (
-    <Tap haptic={false} scale={0.985} onPress={onPress} accessibilityRole="button" accessibilityLabel={`${ride.area} ${timeLabel(ride.depart_at)}`}
+    <Tap haptic={false} scale={0.985} onPress={onPress} accessibilityRole="button" accessibilityLabel={`${need ? t('بدي توصيلة') : ''} ${route} ${timeLabel(ride.depart_at)}`}
       style={[{ backgroundColor: C.card, borderRadius: 26, padding: 14, gap: 12 }, shadow]}>
       <Row gap={12} center={false}>
         <View style={{ alignItems: 'center', minWidth: 64, paddingTop: 2 }}>
           <T style={{ fontFamily: F.display, fontSize: 22, lineHeight: 28 }}>{timeLabel(ride.depart_at)}</T>
-          <T v="tiny" color={free ? C.greenInk : C.muted}>{free ? t('{0} فاضي', [String(free)]) : t('مليانة')}</T>
+          {need
+            ? <T v="tiny" color={free ? C.orangeInk : C.greenInk}>{free ? t('بدو توصيلة') : t('لقى حدا')}</T>
+            : <T v="tiny" color={free ? C.greenInk : C.muted}>{free ? t('{0} فاضي', [String(free)]) : t('مليانة')}</T>}
         </View>
         <View style={{ flex: 1, gap: 6 }}>
           <Row gap={6}>
             <Image source={EMOJI.pin} style={{ width: 20, height: 20 }} contentFit="contain" />
-            <T v="bold" numberOfLines={1} style={{ flexShrink: 1, fontSize: 16 }}>{ride.area}</T>
+            <T v="bold" numberOfLines={2} style={{ flexShrink: 1, fontSize: 16 }}>{route}</T>
           </Row>
+          {ride.campus_spot ? <T v="small" color={C.ink2} numberOfLines={1}>{t('بالجامعة: {0}', [ride.campus_spot])}</T> : null}
           {ride.meet_point ? <T v="small" color={C.ink2} numberOfLines={1}>{t('نقطة التجمّع: {0}', [ride.meet_point])}</T> : null}
           <Row gap={10}>
-            <SeatIcons total={ride.seats_total} taken={ride.seats_taken} />
+            {need ? <T v="tiny" color={C.ink2}>{t('{0} أشخاص', [String(ride.seats_total)])}</T> : <SeatIcons total={ride.seats_total} taken={ride.seats_taken} />}
             <View style={{ backgroundColor: Number(ride.price_jod) > 0 ? C.orangeSoft : C.greenSoft, borderRadius: 999, paddingHorizontal: 9, height: 22, justifyContent: 'center' }}>
               <T v="tiny" color={Number(ride.price_jod) > 0 ? C.orangeInk : C.greenInk} style={{ fontFamily: F.bodyBold }}>{priceLabel(ride.price_jod)}</T>
             </View>
@@ -49,7 +54,7 @@ export function RideCard({ ride, mine, onPress, action }: { ride: Ride; mine: bo
         <Avatar id={ride.driver_id} name={ride.driver_name} url={ride.driver_avatar} size={34} />
         <View style={{ flex: 1 }}>
           <Row gap={4}>
-            <T v="bodyMd" numberOfLines={1} style={{ flexShrink: 1 }}>{mine ? t('توصيلتك') : titledName(ride.driver_name, ride.driver_title, ride.driver_title_verified)}</T>
+            <T v="bodyMd" numberOfLines={1} style={{ flexShrink: 1 }}>{mine ? (need ? t('طلبك') : t('توصيلتك')) : titledName(ride.driver_name, ride.driver_title, ride.driver_title_verified)}</T>
             {!mine && ride.driver_verified && <BadgeCheck size={14} color={C.white} fill={C.verified} />}
             {!mine && <TitleBadge title={ride.driver_title} verified={ride.driver_title_verified} />}
           </Row>

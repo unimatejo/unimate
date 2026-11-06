@@ -10,7 +10,7 @@ import { supabase } from '@/lib/supabase';
 import { t } from '@/lib/i18n';
 
 type Req = {
-  id: string; user_id: string; title: string; department: string | null; note: string | null; status: string; created_at: string;
+  id: string; user_id: string; title: string; department: string | null; note: string | null; position: string | null; status: string; created_at: string;
   user: { full_name: string; username: string | null; account_type: string | null } | null;
 };
 
@@ -72,7 +72,7 @@ export default function Titles() {
         <View style={{ gap: 8 }}>
           {(data ?? []).map((x) => (
             <Item key={x.id} onPress={() => setSel(x)} title={x.user?.full_name ?? '—'}
-              sub={`${titleLabel(x.title)}${x.department ? ' · ' + x.department : ''} · ${fmtDate(x.created_at)}`} end={<Status s={x.status} />} />
+              sub={`${x.position || titleLabel(x.title)}${x.department ? ' · ' + x.department : ''} · ${fmtDate(x.created_at)}`} end={<Status s={x.status} />} />
           ))}
         </View>
       </State>
@@ -90,6 +90,7 @@ export default function Titles() {
           <>
             <TitleBadge title={sel.title} verified size="md" />
             <Muted>{[sel.user?.username ? '@' + sel.user.username : null, sel.user?.account_type === 'faculty' ? t('إيميله من الجامعة (مش إيميل طالب)') : null, fmtDate(sel.created_at)].filter(Boolean).join(' · ')}</Muted>
+            {sel.position ? <Panel><T v="small">{t('المنصب بالكامل')}: {sel.position}</T></Panel> : null}
             {sel.department ? <Panel><T v="small">{t('القسم')}: {sel.department}</T></Panel> : null}
             {sel.note ? <Panel><T v="body" selectable>{sel.note}</T></Panel> : null}
             <Actions>

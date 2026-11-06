@@ -33,6 +33,8 @@ function weekStart(now = new Date()) {
 type AcademicEvent = {
   id: string; section_id: string | null; owner_id: string | null; kind: string; title: string;
   starts_at: string; location: string | null; course_name?: string | null;
+  /** how many classmates added it (official ones) · mine, waiting for the section to agree */
+  confirmations?: number; shared_ask?: boolean;
 };
 
 export function useSchedule(userId?: string) {
@@ -60,10 +62,8 @@ export function useSchedule(userId?: string) {
         .eq('user_id', userId)),
       supabase.from('meeting_reports').select('section_id, weekday, starts_at, room_text, kind').eq('user_id', userId),
       supabase.from('personal_meetings').select('*').eq('user_id', userId),
-      supabase.from('academic_events')
-        .select('id, section_id, owner_id, kind, title, starts_at, location, section:sections(course:courses(name_ar, name_en))')
-        .gte('starts_at', new Date(Date.now() - 86400000).toISOString())
-        .order('starts_at'),
+      // mine + my sections' official ones (never anyone else's, even for an admin)
+      supabase.rpc('my_events', { p_from: new Date(Date.now() - 86400000).toISOString(), p_to: new Date(Date.now() + 200 * 86400000).toISOString() }),
     ]);
     if (enrErr) throw enrErr;
 
@@ -142,7 +142,7 @@ export function useSchedule(userId?: string) {
       }
     }
     out.sort((a, b) => a.weekday - b.weekday || a.starts_at.localeCompare(b.starts_at));
-    const evs = ((ev ?? []) as any[]).map((x) => ({ ...x, course_name: x.section?.course?.name_ar ?? null })) as AcademicEvent[];
+    const evs = (ev ?? []) as AcademicEvent[];
     setMeetings(out); setEvents(evs); setError(false);
     writeCache(key, { meetings: out, events: evs });
     } catch { setError(true); }

@@ -2,7 +2,7 @@ import { AlarmClock, EyeOff, Mail, BellRing, CalendarDays, Heart, Megaphone, Mes
 import { useEffect, useState, type ReactNode } from 'react';
 import { Alert, Linking, ScrollView, View } from 'react-native';
 
-import { Chip, Header, Row, Screen, T, Tap, Toggle } from '@/components/ui';
+import { Chip, Field, Header, Row, Screen, T, Tap, Toggle } from '@/components/ui';
 import { useAuth } from '@/lib/auth';
 import { ensurePermission, scheduleLectureReminders } from '@/lib/notify';
 import { useSchedule } from '@/lib/schedule';
@@ -72,6 +72,7 @@ export default function Reminders() {
               <Row gap={8} style={{ flexWrap: 'wrap' }}>
                 {MINUTES.map((m) => <Chip key={m} label={t('{0} د', [m])} active={prefs.lecture_minutes === m} onPress={() => set({ lecture_minutes: m })} />)}
               </Row>
+              <MinutesBox value={MINUTES.includes(prefs.lecture_minutes) ? null : prefs.lecture_minutes} max={180} onChange={(m) => set({ lecture_minutes: m })} />
             </>
           )}
         </View>
@@ -108,6 +109,7 @@ export default function Reminders() {
                   <Row gap={6} style={{ flexWrap: 'wrap' }}>
                     <Chip label={t('الافتراضي')} active={!r?.minutes} onPress={() => setRem(m.id, { minutes: null })} />
                     {MINUTES.map((x) => <Chip key={x} label={t('{0} د', [x])} active={r?.minutes === x} onPress={() => setRem(m.id, { minutes: x })} />)}
+                    <MinutesBox value={r?.minutes && !MINUTES.includes(r.minutes) ? r.minutes : null} max={1440} onChange={(x) => setRem(m.id, { minutes: x })} />
                   </Row>
                 )}
               </View>
@@ -116,5 +118,20 @@ export default function Reminders() {
         </View>
       </ScrollView>
     </Screen>
+  );
+}
+
+/** "غير": any number of minutes the chips don't cover (up to `max`), saved when the box loses focus. */
+function MinutesBox({ value, max, onChange }: { value: number | null; max: number; onChange: (m: number) => void }) {
+  const [v, setV] = useState(value ? String(value) : '');
+  useEffect(() => { setV(value ? String(value) : ''); }, [value]);
+  const commit = () => { const n = Number(v.replace(/[^0-9]/g, '')); if (n >= 1 && n <= max && n !== value) onChange(n); else if (!n) setV(value ? String(value) : ''); };
+  const bad = !!v && (Number(v) < 1 || Number(v) > max);
+  return (
+    <Row gap={6}>
+      <Field value={v} onChangeText={(x) => setV(x.replace(/[^0-9]/g, '').slice(0, 4))} onEndEditing={commit} onSubmitEditing={commit} keyboardType="number-pad" returnKeyType="done"
+        placeholder={t('غير (بالدقايق)')} style={{ minHeight: 38, width: 150, borderRadius: 999, fontSize: 13, borderColor: value ? C.ink : bad ? C.red : C.line }} />
+      {bad ? <T v="tiny" color={C.red}>{t('من 1 لـ {0}', [String(max)])}</T> : null}
+    </Row>
   );
 }
