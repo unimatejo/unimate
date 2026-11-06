@@ -2811,7 +2811,6 @@ export const EN: Record<string, string> = {
   "وصلت {0}": "You've arrived at {0}",
   "وقف المتابعة": "Stop following",
   "{0} شجرة": "{0} trees",
-  "{0} مبنى بالاسم · {1} مبنى ثلاثي الأبعاد · {2} تقريبي · {3} مكان وخدمة": "{0} named buildings · {1} 3D buildings · {2} approximate · {3} places and services",
   "{0} ممر وطريق": "{0} paths and roads",
   "آخر بناء {0}": "Last built {0}",
   "آخر محاولة فشلت: {0}": "Last attempt failed: {0}",
@@ -2843,4 +2842,10 @@ export const EN: Record<string, string> = {
   "ابحث عن جامعة": "Search universities",
   "بتتصفّح خريطة {0}": "Viewing the map of {0}",
   "غيّر الجامعة": "Change university",
+  "{0} حدود حرم معروفة": "{0} campus outlines known",
+  "{0} مبنى ثلاثي الأبعاد · {1} تقريبي": "{0} 3D buildings · {1} approximate",
+  "اقتراح بيستنى": "waiting",
+  "الأنقص أولاً": "Most missing first",
+  "بالاسم": "By name",
+  "مكان وخدمة": "places",
 };

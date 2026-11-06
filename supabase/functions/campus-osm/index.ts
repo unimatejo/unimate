@@ -151,10 +151,12 @@ const words = (x: string) => plain(x).split(' ').filter((w) => w.length > 1 && !
 // a name made only of common words («الجامعة الأردنية», "The University of Jordan") must match whole
 const sameName = (q: string, name: string) => { const a = words(q), b = new Set(words(name)); return a.length ? a.every((w) => b.has(w)) : plain(q) === plain(name); };
 type Uni = { id: string; center_lat: number; center_lng: number; name_ar: string | null; name_en: string | null };
-async function outline(uni: Uni): Promise<{ ring: LL[]; center: { lat: number; lng: number } } | null> {
+async function outline(uni: Uni): Promise<{ ring: LL[]; center: { lat: number; lng: number }; extra: LL[][] } | null> {
   // Photon finds the campus by name (Nominatim refuses cloud servers); the OSM API then gives its full outline
   const c = { lat: uni.center_lat, lng: uni.center_lng };
   let best: { ring: LL[]; center: { lat: number; lng: number }; d: number } | null = null;
+  // a university can have more than one campus (Yarmouk's south campus, Mutah's military wing): same name, or a "campus"
+  const more: { ring: LL[]; d: number }[] = [];
   const seen = new Set<string>();
   for (const q of [uni.name_en, uni.name_ar].filter(Boolean) as string[]) {
     const u = `https://photon.komoot.io/api/?limit=10&bbox=${c.lng - 0.06},${c.lat - 0.06},${c.lng + 0.06},${c.lat + 0.06}&q=${encodeURIComponent(q.replace(/\(.*?\)/g, ' ').trim())}`;
@@ -181,11 +183,14 @@ async function outline(uni: Uni): Promise<{ ring: LL[]; center: { lat: number; l
         const [lng, lat] = centroid(ring);
         const d = inside([c.lng, c.lat], ring) ? 0 : dist(c, { lat, lng });
         if (d < 6000 && (!best || d < best.d || (d === best.d && area(ring) > area(best.ring)))) best = { ring, center: { lat, lng }, d };
+        if (d < 6000 && (plain(p.name) === plain(q) || /حرم|جناح|campus/i.test(p.name))) more.push({ ring, d });
       }
     }
     if (best) break;
   }
-  return best ? { ring: best.ring, center: best.center } : null;
+  if (!best) return null;
+  const b = best;
+  return { ring: b.ring, center: b.center, extra: more.filter((x) => x.ring !== b.ring && dist(b.center, { lat: centroid(x.ring)[1], lng: centroid(x.ring)[0] }) < 6000).map((x) => x.ring) };
 }
 
 async function build(db: ReturnType<typeof createClient>, uni: Uni) {
@@ -209,8 +214,8 @@ async function build(db: ReturnType<typeof createClient>, uni: Uni) {
   const padLat = 180 / M_LAT, padLng = 180 / mLng(c.lat), minLat = 380 / M_LAT, minLng = 380 / mLng(c.lat);
   s = Math.min(s - padLat, c.lat - minLat); n = Math.max(n + padLat, c.lat + minLat);
   w = Math.min(w - padLng, c.lng - minLng); e = Math.max(e + padLng, c.lng + minLng);
-  const span = named ? Math.max(...named.ring.map((p) => dist(c, { lat: p[1], lng: p[0] }))) : 0;
-  if (named && span < 2200) for (const [x, y] of named.ring) { s = Math.min(s, y - padLat); n = Math.max(n, y + padLat); w = Math.min(w, x - padLng); e = Math.max(e, x + padLng); }
+  const near2km = (r: LL[]) => Math.max(...r.map((p) => dist(c, { lat: p[1], lng: p[0] }))) < 2200;
+  if (named) for (const [x, y] of [named.ring, ...named.extra].filter(near2km).flat()) { s = Math.min(s, y - padLat); n = Math.max(n, y + padLat); w = Math.min(w, x - padLng); e = Math.max(e, x + padLng); }
   const elements = await osm(w, s, e, n);
 
   type B = { o: number; c: LL[]; h: number; mh: number; n: string | null; b: string | null; f: number | null; k: string; ap?: 1; e?: boolean };
@@ -268,6 +273,7 @@ async function build(db: ReturnType<typeof createClient>, uni: Uni) {
   }
 
   if (!campus && named) campus = named.ring;
+  const campuses = campus ? [campus, ...(named?.extra ?? [])] : [];
 
   // link our buildings (official names, floors) to the OSM outlines: the outline they sit in, else the nearest within 40 m
   const used = new Set<number>();
@@ -300,7 +306,7 @@ async function build(db: ReturnType<typeof createClient>, uni: Uni) {
   // Small colleges sit in the middle of a city, and the shops around them aren't theirs.
   const known = (bs ?? []).filter((x) => x.lat != null && dist(c, x as { lat: number; lng: number }) < 1500) as { lat: number; lng: number }[];
   const reach = Math.max(200, ...known.map((x) => dist(c, x) + 60));
-  const onCampus = (p: LL) => (campus ? inside(p, campus) : dist(c, { lat: p[1], lng: p[0] }) < reach);
+  const onCampus = (p: LL) => (campuses.length ? campuses.some((r) => inside(p, r)) : dist(c, { lat: p[1], lng: p[0] }) < reach);
 
   // points of interest → `places` (new ones only; anything already there, by OSM id or same kind within 20 m, stays as it is)
   const have = (ps ?? []) as { kind: string; lat: number; lng: number; osm_id: string | null }[];
@@ -317,12 +323,12 @@ async function build(db: ReturnType<typeof createClient>, uni: Uni) {
 
   buildings.sort((a, b) => area(b.c) - area(a.c));
   for (const x of buildings) delete x.e;
-  const out = { v: 2, at: new Date().toISOString(), bbox: [r6(w), r6(s), r6(e), r6(n)], center: [c.lng, c.lat], campus,
+  const out = { v: 2, at: new Date().toISOString(), bbox: [r6(w), r6(s), r6(e), r6(n)], center: [c.lng, c.lat], campus, campuses,
     buildings, green, parking, paths, trees: trees.slice(0, 6000) };
   const body = JSON.stringify(out);
   const up = await db.storage.from('campus').upload(`${uni.id}.json`, new Blob([body], { type: 'application/json' }), { upsert: true, contentType: 'application/json', cacheControl: '3600' });
   if (up.error) throw new Error('upload: ' + up.error.message);
-  const stats = { outline: !!named, moved, buildings: buildings.length, linked, approx, green: green.length, paths: paths.length, trees: trees.length, pois: pois.length, added, bytes: body.length };
+  const stats = { outline: !!named, outlines: campuses.length, moved, buildings: buildings.length, linked, approx, green: green.length, paths: paths.length, trees: trees.length, pois: pois.length, added, bytes: body.length };
   await db.rpc('campus_map_saved', { p_university: uni.id, p_bbox: out.bbox, p_stats: stats, p_error: null });
   return stats;
 }

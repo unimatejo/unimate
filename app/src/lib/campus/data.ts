@@ -21,7 +21,8 @@ export type CampusData = {
   v: number; at: string;
   bbox: [number, number, number, number]; // w, s, e, n
   center: LL;
-  campus: LL[] | null;  // the university's outline, when OSM has it
+  campus: LL[] | null;  // the university's main outline, when OSM has it
+  campuses?: LL[][];    // every outline (a second campus, a wing); the main one first
   buildings: CampusBuilding[];
   green: { t: 'grass' | 'wood' | 'scrub' | 'pitch' | 'water' | 'plaza' | string; c: LL[] }[];
   parking: LL[][];

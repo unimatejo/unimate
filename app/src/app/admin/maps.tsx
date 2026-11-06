@@ -8,7 +8,7 @@ import { supabase } from '@/lib/supabase';
 import { C } from '@/lib/theme';
 import { nm, t } from '@/lib/i18n';
 
-type Stats = { buildings?: number; approx?: number; paths?: number; trees?: number; green?: number; outline?: boolean };
+type Stats = { buildings?: number; approx?: number; paths?: number; trees?: number; green?: number; outline?: boolean; outlines?: number };
 type U = { id: string; name_ar: string; name_en: string | null; has_center: boolean; buildings: number; places: number; pending: number;
   stats: Stats | null; error: string | null; fetched_at: string | null; version: number };
 type Level = 'ready' | 'mid' | 'thin' | 'none';
@@ -57,15 +57,29 @@ const LEVEL: Record<Level, { label: string; tone: string }> = {
   ready: { label: t('جاهزة'), tone: 'green' }, mid: { label: t('متوسطة'), tone: 'orange' }, thin: { label: t('ناقصة'), tone: 'red' }, none: { label: t('ما إلها خريطة'), tone: '' },
 };
 
+/** One number of a campus: red when it's far from enough, orange on the way, green when it's there. */
+function Gauge({ n, label, good, ok, invert }: { n: number; label: string; good: number; ok: number; invert?: boolean }) {
+  const tone = invert ? (n > 0 ? [C.greenSoft, C.greenInk] : [C.soft, C.muted]) : n >= good ? [C.greenSoft, C.greenInk] : n >= ok ? [C.orangeSoft, C.orangeInk] : [C.redSoft, C.red];
+  return (
+    <View style={{ flex: 1, alignItems: 'center', borderRadius: 14, paddingVertical: 8, backgroundColor: tone[0] }}>
+      <T v="h3" color={tone[1]}>{fmtNum(n)}</T>
+      <T v="tiny" color={tone[1]}>{label}</T>
+    </View>
+  );
+}
+
 /** Every university's campus map: how complete it is, open it as its students see it, or rebuild it now. */
 export default function AdminMaps() {
   const { data, loading, error, reload } = useLoad<U[]>(() => supabase.rpc('admin_campus_overview') as never, []);
   const [f, setF] = useState<'all' | Level>('all');
+  const [order, setOrder] = useState<'missing' | 'name'>('missing');
   const [busy, setBusy] = useState<string | null>(null);
   const [review, setReview] = useState<U | null>(null);
   const rows = useMemo(() => (data ?? []).map((u) => ({ ...u, lv: level(u) })), [data]);
   const count = (l: Level) => rows.filter((u) => u.lv === l).length;
-  const shown = rows.filter((u) => f === 'all' || u.lv === f);
+  // the emptiest campuses first, so it's clear who still needs buildings and places
+  const shown = rows.filter((u) => f === 'all' || u.lv === f)
+    .sort((a, b) => (order === 'name' ? 0 : a.buildings + a.places - (b.buildings + b.places)));
 
   async function rebuild(u: U) {
     if (!(await confirm(t('تبني خريطة «{0}» من جديد؟', [nm(u)]), t('بتاخد دقيقة تقريباً. الطلاب بيشوفوا الخريطة الجديدة أول ما تخلص.'), t('ابنيها')))) return;
@@ -79,6 +93,7 @@ export default function AdminMaps() {
     <AdminScreen title={t('خرائط الجامعات')} subtitle={t('اكبس على أي جامعة وشوف خريطتها زي ما بيشوفها طلابها')}>
       <Filters items={[['all', t('الكل · {0}', [fmtNum(rows.length)])], ['ready', t('جاهزة · {0}', [fmtNum(count('ready'))])], ['mid', t('متوسطة · {0}', [fmtNum(count('mid'))])],
         ['thin', t('ناقصة · {0}', [fmtNum(count('thin'))])], ['none', t('بدون خريطة · {0}', [fmtNum(count('none'))])]]} value={f} onChange={setF} />
+      <Filters items={[['missing', t('الأنقص أولاً')], ['name', t('بالاسم')]]} value={order} onChange={setOrder} />
       <State loading={loading} error={error} empty={!shown.length}>
         <View style={{ gap: 10 }}>
           {shown.map((u) => {
@@ -90,16 +105,19 @@ export default function AdminMaps() {
                   <T v="bold" style={{ flex: 1 }} numberOfLines={2}>{nm(u)}</T>
                   <Pill label={LEVEL[u.lv].label} tone={LEVEL[u.lv].tone} />
                 </Row>
+                <Row gap={8}>
+                  <Gauge n={u.buildings} label={t('مبنى')} good={15} ok={5} />
+                  <Gauge n={u.places} label={t('مكان وخدمة')} good={20} ok={8} />
+                  <Gauge n={u.pending} label={t('اقتراح بيستنى')} good={1} ok={1} invert />
+                </Row>
                 {u.lv === 'none' ? (
                   <Muted>{u.has_center ? t('لسا ما انبنت خريطتها.') : t('ما إلها مركز حرم. ضيفه من «الجامعات والخرائط» وبعدين ابني الخريطة.')}</Muted>
                 ) : (
-                  <T v="small" color={C.ink2}>
-                    {t('{0} مبنى بالاسم · {1} مبنى ثلاثي الأبعاد · {2} تقريبي · {3} مكان وخدمة', [fmtNum(u.buildings), fmtNum(real), fmtNum(s.approx ?? 0), fmtNum(u.places)])}
-                  </T>
+                  <T v="small" color={C.ink2}>{t('{0} مبنى ثلاثي الأبعاد · {1} تقريبي', [fmtNum(real), fmtNum(s.approx ?? 0)])}</T>
                 )}
                 {u.lv !== 'none' && (
                   <Muted>
-                    {[t('{0} ممر وطريق', [fmtNum(s.paths ?? 0)]), s.trees ? t('{0} شجرة', [fmtNum(s.trees)]) : null, s.outline ? t('حدود الحرم معروفة') : t('حدود الحرم مش معروفة'),
+                    {[t('{0} ممر وطريق', [fmtNum(s.paths ?? 0)]), s.trees ? t('{0} شجرة', [fmtNum(s.trees)]) : null, s.outline ? ((s.outlines ?? 1) > 1 ? t('{0} حدود حرم معروفة', [fmtNum(s.outlines ?? 1)]) : t('حدود الحرم معروفة')) : t('حدود الحرم مش معروفة'),
                       t('آخر بناء {0}', [fmtDate(u.fetched_at)])].filter(Boolean).join(' · ')}
                   </Muted>
                 )}

@@ -12,7 +12,7 @@ import { createClient } from 'npm:@supabase/supabase-js@2.45.4';
 type LL = [number, number]; // [lng, lat]
 type Stage = { id: number; osm: string; k: string; name_ar: string | null; name_en: string | null; lat: number; lng: number; tags: Record<string, unknown> | null };
 type Uni = { id: string; slug: string; name_ar: string; center_lat: number; center_lng: number };
-type Campus = { campus: LL[] | null; center: LL; buildings?: { c: LL[]; b: string | null; n: string | null; k: string; ap?: 1 }[] };
+type Campus = { campus: LL[] | null; campuses?: LL[][]; center: LL; buildings?: { c: LL[]; b: string | null; n: string | null; k: string; ap?: 1 }[] };
 
 const M_LAT = 111320;
 const mLng = (lat: number) => 111320 * Math.cos((lat * Math.PI) / 180);
@@ -79,7 +79,8 @@ Deno.serve(async (req) => {
   const secret = Deno.env.get('PUSH_SECRET');
   if (!secret || req.headers.get('x-push-secret') !== secret) return new Response('no', { status: 401 });
   const db = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
-  const { university_id, apply } = await req.json().catch(() => ({})) as { university_id?: string; apply?: boolean };
+  // `only`: apply just these rows of the dry run (their OSM / Wikimapia ids), after a person picked them
+  const { university_id, apply, only } = await req.json().catch(() => ({})) as { university_id?: string; apply?: boolean; only?: string[] };
   if (!university_id) return json({ error: 'university_id' }, 400);
 
   const { data: uni } = await db.from('universities').select('id, slug, name_ar, center_lat, center_lng').eq('id', university_id).maybeSingle() as { data: Uni | null };
@@ -95,6 +96,7 @@ Deno.serve(async (req) => {
   const near = (all ?? []).filter((u) => u.id !== uni.id && dist(c, { lat: u.center_lat, lng: u.center_lng }) < 5000);
   const mine = await file(uni.id);
   const others = (await Promise.all(near.map(async (u) => ({ u, f: await file(u.id) })))).filter((x) => x.f?.campus);
+  const ringsOf = (f: Campus) => f.campuses?.length ? f.campuses : f.campus ? [f.campus] : [];
 
   const [{ data: stage }, { data: bs }, { data: ps }] = await Promise.all([
     db.from('osm_stage').select('id, osm, k, name_ar, name_en, lat, lng, tags').eq('uni', uni.slug),
@@ -107,9 +109,11 @@ Deno.serve(async (req) => {
 
   const known = B.filter((b) => b.lat != null && dist(c, b as { lat: number; lng: number }) < 1500) as { lat: number; lng: number }[];
   const reach = Math.max(250, ...known.map((x) => dist(c, x) + 60));
-  const outline = mine?.campus ?? null;
-  const onCampus = (p: { lat: number; lng: number }) => (outline ? inside([p.lng, p.lat], outline) : dist(c, p) < reach);
-  const theirs = (p: { lat: number; lng: number }) => others.find((o) => inside([p.lng, p.lat], o.f!.campus!))?.u.name_ar ?? null;
+  // every campus of the university (Yarmouk's south campus too)
+  const outlines = mine ? ringsOf(mine) : [];
+  const outline = outlines.length > 0;
+  const onCampus = (p: { lat: number; lng: number }) => (outline ? outlines.some((r) => inside([p.lng, p.lat], r)) : dist(c, p) < reach);
+  const theirs = (p: { lat: number; lng: number }) => others.find((o) => ringsOf(o.f!).some((r) => inside([p.lng, p.lat], r)))?.u.name_ar ?? null;
   // the 3D outlines: a name that lands inside one already named by us is that building, not a new one
   const shapes = (mine?.buildings ?? []).filter((x) => x.k !== 'part' && !x.ap);
   const shapeAt = (p: { lat: number; lng: number }) => shapes.find((x) => inside([p.lng, p.lat], x.c)) ?? null;
@@ -172,8 +176,10 @@ Deno.serve(async (req) => {
 
   let applied = null as null | { buildings: number; places: number };
   if (apply) {
-    const ib = newB.length ? await db.from('buildings').insert(newB.map((b) => ({ ...b, university_id: uni.id })), { count: 'exact' }) : { count: 0, error: null };
-    const ip = newP.length ? await db.from('places').insert(newP.map((x) => ({ ...x, university_id: uni.id, state: 'approved' })), { count: 'exact' }) : { count: 0, error: null };
+    const keep = <X extends { osm_id: string }>(xs: X[]) => (only ? xs.filter((x) => only.includes(x.osm_id)) : xs);
+    const pb = keep(newB), pp = keep(newP);
+    const ib = pb.length ? await db.from('buildings').insert(pb.map((b) => ({ ...b, university_id: uni.id })), { count: 'exact' }) : { count: 0, error: null };
+    const ip = pp.length ? await db.from('places').insert(pp.map((x) => ({ ...x, university_id: uni.id, state: 'approved' })), { count: 'exact' }) : { count: 0, error: null };
     if (ib.error || ip.error) return json({ error: (ib.error ?? ip.error)!.message }, 500);
     applied = { buildings: ib.count ?? 0, places: ip.count ?? 0 };
     // the 3D file picks up the new buildings (their outlines, heights and names) on its next build: start it now
@@ -183,9 +189,10 @@ Deno.serve(async (req) => {
   const byKind: Record<string, number> = {};
   for (const x of newP) byKind[x.kind] = (byKind[x.kind] ?? 0) + 1;
   return json({
-    university: uni.name_ar, slug: uni.slug, mode: apply ? 'applied' : 'dry-run', outline: !!outline, stage_rows: rows.length,
+    university: uni.name_ar, slug: uni.slug, mode: apply ? 'applied' : 'dry-run', outline, outlines: outlines.length, stage_rows: rows.length,
     before, after: { buildings: before.buildings + newB.length, places: before.places + newP.length },
-    add: { buildings: newB.map((b) => b.name_ar), places: byKind, place_names: newP.filter((x) => x.name_ar !== KIND_AR[x.kind]).map((x) => `${x.name_ar} (${x.kind})`) },
+    add: { buildings: newB.map((b) => b.name_ar), places: byKind, place_names: newP.filter((x) => x.name_ar !== KIND_AR[x.kind]).map((x) => `${x.name_ar} (${x.kind})`),
+      rows: [...newB.map((b) => ({ osm: b.osm_id, kind: 'building', name: b.name_ar })), ...newP.map((x) => ({ osm: x.osm_id, kind: x.kind, name: x.name_ar }))] },
     skipped, misplaced: misplaced.slice(0, 200), misplaced_count: misplaced.length, applied,
   });
 });

@@ -133,7 +133,7 @@ function toGeo(d: CampusData) {
     green: fc(d.green.map((g) => (g.t === 'plaza' && g.c.length < 4 ? null : poly(g.c, { t: g.t }))).filter(Boolean) as GeoJSON.Feature[]),
     parking: fc(d.parking.map((r) => poly(r))),
     paths: fc(d.paths.map((p) => line(p.c, { t: p.t }))),
-    campus: d.campus ? fc([poly(d.campus)]) : EMPTY,
+    campus: d.campuses?.length ? fc(d.campuses.map((r) => poly(r))) : d.campus ? fc([poly(d.campus)]) : EMPTY,
   };
 }
 const geoOf = (d: CampusData) => { let g = geoCache.get(d); if (!g) { g = toGeo(d); geoCache.set(d, g); } return g; };
