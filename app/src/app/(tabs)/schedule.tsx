@@ -1,7 +1,7 @@
 import { router } from 'expo-router';
 import { PullRefresh } from '@/components/ui/PullRefresh';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Bell, BellOff, BookOpen, Calculator, Car, CalendarPlus, CalendarX, ScanLine, Clock, FlaskConical, Hourglass, MapPin, MessagesSquare, UserX, Video, EyeOff } from 'lucide-react-native';
+import { Bell, BellOff, BookOpen, Calculator, Car, CalendarPlus, CalendarX, ScanLine, Clock, FlaskConical, Hourglass, MapPin, MessagesSquare, UserX, Video, EyeOff, MonitorSmartphone } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import { useEffect, useMemo, useState } from 'react';
 import { Alert, Linking, ScrollView, View } from 'react-native';
@@ -28,11 +28,12 @@ const KIND: Record<string, [string, string, string]> = {
   lecture: [t('محاضرة'), C.primarySoft, C.primary],
   lab: [t('مختبر'), C.greenSoft, C.greenInk],
   online: [t('أونلاين'), C.violetSoft, C.violetInk],
+  blended: [t('مدمج'), C.skySoft, C.blue],
   tutorial: [t('مناقشة'), C.orangeSoft, C.orangeInk],
 };
 const EVENT: Record<string, string> = { exam_first: t('امتحان أول'), exam_second: t('امتحان ثاني'), exam_mid: t('امتحان نصفي'), exam_final: t('امتحان نهائي'), quiz: t('كويز'), assignment: t('تسليم واجب'), project: t('مشروع'), custom: t('موعد') };
 
-const KIND_ICON = { lecture: BookOpen, lab: FlaskConical, online: Video, tutorial: MessagesSquare } as const;
+const KIND_ICON = { lecture: BookOpen, lab: FlaskConical, online: Video, blended: MonitorSmartphone, tutorial: MessagesSquare } as const;
 const PALETTE = [GRAD.blue, GRAD.pink, GRAD.green, GRAD.orange, GRAD.violet, GRAD.teal, GRAD.indigo, GRAD.red];
 function courseColors(name: string) { let h = 0; for (const ch of name) h = (h * 31 + ch.charCodeAt(0)) >>> 0; return PALETTE[h % PALETTE.length]; }
 const toMin = (t: string) => { const [h, m] = t.split(':').map(Number); return h * 60 + m; };

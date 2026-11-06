@@ -8,7 +8,7 @@ import { minutesUntil } from './util';
 import { t } from './i18n';
 
 export type Meeting = {
-  id: string; section_id: string; kind: 'lecture' | 'lab' | 'online' | 'tutorial';
+  id: string; section_id: string; kind: 'lecture' | 'lab' | 'online' | 'blended' | 'tutorial';
   weekday: number; starts_at: string; ends_at: string; online_url: string | null;
   course_name: string; course_code: string; section_no: string; instructor: string | null;
   room_code: string | null; room_text?: string | null; source?: string; confirmations?: number; room_floor: number | null; room_directions: string | null;
@@ -58,7 +58,7 @@ export function useSchedule(userId?: string) {
           meetings:section_meetings(id, kind, weekday, starts_at, ends_at, online_url, room_text, source, confirmations,
             room:rooms(code, floor, directions, building:buildings(id, name_ar, lat, lng))))`)
         .eq('user_id', userId)),
-      supabase.from('meeting_reports').select('section_id, weekday, starts_at').eq('user_id', userId),
+      supabase.from('meeting_reports').select('section_id, weekday, starts_at, room_text, kind').eq('user_id', userId),
       supabase.from('personal_meetings').select('*').eq('user_id', userId),
       supabase.from('academic_events')
         .select('id, section_id, owner_id, kind, title, starts_at, location, section:sections(course:courses(name_ar, name_en))')
@@ -86,15 +86,26 @@ export function useSchedule(userId?: string) {
     }
     // a Teams group can hold several real sections, so classmates' times pile up on one "section".
     // If I told the app my own times (photo of my timetable, or added them), I only see those for that section.
-    const myTimes = new Map<string, Set<string>>();
-    for (const r of (mine ?? []) as { section_id: string; weekday: number; starts_at: string }[]) {
-      if (!myTimes.has(r.section_id)) myTimes.set(r.section_id, new Set());
-      myTimes.get(r.section_id)!.add(`${r.weekday}-${r.starts_at.slice(0, 5)}`);
+    type Rep = { section_id: string; weekday: number; starts_at: string; room_text: string | null; kind: Meeting['kind'] };
+    const myTimes = new Map<string, Map<string, Rep>>();
+    for (const r of (mine ?? []) as Rep[]) {
+      if (!myTimes.has(r.section_id)) myTimes.set(r.section_id, new Map());
+      myTimes.get(r.section_id)!.set(`${r.weekday}-${r.starts_at.slice(0, 5)}`, r);
     }
+    // the real room of each section, for times whose room is missing (blended weeks, a note in the room column):
+    // my own timetable first, then what classmates reported for the same section
+    const sectionRoom = new Map<string, string>();
+    for (const r of (mine ?? []) as Rep[]) if (r.room_text && !sectionRoom.has(r.section_id)) sectionRoom.set(r.section_id, r.room_text);
+    for (const m of ms) if (m.room_text && !m.room_code && !sectionRoom.has(m.section_id)) sectionRoom.set(m.section_id, m.room_text);
     for (let i = ms.length - 1; i >= 0; i--) {
       const own = myTimes.get(ms[i].section_id);
-      if (own && !own.has(`${ms[i].weekday}-${ms[i].starts_at.slice(0, 5)}`)) ms.splice(i, 1);
+      if (!own) continue;
+      const r = own.get(`${ms[i].weekday}-${ms[i].starts_at.slice(0, 5)}`);
+      if (!r) { ms.splice(i, 1); continue; }
+      // what my own timetable says about this time wins (room, and whether it's online / blended)
+      ms[i] = { ...ms[i], kind: r.kind ?? ms[i].kind, room_text: r.room_text ?? ms[i].room_text };
     }
+    for (const m of ms) if (!m.room_code && !m.room_text && m.kind !== 'online') m.room_text = sectionRoom.get(m.section_id) ?? null;
     // my own changes (internal transfer, a moved lecture just for me): hide or replace section times, add my own
     const personal = (pm ?? []) as { id: string; section_id: string; replaces: string | null; hidden: boolean; kind: Meeting['kind']; weekday: number | null; starts_at: string | null; ends_at: string | null; room_text: string | null }[];
     const replaced = new Set(personal.filter((p) => p.replaces).map((p) => p.replaces));
@@ -155,7 +166,9 @@ export function useSchedule(userId?: string) {
 
 export function placeLine(m: Pick<Meeting, 'kind' | 'building_name' | 'room_floor' | 'room_code'> & { room_text?: string | null }): string {
   if (m.kind === 'online') return t('أونلاين على التيمز');
-  if (!m.room_code && m.room_text) return m.room_text;
+  const blended = m.kind === 'blended' ? t('مدمج: وجاهي وأونلاين') : null;
+  if (!m.room_code && m.room_text) return blended ? `${m.room_text} · ${blended}` : m.room_text;
+  if (blended && !m.room_code) return blended;
   const parts = [m.building_name, m.room_floor != null ? (m.room_floor === 0 ? t('الطابق الأرضي') : t('الطابق {0}', [m.room_floor])) : null, m.room_code ? t('قاعة {0}', [m.room_code]) : null];
   return parts.filter(Boolean).join(t('، ')) || t('القاعة بتنضاف لما يأكدها زملاؤك');
 }

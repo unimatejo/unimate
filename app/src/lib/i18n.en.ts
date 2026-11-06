@@ -2537,4 +2537,7 @@ export const EN: Record<string, string> = {
   "من سفاري اكبس زر المشاركة، بعدين «إضافة إلى الشاشة الرئيسية».": "In Safari, tap Share, then “Add to Home Screen”.",
   "مواعيد الامتحانات وأي تغيير بجدولك": "Exam dates and any change to your timetable",
   "هالاسم فيه كلمة مش مسموحة. جرّب اسم ثاني.": "That name has a word that isn't allowed. Try another one.",
+  "الفيديو كبير كثير. قصّره أو اختار جزء أقصر.": "This video is too big. Trim it or pick a shorter part.",
+  "مدمج": "Blended",
+  "مدمج: وجاهي وأونلاين": "Blended: on campus and online",
 };

@@ -24,7 +24,7 @@ type Sec = { id: string; section_no: string; instructor: string | null; course: 
 /** one lecture on one date: the doctor moved it or cancelled it */
 type Once = { sec: Sec; meeting: Mt };
 
-const KINDS = [['lecture', t('محاضرة')], ['lab', t('مختبر')], ['online', t('أونلاين')], ['tutorial', t('مناقشة')]] as const;
+const KINDS = [['lecture', t('محاضرة')], ['lab', t('مختبر')], ['online', t('أونلاين')], ['blended', t('مدمج')], ['tutorial', t('مناقشة')]] as const;
 const hhmm = (d: Date) => `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
 const at = (h: number, m = 0) => { const d = new Date(); d.setHours(h, m, 0, 0); return d; };
 const dayLabel = (d: string) => new Date(`${d}T12:00:00`).toLocaleDateString(LOCALE, { weekday: 'long', day: 'numeric', month: 'numeric' });

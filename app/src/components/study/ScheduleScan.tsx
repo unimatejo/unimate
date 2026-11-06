@@ -12,7 +12,7 @@ import { C } from '@/lib/theme';
 import { WEEKDAYS_SHORT, clock } from '@/lib/util';
 import { t } from '@/lib/i18n';
 
-type Mt = { days: number[]; start: string; end: string; room: string | null; kind: 'lecture' | 'lab' | 'online' | 'tutorial' };
+type Mt = { days: number[]; start: string; end: string; room: string | null; kind: 'lecture' | 'lab' | 'online' | 'blended' | 'tutorial' };
 type Course = { name: string; code: string | null; section: string | null; instructor: string | null; meetings: Mt[] };
 
 async function pick(camera: boolean): Promise<string | null> {
@@ -88,7 +88,7 @@ export function ScheduleScan({ onDone, autoOpen }: { onDone: () => void; autoOpe
 
   useEffect(() => { if (autoOpen) choose(); }, [autoOpen]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const kindL: Record<string, string> = { lecture: t('محاضرة'), lab: t('مختبر'), online: t('أونلاين'), tutorial: t('مناقشة') };
+  const kindL: Record<string, string> = { lecture: t('محاضرة'), lab: t('مختبر'), online: t('أونلاين'), blended: t('مدمج'), tutorial: t('مناقشة') };
   return (
     <>
       <Tap onPress={choose} disabled={reading} scale={0.98} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: C.card, borderRadius: 22, padding: 14 }}>

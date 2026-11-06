@@ -96,3 +96,47 @@ select private.mod_norm(w) from unnest(array[
   'اقتل نفسك', 'روح انتحر', 'موت يا'
 ]) w
 on conflict do nothing;
+
+-- 6) Chats: only real swearing (Jordanian/Arabic curses) is filtered — ordinary banter, rude-but-normal words and
+--    English are left alone there. Posts, comments, stories and names keep the full list.
+alter table moderation_words add column if not exists in_chats boolean not null default false;
+update moderation_words set in_chats = true where word in (select private.mod_norm(w) from unnest(array[
+  'ابن الشرموطة', 'ابن القحبة', 'انيكك', 'بنيكك', 'خول', 'زب', 'زبك', 'زبي', 'شراميط', 'شرموط', 'شرموطة', 'طيز', 'طيزك', 'طيزها',
+  'عاهرة', 'عرص', 'عرصة', 'معرص', 'قحاب', 'قحبة', 'كس', 'كس اختك', 'كس امك', 'كس امها', 'كس اخوك', 'كسك', 'كسمك', 'كسها', 'كسختك', 'كسم',
+  'متناك', 'متناكة', 'منايك', 'منيك', 'منيوك', 'منيوكة', 'نياك', 'نيك', 'نيكني', 'تنتاك', 'انتاك', 'عير', 'عيري', 'ديوث', 'لوطي',
+  'يلعن ابوك', 'يلعن امك', 'يلعن دينك', 'يلعن ربك', 'يلعن شرفك', 'يلعن عرضك', 'يلعن اختك', 'يلعن ابوكم',
+  'ابن الكلب', 'ابن الحرام', 'ابن الزانية'
+]) w);
+
+create or replace function private.mod_hits_chat(s text)
+returns text language sql stable security definer set search_path = public as $$
+  select string_agg(w.word, '، ')
+  from moderation_words w, (select ' ' || private.mod_norm(s) || ' ' as t) x
+  where w.in_chats and position(' ' || w.word || ' ' in x.t) > 0;
+$$;
+
+-- group and community chats (private chats are never scanned): curses only; the strike/mute ladder stays as it is
+create or replace function private.mod_message()
+returns trigger language plpgsql security definer set search_path = public as $$
+declare h text; n int; dur interval;
+begin
+  if new.kind <> 'text' or new.body is null then return new; end if;
+  if not exists (select 1 from conversations c where c.id = new.conversation_id and c.kind in ('group', 'community')) then return new; end if;
+  h := private.mod_hits_chat(new.body);
+  if h is null then return new; end if;
+  new.deleted_at := now();
+  -- platform admins are never muted, but their message is still hidden
+  if exists (select 1 from admins a where a.user_id = new.sender_id) then return new; end if;
+  insert into chat_strikes(user_id, conversation_id, word) values (new.sender_id, new.conversation_id, left(h, 200));
+  select count(*) into n from chat_strikes where user_id = new.sender_id;
+  dur := private.mute_for(n);
+  insert into chat_mutes(user_id, until, level, updated_at) values (new.sender_id, now() + dur, least((n - 1) / 3, 8), now())
+  on conflict (user_id) do update set until = greatest(chat_mutes.until, excluded.until), level = excluded.level, updated_at = now();
+  if n > 24 then
+    insert into moderation_queue(target_type, target_id, author_id, reason, matched, excerpt)
+    values ('message', new.id::text, new.sender_id, 'words', 'مستخدم بيتكرر منه السب (' || n || ' مرة)', left(new.body, 500));
+    perform private.admin_alert('chat-repeat-' || new.sender_id, 'مستخدم بيتكرر منه السب', 'وصل ' || n || ' مخالفة بالجروبات. افتح «فحص المحتوى».', '/admin/moderation');
+  end if;
+  return new;
+end $$;
+revoke all on function private.mod_hits_chat(text) from public, anon, authenticated;

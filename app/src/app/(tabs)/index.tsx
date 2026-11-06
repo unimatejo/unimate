@@ -159,7 +159,7 @@ export default function Home() {
             </Row>
             {todays.length === 0 ? <T v="small" color={C.muted}>{t('ما عندك محاضرات اليوم.')}</T> : todays.map((m) => (
               <Row key={m.id} gap={12} style={{ minHeight: 54 }}>
-                <View style={{ width: 4, height: 34, borderRadius: 2, backgroundColor: m.kind === 'lab' ? C.green : m.kind === 'online' ? C.violet : C.blue }} />
+                <View style={{ width: 4, height: 34, borderRadius: 2, backgroundColor: m.kind === 'lab' ? C.green : m.kind === 'online' ? C.violet : m.kind === 'blended' ? C.sky : C.blue }} />
                 <View style={{ flex: 1 }}>
                   <T v="bold">{m.course_name}</T>
                   <T v="tiny" color={C.muted}>{placeLine(m)}</T>

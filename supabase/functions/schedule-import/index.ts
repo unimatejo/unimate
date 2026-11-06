@@ -6,12 +6,15 @@ const cors = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers
 const json = (b: unknown, status = 200) => new Response(JSON.stringify(b), { status, headers: { ...cors, 'Content-Type': 'application/json' } });
 
 const PROMPT = `This image is a university student's class timetable from Jordan (a screenshot of the registration portal, a printed schedule, or a photo). It may be in Arabic or English.
-Read every course and every weekly meeting. Return ONLY JSON, no prose, in this shape:
+Read EVERY row and EVERY weekly meeting exactly as written. Return ONLY JSON, no prose, in this shape:
 {"courses":[{"name":"course name exactly as written","code":"course code or null","section":"section number as text or null","instructor":"or null",
-"meetings":[{"days":[0-6],"start":"HH:MM","end":"HH:MM","room":"room/building as written or null","kind":"lecture|lab|online|tutorial"}]}]}
+"meetings":[{"days":[0-6],"start":"HH:MM","end":"HH:MM","room":"building and room as written, or null","kind":"lecture|lab|online|blended|tutorial"}]}]}
 Days: 0=Sunday(الأحد/ح) 1=Monday(الإثنين/ن) 2=Tuesday(الثلاثاء/ث) 3=Wednesday(الأربعاء/ر) 4=Thursday(الخميس/خ) 5=Friday 6=Saturday(السبت/س).
 Times in 24h: Jordanian classes run 08:00-20:00, so "2:00" or "2:00 م" is 14:00. If a row lists several days (e.g. "ح ث خ" or "Sun Tue Thu"), put them all in days.
-Use kind "lab" for عملي/مختبر/Lab. Use "online" ONLY when the course is fully remote (عن بعد / تعليم إلكتروني بالكامل). "مدمج" / blended means the student still attends on campus, so use "lecture" for it. If the room column holds a note like "المادة تدرس بشكل مدمج…" instead of a room, set room to null. If the image is not a timetable, return {"courses":[],"error":"not_schedule"}.`;
+If the same course has rows with different days, times or rooms, give each its own meeting with ITS OWN room. Never move a meeting to another day, never merge or repeat meetings.
+kind: "lab" for عملي/مختبر/Lab; "online" ONLY when the course is fully remote (عن بعد / تعليم إلكتروني بالكامل); "blended" for مدمج / blended / hybrid (on campus some weeks and online others); otherwise "lecture".
+room: copy the building and room (e.g. "مجمع قاعات ابن خلدون 115", "مبنى الكيمياء ك 229") even when a note is written next to it. If the room cell holds only a note (like "المادة تدرس بشكل مدمج في منصة مايكروسوفت تيمز" or "عن بعد") and no building or room, set room to null and use the note for kind.
+Copy the section number exactly; if none is shown, use null. If the image is not a timetable, return {"courses":[],"error":"not_schedule"}.`;
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: cors });
@@ -81,7 +84,7 @@ Deno.serve(async (req) => {
       meetings: (Array.isArray(c.meetings) ? c.meetings : []).slice(0, 8).map((x: Record<string, unknown>) => ({
         days: (Array.isArray(x.days) ? x.days : []).map(Number).filter((d: number) => d >= 0 && d <= 6),
         start: hhmm(x.start), end: hhmm(x.end), room: x.room ? String(x.room).slice(0, 80) : null,
-        kind: ['lecture', 'lab', 'online', 'tutorial'].includes(String(x.kind)) ? x.kind : 'lecture',
+        kind: ['lecture', 'lab', 'online', 'blended', 'tutorial'].includes(String(x.kind)) ? x.kind : 'lecture',
       })).filter((x: { days: number[]; start: string | null; end: string | null }) => x.days.length && x.start && x.end && x.end > x.start),
     })).filter((c: { name: string }) => c.name.length >= 2);
     return json({ courses, error: parsed.error ?? null });

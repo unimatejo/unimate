@@ -74,7 +74,7 @@ async function doSchedule(meetings: Meeting[], off: Record<string, boolean>, use
     let total = h * 60 + mm - minutes;
     let weekday = m.weekday;
     if (total < 0) { total += 1440; weekday = (weekday + 6) % 7; }
-    const where = m.kind === 'online' ? t('أونلاين') : [m.building_name, m.room_code ? t('قاعة {0}', [m.room_code]) : null].filter(Boolean).join(' · ');
+    const where = m.kind === 'online' ? t('أونلاين') : m.kind === 'blended' && !m.room_code && !m.building_name ? t('مدمج') : [m.building_name, m.room_code ? t('قاعة {0}', [m.room_code]) : null].filter(Boolean).join(' · ');
     await Notifications.scheduleNotificationAsync({
       identifier: `lec-${m.id}`,
       content: {

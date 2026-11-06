@@ -33,7 +33,7 @@ export function fitLongSide(ctx: { resize: (s: { width?: number; height?: number
   if (W >= H) ctx.resize({ width: max }); else ctx.resize({ height: max });
 }
 
-export async function pickMedia(opts: { video?: boolean; videoOnly?: boolean; maxSec?: number; camera?: boolean; square?: boolean; maxWidth?: number; crop?: CropMode; aspect?: number | null } = {}): Promise<Picked | null> {
+export async function pickMedia(opts: { video?: boolean; videoOnly?: boolean; maxSec?: number; camera?: boolean; square?: boolean; maxWidth?: number; crop?: CropMode; aspect?: number | null; anyLength?: boolean } = {}): Promise<Picked | null> {
   const p = await pickRaw(opts);
   if (!p || !opts.crop) return p;
   // like Instagram: every photo / video goes through the crop editor before it's used
@@ -41,10 +41,11 @@ export async function pickMedia(opts: { video?: boolean; videoOnly?: boolean; ma
   return r ? { ...r.media, aspect: r.aspect } : null;
 }
 
-async function pickRaw(opts: { video?: boolean; videoOnly?: boolean; maxSec?: number; camera?: boolean; square?: boolean; maxWidth?: number; crop?: CropMode }): Promise<Picked | null> {
+async function pickRaw(opts: { video?: boolean; videoOnly?: boolean; maxSec?: number; camera?: boolean; square?: boolean; maxWidth?: number; crop?: CropMode; anyLength?: boolean }): Promise<Picked | null> {
   const maxSec = opts.maxSec ?? 15;
-  // from the gallery a longer clip is fine when it goes through the editor: you trim it there
-  const pickMax = opts.crop && !opts.camera ? Math.max(maxSec, 180) : maxSec;
+  // from the gallery a video of any length is fine when it goes to the editor next: the student picks the part to keep there
+  const trimLater = (!!opts.crop || !!opts.anyLength) && !opts.camera;
+  const pickMax = trimLater ? Infinity : maxSec;
   // the web needs no permission, and waiting for one would make the browser block the picker (it must open from the tap)
   const perm = Platform.OS === 'web' ? { granted: true } : opts.camera ? await ImagePicker.requestCameraPermissionsAsync() : await ImagePicker.requestMediaLibraryPermissionsAsync();
   if (!perm.granted) {
@@ -56,7 +57,7 @@ async function pickRaw(opts: { video?: boolean; videoOnly?: boolean; maxSec?: nu
   const options: ImagePicker.ImagePickerOptions = {
     mediaTypes: opts.videoOnly ? ['videos'] : opts.video ? ['images', 'videos'] : ['images'],
     quality: 0.85,
-    videoMaxDuration: opts.camera ? maxSec : pickMax,
+    videoMaxDuration: opts.camera ? maxSec : trimLater ? undefined : pickMax,
     videoQuality: ImagePicker.UIImagePickerControllerQualityType.IFrame960x540,
     allowsEditing: !!opts.square,
     aspect: opts.square ? [1, 1] : undefined,
@@ -68,7 +69,7 @@ async function pickRaw(opts: { video?: boolean; videoOnly?: boolean; maxSec?: nu
     // the browser reports seconds, phones milliseconds
     const durMs = a.duration == null ? null : Platform.OS === 'web' ? a.duration * 1000 : a.duration;
     if ((durMs ?? 0) > pickMax * 1000 + 500) { Alert.alert(t('الفيديو طويل'), t('الفيديو لازم يكون {0} ثانية أو أقل.', [pickMax])); return null; }
-    if ((a.fileSize ?? 0) > 50 * 1048576) { Alert.alert(t('الفيديو كبير'), t('جرّب فيديو أقصر.')); return null; }
+    if ((a.fileSize ?? 0) > (trimLater ? 600 : 50) * 1048576) { Alert.alert(t('الفيديو كبير'), t('جرّب فيديو أقصر.')); return null; }
     return { uri: a.uri, mime: a.mimeType ?? 'video/mp4', kind: 'video', duration: durMs, size: a.fileSize, width: a.width || undefined, height: a.height || undefined };
   }
   // resize + JPEG: smaller uploads, no HEIC surprises
@@ -146,6 +147,8 @@ export async function uploadPicked<M extends { trim?: { start: number; end: numb
   if (small?.trimmed && meta) { const { trim: _t, ...rest } = meta; meta = rest as M; }
   try {
     const buf = small?.blob ?? await readBytes(small?.uri ?? file.uri);
+    const size0 = (buf as { size?: number; byteLength?: number }).size ?? (buf as { byteLength?: number }).byteLength ?? 0;
+    if (mime.startsWith('video/') && size0 > 50 * 1048576) throw new UserError(t('الفيديو كبير كثير. قصّره أو اختار جزء أقصر.'));
     // big files get more time (about 150 KB/s on a slow connection), never less than 90 seconds
     const bytes = (buf as { size?: number; byteLength?: number }).size ?? (buf as { byteLength?: number }).byteLength ?? 0;
     const ms = Math.max(90_000, Math.min(600_000, 30_000 + bytes / 150));

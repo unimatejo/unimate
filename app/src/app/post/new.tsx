@@ -123,8 +123,7 @@ export default function Create() {
 
   const pickAsset = useCallback(async (a: GalleryAsset) => {
     if (mode === 'reel' && a.mediaType !== 'video') return;
-    if (mode === 'post' && a.mediaType === 'video' && a.duration > 60) { Alert.alert(t('الفيديو طويل'), t('فيديو المنشور لحد دقيقة. للأطول جرّب الريلز.')); return; }
-    if (a.mediaType === 'video' && a.duration > 180) { Alert.alert(t('الفيديو طويل'), t('اختار فيديو لحد 3 دقايق، وبتقصه بعدين.')); return; }
+    // a long video is never refused: the editor opens on it and the student keeps the part they want
     const i = sel.indexOf(a.id);
     if (multi && mode === 'post') {
       // tap a chosen one again: show it first, then a second tap takes it out
@@ -140,8 +139,13 @@ export default function Create() {
     const seq = ++pickSeq.current;
     setLoadingId(a.id);
     try {
-      const m = await assetToPicked(a);
+      let m = await assetToPicked(a);
       if (seq !== pickSeq.current && !multi) return;
+      if (m.kind === 'video' && (m.duration ?? 0) > 60_500) {
+        const r = await openCropper(m, { mode: 'post', aspect: mode === 'reel' ? 9 / 16 : null, maxSec: 60 });
+        if (!r) return;
+        m = r.media;
+      }
       Haptics.selectionAsync().catch(() => {});
       if (multi && mode === 'post') {
         setItems((cur) => [...cur, m].slice(0, 10)); setSel((cur) => [...cur, a.id].slice(0, 10)); setActive(sel.length);
@@ -214,7 +218,7 @@ export default function Create() {
     } catch (e) { Alert.alert(t('ما زبط'), userMessage(e)); }
   }
   async function storyPick(camera: boolean): Promise<Picked | null> {
-    const p = await pickMedia({ video: true, camera, maxSec: camera ? maxSec : 180 });
+    const p = await pickMedia({ video: true, camera, maxSec, anyLength: !camera });
     if (!p || p.kind !== 'video') return p;
     const r = await openCropper(p, { mode: 'story', maxSec });
     return r ? { ...r.media, aspect: r.aspect } : null;
