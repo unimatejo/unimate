@@ -9,7 +9,7 @@ import { t } from '@/lib/i18n';
 
 export type HonorRow = {
   rank: number; user_id: string; full_name: string; username: string | null; avatar_url: string | null;
-  major: string | null; gpa: number; move: number | null; is_me: boolean; total: number;
+  major: string | null; gpa: number | null; move: number | null; is_me: boolean; total: number;
 };
 
 export const HONOR_EMOJI = {
@@ -69,14 +69,14 @@ export function Podium({ rows, title }: { rows: HonorRow[]; title: string }) {
           const r = top[idx]; const place = idx + 1;
           return (
             <Tap key={r.user_id} haptic={false} scale={0.97} onPress={() => router.push({ pathname: '/user/[id]', params: { id: r.user_id } })}
-              accessibilityLabel={t('المركز {0}: {1}، معدل {2}', [r.rank, r.full_name, r.gpa.toFixed(2)])}
+              accessibilityLabel={t('المركز {0}: {1}، معدل {2}', [r.rank, r.full_name, r.gpa != null ? r.gpa.toFixed(2) : '—'])}
               style={{ alignItems: 'center', width: '33%' }}>
               <Framed r={r} place={place} />
               <T v="bodyMd" numberOfLines={1} style={{ marginTop: 4, maxWidth: '96%' }}>{r.full_name.split(' ').slice(0, 2).join(' ')}</T>
               <T v="tiny" color={C.muted} numberOfLines={1} style={{ maxWidth: '96%' }}>{r.major ?? ' '}</T>
               <LinearGradient colors={ring(idx)} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
                 style={{ marginTop: 10, width: '92%', height: place === 1 ? 96 : place === 2 ? 74 : 60, borderTopLeftRadius: 18, borderTopRightRadius: 18, alignItems: 'center', paddingTop: 10, gap: 2 }}>
-                <T style={{ fontFamily: F.display, fontSize: place === 1 ? 30 : 24, color: '#2A1B00', lineHeight: place === 1 ? 34 : 28 }}>{r.gpa.toFixed(2)}</T>
+                <T style={{ fontFamily: F.display, fontSize: place === 1 ? 30 : 24, color: '#2A1B00', lineHeight: place === 1 ? 34 : 28 }}>{r.gpa != null ? r.gpa.toFixed(2) : '★'}</T>
                 <T v="tiny" style={{ fontFamily: F.bodyBold, color: 'rgba(42,27,0,0.7)' }}>#{r.rank}</T>
               </LinearGradient>
             </Tap>

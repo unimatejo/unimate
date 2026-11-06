@@ -77,7 +77,7 @@ Admin › أخطاء التطبيق (`app/admin/errors.tsx`). Stale web code aft
   `private` schema (not reachable from the API): official grades, staff list, team accounts, push config.
 - **Guards:** triggers on `profiles` reset fields a user may not set (status, points, counters, title, blue check).
 - **Content:** word checks on posts, comments, stories, group/community chats and bios; photo checks by the `moderate` function.
-- **Changes that touch security go to `supabase/review/` first** and are applied only after review.
+- **Changes that touch security are prepared in `supabase/review/` first** and moved to `supabase/migrations/` once reviewed and applied.
 
 ## 6. Releasing
 
@@ -422,9 +422,8 @@ Admin › أخطاء التطبيق (`app/admin/errors.tsx`). Stale web code aft
 - `0085_ms_role.sql` — Staff recognised from their university Microsoft account: the server reads the job title from Microsoft
 - `0086_feed_likers.sql` — A few faces of who liked each post, for a whole page of the feed in one request
 - `0087_doctor_check_title_rules.sql` — 1) The blue check also goes to verified doctors and academic leaders (not teaching assistants or staff).
-
-### Waiting for review (`supabase/review`, NOT applied)
-
 - `0088_security_hardening.sql` — 0088 · Security hardening for an official university app (FOR REVIEW — not applied yet)
 - `0089_honor_privacy.sql` — 0089 · Honor board and points board privacy (FOR REVIEW — not applied yet)
 - `0090_moderation_everywhere.sql` — 0090 · Content checks everywhere (FOR REVIEW — not applied yet)
+- `0091_blended_kind.sql` — UniMate · 0091 a class can be "blended" (on campus some weeks, online others), not only lecture/lab/online.
+- `0092_timetable_rooms.sql` — UniMate · 0092 timetable rooms and kinds.

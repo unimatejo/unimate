@@ -2540,4 +2540,13 @@ export const EN: Record<string, string> = {
   "الفيديو كبير كثير. قصّره أو اختار جزء أقصر.": "This video is too big. Trim it or pick a shorter part.",
   "مدمج": "Blended",
   "مدمج: وجاهي وأونلاين": "Blended: on campus and online",
+  "إذا طفّيتها، بيطلع ترتيبك بس بدون الرقم.": "When off, only your place shows, without the number.",
+  "اسم مستعار (اختياري)": "Nickname (optional)",
+  "اظهر معدلي": "Show my GPA",
+  "اظهرني بلوحة الشرف": "Show me on the leaderboard",
+  "بالأساس ما حدا بيظهر. اللوحة بتعرض أول 10 بس، ومعدلك ما بيطلع إلا إذا سمحت.": "Nobody appears unless they choose to. The board shows the top 10 only, and your GPA only if you allow it.",
+  "بالأساس ما حدا بيظهر. شغّلها إذا بدك اسمك ونقاطك يطلعوا لزملائك.": "Nobody appears unless they choose to. Turn it on to show your name and points to classmates.",
+  "برا أول 20": "Outside the top 20",
+  "بيطلع بدل اسمك وصورتك": "Shown instead of your name and photo",
+  "شارك بلوحة المتفوقين": "Take part in the honor board",
 };

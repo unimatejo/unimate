@@ -9,7 +9,7 @@ import { HonorList, MyPlace } from '@/components/honor/HonorList';
 import { HONOR_EMOJI, Podium, type HonorRow } from '@/components/honor/Podium';
 import { PullRefresh } from '@/components/ui/PullRefresh';
 import { ListSkeleton } from '@/components/ui/Skeleton';
-import { Card, Chip, Header, Row, Screen, Segmented, T, Toggle } from '@/components/ui';
+import { Card, Chip, Header, Row, Screen, Segmented, T, Toggle, Field } from '@/components/ui';
 import { useAuth } from '@/lib/auth';
 import { nm, t } from '@/lib/i18n';
 import { run } from '@/lib/run';
@@ -40,15 +40,24 @@ export default function Honor() {
     const s = (st ?? null) as Status | null;
     setStatus(s ?? { term: null, updated_at: null, hidden: false, has_record: false });
     setHide(!!s?.hidden);
-    setRows(((data ?? []) as HonorRow[]).map((r) => ({ ...r, gpa: Number(r.gpa) })));
+    setRows(((data ?? []) as HonorRow[]).map((r) => ({ ...r, gpa: r.gpa == null ? null : Number(r.gpa) })));
   }, [scope, period]);
   useEffect(() => { setRows(null); load().catch(() => setRows([])); }, [load]);
 
-  async function toggleHide(v: boolean) {
-    setHide(v); setBusy(true);
-    const r = await run(supabase.rpc('set_hide_honor', { p_hide: v }));
+  // taking part is a choice: off by default, an optional nickname, and the GPA shows only if allowed
+  const [alias, setAlias] = useState('');
+  const [showGpa, setShowGpa] = useState(false);
+  useEffect(() => {
+    if (!profile) return;
+    supabase.from('profiles').select('honor_alias, honor_show_gpa').eq('id', profile.id).maybeSingle()
+      .then(({ data }) => { setAlias(data?.honor_alias ?? ''); setShowGpa(!!data?.honor_show_gpa); }, () => {});
+  }, [profile]);
+  async function saveOptions(next: { show?: boolean; alias?: string; gpa?: boolean }) {
+    const show = next.show ?? !hide, a = next.alias ?? alias, g = next.gpa ?? showGpa;
+    setHide(!show); setShowGpa(g); setBusy(true);
+    const r = await run(supabase.rpc('set_honor_options', { p_show: show, p_alias: a.trim() || null, p_show_gpa: g }));
     setBusy(false);
-    if (!r.ok) { setHide(!v); return; }
+    if (!r.ok) { load(); return; }
     load();
   }
 
@@ -61,10 +70,10 @@ export default function Honor() {
   const list = rows ?? [];
   const me = list.find((r) => r.is_me) ?? null;
   // the person right above me (better GPA), for the "gap" line
-  const above = me ? [...list].filter((r) => !r.is_me && r.gpa > me.gpa).sort((a, b) => a.gpa - b.gpa)[0] ?? null : null;
-  const top = list.filter((r) => r.rank <= 100).slice(0, 3);
-  const rest = list.filter((r) => r.rank <= 100).slice(3);
-  const meOutside = me && me.rank > 100 ? me : null;
+  const above = me && me.gpa != null ? [...list].filter((r) => !r.is_me && r.gpa != null && r.gpa > me.gpa!).sort((a, b) => a.gpa! - b.gpa!)[0] ?? null : null;
+  const top = list.filter((r) => r.rank <= 10).slice(0, 3);
+  const rest = list.filter((r) => r.rank <= 10).slice(3);
+  const meOutside = me && me.rank > 10 ? me : null;
   const noData = status && !status.term;
 
   return (
@@ -106,9 +115,17 @@ export default function Honor() {
               </Card>
             )}
             <HonorList rows={meOutside ? [...rest, meOutside] : rest} />
-            <View style={[{ backgroundColor: C.card, borderRadius: 22, padding: 14, gap: 4 }, shadow]}>
-              <Toggle value={hide} onChange={(v) => { if (!busy) toggleHide(v); }} label={t('اخفيني من لوحة المتفوقين')}
-                hint={t('معدلك بيضل بسجل الجامعة، بس اسمك ومعدلك ما بيطلعوا لزملائك بالترتيب.')} />
+            <View style={[{ backgroundColor: C.card, borderRadius: 22, padding: 14, gap: 10 }, shadow]}>
+              <Toggle value={!hide} onChange={(v) => { if (!busy) saveOptions({ show: v }); }} label={t('شارك بلوحة المتفوقين')}
+                hint={t('بالأساس ما حدا بيظهر. اللوحة بتعرض أول 10 بس، ومعدلك ما بيطلع إلا إذا سمحت.')} />
+              {!hide && (
+                <>
+                  <Field label={t('اسم مستعار (اختياري)')} value={alias} maxLength={24} onChangeText={setAlias} onBlur={() => saveOptions({})}
+                    placeholder={t('بيطلع بدل اسمك وصورتك')} />
+                  <Toggle value={showGpa} onChange={(v) => { if (!busy) saveOptions({ gpa: v }); }} label={t('اظهر معدلي')}
+                    hint={t('إذا طفّيتها، بيطلع ترتيبك بس بدون الرقم.')} />
+                </>
+              )}
             </View>
             <T v="tiny" color={C.faint} style={{ textAlign: 'center', fontFamily: F.body }}>{t('الترتيب بيتحدّث كل 24 ساعة من سجل الجامعة الرسمي.')}</T>
           </>

@@ -36,7 +36,7 @@ export function HonorList({ rows }: { rows: HonorRow[] }) {
             {!!r.major && <T v="tiny" color={C.muted} numberOfLines={1}>{r.major}</T>}
           </View>
           <Move v={r.move} />
-          <T style={{ fontFamily: F.display, fontSize: 19, minWidth: 48, textAlign: 'left' }}>{r.gpa.toFixed(2)}</T>
+          <T style={{ fontFamily: F.display, fontSize: 19, minWidth: 48, textAlign: 'left' }}>{r.gpa != null ? r.gpa.toFixed(2) : '★'}</T>
         </Tap>
       ))}
     </View>
@@ -45,7 +45,7 @@ export function HonorList({ rows }: { rows: HonorRow[] }) {
 
 /** Sticky "your place" bar with the gap to the person right above. */
 export function MyPlace({ me, above, scopeName }: { me: HonorRow; above: HonorRow | null; scopeName: string }) {
-  const diff = above ? Math.max(0.01, Math.round((above.gpa - me.gpa) * 100) / 100) : 0;
+  const diff = above && above.gpa != null && me.gpa != null ? Math.max(0.01, Math.round((above.gpa - me.gpa) * 100) / 100) : 0;
   const line = me.rank === 1
     ? t('إنت الأول! حافظ على مكانك 👑')
     : above ? t('ضلّك {0} بس وبتتعدّى {1} 🔥', [diff.toFixed(2), above.full_name.split(' ')[0]]) : '';
@@ -57,7 +57,7 @@ export function MyPlace({ me, above, scopeName }: { me: HonorRow; above: HonorRo
           <Move v={me.move} light />
         </View>
         <View style={{ flex: 1 }}>
-          <T v="bodyMd" color={C.onPrimary} numberOfLines={1}>{t('معدلك {0} · من {1} طالب', [me.gpa.toFixed(2), me.total])}</T>
+          <T v="bodyMd" color={C.onPrimary} numberOfLines={1}>{t('معدلك {0} · من {1} طالب', [me.gpa != null ? me.gpa.toFixed(2) : '—', me.total])}</T>
           {!!line && <T v="tiny" color={C.onPrimary} style={{ opacity: 0.92 }} numberOfLines={1}>{line}</T>}
         </View>
       </Row>

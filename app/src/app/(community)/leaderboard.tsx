@@ -27,7 +27,7 @@ const open = (id: string) => router.push({ pathname: '/user/[id]', params: { id 
 export default function Leaderboard() {
   const { profile, refreshProfile } = useAuth();
   const insets = useSafeAreaInsets();
-  const [scope, setScope] = useState(0);            // 0 = my college, 1 = the university
+  const [scope, setScope] = useState(0);            // 0 = my college, 1 = my cohort, 2 = the university
   const [period, setPeriod] = useState<'month' | 'all'>('month');
   const [rows, setRows] = useState<Row[] | null>(null);
   const [hist, setHist] = useState<Hist[] | null>(null);
@@ -36,7 +36,7 @@ export default function Leaderboard() {
 
   const load = useCallback(async () => {
     const [{ data }, { data: h }] = await Promise.all([
-      supabase.rpc('leaderboard', { p_scope: scope === 0 ? 'college' : 'university', p_period: period }),
+      supabase.rpc('leaderboard', { p_scope: (['college', 'cohort', 'university'] as const)[scope], p_period: period }),
       supabase.rpc('my_points_history'),
     ]);
     setRows((data ?? []) as Row[]); setHist((h ?? []) as Hist[]);
@@ -65,7 +65,7 @@ export default function Leaderboard() {
           <T v="small" style={{ fontFamily: F.bodyBold }}>{t('المتفوقين')}</T>
         </Tap>} />
       <ScrollView contentContainerStyle={{ paddingHorizontal: 18, gap: 14, paddingBottom: insets.bottom + 120 }} refreshControl={<PullRefresh onRefresh={load} />}>
-        <Segmented items={[t('كليتي'), t('الجامعة')]} value={scope} onChange={setScope} />
+        <Segmented items={[t('كليتي'), t('دفعتي'), t('الجامعة')]} value={scope} onChange={setScope} />
         <Row gap={8}>
           <Chip label={t('هالشهر')} active={period === 'month'} onPress={() => setPeriod('month')} />
           <Chip label={t('كل الوقت')} active={period === 'all'} onPress={() => setPeriod('all')} />
@@ -143,7 +143,7 @@ export default function Leaderboard() {
               <T v="bold" color={h.points >= 0 ? C.greenInk : C.red} style={{ minWidth: 34, textAlign: 'center' }}>{h.points > 0 ? `+${h.points}` : h.points}</T>
             </Row>
           )) : <T v="small" color={C.muted}>{t('لسا ما جمعت نقاط.')}</T>)}
-          <Toggle value={hide} onChange={toggleHide} label={t('اخفيني من لوحة الشرف')} hint={t('نقاطك وشاراتك بتضل إلك، بس اسمك ما بيطلع بالقائمة.')} />
+          <Toggle value={!hide} onChange={(v) => toggleHide(!v)} label={t('اظهرني بلوحة الشرف')} hint={t('بالأساس ما حدا بيظهر. شغّلها إذا بدك اسمك ونقاطك يطلعوا لزملائك.')} />
         </Card>
       </ScrollView>
 
@@ -155,7 +155,7 @@ export default function Leaderboard() {
             <View style={{ flex: 1 }}>
               <T v="tiny" color={C.faint}>{t('مكانك')}</T>
               <T v="bold" color={C.onInverse} numberOfLines={1}>
-                {hide ? t('مخفي من القائمة') : me ? t('المركز {0}', [me.rank]) : period === 'month' && monthPts === 0 ? t('لسا ما عندك نقاط هالشهر') : t('برا أول 50')}
+                {hide ? t('مخفي من القائمة') : me ? t('المركز {0}', [me.rank]) : period === 'month' && monthPts === 0 ? t('لسا ما عندك نقاط هالشهر') : t('برا أول 20')}
               </T>
             </View>
             <Row gap={4}><Star size={14} color={C.orange} fill={C.orange} /><T v="bold" color={C.onInverse}>{me?.points ?? (period === 'month' ? monthPts : profile?.points ?? 0)}</T></Row>
