@@ -147,6 +147,18 @@ or JSON: `[{"student_number":"2620387","term_gpa":3.71,"cumulative_gpa":3.60,"cr
   (`components/map/UniSwitcher.tsx`) opens any other campus: its 3D file is public, and its buildings and approved
   places come from `campus_pins(university)` (0114: names, kinds and points only, signed-in users only; the tables'
   RLS still limits direct reads to the student's own university). Suggesting a place is only offered on your own campus.
+- **Shapes OSM doesn't have (`campus-footprints`).** Microsoft's Global ML Building Footprints (satellite imagery,
+  CDLA Permissive 2.0): one call reads one level-9 tile of Jordan as it downloads and writes the footprints inside each
+  campus box (main campus and branches) to `campus/fp/<university>.json`, one part per tile. `campus-osm` adds them
+  where OSM drew no building (their height when Microsoft has one, else 7 m) and links our buildings to them, so an
+  approximate box becomes the real shape. Where nobody mapped trees, trees are planted evenly in the green areas
+  (`planted` in the file: they're for the look, not the trees' real spots). The map credits OpenStreetMap and Microsoft.
+- **Branches.** Our buildings more than 3 km from the main campus (Al-Balqa's colleges in other towns) are grouped into
+  branches; each gets its own box, drawn like the main campus, and a chip on the map that flies there (`branches`).
+- **Phones today.** Until the next app build brings the 3D view, `components/map/NativeCampus.tsx` draws the same file
+  on the platform map (outlines, green, parking, roads and paths by zoom, building shapes you can tap), the camera is
+  tilted, and markers are placed by importance on their screen positions so they never overlap. Landmarks (colleges,
+  presidency, library, mosque, gates, stadiums) are named from far away on both.
 - **Admin.** Admin › خرائط الجامعات (`app/admin/maps.tsx`, RPCs `admin_campus_overview`, `admin_campus_rebuild`) lists
   every university's map with how complete it is (ready / partial / sparse), opens it as its students see it
   (`/map?uni=<id>`, admins only: RLS already lets admins read every campus's buildings and places), rebuilds it now,

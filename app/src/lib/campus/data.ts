@@ -28,6 +28,8 @@ export type CampusData = {
   parking: LL[][];
   paths: { t: 'foot' | 'road' | 'steps'; c: LL[]; n?: string }[];
   trees: LL[];
+  planted?: 1;                         // trees planted evenly in green areas where none were mapped (for the look)
+  branches?: { n: string; c: LL }[];   // the university's colleges in other towns, drawn in the same file
 };
 
 const BASE = `${process.env.EXPO_PUBLIC_SUPABASE_URL}/storage/v1/object/public/campus`;

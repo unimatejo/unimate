@@ -2787,7 +2787,6 @@ export const EN: Record<string, string> = {
   "ابحث: كلية، مبنى، قاعة، مطعم، كشك، باص…": "Search: college, building, room, restaurant, kiosk, bus…",
   "ارجع لورا": "Turn back",
   "الخريطة المرسومة": "Drawn map",
-  "الخريطة من OpenStreetMap": "Map data from OpenStreetMap",
   "المسافة": "Distance",
   "امشِ باتجاه {0}": "Head towards {0}",
   "بتابعك": "Following",
@@ -2848,4 +2847,6 @@ export const EN: Record<string, string> = {
   "الأنقص أولاً": "Most missing first",
   "بالاسم": "By name",
   "مكان وخدمة": "places",
+  "الخريطة من OpenStreetMap و Microsoft": "Map data: OpenStreetMap and Microsoft",
+  "الحرم الرئيسي": "Main campus",
 };

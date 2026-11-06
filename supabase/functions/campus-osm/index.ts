@@ -228,7 +228,20 @@ async function build(db: ReturnType<typeof createClient>, uni: Uni) {
   w = Math.min(w - padLng, c.lng - minLng); e = Math.max(e + padLng, c.lng + minLng);
   const near2km = (r: LL[]) => Math.max(...r.map((p) => dist(c, { lat: p[1], lng: p[0] }))) < 2200;
   if (named) for (const [x, y] of [named.ring, ...named.extra].filter(near2km).flat()) { s = Math.min(s, y - padLat); n = Math.max(n, y + padLat); w = Math.min(w, x - padLng); e = Math.max(e, x + padLng); }
+  // a university's branches in other towns (Al-Balqa's colleges): every group of our buildings more than 3 km away
+  // gets its own box, drawn like the main campus, and a chip on the map to fly there
+  type Branch = { n: string; c: LL; box: [number, number, number, number] };
+  const branches: Branch[] = [];
+  for (const b of (bs ?? []).filter((x) => x.lat != null && dist(c, x as { lat: number; lng: number }) > 3000) as { name_ar: string; lat: number; lng: number }[]) {
+    const g = branches.find((x) => dist({ lat: x.c[1], lng: x.c[0] }, b) < 1500);
+    if (g) continue;
+    const hx = 450 / mLng(b.lat), hy = 450 / M_LAT;
+    branches.push({ n: b.name_ar, c: [r6(b.lng), r6(b.lat)], box: [r6(b.lng - hx), r6(b.lat - hy), r6(b.lng + hx), r6(b.lat + hy)] });
+  }
+  const boxes: [number, number, number, number][] = [[w, s, e, n], ...branches.map((x) => x.box)];
+  const inBoxes = (p: LL) => boxes.some(([a, b2, c2, d]) => p[0] >= a && p[0] <= c2 && p[1] >= b2 && p[1] <= d);
   const elements = await osm(w, s, e, n);
+  for (const b of branches) elements.push(...await osm(...b.box));
 
   type B = { o: number; c: LL[]; h: number; mh: number; n: string | null; b: string | null; f: number | null; k: string; ap?: 1; e?: boolean };
   const buildings: B[] = [];
@@ -287,10 +300,53 @@ async function build(db: ReturnType<typeof createClient>, uni: Uni) {
   if (!campus && named) campus = named.ring;
   const campuses = campus ? [campus, ...(named?.extra ?? [])] : [];
 
+  // where OpenStreetMap has no building, the shape Microsoft's footprints found on satellite imagery (campus-footprints)
+  let ml = 0;
+  const { data: fpFile } = await db.storage.from('campus').download(`fp/${uni.id}.json`);
+  if (fpFile) {
+    const parts = (JSON.parse(await fpFile.text()) as { parts?: Record<string, { c: LL[]; h: number }[]> }).parts ?? {};
+    // compare only shapes whose boxes meet: a campus has thousands of each
+    const bboxOf = (r: LL[]) => { let a = Infinity, b2 = Infinity, c2 = -Infinity, d = -Infinity; for (const [x, y] of r) { a = Math.min(a, x); c2 = Math.max(c2, x); b2 = Math.min(b2, y); d = Math.max(d, y); } return [a, b2, c2, d] as const; };
+    const osmShapes = buildings.filter((x) => x.k !== 'part').map((x) => ({ x, bb: bboxOf(x.c) }));
+    const seenFp = new Set<string>();
+    for (const f of Object.values(parts).flat()) {
+      const key = f.c[0].join(',');
+      if (seenFp.has(key) || f.c.length < 4 || area(f.c) < 15) continue;
+      seenFp.add(key);
+      const cc = centroid(f.c);
+      if (!inBoxes(cc)) continue;
+      const fb = bboxOf(f.c);
+      if (osmShapes.some(({ x, bb }) => bb[0] <= fb[2] && bb[2] >= fb[0] && bb[1] <= fb[3] && bb[3] >= fb[1] && (inside(cc, x.c) || inside(centroid(x.c), f.c)))) continue; // OSM drew it already
+      buildings.push({ o: -(++ml), c: f.c, h: f.h > 0 ? f.h : 7, mh: 0, n: null, b: null, f: null, k: 'ml', e: f.h > 0 });
+    }
+  }
+
+  // trees: the ones OSM mapped; where nobody mapped any, planted evenly in the green areas (for the look, not their spots)
+  let planted = 0;
+  if (trees.length < 40) {
+    const boxes = buildings.filter((b) => b.k !== 'part').map((b) => { let a = Infinity, c2 = Infinity, d = -Infinity, f2 = -Infinity; for (const [x, y] of b.c) { a = Math.min(a, x); d = Math.max(d, x); c2 = Math.min(c2, y); f2 = Math.max(f2, y); } return { b, a, c2, d, f2 }; });
+    const onBuilding = (p: LL) => boxes.some((q) => p[0] >= q.a && p[0] <= q.d && p[1] >= q.c2 && p[1] <= q.f2 && inside(p, q.b.c));
+    for (const g of green) {
+      if (!['grass', 'wood', 'scrub'].includes(g.t) || area(g.c) < 150) continue;
+      const step = g.t === 'wood' ? 9 : 15;
+      let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+      for (const [x, y] of g.c) { x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y); }
+      const dx = step / mLng(y0), dy = step / M_LAT;
+      for (let y = y0 + dy / 2; y < y1 && planted < 4000; y += dy) {
+        for (let x = x0 + dx / 2; x < x1 && planted < 4000; x += dx) {
+          // a fixed jitter from the position, so every build plants the same trees
+          const j = Math.sin(x * 12.9898e3 + y * 78.233e3) * 43758.5453, jx = (j - Math.floor(j) - 0.5) * dx * 0.7, jy = (((j * 7) % 1) - 0.5) * dy * 0.7;
+          const p: LL = [r6(x + jx), r6(y + jy)];
+          if (inside(p, g.c) && !onBuilding(p)) { trees.push(p); planted++; }
+        }
+      }
+    }
+  }
+
   // link our buildings (official names, floors) to the OSM outlines: the outline they sit in, else the nearest within 40 m
   const used = new Set<number>();
   let linked = 0, approx = 0;
-  for (const b of (bs ?? []).filter((x) => x.lat != null && dist(c, x as { lat: number; lng: number }) < 3000)) {
+  for (const b of (bs ?? []).filter((x) => x.lat != null && (dist(c, x as { lat: number; lng: number }) < 3000 || branches.some((g) => dist({ lat: g.c[1], lng: g.c[0] }, x as { lat: number; lng: number }) < 1500)))) {
     const p: LL = [b.lng!, b.lat!];
     let hit = buildings.findIndex((x, i) => !used.has(i) && (b.osm_id ? String(x.o) === String(b.osm_id).replace(/\D/g, '') : false));
     if (hit < 0) hit = buildings.findIndex((x, i) => !used.has(i) && x.k !== 'part' && inside(p, x.c));
@@ -318,7 +374,8 @@ async function build(db: ReturnType<typeof createClient>, uni: Uni) {
   // Small colleges sit in the middle of a city, and the shops around them aren't theirs.
   const known = (bs ?? []).filter((x) => x.lat != null && dist(c, x as { lat: number; lng: number }) < 1500) as { lat: number; lng: number }[];
   const reach = Math.max(200, ...known.map((x) => dist(c, x) + 60));
-  const onCampus = (p: LL) => (campuses.length ? campuses.some((r) => inside(p, r)) : dist(c, { lat: p[1], lng: p[0] }) < reach);
+  const onCampus = (p: LL) => (campuses.length ? campuses.some((r) => inside(p, r)) : dist(c, { lat: p[1], lng: p[0] }) < reach)
+    || branches.some((g) => dist({ lat: g.c[1], lng: g.c[0] }, { lat: p[1], lng: p[0] }) < 400);
 
   // points of interest → `places` (new ones only; anything already there, by OSM id or same kind within 20 m, stays as it is)
   const have = (ps ?? []) as { kind: string; lat: number; lng: number; osm_id: string | null }[];
@@ -336,11 +393,11 @@ async function build(db: ReturnType<typeof createClient>, uni: Uni) {
   buildings.sort((a, b) => area(b.c) - area(a.c));
   for (const x of buildings) delete x.e;
   const out = { v: 2, at: new Date().toISOString(), bbox: [r6(w), r6(s), r6(e), r6(n)], center: [c.lng, c.lat], campus, campuses,
-    buildings, green, parking, paths, trees: trees.slice(0, 6000) };
+    buildings, green, parking, paths, trees: trees.slice(0, 6000), ...(planted ? { planted: 1 } : {}), ...(branches.length ? { branches: branches.map(({ n, c }) => ({ n, c })) } : {}) };
   const body = JSON.stringify(out);
   const up = await db.storage.from('campus').upload(`${uni.id}.json`, new Blob([body], { type: 'application/json' }), { upsert: true, contentType: 'application/json', cacheControl: '3600' });
   if (up.error) throw new Error('upload: ' + up.error.message);
-  const stats = { outline: !!named, outlines: campuses.length, moved, buildings: buildings.length, linked, approx, green: green.length, paths: paths.length, trees: trees.length, pois: pois.length, added, bytes: body.length };
+  const stats = { outline: !!named, outlines: campuses.length, ml, planted, branches: branches.length, boxes, moved, buildings: buildings.length, linked, approx, green: green.length, paths: paths.length, trees: trees.length, pois: pois.length, added, bytes: body.length };
   await db.rpc('campus_map_saved', { p_university: uni.id, p_bbox: out.bbox, p_stats: stats, p_error: null });
   return stats;
 }

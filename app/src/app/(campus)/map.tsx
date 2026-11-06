@@ -29,6 +29,10 @@ type Hit = { kind: string; id: string; title: string; subtitle: string; lat: num
 type Nav = { dest: Pin; building: string | null; buildingId: string | null; outline: LL[] | null; floor: number | null; room: string | null; route: Route; from: 'me' | 'gate' };
 
 const WEB = Platform.OS === 'web';
+/** What a campus is known by: named from far away (colleges, presidency, library, mosque, gates, stadiums). */
+const LANDMARK_KINDS = ['library', 'mosque', 'gate', 'sports'];
+const LANDMARK_NAME = /كلي[ةه]|رئاس[ةه]|عماد[ةه]|مجمع|مدرج|مكتب[ةه]|مستشفى|المسجد|faculty|college|school of|library|presidency/i;
+const landmark = (p: { kind: string; name: string }) => LANDMARK_KINDS.includes(p.kind) || (p.kind === 'building' && LANDMARK_NAME.test(p.name));
 const theme = mapTheme();
 
 /**
@@ -305,7 +309,7 @@ export default function CampusMap() {
   const placeMarkers = useCallback(async () => {
     if (WEB || !map.current) return;
     const turn = ++region.current;
-    const rank = (p: Pin) => (p.id === sel?.id ? 0 : p.kind === 'building' ? 1 : MINOR.includes(p.kind) ? 3 : 2);
+    const rank = (p: Pin) => (p.id === sel?.id ? 0 : landmark(p) ? 1 : p.kind === 'building' ? 2 : MINOR.includes(p.kind) ? 4 : 3);
     const order = [...listed].sort((a, b) => rank(a) - rank(b)).slice(0, 220);
     const pts = await Promise.all(order.map((p) => map.current!.pointForCoordinate({ latitude: p.lat, longitude: p.lng }).catch(() => null)));
     if (turn !== region.current) return;
@@ -314,7 +318,7 @@ export default function CampusMap() {
     order.forEach((p, i) => {
       const pt = pts[i];
       if (!pt) return;
-      const w = p.kind === 'building' && zoom > 16.6 ? 120 : 36, h = 36;
+      const w = (landmark(p) && zoom > 15.2) || (p.kind === 'building' && zoom > 16.6) ? 120 : 36, h = 36;
       const b: [number, number, number, number] = [pt.x - w / 2, pt.y - h / 2, pt.x + w / 2, pt.y + h / 2];
       if (p.id !== sel?.id && boxes.some((o) => b[0] < o[2] && b[2] > o[0] && b[1] < o[3] && b[3] > o[1])) return;
       boxes.push(b); keep.add(p.id);
@@ -350,11 +354,11 @@ export default function CampusMap() {
           const small = MINOR.includes(p.kind) && !on;
           // a drawn campus (3D on the web, shapes on phones): a building is its own shape, just its name once you're close
           const bare = !!campus && p.kind === 'building' && !on;
-          const label = on || (p.kind === 'building' ? zoom > 16.6 : zoom > 17.6);
+          const label = on || (landmark(p) ? zoom > 15.2 : p.kind === 'building' ? zoom > 16.6 : zoom > 17.6);
           if (bare && !label) return null;
           return (
             <Marker key={p.id + (on ? '-on' : '') + (label ? '-l' : '')} coordinate={{ latitude: p.lat, longitude: p.lng }} onPress={() => focus(p)} tracksViewChanges={false} anchor={{ x: 0.5, y: 0.5 }}
-              {...(WEB ? { priority: on ? 100 : p.kind === 'building' ? 60 : MINOR.includes(p.kind) ? 20 : 40 } : {})}>
+              {...(WEB ? { priority: on ? 100 : landmark(p) ? 80 : p.kind === 'building' ? 60 : MINOR.includes(p.kind) ? 20 : 40 } : {})}>
               <View style={{ alignItems: 'center', gap: 3 }}>
                 {!bare && <GlyphTile icon={Icon} colors={on ? ['#2A2F4F', '#0E1430'] : g} size={on ? 40 : small ? 22 : 30} />}
                 {label && (
@@ -441,6 +445,15 @@ export default function CampusMap() {
             {FILTERS.filter((f) => f.key === 'all' || pins.some((p) => inGroup(f.key, p.kind))).map((f) => <Chip key={f.key} label={f.label} active={filter === f.key} onPress={() => setFilter(f.key)} style={shadow} />)}
           </ScrollView>
         ))}
+        {!nav && q.trim().length < 2 && !!campus?.branches?.length && (
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
+            <Chip label={t('الحرم الرئيسي')} onPress={fitAll} style={shadow} />
+            {campus.branches.map((b) => (
+              <Chip key={b.n} label={b.n} style={shadow}
+                onPress={() => map.current?.animateCamera({ center: { latitude: b.c[1], longitude: b.c[0] }, zoom: 16.6, pitch: WEB ? 52 : 35 }, { duration: 900 })} />
+            ))}
+          </ScrollView>
+        )}
         {preview && (
           <Tap onPress={() => setSwitching(true)} accessibilityLabel={t('غيّر الجامعة')}
             style={[{ alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 36, backgroundColor: C.primary, borderRadius: 999, paddingHorizontal: 12 }, shadow]}>
@@ -457,7 +470,7 @@ export default function CampusMap() {
 
       {!sel && !busy && (
         <View pointerEvents="none" style={{ position: 'absolute', left: 0, right: 0, bottom: 12, alignItems: 'center' }}>
-          <T v="tiny" color={C.muted} style={{ fontSize: 10, backgroundColor: C.glass, paddingHorizontal: 8, borderRadius: 6, overflow: 'hidden' }}>{t('الخريطة من OpenStreetMap')}</T>
+          <T v="tiny" color={C.muted} style={{ fontSize: 10, backgroundColor: C.glass, paddingHorizontal: 8, borderRadius: 6, overflow: 'hidden' }}>{t('الخريطة من OpenStreetMap و Microsoft')}</T>
         </View>
       )}
 
