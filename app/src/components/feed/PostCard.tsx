@@ -186,7 +186,7 @@ function PostCardView({ post, onLikes, compact, detail }: { post: Post; onLikes?
         <View style={{ flex: 1 }}>
           <Row gap={4}>
             <T v="bold" numberOfLines={1} style={{ fontSize: 14, flexShrink: 1 }}>{titledName(p.author?.full_name, p.author?.academic_title, p.author?.title_verified)}</T>
-            {p.author?.is_verified && <BadgeCheck size={15} color={C.white} fill={C.primary} />}
+            {p.author?.is_verified && <BadgeCheck size={15} color={C.white} fill={C.verified} />}
             <TitleBadge title={p.author?.academic_title} verified={p.author?.title_verified} />
           </Row>
           <T v="tiny" color={C.muted} style={{ fontFamily: F.body }}>{[nm(p.author?.major), timeAgo(p.created_at)].filter(Boolean).join(' · ')}</T>

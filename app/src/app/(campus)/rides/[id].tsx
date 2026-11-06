@@ -159,7 +159,7 @@ export default function RideDetail() {
               <View style={{ flex: 1 }}>
                 <Row gap={5}>
                   <T v="bold" numberOfLines={1} style={{ flexShrink: 1 }}>{titledName(ride.driver_name, ride.driver_title, ride.driver_title_verified)}</T>
-                  {ride.driver_verified && <BadgeCheck size={15} color={C.white} fill={C.primary} />}
+                  {ride.driver_verified && <BadgeCheck size={15} color={C.white} fill={C.verified} />}
                   <TitleBadge title={ride.driver_title} verified={ride.driver_title_verified} />
                 </Row>
                 <T v="tiny" color={C.muted}>{t('السائق')}{ride.driver_username ? ` · ⁦@${ride.driver_username}⁩` : ''}</T>

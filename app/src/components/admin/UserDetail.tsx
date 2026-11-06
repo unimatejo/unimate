@@ -84,7 +84,7 @@ export function UserDetail({ id, onChanged }: { id: string; onChanged?: () => vo
   // the blue check is for important people only (presidents, deans, people the owner picks)
   async function setBlueCheck(on: boolean) {
     const ok = await confirm(on ? t('تعطي {0} العلامة الزرقاء؟', [u?.full_name ?? '']) : t('تشيل العلامة الزرقاء؟'),
-      on ? t('العلامة الزرقاء للشخصيات المهمة بس: رئيس الجامعة، العمداء، ومن تختاره.') : t('بيرجع الحساب بدون علامة.'), on ? t('أعطيه') : t('شيلها'));
+      on ? t('العلامة الزرقاء للشخصيات المهمة بس: رئيس الجامعة، العمداء، ومن تختاره.') : t('بتنشال وما بترجع لحالها، حتى لو عنده لقب عميد أو رئيس. بترجع بس إذا إنت أعطيته إياها.'), on ? t('أعطيه') : t('شيلها'));
     if (!ok) return;
     const { error } = await supabase.rpc('admin_set_blue_check', { p_user: id, p_on: on });
     if (error) { Alert.alert(t('ما زبط'), error.message); return; }
@@ -178,7 +178,7 @@ export function UserDetail({ id, onChanged }: { id: string; onChanged?: () => vo
       {owner && <Section title={t('العلامة الزرقاء')} />}
       {owner && <Panel>
         <Row gap={8}>
-          {acad?.is_verified ? <BadgeCheck size={20} color={C.white} fill={C.primary} /> : null}
+          {acad?.is_verified ? <BadgeCheck size={20} color={C.white} fill={C.verified} /> : null}
           <Muted>{acad?.is_verified ? t('الحساب موثّق بالعلامة الزرقاء') : acad?.lapsed_blue ? t('العلامة موقوفة: ما دخل بإيميله الجامعي من 6 شهور، وبترجع لحالها لما يدخل') : t('بدون علامة زرقاء')}</Muted>
         </Row>
         <Actions>

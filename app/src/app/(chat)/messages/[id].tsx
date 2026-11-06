@@ -490,7 +490,7 @@ export default function Chat() {
             <View style={{ flex: 1 }}>
               <Row gap={5}>
                 <T v="bodyMd" numberOfLines={1} style={{ flexShrink: 1, fontSize: 15, fontFamily: F.bodyBold }}>{title}</T>
-                {other?.is_verified && conv?.kind === 'direct' && <BadgeCheck size={15} color={C.onPrimary} fill={C.primary} />}
+                {other?.is_verified && conv?.kind === 'direct' && <BadgeCheck size={15} color={C.white} fill={C.verified} />}
                 {conv?.kind === 'direct' && <TitleBadge title={other?.academic_title} verified={other?.title_verified} />}
                 {(conv?.streak_days ?? 0) > 1 && <Row gap={2}><Flame size={14} color="#E8590C" fill="#FF8A00" /><T v="tiny" color="#FF9A1F">{conv?.streak_days}</T></Row>}
               </Row>
@@ -543,7 +543,7 @@ export default function Chat() {
                   <Avatar id={other.id} name={other.full_name} url={other.avatar_url} size={92} ring />
                   <Row gap={5} style={{ marginTop: 8 }}>
                     <T v="h2">{other.full_name}</T>
-                    {other.is_verified && <BadgeCheck size={18} color={C.onPrimary} fill={C.primary} />}
+                    {other.is_verified && <BadgeCheck size={18} color={C.white} fill={C.verified} />}
                     <TitleBadge title={other.academic_title} verified={other.title_verified} size="md" />
                   </Row>
                   {other.username ? <T v="small" color={C.muted} style={{ writingDirection: 'ltr' }}>@{other.username}</T> : null}

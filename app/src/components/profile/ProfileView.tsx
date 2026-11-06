@@ -362,8 +362,8 @@ export function ProfileView({ userId, onTitle, back }: { userId: string; onTitle
     : [uni, nm(p.major), p.study_year ? t('سنة {0}', [p.study_year]) : null].filter(Boolean).join(' · ');
   const pill = { flex: 1, minHeight: 40, borderRadius: R.pill, backgroundColor: C.soft, alignItems: 'center' as const, justifyContent: 'center' as const, paddingHorizontal: 12 };
   const Verified = () => (
-    <View accessibilityLabel={staffAcct ? t('حساب موثّق بالجامعة') : t('طالب موثّق بحساب الجامعة')} style={{ width: 17, height: 17, borderRadius: 9, backgroundColor: C.primary, alignItems: 'center', justifyContent: 'center' }}>
-      <Check size={11} color={C.onPrimary} strokeWidth={3.4} />
+    <View accessibilityLabel={staffAcct ? t('حساب موثّق بالجامعة') : t('طالب موثّق بحساب الجامعة')} style={{ width: 17, height: 17, borderRadius: 9, backgroundColor: C.verified, alignItems: 'center', justifyContent: 'center' }}>
+      <Check size={11} color="#FFFFFF" strokeWidth={3.4} />
     </View>
   );
 

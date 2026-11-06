@@ -19,6 +19,7 @@ const MIDNIGHT = {
   overlay: 'rgba(5,8,24,0.62)',
   glass: 'rgba(23,32,74,0.82)',
   primary: '#FF7A59',   // accent
+  verified: '#1D9BF0',  // the blue check (owner, presidents, deans), like Instagram
   onPrimary: '#0E1430',
   primaryDark: '#FFA88F',
   primarySoft: '#3A2A44',
@@ -78,6 +79,7 @@ const LIGHT: typeof MIDNIGHT = {
   overlay: 'rgba(14,20,48,0.45)',
   glass: 'rgba(255,255,255,0.8)',
   primary: '#FF6B4A',
+  verified: '#1D9BF0',
   onPrimary: '#0E1430',
   primaryDark: '#C2412A',
   primarySoft: '#FFE9E3',

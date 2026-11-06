@@ -51,7 +51,7 @@ export function SuggestedPeople() {
               <Avatar id={p.id} name={p.full_name} url={p.avatar_url} size={64} />
               <Row gap={3} style={{ maxWidth: 126 }}>
                 <T v="bold" numberOfLines={1} style={{ fontSize: 13, flexShrink: 1 }}>{p.full_name}</T>
-                {p.is_verified && <BadgeCheck size={13} color={C.white} fill={C.primary} />}
+                {p.is_verified && <BadgeCheck size={13} color={C.white} fill={C.verified} />}
               </Row>
               <T v="tiny" color={C.muted} numberOfLines={1}>{t(WHY[p.reason] ?? WHY.university)}</T>
               <T v="tiny" color={C.faint} numberOfLines={1} style={{ maxWidth: 126 }}>{(isAR ? p.major_ar : p.major_en || p.major_ar) ?? ''}</T>

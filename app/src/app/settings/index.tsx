@@ -136,7 +136,7 @@ export default function Settings() {
             style={[{ flexDirection: 'row', alignItems: 'center', gap: 14, backgroundColor: C.card, borderRadius: 24, padding: 14 }, shadow]}>
             <Avatar id={profile?.id} name={profile?.full_name} url={profile?.avatar_url} size={60} ring />
             <View style={{ flex: 1, gap: 1 }}>
-              <Row gap={5}><T v="h3" numberOfLines={1} style={{ flexShrink: 1 }}>{profile?.full_name}</T>{profile?.is_verified && <BadgeCheck size={16} color={C.white} fill={C.primary} />}</Row>
+              <Row gap={5}><T v="h3" numberOfLines={1} style={{ flexShrink: 1 }}>{profile?.full_name}</T>{profile?.is_verified && <BadgeCheck size={16} color={C.white} fill={C.verified} />}</Row>
               {profile?.username ? <T v="small" color={C.muted} style={{ writingDirection: 'ltr', textAlign: ta }}>@{profile.username}</T> : null}
               <T v="tiny" color={C.muted} numberOfLines={1}>{[nm(profile?.major), nm(university)].filter(Boolean).join(' · ')}</T>
             </View>

@@ -1,4 +1,4 @@
-import { BadgeCheck, BookOpen, BriefcaseBusiness, GraduationCap, Users, type LucideIcon } from 'lucide-react-native';
+import { BookOpen, BriefcaseBusiness, Crown, GraduationCap, Landmark, Users } from 'lucide-react-native';
 import { Text, View } from 'react-native';
 
 import { F } from '@/lib/theme';
@@ -29,14 +29,12 @@ export function titleLabel(k?: string | null): string {
   }
 }
 
-// one colour family per level: leadership the verified blue (with the check), heads violet, professors/doctors blue,
-// teaching teal, staff slate
-const VERIFIED_BLUE = '#1D9BF0';
-const LOOK: Record<AcademicTitle, { bg: string; fg: string; icon: LucideIcon }> = {
-  president: { bg: VERIFIED_BLUE, fg: '#FFFFFF', icon: BadgeCheck },
-  vice_president: { bg: VERIFIED_BLUE, fg: '#FFFFFF', icon: BadgeCheck },
-  dean: { bg: VERIFIED_BLUE, fg: '#FFFFFF', icon: BadgeCheck },
-  vice_dean: { bg: VERIFIED_BLUE, fg: '#FFFFFF', icon: BadgeCheck },
+// one colour family per level: leadership gold, heads violet, professors/doctors blue, teaching teal, staff slate
+const LOOK: Record<AcademicTitle, { bg: string; fg: string; icon: typeof Crown }> = {
+  president: { bg: '#F5B700', fg: '#3A2A00', icon: Crown },
+  vice_president: { bg: '#F5B700', fg: '#3A2A00', icon: Crown },
+  dean: { bg: '#F5B700', fg: '#3A2A00', icon: Landmark },
+  vice_dean: { bg: '#F5B700', fg: '#3A2A00', icon: Landmark },
   head: { bg: '#8E66FF', fg: '#FFFFFF', icon: Users },
   prof: { bg: '#3D6BFF', fg: '#FFFFFF', icon: GraduationCap },
   assoc_prof: { bg: '#3D6BFF', fg: '#FFFFFF', icon: GraduationCap },

@@ -76,7 +76,7 @@ export default function Requests() {
               <Row gap={12}>
                 <Avatar id={item.from?.id} name={item.from?.full_name} url={item.from?.avatar_url} size={50} />
                 <View style={{ flex: 1 }}>
-                  <Row gap={5}><T v="bold">{item.from?.full_name}</T>{item.from?.is_verified && <BadgeCheck size={15} color={C.white} fill={C.primary} />}</Row>
+                  <Row gap={5}><T v="bold">{item.from?.full_name}</T>{item.from?.is_verified && <BadgeCheck size={15} color={C.white} fill={C.verified} />}</Row>
                   <T v="tiny" color={C.muted}>{nm(item.from?.major)}</T>
                 </View>
               </Row>

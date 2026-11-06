@@ -102,7 +102,7 @@ export default function NewMessage() {
           <Tap onPress={() => (group ? toggle(item) : openChat(item))} scale={0.98} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: C.card, borderRadius: 18, padding: 10 }}>
             <Avatar id={item.id} name={item.full_name} url={item.avatar_url} size={46} />
             <View style={{ flex: 1 }}>
-              <Row gap={4}><T v="bodyMd" numberOfLines={1} style={{ flexShrink: 1 }}>{item.full_name}</T>{item.is_verified && <BadgeCheck size={14} color={C.white} fill={C.primary} />}</Row>
+              <Row gap={4}><T v="bodyMd" numberOfLines={1} style={{ flexShrink: 1 }}>{item.full_name}</T>{item.is_verified && <BadgeCheck size={14} color={C.white} fill={C.verified} />}</Row>
               <T v="tiny" color={C.muted} numberOfLines={1}>{[item.username ? `@${item.username}` : null, nm(item.major)].filter(Boolean).join(' · ')}</T>
             </View>
             {group && (

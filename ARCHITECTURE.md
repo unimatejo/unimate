@@ -431,3 +431,5 @@ Admin › أخطاء التطبيق (`app/admin/errors.tsx`). Stale web code aft
 - `0094_full_titles.sql` — UniMate · 0094 full official titles ("عميد شؤون الطلبة", "نائب الرئيس للشؤون الأكاديمية", "رئيس قسم الهندسة المدنية").
 - `0095_block_fixes.sql` — UniMate · 0095 blocking works all the way.
 - `0096_directory_titles.sql` — UniMate · 0096 the university directory shows the full official title ("عميد شؤون الطلبة"), never lists team accounts.
+- `0097_blue_check_leaders_only.sql` — UniMate · 0097 the blue check is for the owner and the university's leaders only (president, vice president, dean,
+- `0098_blue_check_off.sql` — UniMate · 0098 the owner can take the blue check from anyone — a president or dean too — and it stays off:

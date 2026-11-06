@@ -83,7 +83,7 @@ export default function Members() {
               <View style={{ flex: 1, gap: 2 }}>
                 <Row gap={5}>
                   <T v="bodyMd" numberOfLines={1} style={{ flexShrink: 1 }}>{m.full_name}</T>
-                  {m.is_verified && <BadgeCheck size={14} color={C.onPrimary} fill={C.primary} />}
+                  {m.is_verified && <BadgeCheck size={14} color={C.white} fill={C.verified} />}
                   <TitleBadge title={m.academic_title} verified={m.title_verified} />
                 </Row>
                 <Row gap={6}>

@@ -254,7 +254,7 @@ const ChatRow = memo(function ChatRow({ item, typing, onAnswer }: { item: Item; 
       <View style={{ flex: 1, minWidth: 0, gap: 3 }}>
         <Row gap={5}>
           <T v={item.unread ? 'bold' : 'bodyMd'} numberOfLines={1} style={{ flexShrink: 1, fontSize: 15 }}>{item.title}</T>
-          {item.other?.is_verified && <BadgeCheck size={14} color={C.onPrimary} fill={C.primary} />}
+          {item.other?.is_verified && <BadgeCheck size={14} color={C.white} fill={C.verified} />}
           <TitleBadge title={item.other?.academic_title} verified={item.other?.title_verified} />
           {item.streak > 1 && <T v="tiny" color="#E8590C">🔥{item.streak}</T>}
         </Row>

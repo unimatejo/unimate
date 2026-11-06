@@ -50,7 +50,7 @@ export function RideCard({ ride, mine, onPress, action }: { ride: Ride; mine: bo
         <View style={{ flex: 1 }}>
           <Row gap={4}>
             <T v="bodyMd" numberOfLines={1} style={{ flexShrink: 1 }}>{mine ? t('توصيلتك') : titledName(ride.driver_name, ride.driver_title, ride.driver_title_verified)}</T>
-            {!mine && ride.driver_verified && <BadgeCheck size={14} color={C.white} fill={C.primary} />}
+            {!mine && ride.driver_verified && <BadgeCheck size={14} color={C.white} fill={C.verified} />}
             {!mine && <TitleBadge title={ride.driver_title} verified={ride.driver_title_verified} />}
           </Row>
           {!mine && ride.driver_username ? <T v="tiny" color={C.muted}>{`⁦@${ride.driver_username}⁩`}</T> : null}

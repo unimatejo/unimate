@@ -411,7 +411,7 @@ export function ContactBubble({ m, mine }: { m: Message; mine: boolean }) {
       <Row gap={10}>
         <Avatar id={m.ref_id} name={p?.full_name ?? m.body ?? ''} url={p?.avatar_url ?? null} size={44} />
         <View style={{ flex: 1 }}>
-          <Row gap={4}><T v="bodyMd" numberOfLines={1} color={mine ? C.onPrimary : C.ink} style={{ flexShrink: 1 }}>{p?.full_name ?? m.body}</T>{p?.is_verified && <BadgeCheck size={14} color="#fff" fill={C.primary} />}</Row>
+          <Row gap={4}><T v="bodyMd" numberOfLines={1} color={mine ? C.onPrimary : C.ink} style={{ flexShrink: 1 }}>{p?.full_name ?? m.body}</T>{p?.is_verified && <BadgeCheck size={14} color="#fff" fill={C.verified} />}</Row>
           {p?.username ? <T v="tiny" color={mine ? subOn(true) : C.muted}>@{p.username}</T> : null}
         </View>
       </Row>
