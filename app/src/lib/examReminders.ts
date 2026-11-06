@@ -26,7 +26,7 @@ async function doSchedule(events: ExamLike[]) {
   const now = Date.now();
   const upcoming = events.filter((e) => REMIND.has(e.kind) && new Date(e.starts_at).getTime() > now).slice(0, 30);
   if (!upcoming.length) return;
-  if (!(await ensurePermission(false))) return;
+  if (!(await ensurePermission())) return;
   for (const e of upcoming) {
     const at = new Date(e.starts_at).getTime();
     const name = e.course_name || e.title;

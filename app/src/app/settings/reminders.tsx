@@ -1,3 +1,4 @@
+import { router } from 'expo-router';
 import { AlarmClock, EyeOff, Mail, BellRing, CalendarDays, Heart, Megaphone, MessageCircle, Moon, Users } from 'lucide-react-native';
 import { useEffect, useState, type ReactNode } from 'react';
 import { Alert, Linking, ScrollView, View } from 'react-native';
@@ -5,6 +6,7 @@ import { Alert, Linking, ScrollView, View } from 'react-native';
 import { Chip, Field, Header, Row, Screen, T, Tap, Toggle } from '@/components/ui';
 import { useAuth } from '@/lib/auth';
 import { ensurePermission, scheduleLectureReminders } from '@/lib/notify';
+import { notifStatus } from '@/lib/notifPermission';
 import { useSchedule } from '@/lib/schedule';
 import { usePrefs } from '@/lib/settings';
 import { supabase } from '@/lib/supabase';
@@ -41,9 +43,13 @@ export default function Reminders() {
     scheduleLectureReminders(meetings, off, profile?.id, { lectures: prefs.lectures, lecture_minutes: prefs.lecture_minutes, nightly_summary: prefs.nightly_summary, perMin }).catch(reportError);
   }, [meetings, rems, prefs.lecture_minutes, prefs.lectures, prefs.nightly_summary, loaded, profile?.id]);
 
-  /** Turning a reminder on needs notification permission; if iOS won't ask again, point to Settings. */
+  /**
+   * Turning a reminder on needs notification permission. Never asked yet: the one onboarding screen asks.
+   * Already refused (iOS won't ask twice): point to the phone's Settings.
+   */
   async function askNotif() {
-    if (await ensurePermission(true)) return true;
+    if (await ensurePermission()) return true;
+    if (await notifStatus() === 'ask') { router.push({ pathname: '/notify', params: { back: '1' } }); return false; }
     Alert.alert(t('التنبيهات مسكّرة'), t('فعّلها من إعدادات الجهاز عشان توصلك التذكيرات.'), [
       { text: t('إلغاء'), style: 'cancel' },
       { text: t('افتح الإعدادات'), onPress: () => Linking.openSettings().catch(() => {}) },

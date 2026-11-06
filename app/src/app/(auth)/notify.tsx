@@ -1,5 +1,5 @@
 import { Image } from 'expo-image';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { AlarmClock, CalendarDays, MessageCircle, Share } from 'lucide-react-native';
 import { useEffect, useState } from 'react';
 import { View } from 'react-native';
@@ -23,7 +23,9 @@ export default function NotifyIntro() {
   const [busy, setBusy] = useState(false);
   useEffect(() => { notifStatus().then(setSt); }, []);
 
-  const go = () => router.replace('/(tabs)');
+  // opened from Settings (a reminder needs it): back there; during onboarding: on into the app
+  const { back } = useLocalSearchParams<{ back?: string }>();
+  const go = () => (back && router.canGoBack() ? router.back() : router.replace('/(tabs)'));
   const later = () => { markNotifIntroDone(); go(); };
   async function on() {
     setBusy(true);

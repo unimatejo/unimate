@@ -2,7 +2,7 @@ import { getRecordingPermissionsAsync, requestRecordingPermissionsAsync } from '
 import * as ImagePicker from 'expo-image-picker';
 import * as Location from 'expo-location';
 import * as Notifications from 'expo-notifications';
-import { useFocusEffect } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import { Bell, Camera, Image as ImageIcon, MapPin, Mic } from 'lucide-react-native';
 import { useCallback, useState, type ReactNode } from 'react';
 import { ActivityIndicator, AppState, Linking, Platform, ScrollView, View } from 'react-native';
@@ -10,10 +10,12 @@ import { ActivityIndicator, AppState, Linking, Platform, ScrollView, View } from
 import { Header, IconTile, Row, Screen, T, Tap } from '@/components/ui';
 import { C, shadow } from '@/lib/theme';
 import { t } from '@/lib/i18n';
-import { enableWebPush, webPushState } from '@/lib/webpush';
+import { webPushState } from '@/lib/webpush';
 
 type State = 'granted' | 'denied' | 'ask' | 'unavailable';
-type Perm = { key: string; icon: ReactNode; color: string; label: string; why: string; get: () => Promise<{ granted: boolean; canAskAgain?: boolean; status?: string }>; ask: () => Promise<unknown> };
+type Perm = { key: string; icon: ReactNode; color: string; label: string; why: string; get: () => Promise<{ granted: boolean; canAskAgain?: boolean; status?: string }>;
+  /** the system prompt; notifications have none here (they're asked on their own screen) */
+  ask?: () => Promise<unknown> };
 
 const ic = { size: 19, color: '#FFFFFF' };
 // the web app: message notifications through the browser (iPhone: only once added to the home screen)
@@ -23,7 +25,7 @@ async function webNotif() {
   return { granted: s === 'granted', canAskAgain: s !== 'denied', status: s === 'denied' ? 'denied' : undefined };
 }
 const PERMS: Perm[] = [
-  { key: 'notif', icon: <Bell {...ic} />, color: C.orange, label: t('التنبيهات'), why: Platform.OS === 'web' ? t('إشعار لما توصلك رسالة أو حدا يتفاعل معك، حتى لو الموقع مسكّر.') : t('تذكير قبل المحاضرات والامتحانات، وملخص بكرة كل ليلة.'), get: () => Platform.OS === 'web' ? webNotif() : Notifications.getPermissionsAsync(), ask: () => Platform.OS === 'web' ? enableWebPush() : Notifications.requestPermissionsAsync() },
+  { key: 'notif', icon: <Bell {...ic} />, color: C.orange, label: t('التنبيهات'), why: Platform.OS === 'web' ? t('إشعار لما توصلك رسالة أو حدا يتفاعل معك، حتى لو الموقع مسكّر.') : t('تذكير قبل المحاضرات والامتحانات، وملخص بكرة كل ليلة.'), get: () => Platform.OS === 'web' ? webNotif() : Notifications.getPermissionsAsync() },
   { key: 'camera', icon: <Camera {...ic} />, color: C.pink, label: t('الكاميرا'), why: t('تصوّر ستوري أو صورة بالمحادثة.'), get: () => ImagePicker.getCameraPermissionsAsync(), ask: () => ImagePicker.requestCameraPermissionsAsync() },
   { key: 'photos', icon: <ImageIcon {...ic} />, color: C.green, label: t('الصور'), why: t('تختار صور للمنشورات والستوري والبروفايل.'), get: () => ImagePicker.getMediaLibraryPermissionsAsync(), ask: () => ImagePicker.requestMediaLibraryPermissionsAsync() },
   { key: 'mic', icon: <Mic {...ic} />, color: C.violet, label: t('المايك'), why: t('الرسائل الصوتية وصوت فيديو الستوري.'), get: () => getRecordingPermissionsAsync(), ask: () => requestRecordingPermissionsAsync() },
@@ -63,8 +65,10 @@ export default function Permissions() {
     const s = st[p.key];
     if (s === 'granted' || s === 'unavailable' || busy) return;
     if (s === 'denied' && Platform.OS !== 'web') { Linking.openSettings().catch(() => {}); return; }
+    // notifications are only ever asked on their one explaining screen
+    if (p.key === 'notif') { router.push({ pathname: '/notify', params: { back: '1' } }); return; }
     setBusy(p.key);
-    try { await p.ask(); } catch { /* the browser or phone said no */ } finally { setBusy(null); read(); }
+    try { await p.ask?.(); } catch { /* the browser or phone said no */ } finally { setBusy(null); read(); }
   }
 
   return (

@@ -11,19 +11,12 @@ Notifications.setNotificationHandler({
 });
 
 /**
- * Reminders need notification permission. It is asked once, in onboarding (lib/notifPermission); here it is only
- * checked. `force` is a student turning a reminder on in Settings: then the system may ask, if it still can.
+ * Reminders need notification permission. It is asked in ONE place only: the onboarding screen ((auth)/notify,
+ * lib/notifPermission). Everywhere else it is only checked, never requested.
  */
-export async function ensurePermission(force = false): Promise<boolean> {
+export async function ensurePermission(): Promise<boolean> {
   if (Platform.OS === 'web') return false; // local reminders are phone-only; the web app uses web push
-  const cur = await Notifications.getPermissionsAsync();
-  if (cur.granted) return true;
-  if (!force || !cur.canAskAgain) return false;
-  const req = await Notifications.requestPermissionsAsync();
-  if (Platform.OS === 'android') {
-    await Notifications.setNotificationChannelAsync('lectures', { name: t('المحاضرات'), importance: Notifications.AndroidImportance.HIGH });
-  }
-  return req.granted;
+  return (await Notifications.getPermissionsAsync()).granted;
 }
 
 /**
