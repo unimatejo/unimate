@@ -155,10 +155,13 @@ type Uni = { id: string; center_lat: number; center_lng: number; name_ar: string
 // Student housing run by the university stays (سكن الطلاب / الطالبات / الجامعة / الداخلي).
 const PRIVATE = /\d{5,}|\d{3}[\s-]\d{3,}|07[789]\d{7}|منزل|مسكن|(^|\s)(شق[ةه]|فيلا|عمار[ةه]|بناي[ةه])\s|المرحوم|مكان عمل|ديوان|(بيت|سكن)\s+(رئيس|عميد|نائب|مدير|السيد|الدكتور|الحاج|المهندس|المحامي|أبو|ابو|أم|ام)\s/;
 const UNI_HOUSING = /سكن\s*(ال)?(طلاب|طالبات|طلبة|الطلبة|جامع|داخلي)/;
+// no current officials' names on buildings: «رئاسة الجامعة الرئيس الحالي فلان» → «رئاسة الجامعة»
+const OFFICIAL = /\s*[-–,،(]?\s*(ال)?(رئيس|عميد|مدير|نائب)\S*\s+(ال)?(جامع[ةه]\s+)?(ال)?حال[يى](\s.*)?$/u;
+const noOfficial = (n: string) => n.replace(OFFICIAL, '').trim();
 const isPrivate = (name: string) => PRIVATE.test(name) || (/(^|\s)سكن\s/.test(name) && !UNI_HOUSING.test(name));
 
 // an OSM name that is someone's home stays off the map (the outline is still drawn)
-const publicName = (t: Record<string, string>) => { const n = nameOf(t); return n && !isPrivate(n) ? n : null; };
+const publicName = (t: Record<string, string>) => { const n = nameOf(t); return n && !isPrivate(n) ? noOfficial(n) || null : null; };
 
 async function outline(uni: Uni): Promise<{ ring: LL[]; center: { lat: number; lng: number }; extra: LL[][] } | null> {
   // Photon finds the campus by name (Nominatim refuses cloud servers); the OSM API then gives its full outline

@@ -135,6 +135,9 @@ or JSON: `[{"student_number":"2620387","term_gpa":3.71,"cumulative_gpa":3.60,"cr
   Buildings hide like places: `buildings.state` (0117, approved by default; students read approved only, admins all).
   Someone's home, a private flat or housing, a family diwan or a phone number never becomes a place or a name on the
   3D map (rule `isPrivate` in both campus functions; university housing such as «سكن الطالبات» stays).
+  No current officials' names on buildings either («… الرئيس الحالي فلان» is cut, rule `noOfficial`). Private
+  housing taken off the maps is kept as candidates for a future housing section in `private.housing_candidates`
+  (0118; schema `private`, no API access: nothing shows it today).
   People's homes, names and phone numbers never come in: `osm_stage` drops them on insert (trigger
   `osm_stage_guard`, 0116) and the import refuses them too. Off-campus OSM places are hidden as `rejected`, never deleted
   (0115: bus stops, gates and parking within 400 m and anything named after the university stay).

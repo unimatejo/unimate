@@ -59,6 +59,9 @@ const JUNK = (x: string) => /\d{5,}|\d{3}[\s-]\d{3}|https?:|www\.|\.com|@/i.test
 // Student housing run by the university stays (سكن الطلاب / الطالبات / الجامعة / الداخلي).
 const PRIVATE = /\d{5,}|\d{3}[\s-]\d{3,}|07[789]\d{7}|منزل|مسكن|(^|\s)(شق[ةه]|فيلا|عمار[ةه]|بناي[ةه])\s|المرحوم|مكان عمل|ديوان|(بيت|سكن)\s+(رئيس|عميد|نائب|مدير|السيد|الدكتور|الحاج|المهندس|المحامي|أبو|ابو|أم|ام)\s/;
 const UNI_HOUSING = /سكن\s*(ال)?(طلاب|طالبات|طلبة|الطلبة|جامع|داخلي)/;
+// no current officials' names on buildings: «رئاسة الجامعة الرئيس الحالي فلان» → «رئاسة الجامعة»
+const OFFICIAL = /\s*[-–,،(]?\s*(ال)?(رئيس|عميد|مدير|نائب)\S*\s+(ال)?(جامع[ةه]\s+)?(ال)?حال[يى](\s.*)?$/u;
+const noOfficial = (n: string) => n.replace(OFFICIAL, '').trim();
 const isPrivate = (name: string) => PRIVATE.test(name) || (/(^|\s)سكن\s/.test(name) && !UNI_HOUSING.test(name));
 
 function classify(r: Stage): { kind: string | null; why?: string } {
@@ -154,7 +157,7 @@ Deno.serve(async (req) => {
       while (parts.length > 1 && [uni.name_ar, uni.slug].some((u) => plain(parts[parts.length - 1]).includes(plain(u)) || plain(u).includes(plain(parts[parts.length - 1])))) parts.pop();
       return parts.join(' - ').trim() || null;
     };
-    const label = tidy(ar) ?? tidy(en);
+    const label = (x => x && noOfficial(x))(tidy(ar) ?? tidy(en)) || null;
     const n = label ? plain(label) : '';
     if (kind === 'building') {
       if (!label) { skip('بدون اسم'); continue; }
