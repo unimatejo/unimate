@@ -9,7 +9,7 @@ export type Profile = {
   id: string; university_id: string | null; college_id: string | null; major_id: string | null;
   username: string | null; deletion_requested_at?: string | null; birth_year?: number | null; birth_day?: string | null; show_birth?: string | null; username_changed_at?: string | null; full_name: string; avatar_url: string | null; bio: string; study_year: number | null;
   status: 'active' | 'suspended' | 'banned';
-  is_private: boolean; hide_followers: boolean; hide_following: boolean; hide_like_counts: boolean; hide_rank?: boolean;
+  is_private: boolean; hide_followers: boolean; hide_following: boolean; hide_like_counts: boolean;
   who_can_message: 'everyone' | 'college' | 'major' | 'nobody';
   socials_visible_to: 'everyone' | 'friends' | 'close_friends' | 'nobody';
   instagram: string | null; snapchat: string | null;

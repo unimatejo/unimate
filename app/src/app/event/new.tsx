@@ -18,7 +18,7 @@ const KINDS: [string, string][] = [
   ['exam_first', t('فيرست')], ['exam_second', t('سكند')], ['exam_mid', t('ميد')], ['exam_final', t('فاينل')],
   ['quiz', t('كويز')], ['assignment', t('واجب')], ['project', t('مشروع')], ['custom', t('تذكير خاص')],
 ];
-type Sec = { id: string; section_no: string; course: { name_ar: string } };
+type Sec = { id: string; section_no: string; course: { name_ar: string; name_en?: string | null } };
 
 /**
  * Add an exam, deadline or reminder to my timetable. Ticking "for my section" doesn't push it to everyone: it counts
@@ -43,9 +43,11 @@ export default function NewEvent() {
 
   useEffect(() => {
     if (!profile) return;
-    supabase.from('enrollments').select('section:sections(id, section_no, course:courses(name_ar, name_en))').eq('user_id', (profile?.id ?? ''))
-       
-      .then(({ data }) => { const s = ((data ?? []) as any[]).map((e) => e.section).filter(Boolean) as Sec[]; setSecs(s); if (!editId) setSection(s[0]?.id ?? null); });
+    supabase.from('enrollments').select('section:sections(id, section_no, course:courses(name_ar, name_en))').eq('user_id', profile.id)
+      .then(({ data }) => {
+        const s = ((data ?? []) as unknown as { section: Sec | null }[]).map((e) => e.section).filter((x): x is Sec => !!x);
+        setSecs(s); if (!editId) setSection(s[0]?.id ?? null);
+      });
   }, [profile, editId]);
 
   // editing an existing event: fill the form from it

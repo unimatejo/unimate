@@ -27,6 +27,7 @@ import { assetToPicked, cameraModule, galleryAlbums, mediaLibrary, type GalleryA
 import { flip, t, ta } from '@/lib/i18n';
 import { goBack } from '@/lib/nav';
 import { markFeedStale } from '@/lib/posts';
+import { latinDigits } from '@/lib/util';
 
 const POST_AUD = [['university', t('الجامعة')], ['college', t('كليتي')], ['major', t('تخصصي')], ['friends', t('أصدقائي')]] as const;
 const STORY_AUD = [['friends', t('أصدقائي')], ['close_friends', t('المقربين')], ['major', t('تخصصي')], ['university', t('الجامعة')]] as const;
@@ -304,7 +305,7 @@ export default function Create() {
         const ups = await Promise.all(items.map((m) => uploadPicked('posts', profile.id, m)));
         const paths = ups.map((u) => u.path);
         const pdfPath = pdf && mode === 'post' ? await uploadFile('posts', profile.id, pdf) : null;
-        const price_jod = cat === 'market' && price ? Number(price.replace(/[٠-٩]/g, (d) => String('٠١٢٣٤٥٦٧٨٩'.indexOf(d))).replace(/[٫,]/g, '.')) : null;
+        const price_jod = cat === 'market' && price ? Number(latinDigits(price).replace(/,/g, '.')) : null;
         if (price_jod != null && !Number.isFinite(price_jod)) { Alert.alert(t('السعر بالدينار'), t('اكتب السعر أرقام بس.')); setBusy(false); return; }
         const { data: post, error } = await supabase.from('posts').insert({
           author_id: profile.id, university_id: profile.university_id, community_id: params.community ?? null,

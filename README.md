@@ -9,9 +9,9 @@ Student community app for Jordanian universities: schedule, study tools, campus 
 | `app/` | The app (Expo / React Native): Android, iPhone and the web app at app.unimate.my |
 | `app/src/app/` | Screens. Every file is a page; the folder path is its URL. Folders in brackets only group pages and don't change the URL |
 | `app/src/components/` | Building blocks, one folder per feature (chat, feed, story, profile, study, rides, honor, admin…); `ui/` holds the shared basics |
-| `app/src/lib/` | Logic without screens: sign-in, database client, translations, schedule, uploads |
+| `app/src/lib/` | Logic without screens: sign-in, database client, translations, schedule, uploads; `campus/` holds the map data, walking routes and map colours |
 | `supabase/migrations/` | Database tables, security rules and server functions, applied in order |
-| `supabase/functions/` | Server functions (push notifications, photo checks, timetable reading…) |
+| `supabase/functions/` | Server functions (push notifications, photo checks, timetable reading, Moodle import, campus maps from OpenStreetMap…) |
 | `supabase/tests/` | Security checks |
 | `supabase/seed/`, `supabase/data/` | University, college, major and campus data |
 | `site/` | The public site unimate.my |
@@ -22,9 +22,14 @@ Student community app for Jordanian universities: schedule, study tools, campus 
 - `(tabs)` – the five main tabs · `(auth)` – sign-in and first setup
 - `(study)` – absences, GPA, exams, honor board, study partners, section swaps, courses
 - `(campus)` – map, staff directory, rides, announcements
-- `(community)` – sections, search, people, notifications, points leaderboard, profiles
+- `(community)` – sections, search, people, notifications, profiles
 - `(chat)` – messages and group invites
 - `admin/`, `settings/`, `post/`, `story/`, `event/`, `call/`, `report`, `share`
+
+## How the main features work
+
+See [ARCHITECTURE.md](ARCHITECTURE.md): where every flow lives, the security model, the honor board and its official
+grades file format (4a), the 3D campus map and walking routes (4b), and how to release.
 
 ## Checks
 
@@ -32,6 +37,8 @@ Student community app for Jordanian universities: schedule, study tools, campus 
 cd app
 npm run check      # types, lint, unused code
 ```
+
+Database changes: `bash supabase/apply.sh supabase/migrations/<file>.sql` (numbered files, never edit an applied one).
 
 ## Admin levels
 

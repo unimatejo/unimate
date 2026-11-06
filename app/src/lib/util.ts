@@ -22,12 +22,15 @@ export function clock(time: string, ampm = true): string {
   return ampm ? `${base} ${h < 12 ? t('ص') : t('م')}` : base;
 }
 
+/** Arabic-Indic digits (٠-٩) and the Arabic decimal mark → plain digits and a dot, for numbers people type. */
+export const latinDigits = (s: string) => s.replace(/[٠-٩]/g, (d) => String('٠١٢٣٤٥٦٧٨٩'.indexOf(d))).replace(/٫/g, '.');
+
 /** Arabic-insensitive search key: unify alef/yaa/taa marbuta forms, drop diacritics and tatweel, Arabic digits → Latin. */
 export function normalize(s: string | null | undefined): string {
   return (s ?? '').toLowerCase()
     .replace(/[\u064B-\u065F\u0670\u0640]/g, '')
     .replace(/[أإآٱ]/g, 'ا').replace(/ى/g, 'ي').replace(/ة/g, 'ه').replace(/ؤ/g, 'و').replace(/ئ/g, 'ي')
-    .replace(/[٠-٩]/g, (d) => String('٠١٢٣٤٥٦٧٨٩'.indexOf(d)))
+    .replace(/[٠-٩]/g, (d) => String('٠١٢٣٤٥٦٧٨٩'.indexOf(d))) // (latinDigits without the decimal mark: this is a search key)
     .replace(/\s+/g, ' ').trim();
 }
 

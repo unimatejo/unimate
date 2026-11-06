@@ -5,6 +5,7 @@ import {
 
 import { GRAD } from '@/components/ui/Glyph';
 import { t } from '@/lib/i18n';
+import { normalize } from '@/lib/util';
 
 /** A place on the campus map: our buildings and approved places (with the OSM ones), or a spot shared in a chat. */
 export type Pin = { id: string; kind: string; name: string; sub?: string | null; lat: number; lng: number; advertiser_id?: string | null };
@@ -53,8 +54,8 @@ export const TOUR_KINDS = ['gate', 'building', 'library', 'cafeteria', 'restaura
 export const SUGGEST_KINDS = ['building', 'cafeteria', 'restaurant', 'kiosk', 'print', 'shop', 'parking', 'bus', 'gate', 'mosque', 'library', 'atm', 'clinic', 'sports', 'garden', 'service'];
 
 // ---------- instant search over what's already on the map ----------
-/** Arabic spelling differences people type every day (أ/إ/آ/ا, ة/ه, ى/ي, tashkeel) don't matter. */
-const norm = (s: string) => s.toLowerCase().replace(/[ً-ْـ]/g, '').replace(/[أإآ]/g, 'ا').replace(/ة/g, 'ه').replace(/ى/g, 'ي').replace(/\s+/g, ' ').trim();
+// Arabic spelling differences people type every day (أ/إ/آ/ا, ة/ه, ى/ي, tashkeel) don't matter
+const norm = normalize;
 
 /** Places whose name matches, or every place of a kind when the words name one («كشك», «باص», «صراف»). */
 export function localSearch(pins: Pin[], q: string, near?: { lat: number; lng: number } | null): Pin[] {

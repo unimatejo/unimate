@@ -6,13 +6,14 @@ import { Field, T, Toggle } from '@/components/ui';
 import { useAuth } from '@/lib/auth';
 import { run } from '@/lib/run';
 import { refreshFrames } from '@/lib/frames';
+import { latinDigits } from '@/lib/util';
 import { supabase } from '@/lib/supabase';
 import { C, F } from '@/lib/theme';
 import { t } from '@/lib/i18n';
 
 type Row = { student_number: string; term_gpa: number | null; cumulative_gpa: number | null; credit_hours: number | null; major: string | null };
 
-const toEn = (s: string) => s.replace(/[٠-٩]/g, (d) => String('٠١٢٣٤٥٦٧٨٩'.indexOf(d))).replace(/٫/g, '.');
+const toEn = latinDigits;
 const gpaOk = (v: number | null) => v === null || (Number.isFinite(v) && v >= 0 && v <= 4);
 
 const num = (v: unknown) => (v === undefined || v === null || String(v).trim() === '' ? null : Number(toEn(String(v).trim())));

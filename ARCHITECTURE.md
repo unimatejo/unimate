@@ -36,7 +36,7 @@ profiles) first show what they showed last time (`lib/cache.ts`) and refresh qui
 
 **Writing.** Inserts/updates go through RLS too. Anything official or multi-step is an RPC (`security definer` function) that
 checks the caller first (`admin_require()`, `owner_require()`, `auth.uid()`). Triggers then do the follow-ups: counters,
-notifications, push, content checks, and **guards** that undo changes a user may not make (title, blue check, points…).
+notifications, push, content checks, and **guards** that undo changes a user may not make (title, blue check, status…).
 
 **Notifications.** A database row in `notifications` → trigger `private.on_notification_push` → Edge Function `push`
 (web push for the web app, FCM for Android). The client never creates notifications.
@@ -73,7 +73,7 @@ Admin › أخطاء التطبيق (`app/admin/errors.tsx`). Stale web code aft
 ## 4a. Honor board and frames
 
 Ranks come **only** from the university's official grades (`private.official_grades`, never typed by students). The points
-system was removed (0108); `/honor` is the only ranking.
+system was removed (0108, dropped in 0112); `/honor` is the only ranking.
 
 - **Opt-in.** `profiles.hide_honor` is `true` by default. Nobody appears on the board or wears a frame until they turn on
   «شارك بلوحة المتفوقين». A nickname (`honor_alias`) shows instead of name, photo and major, and means no frame.
@@ -168,7 +168,7 @@ or JSON: `[{"student_number":"2620387","term_gpa":3.71,"cumulative_gpa":3.60,"cr
 | `/announcements` | `app/(campus)/announcements/index.tsx` | Official announcements from the university leadership, deans and the dean's office. |
 | `/announcements/new` | `app/(campus)/announcements/new.tsx` | Write (or edit with ?id=) an official announcement. Only verified leadership / dean's office can open this. |
 | `/directory` | `app/(campus)/directory.tsx` | Everyone at your university, from the president down to the students. Ranks come from the university email + the official staff list — nobody sets… |
-| `/map` | `app/(campus)/map.tsx` | what a virtual walk stops at: the places people actually look for, not every parking lot |
+| `/map` | `app/(campus)/map.tsx` | The campus map, all inside the app. On the web: a real 3D campus (MapLibre: buildings with height, light and shadow, trees, green areas, paths) built… |
 | `/rides/[id]` | `app/(campus)/rides/[id].tsx` | One ride: the details, and for the driver the requests to accept or decline. |
 | `/rides` | `app/(campus)/rides/index.tsx` | Rides to and from campus, offered by students of the same university. |
 | `/rides/new` | `app/(campus)/rides/new.tsx` | Offer a ride, or ask for one ("بدي توصيلة"): the areas it passes through, where on campus, when, seats, price, and optionally a phone that only the… |
@@ -180,7 +180,6 @@ or JSON: `[{"student_number":"2620387","term_gpa":3.71,"cumulative_gpa":3.60,"cr
 | `/messages/new` | `app/(chat)/messages/new.tsx` | New message: pick one person to chat, or switch to group mode and pick several. |
 | `/messages/requests` | `app/(chat)/messages/requests.tsx` | Message requests from people you don't follow: accept to move them to the inbox, or ignore. |
 | `/follows` | `app/(community)/follows.tsx` | Followers / following lists, like Instagram. Hidden lists are blocked by the profile owner's privacy settings. |
-| `/leaderboard` | `app/(community)/leaderboard.tsx` | Monthly "wall of fame": who helped classmates most, from points the database gives by itself. |
 | `/notifications` | `app/(community)/notifications.tsx` | Server-made notification texts are Arabic; show them in English when the app is in English. |
 | `/search` | `app/(community)/search.tsx` | recent searches stay on this device only |
 | `/section/[category]` | `app/(community)/section/[category].tsx` | One community section (summaries, market, lost & found…): its posts only, with a button to post in it. |
@@ -190,7 +189,7 @@ or JSON: `[{"student_number":"2620387","term_gpa":3.71,"cumulative_gpa":3.60,"cr
 | `/courses` | `app/(study)/courses/index.tsx` | My courses: brought in from Microsoft Teams, or added once by anyone in the section. Times added once fill in for all classmates. |
 | `/exams` | `app/(study)/exams.tsx` | Exam mode: what's coming, how long is left, and who from my section is studying right now. |
 | `/gpa` | `app/(study)/gpa.tsx` | معدلي: the student's GPA, term by term, with "what do I need" planning. Everything here is private to them. |
-| `/honor` | `app/(study)/honor.tsx` | Honor board: students ranked by their official GPA (from the university's records, never typed in by students). |
+| `/honor` | `app/(study)/honor.tsx` | Honor board: students ranked by their official GPA (from the university's records, never typed in by students). Only people who opted in, top 10 per… |
 | `/study` | `app/(study)/study.tsx` | "Study together": classmates in the same course sections who want a study partner. |
 | `/swap` | `app/(study)/swap.tsx` | Section swaps: offer your section of a course for another one, matched automatically. |
 | `/community` | `app/(tabs)/community.tsx` | A category filter: a small pill with its icon, filled when it's on. |
@@ -283,8 +282,16 @@ or JSON: `[{"student_number":"2620387","term_gpa":3.71,"cumulative_gpa":3.60,"cr
 
 **honor/**
 
-- `HonorList.tsx` — Ranks 4 and down.
-- `Podium.tsx` — Top three on a podium: silver · gold · bronze (ties keep their real rank, colours follow the place).
+- `HonorChip.tsx` — Under a name on a profile: why this person wears a frame («المركز الأول بالكلية · الفصل الأول»). Opens the board.
+- `HonorList.tsx` — Ranks 4 to 10 (and me, if I'm further down). Names and frames only, never a GPA.
+- `Podium.tsx` — Top three on a podium: silver · gold · bronze (ties keep their real rank, colours follow the place). No GPAs.
+
+**map/**
+
+- `NavPanel.tsx` — The big direction at the top while walking: what to do next and in how many metres.
+- `SuggestPlace.tsx` — "Suggest a missing place": move the map under the pin, name it, and the team approves it.
+- `kinds.ts` — Small things that only show once you zoom in (or pick their filter), so the campus never looks cluttered.
+- `webMaps.tsx` — A React view pinned to a point; MapLibre moves it (GPU transform), React only renders it when its content changes.
 
 **media/**
 
@@ -352,7 +359,7 @@ or JSON: `[{"student_number":"2620387","term_gpa":3.71,"cumulative_gpa":3.60,"cr
 - `PullRefresh.tsx` — Pull-to-refresh that only spins while the person is actually pulling. Screens used to pass `refreshing={loading}`, so every quiet reload (on focus, when the…
 - `Skeleton.tsx` — Soft pulsing placeholder shown while content loads (instead of a blank screen).
 - `TimeField.tsx` — A time picker that works on iPhone, Android and in the browser.
-- `index.tsx` — Small app-icon style tile (gradient + gloss) used in lists and settings.
+- `index.tsx` — Everyone's picture, everywhere. Wears the person's honor frame by itself (lib/frames) unless `frame` says otherwise (null = none, e.g. where a bigger frame is…
 
 ### Shared logic (`app/src/lib`)
 
@@ -363,6 +370,7 @@ or JSON: `[{"student_number":"2620387","term_gpa":3.71,"cumulative_gpa":3.60,"cr
 - `errors.ts` — Send an error report to the database so problems on real phones can be fixed. Never throws.
 - `events.ts` — Exams, deadlines and reminders: the kinds the database knows (event_kind), in plain words.
 - `examReminders.ts` — Phone-only local reminders for exams and deadlines: one the day before and one an hour before. Replaces any earlier "exam-" reminders, so calling it again after a change…
+- `frames.ts` — Honor frames (0109): who in my university wears one this term, from the official grades only. Loaded once on the first avatar that asks, kept for a few hours, dropped on…
 - `gpa.ts` — GPA maths, kept pure so it can be tested on its own. A planned course (grade null) and a pass/fail one ("P") never count toward the GPA; 0-hour courses neither. Results…
 - `i18n.en.ts` — English UI strings. Keys are the Arabic source text (see t() in i18n.ts).
 - `i18n.ts` — Active language for this run of the app (changing it reloads the app so layout direction flips too).
@@ -374,7 +382,6 @@ or JSON: `[{"student_number":"2620387","term_gpa":3.71,"cumulative_gpa":3.60,"cr
 - `notify.ts` — Reminders need notification permission. It is asked in ONE place only: the onboarding screen ((auth)/notify, lib/notifPermission). Everywhere else it is only checked,…
 - `ota.ts` — New versions arrive by themselves (no reinstalling the app): on launch and whenever the app comes back to the front, check app.unimate.my/ota for a newer build of the…
 - `perf.ts` — Light performance reports: how long key screens take to show their data, and any request slower than 2 seconds. Samples are batched and sent every 20 seconds; the admin…
-- `points.ts` — 3D emoji (Microsoft Fluent UI Emoji, MIT) used on the points leaderboard.
 - `posts.ts` — Something new was posted: the feed fetches again the next time it shows (instead of waiting its 30 s).
 - `prefs.ts` — Tiny synchronous key-value store for app preferences (theme, language). Read at startup before the first render.
 - `presence.ts` — Activity status like Instagram: one app-wide realtime presence channel says who is open right now, and last_seen_at (written at most every 2 minutes) says "active 5 m…
@@ -402,6 +409,7 @@ or JSON: `[{"student_number":"2620387","term_gpa":3.71,"cumulative_gpa":3.60,"cr
 
 ### Edge functions (`supabase/functions`)
 
+- `campus-osm` — Campus map data, from OpenStreetMap, one file per university (Storage: campus/<university>.json).
 - `moderate` — Checks a new photo (post photo, story, profile photo) with Gemini. If it shows nudity, sexual content,
 - `moodle-import` — iCal date → Date. "…Z" is UTC; a TZID or floating time is Jordan time (UTC+3 all year since 2022).
 - `ms-role` — Microsoft job title (Arabic or English) → the app's title. Most specific first.
@@ -518,3 +526,8 @@ or JSON: `[{"student_number":"2620387","term_gpa":3.71,"cumulative_gpa":3.60,"cr
 - `0105_highlights_mutes.sql` — UniMate · 0105 highlights like Instagram, and muting someone's stories.
 - `0106_sections_truth.sql` — UniMate · 0106 a student only gets what belongs to THEIR section (for review — not applied yet).
 - `0107_highlight_covers.sql` — UniMate · 0107 a highlight's cover can be any photo from your gallery (Instagram's "edit cover").
+- `0108_points_off.sql` — UniMate · 0108 the points system is retired; the honor board (official GPAs) stays.
+- `0109_honor_frames.sql` — UniMate · 0109 honor frames, and an honor board that never shows anyone else's GPA.
+- `0110_honor_major_match.sql` — UniMate · 0110 the university's file names a major in words («هندسة مدنية»): match it to our majors list so it
+- `0111_campus_maps.sql` — UniMate · 0111 campus maps: one OpenStreetMap file per university (Storage campus/<id>.json, built by the
+- `0112_points_gone.sql` — UniMate · 0112 the points system is gone for good (switched off in 0108; nothing calls it, every balance is 0
