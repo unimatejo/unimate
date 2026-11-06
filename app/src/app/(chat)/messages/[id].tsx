@@ -19,6 +19,7 @@ import { Avatar, Row, T, Tap, Toggle } from '@/components/ui';
 import { VoiceBubble, VoiceRecorder } from '@/components/chat/Voice';
 import { useAuth } from '@/lib/auth';
 import { mediaUrl, supabase, photoWidth } from '@/lib/supabase';
+import { toast } from '@/lib/toast';
 import { rtTopic, sharedChannel } from '@/lib/realtime';
 import { C, F, isDark } from '@/lib/theme';
 import type { Conversation, Message, VanishMode } from '@/lib/types';
@@ -125,6 +126,7 @@ export default function Chat() {
   const { profile } = useAuth();
   const insets = useSafeAreaInsets();
   const [conv, setConv] = useState<Conversation | null>(null);
+  const [iBlocked, setIBlocked] = useState<string | null>(null);
   const [other, setOther] = useState<{ id: string; full_name: string; avatar_url: string | null; username?: string | null; is_verified?: boolean; academic_title?: string | null; title_verified?: boolean; major?: { name_ar: string; name_en?: string | null } | null } | null>(null);
   const [msgs, setMsgs] = useState<Message[]>([]);
   const [draft, setDraft] = useState('');
@@ -169,7 +171,10 @@ export default function Chat() {
     setPeople(Object.fromEntries(rows.filter((r) => r.profile).map((r) => [r.user_id, r.profile])));
     setOtherRead(rows.find((m) => m.user_id !== (profile?.id ?? ''))?.last_read_at ?? null);
     setReads(Object.fromEntries(rows.filter((r) => r.user_id !== profile.id && r.state === 'active').map((r) => [r.user_id, r.last_read_at])));
-    setOther(rows.find((m) => m.user_id !== (profile?.id ?? ''))?.profile ?? null);
+    const o = rows.find((m) => m.user_id !== (profile?.id ?? ''));
+    setOther(o?.profile ?? null);
+    // a chat with someone I blocked: no composer, a way to unblock instead
+    if (o?.user_id && (c as Conversation | null)?.kind === 'direct') supabase.rpc('i_blocked', { target: o.user_id }).then(({ data }) => setIBlocked(data === true ? o.user_id : null), () => {});
     setMyState(rows.find((m) => m.user_id === (profile?.id ?? ''))?.state ?? 'active');
     const { data: m } = await supabase.from('messages').select('*').eq('conversation_id', id).order('created_at', { ascending: false }).limit(60);
     setMsgs((m ?? []) as Message[]);
@@ -629,6 +634,14 @@ export default function Chat() {
               <Tap onPress={() => answerHere(true)} disabled={answering} style={{ flex: 1, minHeight: 46, borderRadius: 23, backgroundColor: C.primary, alignItems: 'center', justifyContent: 'center' }}><T v="bold" color={C.onPrimary}>{t('قبول')}</T></Tap>
               <Tap onPress={() => answerHere(false)} disabled={answering} style={{ flex: 1, minHeight: 46, borderRadius: 23, backgroundColor: C.soft, alignItems: 'center', justifyContent: 'center' }}><T v="bold">{t('تجاهل')}</T></Tap>
             </Row>
+          </View>
+        ) : iBlocked ? (
+          <View style={{ backgroundColor: C.card, borderTopWidth: 1, borderTopColor: C.line, padding: 14, paddingBottom: insets.bottom + 10, gap: 10, alignItems: 'center' }}>
+            <T v="small" color={C.muted} style={{ textAlign: 'center' }}>{t('حظرت هالحساب. ما بتوصلك رسائله وما بيقدر يشوف حسابك.')}</T>
+            <Tap onPress={async () => {
+              const r = await run(supabase.from('blocks').delete().eq('blocker_id', profile?.id ?? '').eq('blocked_id', iBlocked));
+              if (r.ok) { setIBlocked(null); toast(t('انلغى الحظر')); }
+            }} style={{ minHeight: 42, paddingHorizontal: 22, borderRadius: 21, backgroundColor: C.soft, alignItems: 'center', justifyContent: 'center' }}><T v="bold">{t('إلغاء الحظر')}</T></Tap>
           </View>
         ) : mutedUntil && mutedUntil > clock ? (
           <View style={{ backgroundColor: C.bg, paddingHorizontal: 14, paddingTop: 10, paddingBottom: insets.bottom + 12 }}>

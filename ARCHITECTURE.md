@@ -427,3 +427,7 @@ Admin › أخطاء التطبيق (`app/admin/errors.tsx`). Stale web code aft
 - `0090_moderation_everywhere.sql` — 0090 · Content checks everywhere (FOR REVIEW — not applied yet)
 - `0091_blended_kind.sql` — UniMate · 0091 a class can be "blended" (on campus some weeks, online others), not only lecture/lab/online.
 - `0092_timetable_rooms.sql` — UniMate · 0092 timetable rooms and kinds.
+- `0093_verification_upkeep.sql` — UniMate · 0093 the owner's controls, and badges that stay true.
+- `0094_full_titles.sql` — UniMate · 0094 full official titles ("عميد شؤون الطلبة", "نائب الرئيس للشؤون الأكاديمية", "رئيس قسم الهندسة المدنية").
+- `0095_block_fixes.sql` — UniMate · 0095 blocking works all the way.
+- `0096_directory_titles.sql` — UniMate · 0096 the university directory shows the full official title ("عميد شؤون الطلبة"), never lists team accounts.

@@ -207,7 +207,7 @@ export default function Welcome() {
               <>
                 <T v="h1">{t('وين بتشتغل؟')}</T>
                 {profile?.title_verified && profile.academic_title
-                  ? <Row gap={8}><TitleBadge title={profile.academic_title} verified size="md" /><T v="small" color={C.muted}>{t('رتبتك من قائمة الجامعة الرسمية')}</T></Row>
+                  ? <Row gap={8}><TitleBadge title={profile.academic_title} verified size="md" label={profile.position_title} /><T v="small" color={C.muted}>{t('رتبتك من قائمة الجامعة الرسمية')}</T></Row>
                   : <T v="small" color={C.muted}>{t('رتبتك (دكتور، عميد…) بتنحط من قائمة الجامعة الرسمية أو بعد التوثيق، ما بتنكتب باليد.')}</T>}
                 <MajorPicker universityId={university?.id} collegeId={col} majorId={maj} onChange={(c, m) => { setCol(c); setMaj(m); }} />
                 {!profile?.title_verified && <Field label={t('القسم أو الدائرة (اختياري)')} value={dept} onChangeText={setDept} placeholder={t('مثلاً قسم علم الحاسوب')} maxLength={80} />}

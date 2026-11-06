@@ -291,9 +291,29 @@ export function ProfileView({ userId, onTitle, back }: { userId: string; onTitle
     Share.share({ message, url }).catch(() => {});
   }
 
-  function moreMenu() {
+  /** Block / unblock, like Instagram: a blocked person can't find this account, message it or see its posts. */
+  function toggleBlock(blocked: boolean) {
+    if (!me) return;
+    const name = p?.full_name ?? '';
+    Alert.alert(blocked ? t('تلغي حظر {0}؟', [name]) : t('تحظر {0}؟', [name]),
+      blocked ? t('رح يقدر يشوف حسابك ويراسلك مرة ثانية.') : t('ما رح يقدر يلاقي حسابك أو يراسلك أو يشوف منشوراتك، وما بيعرف إنك حظرته.'), [
+      { text: t('إلغاء'), style: 'cancel' },
+      { text: blocked ? t('إلغاء الحظر') : t('احظر'), style: 'destructive', onPress: async () => {
+        const r = blocked
+          ? await run(supabase.from('blocks').delete().eq('blocker_id', me.id).eq('blocked_id', userId))
+          : await run(supabase.from('blocks').insert({ blocker_id: me.id, blocked_id: userId }));
+        if (!r.ok) return;
+        toast(blocked ? t('انلغى الحظر') : t('انحظر'));
+        if (!blocked) { if (router.canGoBack()) router.back(); else router.replace('/(tabs)'); } else load();
+      } },
+    ]);
+  }
+
+  async function moreMenu() {
+    const blocked = (await supabase.rpc('i_blocked', { target: userId })).data === true;
     Alert.alert(p?.full_name ?? '', undefined, [
       { text: t('شارك البروفايل'), onPress: shareProfile },
+      { text: blocked ? t('إلغاء الحظر') : t('حظر'), onPress: () => toggleBlock(blocked) },
       { text: t('إبلاغ'), style: 'destructive', onPress: () => router.push({ pathname: '/report', params: { type: 'user', id: userId, user: userId } }) },
       { text: t('إلغاء'), style: 'cancel' },
     ]);
@@ -415,7 +435,7 @@ export function ProfileView({ userId, onTitle, back }: { userId: string; onTitle
               <T style={{ fontFamily: F.bodyBold, fontSize: 15 }}>{titledName(p.full_name, p.academic_title, p.title_verified)}</T>
               {friends && <Animated.View entering={FadeIn}><View style={{ backgroundColor: C.greenSoft, borderRadius: 999, paddingHorizontal: 8, paddingVertical: 2 }}><T v="tiny" color={C.greenInk}>{t('أصدقاء')}</T></View></Animated.View>}
             </Row>
-            <TitleBadge title={p.academic_title} verified={p.title_verified} size="md" />
+            <TitleBadge title={p.academic_title} verified={p.title_verified} size="md" label={p.position_title} />
             {!!badge && (
               <View style={{ alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 26, paddingHorizontal: 10, borderRadius: 13, backgroundColor: C.soft, maxWidth: '100%' }}>
                 <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: C.primary }} />

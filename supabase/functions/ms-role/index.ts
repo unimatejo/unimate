@@ -55,9 +55,13 @@ Deno.serve(async (req) => {
   const staffDomain = (unis ?? []).some((x: { email_domains: string[] }) => x.email_domains.some((d) => dom === d && !/^(std|sta|st|ses|stu|student|students)\./.test(d)));
   if (!staffDomain || /^[0-9]+$/.test(local)) return json({ skipped: 'student' });
 
+  // no job title any more (left the university, role ended): a title that came from Microsoft is removed
   const title = titleFrom(me.jobTitle ?? '');
-  if (!title) return json({ skipped: 'no_job_title' });
-  const { data: applied, error } = await db.rpc('ms_apply_title', { p_user: user.id, p_title: title, p_department: me.department ?? null });
+  const { data: applied, error } = await db.rpc('ms_apply_title', {
+    p_user: user.id, p_title: title, p_department: me.department ?? null,
+    // the full title as the university wrote it ("عميد شؤون الطلبة"), shown on the profile
+    p_position: (me.jobTitle ?? '').trim().slice(0, 80) || null,
+  });
   if (error) { console.error('ms_apply_title', error.message); return json({ error: 'save_failed' }, 500); }
   return json({ title, applied });
 });

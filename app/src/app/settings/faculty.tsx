@@ -60,7 +60,7 @@ export default function FacultyTitle() {
                 <T v="bodyMd">{t('حسابك موثّق')}</T>
               </View>
               <T v="h3">{titledName(profile?.full_name, profile?.academic_title, true)}</T>
-              <TitleBadge title={profile?.academic_title} verified size="md" />
+              <TitleBadge title={profile?.academic_title} verified size="md" label={profile?.position_title} />
               {profile?.department ? <T v="small" color={C.muted}>{profile.department}</T> : null}
               <T v="tiny" color={C.muted}>{t('إذا تغيّر منصبك، ابعت طلب جديد تحت.')}</T>
             </View>

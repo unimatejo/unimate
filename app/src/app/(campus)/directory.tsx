@@ -13,7 +13,7 @@ import { nm, t, ta } from '@/lib/i18n';
 
 type P = {
   id: string; full_name: string; username: string | null; avatar_url: string | null; account_type: string | null;
-  academic_title: string | null; title_verified: boolean; department: string | null; major: string | null; college: string | null; rank: number;
+  academic_title: string | null; title_verified: boolean; department: string | null; major: string | null; college: string | null; rank: number; position_title?: string | null;
 };
 type Tier = 'leaders' | 'deans' | 'heads' | 'faculty' | 'staff' | 'pending' | 'students';
 type Filter = 'all' | 'staff' | 'students';
@@ -51,7 +51,7 @@ export default function Directory() {
 
   const sections = useMemo(() => {
     const s = q.trim().toLowerCase();
-    const hit = (p: P) => !s || p.full_name.toLowerCase().includes(s) || (p.username ?? '').includes(s) || (p.department ?? '').includes(s) || (p.major ?? '').includes(s) || titleLabel(p.academic_title).includes(s);
+    const hit = (p: P) => !s || p.full_name.toLowerCase().includes(s) || (p.username ?? '').includes(s) || (p.department ?? '').includes(s) || (p.major ?? '').includes(s) || titleLabel(p.academic_title).includes(s) || (p.position_title ?? '').includes(s);
     const keep = (p: P) => (filter === 'all' || (filter === 'staff' ? p.rank < 100 : p.rank === 100)) && hit(p);
     return TIERS.map((k) => ({ key: k, title: tierName(k), data: all.filter((p) => TIER_OF(p) === k && keep(p)) })).filter((x) => x.data.length);
   }, [all, q, filter]);
@@ -73,7 +73,7 @@ export default function Directory() {
                 <Avatar id={p.id} name={p.full_name} url={p.avatar_url} size={64} />
               </View>
               <T v="tiny" numberOfLines={1} style={{ fontFamily: F.bodyBold }}>{titledName(p.full_name, p.academic_title, p.title_verified).split(' ').slice(0, 2).join(' ')}</T>
-              <T v="tiny" color={C.muted} numberOfLines={1} style={{ marginTop: -6 }}>{titleLabel(p.academic_title)}</T>
+              <T v="tiny" color={C.muted} numberOfLines={1} style={{ marginTop: -6 }}>{p.position_title || titleLabel(p.academic_title)}</T>
             </Tap>
           ))}
         </ScrollView>
@@ -142,7 +142,7 @@ function Stat({ icon, tint, n, label }: { icon: React.ReactNode; tint: string; n
 
 function Person({ p, big }: { p: P; big: boolean }) {
   const sub = p.rank < 100
-    ? [p.title_verified ? null : t('إيميل كادر جامعي'), p.department].filter(Boolean).join(' · ')
+    ? [p.title_verified ? p.position_title : t('إيميل كادر جامعي'), p.department].filter(Boolean).join(' · ')
     : [p.major, p.college].filter(Boolean).join(' · ') || (p.username ? `@${p.username}` : '');
   return (
     <Tap haptic={false} scale={0.98} onPress={() => open(p.id)}

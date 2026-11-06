@@ -26,8 +26,10 @@ export function UserDetail({ id, onChanged }: { id: string; onChanged?: () => vo
   const [edit, setEdit] = useState<{ full_name: string; bio: string } | null>(null);
 
   useEffect(() => { setOpen(null); setEdit(null); }, [id]);
-  const { data: acad, reload: reloadAcad } = useLoad<{ academic_title: string | null; title_verified: boolean; account_type: string; is_verified: boolean }>(
-    () => supabase.from('profiles').select('academic_title, title_verified, account_type, is_verified').eq('id', id).single(), [id]);
+  const { data: acad, reload: reloadAcad } = useLoad<{ academic_title: string | null; title_verified: boolean; account_type: string; is_verified: boolean; username: string | null; lapsed_blue: boolean; lapsed_title: boolean; position_title: string | null }>(
+    () => supabase.from('profiles').select('academic_title, title_verified, account_type, is_verified, username, lapsed_blue, lapsed_title, position_title').eq('id', id).single(), [id]);
+  const [uname, setUname] = useState<string | null>(null);
+  const [pos, setPos] = useState<string | null>(null);
   const [pickTitle, setPickTitle] = useState(false);
   // Instagram / Snapchat on the profile (icons + bio): admins can remove them, and stop new ones
   const { data: soc, reload: reloadSoc } = useLoad<{ instagram: string | null; snapchat: string | null; blocked: boolean }>(
@@ -57,10 +59,26 @@ export function UserDetail({ id, onChanged }: { id: string; onChanged?: () => vo
   }
   async function setTitle(k: string | null) {
     const ok = await confirm(k ? t('توثيق كـ {0}؟', [titleLabel(k)]) : t('تشيل اللقب؟'),
-      k ? t('بيظهر اللقب جنب اسم {0} للكل.', [u?.full_name ?? '']) : t('بيرجع حساب عادي بدون لقب.'), k ? t('وثّق') : t('شيله'));
+      k ? t('بيظهر اللقب جنب اسم {0} للكل.', [u?.full_name ?? '']) : t('بيرجع حساب عادي بدون لقب، وبتنشال العلامة الزرقاء إذا إجت من اللقب.'), k ? t('وثّق') : t('شيله'));
     if (!ok) return;
     await supabase.rpc('admin_set_title', { p_user: id, p_title: k, p_type: k ? null : 'student' });
     done(); setPickTitle(false); reloadAcad(); onChanged?.();
+  }
+
+  /** the full official title shown on the profile ("عميد شؤون الطلبة"); empty = the short one */
+  async function savePosition(next: string) {
+    const { error } = await supabase.rpc('admin_set_position', { p_user: id, p_position: next.trim() || null });
+    if (error) { Alert.alert(t('ما زبط'), t('جرّب كمان مرة.')); return; }
+    done(); setPos(null); reloadAcad(); onChanged?.();
+  }
+
+  /** the owner sets anyone's @username; empty = a plain numbered one (user12345678) */
+  async function setUsername(next: string | null) {
+    const ok = await confirm(next ? t('تغيّر اليوزر لـ @{0}؟', [next]) : t('تشيل اليوزر؟'), next ? t('بيتغيّر رابط حسابه كمان.') : t('بيصير اليوزر رقم، مثل user12345678.'), next ? t('غيّر') : t('شيله'));
+    if (!ok) return;
+    const { error } = await supabase.rpc('admin_set_username', { p_user: id, p_username: next });
+    if (error) { Alert.alert(t('ما زبط'), /taken/.test(error.message) ? t('هاليوزر مأخوذ.') : /bad_username/.test(error.message) ? t('اليوزر حروف إنجليزية صغيرة وأرقام و . و _ بس (3 لـ 24).') : t('جرّب كمان مرة.')); return; }
+    done(); setUname(null); reloadAcad(); onChanged?.();
   }
 
   // the blue check is for important people only (presidents, deans, people the owner picks)
@@ -145,11 +163,23 @@ export function UserDetail({ id, onChanged }: { id: string; onChanged?: () => vo
           </Actions>
         )}
       </Panel>
+      {owner && <Section title={t('اليوزر')} />}
+      {owner && <Panel>
+        <Muted>{acad?.username ? `@${acad.username}` : t('بدون يوزر')}</Muted>
+        {uname !== null && <Field label={t('اليوزر الجديد')} value={uname} autoCapitalize="none" autoCorrect={false} maxLength={24} onChangeText={(v) => setUname(v.toLowerCase().replace(/[^a-z0-9._]/g, ''))} />}
+        <Actions>
+          {uname === null
+            ? <Act label={t('غيّر اليوزر')} onPress={() => setUname(acad?.username ?? '')} />
+            : <Act label={t('احفظ')} kind="primary" onPress={() => uname.length >= 3 && setUsername(uname)} />}
+          {uname !== null && <Act label={t('إلغاء')} onPress={() => setUname(null)} />}
+          <Act label={t('شيل اليوزر (رقم)')} kind="danger" onPress={() => setUsername(null)} />
+        </Actions>
+      </Panel>}
       {owner && <Section title={t('العلامة الزرقاء')} />}
       {owner && <Panel>
         <Row gap={8}>
           {acad?.is_verified ? <BadgeCheck size={20} color={C.white} fill={C.primary} /> : null}
-          <Muted>{acad?.is_verified ? t('الحساب موثّق بالعلامة الزرقاء') : t('بدون علامة زرقاء')}</Muted>
+          <Muted>{acad?.is_verified ? t('الحساب موثّق بالعلامة الزرقاء') : acad?.lapsed_blue ? t('العلامة موقوفة: ما دخل بإيميله الجامعي من 6 شهور، وبترجع لحالها لما يدخل') : t('بدون علامة زرقاء')}</Muted>
         </Row>
         <Actions>
           {acad?.is_verified
@@ -160,12 +190,22 @@ export function UserDetail({ id, onChanged }: { id: string; onChanged?: () => vo
       {owner && <Section title={t('اللقب الأكاديمي')} />}
       {owner && <Panel>
         <Row gap={8}>
-          {acad?.title_verified && acad.academic_title ? <TitleBadge title={acad.academic_title} verified size="md" /> : <Muted>{acad?.account_type === 'faculty' ? t('إيميله من الجامعة، ممكن يكون دكتور أو موظف') : t('بدون لقب')}</Muted>}
+          {acad?.title_verified && acad.academic_title ? <TitleBadge title={acad.academic_title} verified size="md" label={acad.position_title} /> : <Muted>{acad?.lapsed_title && acad.academic_title ? t('اللقب موقوف ({0}): ما دخل بإيميله الجامعي من 6 شهور', [titleLabel(acad.academic_title)]) : acad?.account_type === 'faculty' ? t('إيميله من الجامعة، ممكن يكون دكتور أو موظف') : t('بدون لقب')}</Muted>}
         </Row>
         <Actions>
           <Act label={pickTitle ? t('إلغاء') : t('غيّر اللقب')} onPress={() => setPickTitle(!pickTitle)} />
-          {acad?.academic_title && <Act label={t('شيل اللقب')} kind="danger" onPress={() => setTitle(null)} />}
+          {acad?.academic_title && <Act label={t('شيل اللقب (إلغاء)')} kind="danger" onPress={() => setTitle(null)} />}
+          {acad?.academic_title && pos === null && <Act label={t('المسمّى الكامل')} onPress={() => setPos(acad.position_title ?? '')} />}
         </Actions>
+        {pos !== null && (
+          <>
+            <Field label={t('المسمّى الكامل (مثلاً: عميد شؤون الطلبة)')} value={pos} maxLength={80} onChangeText={setPos} />
+            <Actions>
+              <Act label={t('احفظ')} kind="primary" onPress={() => savePosition(pos)} />
+              <Act label={t('إلغاء')} onPress={() => setPos(null)} />
+            </Actions>
+          </>
+        )}
         {pickTitle && (
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
             {TITLE_ORDER.map((k) => <Act key={k} label={titleLabel(k)} kind={acad?.academic_title === k ? 'primary' : 'soft'} onPress={() => setTitle(k)} />)}

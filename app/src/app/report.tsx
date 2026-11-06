@@ -35,7 +35,7 @@ export default function Report() {
         const b = await supabase.from('blocks').insert({ blocker_id: profile.id, blocked_id: user });
         blockFailed = !!b.error && b.error.code !== '23505';
       }
-      Alert.alert(t('وصل بلاغك'), blockFailed ? t('البلاغ وصل، بس الحظر ما زبط. جرّب تحظره من بروفايله.') : t('فريق يونيميت رح يراجعه، وما حدا بيعرف إنك بلّغت.'), [{ text: t('تمام'), onPress: () => router.back() }]);
+      Alert.alert(t('وصل بلاغك'), blockFailed ? t('البلاغ وصل، بس الحظر ما زبط. جرّب تحظره من بروفايله (⋯ ← حظر).') : t('فريق يونيميت رح يراجعه، وما حدا بيعرف إنك بلّغت.'), [{ text: t('تمام'), onPress: () => router.back() }]);
     } catch { Alert.alert(t('ما زبط'), t('جرّب كمان مرة.')); }
     finally { setBusy(false); }
   }

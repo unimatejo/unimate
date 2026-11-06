@@ -1,4 +1,4 @@
-import { BookOpen, BriefcaseBusiness, Crown, GraduationCap, Landmark, Users } from 'lucide-react-native';
+import { BadgeCheck, BookOpen, BriefcaseBusiness, GraduationCap, Users, type LucideIcon } from 'lucide-react-native';
 import { Text, View } from 'react-native';
 
 import { F } from '@/lib/theme';
@@ -29,12 +29,14 @@ export function titleLabel(k?: string | null): string {
   }
 }
 
-// one colour family per level: leadership gold, heads violet, professors/doctors blue, teaching teal, staff slate
-const LOOK: Record<AcademicTitle, { bg: string; fg: string; icon: typeof Crown }> = {
-  president: { bg: '#F5B700', fg: '#3A2A00', icon: Crown },
-  vice_president: { bg: '#F5B700', fg: '#3A2A00', icon: Crown },
-  dean: { bg: '#F5B700', fg: '#3A2A00', icon: Landmark },
-  vice_dean: { bg: '#F5B700', fg: '#3A2A00', icon: Landmark },
+// one colour family per level: leadership the verified blue (with the check), heads violet, professors/doctors blue,
+// teaching teal, staff slate
+const VERIFIED_BLUE = '#1D9BF0';
+const LOOK: Record<AcademicTitle, { bg: string; fg: string; icon: LucideIcon }> = {
+  president: { bg: VERIFIED_BLUE, fg: '#FFFFFF', icon: BadgeCheck },
+  vice_president: { bg: VERIFIED_BLUE, fg: '#FFFFFF', icon: BadgeCheck },
+  dean: { bg: VERIFIED_BLUE, fg: '#FFFFFF', icon: BadgeCheck },
+  vice_dean: { bg: VERIFIED_BLUE, fg: '#FFFFFF', icon: BadgeCheck },
   head: { bg: '#8E66FF', fg: '#FFFFFF', icon: Users },
   prof: { bg: '#3D6BFF', fg: '#FFFFFF', icon: GraduationCap },
   assoc_prof: { bg: '#3D6BFF', fg: '#FFFFFF', icon: GraduationCap },
@@ -58,18 +60,19 @@ export function titledName(name: string | null | undefined, title?: string | nul
 
 /**
  * The badge next to a name. `size="sm"` is the compact chip for lists (icon + short label),
- * `size="md"` is the profile pill. Shows nothing unless an admin verified the title.
+ * `size="md"` is the profile pill; `label` is the full official title when there is one ("عميد شؤون الطلبة").
+ * Shows nothing unless the title is verified.
  */
-export function TitleBadge({ title, verified, size = 'sm', label }: { title?: string | null; verified?: boolean | null; size?: 'sm' | 'md'; label?: string }) {
+export function TitleBadge({ title, verified, size = 'sm', label }: { title?: string | null; verified?: boolean | null; size?: 'sm' | 'md'; label?: string | null }) {
   if (!verified || !title || !(title in LOOK)) return null;
   const l = LOOK[title as AcademicTitle];
   const Icon = l.icon;
   const md = size === 'md';
   return (
-    <View accessibilityRole="text" accessibilityLabel={titleLabel(title)}
+    <View accessibilityRole="text" accessibilityLabel={label || titleLabel(title)}
       style={{ flexDirection: 'row', alignItems: 'center', gap: md ? 6 : 3, backgroundColor: l.bg, borderRadius: 999, paddingHorizontal: md ? 11 : 6, height: md ? 28 : 18, alignSelf: md ? 'flex-start' : 'center', flexShrink: 0 }}>
       <Icon size={md ? 15 : 11} color={l.fg} strokeWidth={2.4} />
-      <Text numberOfLines={1} style={{ fontFamily: F.bodyBold, fontSize: md ? 13 : 10, color: l.fg }}>{label ?? titleLabel(title)}</Text>
+      <Text numberOfLines={1} style={{ fontFamily: F.bodyBold, fontSize: md ? 13 : 10, color: l.fg }}>{label || titleLabel(title)}</Text>
     </View>
   );
 }
