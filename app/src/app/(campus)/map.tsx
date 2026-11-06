@@ -31,7 +31,7 @@ type Nav = { dest: Pin; building: string | null; buildingId: string | null; outl
 const WEB = Platform.OS === 'web';
 /** What a campus is known by: named from far away (colleges, presidency, library, mosque, gates, stadiums). */
 const LANDMARK_KINDS = ['library', 'mosque', 'gate', 'sports'];
-const LANDMARK_NAME = /كلي[ةه]|رئاس[ةه]|عماد[ةه]|مجمع|مدرج|مكتب[ةه]|مستشفى|المسجد|faculty|college|school of|library|presidency/i;
+const LANDMARK_NAME = /كلي[ةه]|رئاس[ةه]|برج|عماد[ةه]|مجمع|مدرج|مكتب[ةه]|مستشفى|المسجد|faculty|college|school of|library|presidency/i;
 const landmark = (p: { kind: string; name: string }) => LANDMARK_KINDS.includes(p.kind) || (p.kind === 'building' && LANDMARK_NAME.test(p.name));
 const theme = mapTheme();
 
