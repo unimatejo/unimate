@@ -1,11 +1,10 @@
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
-import { router } from 'expo-router';
 import { ChevronRight, CircleAlert } from 'lucide-react-native';
 import { forwardRef, useEffect, useRef, type ComponentRef, type ReactNode } from 'react';
 import {
-  ActivityIndicator, Platform, Pressable, StyleSheet, Text, TextInput, View,
+  ActivityIndicator, Platform, Pressable, Text, TextInput, View,
   type PressableProps, type StyleProp, type TextInputProps, type TextProps, type TextStyle, type ViewStyle,
 } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
@@ -14,6 +13,7 @@ import { SafeAreaView, type Edge } from 'react-native-safe-area-context';
 import { ListSkeleton } from '@/components/ui/Skeleton';
 import { C, F, R, avatarColors, isDark, shadow, glassStyle } from '@/lib/theme';
 import { flip, isAR, t, ta, rtlLayout } from '@/lib/i18n';
+import { goBack } from '@/lib/nav';
 
 // ---------- text ----------
 type Variant = 'display' | 'h1' | 'h2' | 'h3' | 'body' | 'bodyMd' | 'bold' | 'small' | 'tiny';
@@ -188,7 +188,7 @@ export function Header({ title, subtitle, right, back = true, onBack }: { title:
   return (
     <Row gap={10} style={{ paddingHorizontal: 18, paddingTop: 6, paddingBottom: 10 }}>
       {back && (
-        <IconButton label={t('رجوع')} onPress={onBack ?? (() => (router.canGoBack() ? router.back() : router.replace('/')))}>
+        <IconButton label={t('رجوع')} onPress={onBack ?? (() => goBack('/'))}>
           <ChevronRight size={22} color={C.ink} strokeWidth={2.2} style={flip} />
         </IconButton>
       )}

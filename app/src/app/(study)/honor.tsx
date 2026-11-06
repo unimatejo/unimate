@@ -133,7 +133,7 @@ export default function Honor() {
       </ScrollView>
       {me && !noData && (
         <View style={{ position: 'absolute', left: 14, right: 14, bottom: 14 + insets.bottom }}>
-          <MyPlace me={me} above={above} scopeName={scopeName} />
+          <MyPlace me={me} above={above} />
         </View>
       )}
     </Screen>

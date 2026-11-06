@@ -1,6 +1,5 @@
 import { BlurView } from 'expo-blur';
 import * as Haptics from 'expo-haptics';
-import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { CalendarDays, House, MessageCircle, User, Users } from 'lucide-react-native';
 import { useEffect, useState } from 'react';
@@ -16,9 +15,6 @@ import { t } from '@/lib/i18n';
 
 const ICONS: Record<string, typeof House> = { index: House, schedule: CalendarDays, community: Users, inbox: MessageCircle, profile: User };
 const LABELS: Record<string, string> = { index: t('الرئيسية'), schedule: t('الجدول'), community: t('المجتمع'), inbox: t('الرسائل'), profile: t('حسابي') };
-const COLORS: Record<string, [string, string]> = {
-  index: ['#6E95FF', '#2E5BFF'], schedule: ['#FFB86B', '#FF6B2C'], community: ['#FF8FB1', '#E0306B'], inbox: ['#5EE3A1', '#0E9F6E'], profile: ['#B794FF', '#7C3AED'],
-};
 
 function TabItem({ name, on, onPress, badge = 0 }: { name: string; on: boolean; onPress: () => void; badge?: number }) {
   const v = useSharedValue(on ? 1 : 0);

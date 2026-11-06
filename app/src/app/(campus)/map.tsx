@@ -17,6 +17,7 @@ import { useAuth } from '@/lib/auth';
 import { supabase } from '@/lib/supabase';
 import { C, F, isDark, shadow } from '@/lib/theme';
 import { flip, nm, t, ta } from '@/lib/i18n';
+import { goBack } from '@/lib/nav';
 
 type Pin = { id: string; kind: string; name: string; sub?: string | null; lat: number; lng: number; advertiser_id?: string | null };
 type Hit = { kind: string; id: string; title: string; subtitle: string; lat: number | null; lng: number | null };
@@ -319,7 +320,7 @@ export default function CampusMap() {
 
       <SafeAreaView edges={['top']} style={{ position: 'absolute', top: 0, left: 0, right: 0, paddingHorizontal: 16, gap: 10 }} pointerEvents="box-none">
         <Row gap={8} style={{ marginTop: 6 }}>
-        <Tap onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))} accessibilityLabel={t('رجوع')}
+        <Tap onPress={() => goBack('/')} accessibilityLabel={t('رجوع')}
           style={[{ width: 52, height: 52, borderRadius: 18, backgroundColor: C.card, alignItems: 'center', justifyContent: 'center' }, shadow]}>
           <ChevronRight size={22} color={C.ink} style={flip} />
         </Tap>

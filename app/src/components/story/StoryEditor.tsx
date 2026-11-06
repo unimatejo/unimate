@@ -23,12 +23,11 @@ import type { MediaMeta } from '@/lib/cropper';
 import { newId, type Overlay, type Stroke } from '@/lib/storyOverlay';
 import { toast } from '@/lib/toast';
 import { F } from '@/lib/theme';
-import { isAR, LOCALE, t } from '@/lib/i18n';
+import { isAR, t } from '@/lib/i18n';
 import type { Picked } from '@/lib/upload';
 
 const fill = { position: 'absolute', top: 0, bottom: 0, left: 0, right: 0 } as const;
 const glass = { backgroundColor: 'rgba(0,0,0,0.32)' } as const;
-const CALM = { duration: 200 } as const;
 
 /** Toolbar side: right in English, left in Arabic (like Instagram); the close button sits opposite. */
 const toolSide = (n: number) => (Platform.OS === 'web' ? (isAR ? { left: n } : { right: n }) : { end: n });

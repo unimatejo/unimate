@@ -17,7 +17,6 @@ export const GRAD = {
   teal: ['#5CE1E6', '#0891B2'],
   slate: ['#A5B0CC', '#56627F'],
 } as const;
-type GradName = keyof typeof GRAD;
 
 /**
  * App-icon style tile: gradient squircle, glossy top light, white icon, soft colored glow.

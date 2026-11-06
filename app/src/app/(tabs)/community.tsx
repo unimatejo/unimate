@@ -1,4 +1,3 @@
-import { LinearGradient } from 'expo-linear-gradient';
 import { PullRefresh } from '@/components/ui/PullRefresh';
 import { router, useFocusEffect } from 'expo-router';
 import { Briefcase, BookOpen, CircleAlert, Bus, Gift, GraduationCap, Image as ImageIcon, LayoutGrid, MessageSquare, NotebookPen, PartyPopper, Plus, Landmark, Megaphone, Search, SearchCheck, ShoppingBag, type LucideIcon } from 'lucide-react-native';
@@ -12,8 +11,7 @@ import { StoriesRow } from '@/components/story/StoriesRow';
 import { SuggestedPeople } from '@/components/feed/SuggestedPeople';
 import { Avatar, Button, Empty, IconButton, Row, Screen, Segmented, T, Tap } from '@/components/ui';
 import { useAuth } from '@/lib/auth';
-import { loadFeed, type FeedFilter } from '@/lib/posts';
-import { supabase } from '@/lib/supabase';
+import { loadFeed, takeFeedStale, type FeedFilter } from '@/lib/posts';
 import { CATEGORY, C, F, shadow } from '@/lib/theme';
 import type { Post } from '@/lib/types';
 import { nm, t } from '@/lib/i18n';
@@ -21,6 +19,7 @@ import { ListSkeleton } from '@/components/ui/Skeleton';
 import { useScreenTimer } from '@/lib/perf';
 import { OnScreenProvider, useVisiblePosts } from '@/lib/videoFocus';
 import { readCache, writeCache } from '@/lib/cache';
+import { useKeepScroll } from '@/lib/keepScroll';
 
 const TABS: FeedFilter['tab'][] = ['university', 'college', 'following'];
 const CAT_ICON: Record<string, LucideIcon> = {
@@ -50,6 +49,8 @@ export default function Community() {
   const [loading, setLoading] = useState(() => !readCache(cacheKey));
   useScreenTimer('feed', !loading);
   const [likesOf, setLikesOf] = useState<Post | null>(null);
+  const listRef = useRef<FlatList<Post>>(null);
+  const keepScroll = useKeepScroll(listRef);
 
   const [failed, setFailed] = useState(false);
   const reqKey = useRef(0);          // ignore answers from a tab/category we already left
@@ -57,22 +58,40 @@ export default function Community() {
   const hasMore = useRef(true);
   const scope = { universityId: profile?.university_id ?? null, collegeId: profile?.college_id ?? null };
 
-  const load = useCallback(async () => {
+  // what's on screen now (tab + category) and when it was last fetched
+  const shown = useRef<{ key: string | null; at: number }>({ key: null, at: 0 });
+  /**
+   * `fresh`: a new tab/category, or pull to refresh — start from the top.
+   * Otherwise (coming back from a post, a profile, a chat): keep the list, the pages already loaded and the scroll
+   * position exactly as they were, and only slip newer posts in at the top, quietly (like Instagram).
+   */
+  const load = useCallback(async (fresh = false) => {
     if (!profile) return;
+    const same = shown.current.key === cacheKey;
+    if (same && !fresh && !takeFeedStale() && Date.now() - shown.current.at < 30000) return;
     const key = ++reqKey.current;
-    const seen = readCache<Post[]>(cacheKey);
-    if (seen) { setPosts(seen); setLoading(false); } else { setPosts([]); setLoading(true); }
+    if (!same || fresh) {
+      const seen = readCache<Post[]>(cacheKey);
+      if (seen) { setPosts(seen); setLoading(false); } else { setPosts([]); setLoading(true); }
+    }
     try {
       const rows = await loadFeed(profile.id, { tab: TABS[tab], category: cat }, undefined, scope);
       if (key !== reqKey.current) return;
-      setPosts(rows); setFailed(false); hasMore.current = rows.length >= 20;
+      shown.current = { key: cacheKey, at: Date.now() };
+      setFailed(false);
+      if (same && !fresh) {
+        // the first page, updated; everything older that was already scrolled to stays where it was
+        setPosts((cur) => [...rows, ...cur.filter((o) => !rows.some((r) => r.id === o.id) && rows.length > 0 && o.created_at < rows[rows.length - 1].created_at)]);
+      } else {
+        setPosts(rows); hasMore.current = rows.length >= 20;
+      }
       writeCache(cacheKey, rows);
     } catch { if (key === reqKey.current) setFailed(true); }
     finally { if (key === reqKey.current) setLoading(false); }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [profile?.id, profile?.university_id, profile?.college_id, tab, cat]);
 
-  // runs when the tab opens, when tab/category change, and when you come back from posting
+  // runs when the tab opens, when tab/category change, and when you come back (quietly, keeping your place)
   useFocusEffect(useCallback(() => { load(); }, [load]));
 
   async function more() {
@@ -101,13 +120,16 @@ export default function Community() {
     <Screen>
       <OnScreenProvider value={visible}>
       <FlatList
+        ref={listRef}
+        onScroll={keepScroll}
+        scrollEventThrottle={64}
         onViewableItemsChanged={onViewableItemsChanged}
         viewabilityConfig={viewabilityConfig}
         data={posts}
         keyExtractor={(p) => p.id}
         onEndReached={more}
         onEndReachedThreshold={0.4}
-        refreshControl={<PullRefresh onRefresh={load} />}
+        refreshControl={<PullRefresh onRefresh={() => load(true)} />}
         contentContainerStyle={{ gap: 14, paddingBottom: 180 }}
         ListHeaderComponent={
           <View style={{ gap: 14, paddingTop: 6, paddingBottom: 2 }}>

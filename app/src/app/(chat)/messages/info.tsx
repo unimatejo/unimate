@@ -19,6 +19,7 @@ import { toast } from '@/lib/toast';
 import type { Conversation, Message, VanishMode } from '@/lib/types';
 import { pickMedia, publicUrl, uploadFile } from '@/lib/upload';
 import { timeAgo } from '@/lib/util';
+import { goBack } from '@/lib/nav';
 
 export type Member = { user_id: string; full_name: string; username: string | null; avatar_url: string | null; role: 'owner' | 'admin' | 'member'; state: string; academic_title: string | null; title_verified: boolean | null; is_verified: boolean | null };
 
@@ -217,7 +218,7 @@ export default function ChatInfo() {
   return (
     <SafeAreaView edges={['top']} style={{ flex: 1, backgroundColor: C.bg }}>
       <Row style={{ height: 52, paddingHorizontal: 8 }}>
-        <Tap onPress={() => (router.canGoBack() ? router.back() : router.replace({ pathname: '/messages/[id]', params: { id } }))} accessibilityLabel={t('رجوع')}
+        <Tap onPress={() => goBack({ pathname: '/messages/[id]', params: { id } })} accessibilityLabel={t('رجوع')}
           style={{ width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center', backgroundColor: C.soft }}>
           <ChevronRight size={22} color={C.ink} style={flip} />
         </Tap>

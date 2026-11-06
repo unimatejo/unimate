@@ -25,6 +25,8 @@ import { takeStoryDraft } from '@/lib/storyDraft';
 import { StoryCamera } from '@/components/create/StoryCamera';
 import { assetToPicked, cameraModule, galleryAlbums, mediaLibrary, type GalleryAlbum, type GalleryAsset } from '@/lib/nativeMedia';
 import { flip, t, ta } from '@/lib/i18n';
+import { goBack } from '@/lib/nav';
+import { markFeedStale } from '@/lib/posts';
 
 const POST_AUD = [['university', t('الجامعة')], ['college', t('كليتي')], ['major', t('تخصصي')], ['friends', t('أصدقائي')]] as const;
 const STORY_AUD = [['friends', t('أصدقائي')], ['close_friends', t('المقربين')], ['major', t('تخصصي')], ['university', t('الجامعة')]] as const;
@@ -322,8 +324,9 @@ export default function Create() {
           if (me) { await supabase.from('posts').delete().eq('id', post.id); throw me; }
         }
       }
+      markFeedStale();
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
-      if (router.canGoBack()) router.back(); else router.replace('/community');
+      goBack('/community');
     } catch (e) {
       reportError(e);
       Alert.alert(t('ما انتشر'), userMessage(e));
@@ -468,7 +471,7 @@ export default function Create() {
   if (isStory && camera) {
     return (
       <View style={{ flex: 1, backgroundColor: '#000' }}>
-        <StoryCamera maxSec={15} onPicked={storyShot} onClose={() => (router.canGoBack() ? router.back() : router.replace('/community'))}
+        <StoryCamera maxSec={15} onPicked={storyShot} onClose={() => goBack('/community')}
           onSystemPicker={addFromGallery} footer={<ModeSwitch mode={mode} onChange={switchMode} />} />
         {editorModal}
         {busyOverlay}
@@ -554,7 +557,7 @@ export default function Create() {
         <LinearGradient colors={['#1B1F4B', '#05070F']} style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }} />
         <SafeAreaView style={{ flex: 1 }}>
           <Row style={{ paddingHorizontal: 12, minHeight: 56 }}>
-            <Tap onPress={() => (router.canGoBack() ? router.back() : router.replace('/community'))} accessibilityLabel={t('إغلاق')} style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}><X size={26} color="#fff" /></Tap>
+            <Tap onPress={() => goBack('/community')} accessibilityLabel={t('إغلاق')} style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}><X size={26} color="#fff" /></Tap>
             <T style={{ flex: 1, textAlign: 'center', fontFamily: F.bodyBold, fontSize: 17 }} color="#fff">{TITLES.story}</T>
             <View style={{ width: 44 }} />
           </Row>

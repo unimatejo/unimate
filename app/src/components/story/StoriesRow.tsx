@@ -46,9 +46,14 @@ export function StoriesRow() {
 
   const load = useCallback(async () => {
     if (!profile) return;
-    const { data } = await supabase.from('stories')
-      .select('id, author_id, created_at, author:profiles!stories_author_id_fkey(full_name, avatar_url), views:story_views(viewer_id)')
-      .gt('expires_at', new Date().toISOString()).order('created_at', { ascending: false }).limit(200);
+    const [{ data }, { data: mutes }] = await Promise.all([
+      supabase.from('stories')
+        .select('id, author_id, created_at, author:profiles!stories_author_id_fkey(full_name, avatar_url), views:story_views(viewer_id)')
+        .gt('expires_at', new Date().toISOString()).order('created_at', { ascending: false }).limit(200),
+      // people whose stories I muted (from the story's ⋯ menu): not in the row, still on their profile
+      supabase.from('story_mutes').select('muted_id'),
+    ]);
+    const muted = new Set(((mutes ?? []) as { muted_id: string }[]).map((m) => m.muted_id));
     const map = new Map<string, Group>();
      
     for (const s of (data ?? []) as any[]) {
@@ -58,7 +63,7 @@ export function StoriesRow() {
       else if (!seen) g.seen = false;
     }
     setMineCount((data ?? []).filter((x) => x.author_id === profile?.id).length);
-    const list = [...map.values()].filter((g) => g.author_id !== (profile?.id ?? '')).sort((a, b) => Number(a.seen) - Number(b.seen));
+    const list = [...map.values()].filter((g) => g.author_id !== (profile?.id ?? '') && !muted.has(g.author_id)).sort((a, b) => Number(a.seen) - Number(b.seen));
     setGroups(list);
   }, [profile]);
 

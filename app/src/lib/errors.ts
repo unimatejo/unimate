@@ -32,7 +32,13 @@ export async function reportError(e: unknown, fatal = false) {
 export function installGlobalErrorHandler() {
   // the web: errors outside React (a failed promise, a script error) are logged quietly too
   if (Platform.OS === 'web' && typeof window !== 'undefined') {
-    window.addEventListener('unhandledrejection', (ev) => { reportError((ev as PromiseRejectionEvent).reason); });
+    window.addEventListener('unhandledrejection', (ev) => {
+      const r = (ev as PromiseRejectionEvent).reason as { name?: string } | undefined;
+      // a browser refusing to start a video with sound (until a tap), or a play() cut short by pause(): expected,
+      // the video screens already handle it (muted play + "tap for sound")
+      if (r?.name === 'NotAllowedError' || r?.name === 'AbortError') { ev.preventDefault(); return; }
+      reportError(r);
+    });
     window.addEventListener('error', (ev) => { if ((ev as ErrorEvent).error) reportError((ev as ErrorEvent).error); });
   }
   const g = globalThis as unknown as { ErrorUtils?: { getGlobalHandler: () => (e: Error, f?: boolean) => void; setGlobalHandler: (h: (e: Error, f?: boolean) => void) => void } };

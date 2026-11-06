@@ -23,6 +23,11 @@ export async function withMine(posts: Post[], uid?: string): Promise<Post[]> {
   return posts.map((p) => ({ ...p, liked: L.has(p.id), saved: S.has(p.id), likers: likers ? F.get(p.id) ?? [] : undefined }));
 }
 
+/** Something new was posted: the feed fetches again the next time it shows (instead of waiting its 30 s). */
+let feedStale = false;
+export const markFeedStale = () => { feedStale = true; };
+export function takeFeedStale() { const v = feedStale; feedStale = false; return v; }
+
 export type FeedFilter = { tab: 'university' | 'college' | 'following'; category?: string | null; communityId?: string | null };
 
 export async function loadFeed(uid: string, f: FeedFilter, before?: string, scope?: { universityId?: string | null; collegeId?: string | null }): Promise<Post[]> {

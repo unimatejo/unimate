@@ -1,4 +1,4 @@
-import { Activity, Camera, Eye, EyeOff, Heart, Lock, MapPin, MessageCircle, Timer, Users } from 'lucide-react-native';
+import { Activity, Camera, Eye, EyeOff, Heart, Lock, MessageCircle, Timer, Users } from 'lucide-react-native';
 import type { ReactNode } from 'react';
 import { ScrollView, View } from 'react-native';
 

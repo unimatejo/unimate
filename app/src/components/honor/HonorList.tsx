@@ -44,7 +44,7 @@ export function HonorList({ rows }: { rows: HonorRow[] }) {
 }
 
 /** Sticky "your place" bar with the gap to the person right above. */
-export function MyPlace({ me, above, scopeName }: { me: HonorRow; above: HonorRow | null; scopeName: string }) {
+export function MyPlace({ me, above }: { me: HonorRow; above: HonorRow | null }) {
   const diff = above && above.gpa != null && me.gpa != null ? Math.max(0.01, Math.round((above.gpa - me.gpa) * 100) / 100) : 0;
   const line = me.rank === 1
     ? t('إنت الأول! حافظ على مكانك 👑')

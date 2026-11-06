@@ -4,7 +4,7 @@ import { Stack, router, useSegments, type ErrorBoundaryProps } from 'expo-router
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, Text, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
@@ -18,7 +18,7 @@ import { AuthProvider, useAuth } from '@/lib/auth';
 import { useTeamStatus } from '@/lib/team';
 import { useNotifIntroDue } from '@/lib/notifPermission';
 import { installGlobalErrorHandler, reportError, setScreen } from '@/lib/errors';
-import { isAR, syncDirection, t, ta } from '@/lib/i18n';
+import { isAR, syncDirection, t } from '@/lib/i18n';
 import { C, F, isDark } from '@/lib/theme';
 
 SplashScreen.preventAutoHideAsync();

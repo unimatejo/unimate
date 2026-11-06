@@ -1,5 +1,4 @@
 import { Image } from 'expo-image';
-import { router } from 'expo-router';
 import { AtSign, Camera, Check, Lock, Trash2 } from 'lucide-react-native';
 import { useEffect, useState } from 'react';
 import { ActionSheetIOS, ActivityIndicator, Alert, KeyboardAvoidingView, Platform, ScrollView, View } from 'react-native';
@@ -17,6 +16,7 @@ import { pickMedia, publicUrl, uploadFile } from '@/lib/upload';
 import { handleFrom } from '@/lib/util';
 import { userMessage } from '@/lib/run';
 import { t } from '@/lib/i18n';
+import { goBack } from '@/lib/nav';
 
 const validHandle = (s: string) => /^[A-Za-z0-9._-]{1,30}$/.test(s);
 
@@ -137,7 +137,7 @@ export default function EditProfile() {
     if (bd && bd !== birthWas) await supabase.rpc('set_birth_date', { d: bd });
     if (showBirth !== (profile.show_birth ?? 'year') || (bd && bd !== birthWas)) await supabase.rpc('set_birth_visibility', { v: showBirth });
     await refreshProfile();
-    if (router.canGoBack()) router.back(); else router.replace('/profile');
+    goBack('/profile');
   }
 
   const shown = preview ?? avatar;

@@ -1,6 +1,6 @@
 import { Bookmark } from 'lucide-react-native';
 import { PullRefresh } from '@/components/ui/PullRefresh';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { FlatList } from 'react-native';
 
 import { LikesSheet } from '@/components/feed/LikesSheet';

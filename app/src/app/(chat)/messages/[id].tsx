@@ -13,7 +13,7 @@ import { PostShareBubble } from '@/components/chat/PostShareBubble';
 import { pingInboxTyping, useActivityLine } from '@/lib/presence';
 import { TitleBadge } from '@/components/profile/TitleBadge';
 import { AttachSheet, ContactBubble, FileBubble, LocationBubble, PollBubble, StickerBubble, StickerPanel, saveSticker, type Outgoing } from '@/components/chat/ChatAttach';
-import { bubble, DateSep, HeartBurst, inkOn, MessageMenu, ReactionChips, ReactionsSheet, SeenBy, SheetModal, subOn, type Reaction } from '@/components/chat/ChatExtras';
+import { bubble, DateSep, HeartBurst, inkOn, MessageMenu, ReactionChips, ReactionsSheet, SeenBy, SheetModal, type Reaction } from '@/components/chat/ChatExtras';
 import { Bone } from '@/components/ui/Skeleton';
 import { Avatar, Row, T, Tap, Toggle } from '@/components/ui';
 import { VoiceBubble, VoiceRecorder } from '@/components/chat/Voice';
@@ -30,6 +30,7 @@ import { timeAgo } from '@/lib/util';
 import { flip, isAR, nm, t, ta } from '@/lib/i18n';
 import { friendly, isRateLimited, optimistic, run, userMessage } from '@/lib/run';
 import { useScreenTimer } from '@/lib/perf';
+import { goBack } from '@/lib/nav';
 
 const VANISH: { key: VanishMode; label: string; hint: string }[] = [
   { key: 'after_view', label: t('بعد المشاهدة'), hint: t('زي السناب') },
@@ -483,7 +484,7 @@ export default function Chat() {
     <View style={{ flex: 1, backgroundColor: C.bg }}>
       <SafeAreaView edges={['top']} style={{ backgroundColor: C.bg, borderBottomWidth: 1, borderBottomColor: C.line }}>
         <Row gap={6} style={{ height: 64, paddingHorizontal: 6 }}>
-          <Tap onPress={() => (router.canGoBack() ? router.back() : router.replace('/messages'))} accessibilityLabel={t('رجوع')} style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}><ChevronRight size={24} color={C.ink} strokeWidth={2.2} style={flip} /></Tap>
+          <Tap onPress={() => goBack('/messages')} accessibilityLabel={t('رجوع')} style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}><ChevronRight size={24} color={C.ink} strokeWidth={2.2} style={flip} /></Tap>
           <Tap onPress={openInfo} haptic={false} scale={0.98} accessibilityLabel={t('تفاصيل المحادثة')} style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 10, minHeight: 44 }}>
             {conv?.kind === 'direct' ? <View><Avatar id={other?.id} name={title} url={other?.avatar_url} size={40} /><OnlineDot id={other?.id} size={12} /></View> :
               conv?.photo_url ? <Image source={{ uri: conv.photo_url }} style={{ width: 40, height: 40, borderRadius: 20 }} contentFit="cover" /> : <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: C.soft, alignItems: 'center', justifyContent: 'center' }}><Users size={19} color={C.ink} /></View>}

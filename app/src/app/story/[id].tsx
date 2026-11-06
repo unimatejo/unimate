@@ -1,5 +1,5 @@
-import { router, useLocalSearchParams } from 'expo-router';
-import { Plus, Star, Trash2, VolumeX, X } from 'lucide-react-native';
+import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
+import { BellOff, Download, Eye, Flag, MinusCircle, MoreHorizontal, Pencil, Plus, Share2, Star, Trash2, Users, VolumeX, X } from 'lucide-react-native';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Alert, KeyboardAvoidingView, Modal, Platform, Pressable, TextInput, useWindowDimensions, View } from 'react-native';
 import * as Haptics from 'expo-haptics';
@@ -20,7 +20,11 @@ import { EmojiBurst, StoryReplyBar, type ReplyBarHandle } from '@/components/sto
 import { optimistic } from '@/lib/run';
 import { toast } from '@/lib/toast';
 import { FramedMedia } from '@/components/media/FramedMedia';
+import { HighlightEditor, type HighlightRef } from '@/components/story/HighlightEditor';
+import { StoryMenu, type StoryMenuItem } from '@/components/story/StoryMenu';
+import { saveToDevice, shareLink } from '@/lib/share';
 import type { MediaMeta } from '@/lib/cropper';
+import { goBack } from '@/lib/nav';
 
 type S = { id: string; media_url: string; kind: string; caption: string | null; created_at: string; duration_sec: number | null; overlays?: unknown; meta?: MediaMeta | null };
 type Viewer = StoryViewer;
@@ -46,7 +50,9 @@ export default function StoryViewer() {
   const [hlOpen, setHlOpen] = useState(false);
   const [hls, setHls] = useState<{ id: string; title: string }[]>([]);
   const [hlTitle, setHlTitle] = useState('');
-  const [hlName, setHlName] = useState<string | null>(null);
+  const [hl, setHl] = useState<HighlightRef | null>(null);
+  const hlName = hl?.title ?? null;
+  const [reloadKey, setReloadKey] = useState(0); // the highlight was edited: read its stories again
   const progress = useSharedValue(0);
   const bar = useAnimatedStyle(() => ({ width: `${progress.value * 100}%` }));
   // pull down to close, like Instagram: the story follows the finger, shrinks a little and fades
@@ -60,7 +66,7 @@ export default function StoryViewer() {
   useEffect(() => {
     supabase.from('profiles').select('full_name, avatar_url').eq('id', id).maybeSingle().then(({ data }) => setAuthor(data));
     if (highlight) {
-      supabase.from('highlights').select('title').eq('id', highlight).single().then(({ data }) => setHlName(data?.title ?? null));
+      supabase.from('highlights').select('id, title, cover_url').eq('id', highlight).single().then(({ data }) => setHl(data ?? null));
       supabase.from('highlight_items').select('added_at, s:stories(id, media_url, kind, caption, created_at, duration_sec, overlays, meta)').eq('highlight_id', highlight).order('added_at')
          
         .then(({ data }) => { const list = ((data ?? []) as any[]).map((x) => x.s).filter(Boolean) as S[]; setItems(list); if (list.length === 0) close(); });
@@ -68,7 +74,7 @@ export default function StoryViewer() {
     }
     supabase.from('stories').select('id, media_url, kind, caption, created_at, duration_sec, overlays, meta').eq('author_id', id).gt('expires_at', new Date().toISOString()).order('created_at')
       .then(({ data }) => { const list = (data ?? []) as S[]; setItems(list); if (list.length === 0) close(); });
-  }, [id, highlight]);
+  }, [id, highlight, reloadKey]);
 
   async function openHighlights() {
     pause();
@@ -85,14 +91,14 @@ export default function StoryViewer() {
       target = data.id;
     }
     const { error } = await supabase.from('highlight_items').insert({ highlight_id: target, story_id: s.id });
-    setHlOpen(false); resume();
+    setHlOpen(false); unfreeze();
     if (error) Alert.alert(t('ما زبط'), error.message.includes('limit') ? t('وصلت الحد: 30 قصة بالهايلايت.') : error.message.includes('duplicate') ? t('موجودة أصلاً بهالهايلايت.') : t('جرّب كمان مرة.'));
     else Alert.alert(t('انضافت لأبرز القصص ✓'));
   }
 
   // leave once (never call navigation inside a state updater: it can run twice)
   const closed = useRef(false);
-  const close = useCallback(() => { if (closed.current) return; closed.current = true; if (router.canGoBack()) router.back(); else router.replace('/'); }, []);
+  const close = useCallback(() => { if (closed.current) return; closed.current = true; goBack('/'); }, []);
   const iRef = useRef(0);
   useEffect(() => { iRef.current = i; }, [i]);
   const next = useCallback(() => {
@@ -211,16 +217,86 @@ export default function StoryViewer() {
   }
   function onTyping(v: boolean) { setTyping(v); if (v) pause(); else resume(); }
 
+  /** the story leaves this viewer (deleted, or taken out of the highlight): show the next one, or leave */
+  function dropCurrent() {
+    if (!s) return;
+    const rest = (items ?? []).filter((x) => x.id !== s.id);
+    frozen.current = false;
+    if (rest.length === 0) close(); else { setItems(rest); setI(Math.min(i, rest.length - 1)); }
+  }
   function remove() {
     if (!s) return;
-    Alert.alert(t('حذف القصة'), t('أكيد بدك تحذفها؟'), [{ text: t('لا'), style: 'cancel' }, {
+    Alert.alert(t('حذف القصة'), t('أكيد بدك تحذفها؟'), [{ text: t('لا'), style: 'cancel', onPress: unfreeze }, {
       text: t('احذف'), style: 'destructive', onPress: async () => {
-        await supabase.from('stories').delete().eq('id', s.id);
-        const rest = (items ?? []).filter((x) => x.id !== s.id);
-        if (rest.length === 0) close(); else { setItems(rest); setI(Math.min(i, rest.length - 1)); }
+        const { error } = await supabase.from('stories').delete().eq('id', s.id);
+        if (error) { toast.error(t('ما انحذفت، جرّب كمان مرة.')); unfreeze(); return; }
+        dropCurrent();
       },
     }]);
   }
+  function removeFromHighlight() {
+    if (!s || !highlight) return;
+    Alert.alert(t('تشيلها من الهايلايت؟'), t('القصة نفسها بتضل بأرشيفك.'), [{ text: t('لا'), style: 'cancel', onPress: unfreeze }, {
+      text: t('شيلها'), style: 'destructive', onPress: async () => {
+        const { error } = await supabase.from('highlight_items').delete().eq('highlight_id', highlight).eq('story_id', s.id);
+        if (error) { toast.error(t('ما زبط، جرّب كمان مرة.')); unfreeze(); return; }
+        toast(t('انشالت من الهايلايت'));
+        dropCurrent();
+      },
+    }]);
+  }
+
+  // ---------- the "⋯" menu: the story waits while it's open, and while whatever was picked is on screen ----------
+  const [menu, setMenu] = useState(false);
+  const [editHl, setEditHl] = useState(false);
+  const [mutedAuthor, setMutedAuthor] = useState(false);
+  const away = useRef(false); // another screen was opened from the menu (report…): play on when back here
+  function openMenu() { frozen.current = true; pause(); setMenu(true); }
+  function unfreeze() { frozen.current = false; resume(); }
+  useFocusEffect(useCallback(() => { if (away.current) { away.current = false; unfreeze(); } }, [])); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (mine || !profile) return;
+    supabase.from('story_mutes').select('muted_id').eq('muted_id', id).maybeSingle().then(({ data }) => setMutedAuthor(!!data));
+  }, [id, mine, profile]);
+
+  async function toggleMute() {
+    if (!profile) return;
+    const { error } = mutedAuthor
+      ? await supabase.from('story_mutes').delete().eq('user_id', profile.id).eq('muted_id', id)
+      : await supabase.from('story_mutes').insert({ user_id: profile.id, muted_id: id });
+    if (error) { toast.error(t('ما زبط، جرّب كمان مرة.')); unfreeze(); return; }
+    if (mutedAuthor) { setMutedAuthor(false); toast(t('رجعت قصص {0} تبيّن', [author?.full_name ?? ''])); unfreeze(); return; }
+    toast(t('ما رح تبيّنلك قصص {0} بالشريط. ما رح يعرف.', [author?.full_name ?? '']));
+    close();
+  }
+  async function saveStory() {
+    if (!s) return;
+    const url = await mediaUrl('stories', s.media_url);
+    if (url) await saveToDevice(url, s.kind === 'video' ? 'video' : 'image');
+    unfreeze();
+  }
+  async function shareStory() {
+    const link = highlight ? `https://app.unimate.my/story/${id}?highlight=${highlight}` : `https://app.unimate.my/story/${id}`;
+    await shareLink(link, hlName ? t('هايلايت «{0}» على يونيميت', [hlName]) : t('قصة {0} على يونيميت', [author?.full_name ?? '']));
+    unfreeze();
+  }
+
+  const menuItems: StoryMenuItem[] = !s ? [] : mine && highlight ? [
+    { key: 'edit', icon: Pencil, label: t('تعديل الهايلايت'), onPress: () => setEditHl(true) },
+    { key: 'save', icon: Download, label: t('احفظ'), onPress: saveStory },
+    { key: 'share', icon: Share2, label: t('شارك الرابط'), onPress: shareStory },
+    { key: 'out', icon: MinusCircle, label: t('شيلها من الهايلايت'), onPress: removeFromHighlight, danger: true },
+  ] : mine ? [
+    { key: 'viewers', icon: Eye, label: t('مين شافها'), onPress: () => { setActivity(true); } },
+    { key: 'hl', icon: Star, label: t('ضيفها لأبرز القصص'), onPress: openHighlights },
+    { key: 'save', icon: Download, label: t('احفظ'), onPress: saveStory },
+    { key: 'close', icon: Users, label: t('الأصدقاء المقرّبين'), onPress: () => { away.current = true; router.push('/settings/close-friends'); } },
+    { key: 'delete', icon: Trash2, label: t('احذف القصة'), onPress: remove, danger: true },
+  ] : [
+    { key: 'share', icon: Share2, label: t('شارك الرابط'), onPress: shareStory },
+    { key: 'mute', icon: BellOff, label: mutedAuthor ? t('رجّع قصص {0}', [author?.full_name?.split(' ')[0] ?? '']) : t('اكتم قصص {0}', [author?.full_name?.split(' ')[0] ?? '']), onPress: toggleMute },
+    { key: 'report', icon: Flag, label: t('إبلاغ'), danger: true, onPress: () => { away.current = true; router.push({ pathname: '/report', params: { type: 'story', id: s.id, user: id } }); } },
+  ];
 
   return (
     <View style={{ flex: 1, backgroundColor: '#000' }}>
@@ -261,8 +337,7 @@ export default function StoryViewer() {
               {s && <T v="tiny" color="#E3E7F5">{timeAgo(s.created_at)}</T>}
             </View>
           </Tap>
-          {mine && !highlight && s?.kind === 'image' && <Tap onPress={openHighlights} accessibilityLabel={t('ثبّت بأبرز القصص')} style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}><Star size={22} color={C.white} /></Tap>}
-          {mine && !highlight && <Tap onPress={remove} accessibilityLabel={t('احذف القصة')} style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}><Trash2 size={22} color={C.white} /></Tap>}
+          {s && <Tap onPress={openMenu} accessibilityLabel={t('خيارات')} style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}><MoreHorizontal size={24} color={C.white} /></Tap>}
           <Tap onPress={close} accessibilityLabel={t('إغلاق')} style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}><X size={26} color={C.white} /></Tap>
         </Row>
       </SafeAreaView>
@@ -290,8 +365,8 @@ export default function StoryViewer() {
     </Animated.View>
     </GestureDetector>
 
-      <Modal visible={hlOpen} transparent animationType="slide" onRequestClose={() => { setHlOpen(false); resume(); }}>
-        <Pressable style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.4)' }} onPress={() => { setHlOpen(false); resume(); }} />
+      <Modal visible={hlOpen} transparent animationType="slide" onRequestClose={() => { setHlOpen(false); unfreeze(); }}>
+        <Pressable style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.4)' }} onPress={() => { setHlOpen(false); unfreeze(); }} />
         <View style={{ backgroundColor: C.card, borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: 18, gap: 12, paddingBottom: 40 }}>
           <T v="h3">{t('ثبّت بأبرز القصص')}</T>
           {hls.map((h) => (
@@ -306,6 +381,12 @@ export default function StoryViewer() {
           </Row>
         </View>
       </Modal>
+
+      <StoryMenu open={menu} items={menuItems} onClose={() => { setMenu(false); unfreeze(); }} onPick={(it) => { setMenu(false); it.onPress(); }} />
+      {mine && hl && (
+        <HighlightEditor open={editHl} edit={hl} onClose={() => { setEditHl(false); unfreeze(); }}
+          onSaved={() => { closed.current = false; setReloadKey((k) => k + 1); setI(0); }} />
+      )}
 
       <StoryActivitySheet open={activity} onClose={closeActivity} stories={items ?? []} index={i} me={profile?.id}
         onPick={(k) => { if (k !== i) setI(k); }} />

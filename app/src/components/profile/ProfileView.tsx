@@ -1,12 +1,11 @@
 import { TitleBadge, titledName } from '@/components/profile/TitleBadge';
 import { router, useFocusEffect } from 'expo-router';
 import { readCache, writeCache } from '@/lib/cache';
-import { BarChart3, Check, ChevronRight, Clapperboard, FileText, Grid3x3, Heart, Lock, Menu, MoreHorizontal, Play, Plus, PlusSquare, Star, UserPlus, UserSquare2, UserX, WifiOff, X } from 'lucide-react-native';
+import { BarChart3, Check, ChevronRight, Clapperboard, FileText, Grid3x3, Heart, Lock, Menu, MoreHorizontal, Play, Plus, PlusSquare, Star, UserPlus, UserSquare2, UserX, WifiOff } from 'lucide-react-native';
 import { useCallback, useEffect, useState } from 'react';
 import * as Haptics from 'expo-haptics';
-import { Alert, Linking, Modal, Pressable, RefreshControl, ScrollView, Share, TextInput, useWindowDimensions, View, Platform } from 'react-native';
+import { Alert, Linking, RefreshControl, ScrollView, View, Platform } from 'react-native';
 import Animated, { FadeIn, useAnimatedStyle, useSharedValue, withSequence, withSpring, withTiming } from 'react-native-reanimated';
-import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -17,15 +16,18 @@ import { SuggestedPeople } from '@/components/feed/SuggestedPeople';
 import { Avatar, Button, Empty, Row, T, Tap } from '@/components/ui';
 import { useAuth } from '@/lib/auth';
 import { POST_SELECT, toggleLike, withMine } from '@/lib/posts';
-import { optimistic , run } from '@/lib/run';
+import { optimistic, run } from '@/lib/run';
 import { toast } from '@/lib/toast';
 import { mediaUrl, supabase, photoWidth } from '@/lib/supabase';
-import { C, F, isDark, R, SPRING } from '@/lib/theme';
+import { C, F, R, SPRING } from '@/lib/theme';
 import type { Post, Profile } from '@/lib/types';
-import { flip, nm, t, ta, LOCALE } from '@/lib/i18n';
+import { flip, nm, t, LOCALE } from '@/lib/i18n';
 import { Bone } from '@/components/ui/Skeleton';
 import { useScreenTimer } from '@/lib/perf';
 import { featureOn, useAppContent } from '@/lib/appContent';
+import { goBack } from '@/lib/nav';
+import { shareLink } from '@/lib/share';
+import { HighlightEditor, type HighlightRef } from '@/components/story/HighlightEditor';
 
 type Rel = 'none' | 'pending' | 'accepted';
 
@@ -42,16 +44,21 @@ function openSocial(site: 'instagram' | 'snapchat', handle: string) {
 
 const TILE_G: [string, string][] = [['#2E5BFF', '#17204A'], ['#FF7A59', '#C0264A'], ['#0D9488', '#17204A'], ['#6A3BE0', '#17204A'], ['#B45309', '#3A2A44']];
 
-/** A highlight circle under the bio (opens its stories). */
-function HighlightBubble({ h, owner }: { h: { id: string; title: string; cover_url: string | null }; owner: string }) {
+/** A highlight circle under the bio: tap plays its stories; on your own profile, hold to edit it (like Instagram). */
+function HighlightBubble({ h, owner, onEdit }: { h: HighlightRef; owner: string; onEdit?: (h: HighlightRef) => void }) {
   const [uri, setUri] = useState<string | null>(null);
-  useEffect(() => { if (h.cover_url) mediaUrl('stories', h.cover_url, photoWidth(66)).then(setUri); }, [h.cover_url]);
+  useEffect(() => { setUri(null); if (h.cover_url) mediaUrl('stories', h.cover_url, photoWidth(66)).then(setUri); }, [h.cover_url]);
   return (
-    <Tap onPress={() => router.push({ pathname: '/story/[id]', params: { id: owner, highlight: h.id } })} style={{ alignItems: 'center', gap: 6, width: 66 }} accessibilityLabel={h.title}>
-      <View style={{ width: 62, height: 62, borderRadius: 31, padding: 3, borderWidth: 1, borderColor: C.line }}>
-        <View style={{ flex: 1, borderRadius: 28, overflow: 'hidden', backgroundColor: C.soft }}>{uri && <Image source={{ uri }} style={{ flex: 1 }} contentFit="cover" transition={150} />}</View>
+    <Tap onPress={() => router.push({ pathname: '/story/[id]', params: { id: owner, highlight: h.id } })}
+      onLongPress={onEdit ? () => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {}); onEdit(h); } : undefined}
+      style={{ alignItems: 'center', gap: 6, width: 70 }} accessibilityLabel={h.title} accessibilityHint={onEdit ? t('اضغط مطوّل للتعديل') : undefined}>
+      <View style={{ width: 66, height: 66, borderRadius: 33, padding: 3, borderWidth: 1.5, borderColor: C.line }}>
+        <View style={{ flex: 1, borderRadius: 30, overflow: 'hidden', backgroundColor: C.soft, alignItems: 'center', justifyContent: 'center' }}>
+          {uri ? <Image source={{ uri }} style={{ position: 'absolute', top: 0, bottom: 0, left: 0, right: 0 }} contentFit="cover" transition={150} />
+            : <T style={{ fontFamily: F.display, fontSize: 22 }} color={C.muted}>{h.title.trim()[0] ?? '★'}</T>}
+        </View>
       </View>
-      <T v="tiny" numberOfLines={1}>{h.title}</T>
+      <T v="tiny" numberOfLines={1} style={{ maxWidth: 70 }}>{h.title}</T>
     </Tap>
   );
 }
@@ -101,80 +108,6 @@ export function GridTile({ post, i }: { post: Post; i: number }) {
   );
 }
 
-type MyStory = { id: string; media_url: string; created_at: string };
-/** Pick your old photo stories and name a new highlight (Instagram's "New" bubble). */
-function NewHighlight({ open, onClose, onMade }: { open: boolean; onClose: () => void; onMade: () => void }) {
-  const { profile } = useAuth();
-  const { width } = useWindowDimensions();
-  const [list, setList] = useState<(MyStory & { uri?: string })[] | null>(null);
-  const [sel, setSel] = useState<string[]>([]);
-  const [title, setTitle] = useState('');
-  const [busy, setBusy] = useState(false);
-  useEffect(() => {
-    if (!open || !profile) return;
-    setSel([]); setTitle(''); setList(null);
-    supabase.from('stories').select('id, media_url, created_at').eq('author_id', profile.id).eq('kind', 'image').order('created_at', { ascending: false }).limit(60)
-      .then(async ({ data }) => {
-        const rows = (data ?? []) as MyStory[];
-        const withUri = await Promise.all(rows.map(async (r) => ({ ...r, uri: (await mediaUrl('stories', r.media_url)) ?? undefined })));
-        setList(withUri);
-      });
-  }, [open, profile]);
-  async function make() {
-    if (!profile || busy) return;
-    if (!sel.length) { Alert.alert(t('اختار قصة وحدة على الأقل')); return; }
-    if (!title.trim()) { Alert.alert(t('سمّي الهايلايت')); return; }
-    setBusy(true);
-    try {
-      const cover = list?.find((x) => x.id === sel[0])?.media_url ?? null;
-      const { data, error } = await supabase.from('highlights').insert({ owner_id: profile.id, title: title.trim().slice(0, 30), cover_url: cover }).select('id').single();
-      if (error || !data) throw error;
-      const { error: ie } = await supabase.from('highlight_items').insert(sel.map((story_id) => ({ highlight_id: data.id, story_id })));
-      if (ie) throw ie;
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
-      toast(t('انعمل الهايلايت ✓'));
-      onMade(); onClose();
-    } catch (e) {
-      Alert.alert(t('ما زبط'), String((e as Error)?.message ?? '').includes('limit') ? t('وصلت الحد: 30 قصة بالهايلايت.') : t('جرّب كمان مرة.'));
-    } finally { setBusy(false); }
-  }
-  const side = (width - 16 * 2 - 6 * 2) / 3;
-  return (
-    <Modal visible={open} animationType="slide" onRequestClose={onClose} presentationStyle="pageSheet">
-      <SafeAreaView style={{ flex: 1, backgroundColor: C.bg }}>
-        <Row gap={8} style={{ paddingHorizontal: 12, paddingVertical: 8 }}>
-          <Tap onPress={onClose} accessibilityLabel={t('إغلاق')} style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}><X size={22} color={C.ink} /></Tap>
-          <T v="h3" style={{ flex: 1, textAlign: 'center' }}>{t('هايلايت جديد')}</T>
-          <Tap onPress={make} disabled={busy} style={{ minHeight: 38, paddingHorizontal: 18, borderRadius: R.pill, backgroundColor: C.primary, alignItems: 'center', justifyContent: 'center', opacity: busy ? 0.6 : 1 }}>
-            <T v="bold" color={C.onPrimary}>{t('تم')}</T>
-          </Tap>
-        </Row>
-        <View style={{ paddingHorizontal: 16, paddingBottom: 12 }}>
-          <TextInput value={title} onChangeText={setTitle} maxLength={30} placeholder={t('اسم الهايلايت، مثلاً «سنة أولى»')} placeholderTextColor={C.faint} keyboardAppearance={isDark ? 'dark' : 'light'}
-            style={{ minHeight: 48, borderRadius: 16, backgroundColor: C.card, borderWidth: 1, borderColor: C.line, paddingHorizontal: 14, fontFamily: F.body, fontSize: 15, color: C.ink, textAlign: ta }} />
-        </View>
-        <ScrollView contentContainerStyle={{ paddingHorizontal: 16, flexDirection: 'row', flexWrap: 'wrap', gap: 6, paddingBottom: 40 }}>
-          {list === null ? [0, 1, 2, 3, 4, 5].map((k) => <Bone key={k} w={side} h={side * 1.6} r={16} />)
-            : list.length === 0 ? <View style={{ width: '100%' }}><Empty title={t('ما عندك قصص صور لهلأ')} body={t('نزّل ستوري وبعدين بتقدر تثبّتها هون.')} /></View>
-            : list.map((x) => {
-              const n = sel.indexOf(x.id);
-              return (
-                <Pressable key={x.id} onPress={() => { Haptics.selectionAsync().catch(() => {}); setSel((cur) => (n >= 0 ? cur.filter((y) => y !== x.id) : [...cur, x.id])); }}
-                  accessibilityRole="checkbox" accessibilityState={{ checked: n >= 0 }} accessibilityLabel={new Date(x.created_at).toLocaleDateString(LOCALE)}
-                  style={{ width: side, height: side * 1.6, borderRadius: 16, overflow: 'hidden', backgroundColor: C.soft }}>
-                  {x.uri && <Image source={{ uri: x.uri }} style={{ flex: 1 }} contentFit="cover" />}
-                  <View style={{ position: 'absolute', top: 6, left: 6, width: 24, height: 24, borderRadius: 12, borderWidth: 2, borderColor: '#fff', backgroundColor: n >= 0 ? C.primary : 'rgba(0,0,0,0.25)', alignItems: 'center', justifyContent: 'center' }}>
-                    {n >= 0 && <T v="tiny" color={C.onPrimary} style={{ fontFamily: F.bodyBold }}>{n + 1}</T>}
-                  </View>
-                </Pressable>
-              );
-            })}
-        </ScrollView>
-      </SafeAreaView>
-    </Modal>
-  );
-}
-
 export function ProfileView({ userId, onTitle, back }: { userId: string; onTitle?: (title: string) => void; back?: boolean }) {
   const { profile: me } = useAuth();
   const mine = me?.id === userId;
@@ -189,11 +122,12 @@ export function ProfileView({ userId, onTitle, back }: { userId: string; onTitle
   const [loading, setLoading] = useState(true);
   useScreenTimer('profile', !loading);
   const [hasStory, setHasStory] = useState(false);
-  const [hls, setHls] = useState<{ id: string; title: string; cover_url: string | null }[]>([]);
+  const [hls, setHls] = useState<HighlightRef[]>([]);
   const [failed, setFailed] = useState<'none' | 'error' | 'missing'>('none');
   const [busy, setBusy] = useState(false);
   const [suggest, setSuggest] = useState(false);
-  const [newHl, setNewHl] = useState(false);
+  // the highlight editor: null closed, 'new', or the one being edited
+  const [hlEdit, setHlEdit] = useState<HighlightRef | 'new' | null>(null);
   const [tagged, setTagged] = useState<Post[] | null>(null);
 
   const cacheKey = me ? `profile:${me.id}:${userId}` : null;
@@ -282,13 +216,7 @@ export function ProfileView({ userId, onTitle, back }: { userId: string; onTitle
   function shareProfile() {
     if (!p) return;
     const url = `https://app.unimate.my/user/${p.id}`;
-    const message = `${p.full_name}${p.username ? ` (@${p.username})` : ''} على يونيميت\n${url}`;
-    // browsers without a share sheet: copy the link instead of doing nothing
-    if (Platform.OS === 'web' && typeof navigator !== 'undefined' && !(navigator as Navigator & { share?: unknown }).share) {
-      navigator.clipboard?.writeText(url).then(() => toast(t('انتسخ رابط البروفايل')), () => toast(url));
-      return;
-    }
-    Share.share({ message, url }).catch(() => {});
+    shareLink(url, `${p.full_name}${p.username ? ` (@${p.username})` : ''} على يونيميت`);
   }
 
   /** Block / unblock, like Instagram: a blocked person can't find this account, message it or see its posts. */
@@ -304,7 +232,7 @@ export function ProfileView({ userId, onTitle, back }: { userId: string; onTitle
           : await run(supabase.from('blocks').insert({ blocker_id: me.id, blocked_id: userId }));
         if (!r.ok) return;
         toast(blocked ? t('انلغى الحظر') : t('انحظر'));
-        if (!blocked) { if (router.canGoBack()) router.back(); else router.replace('/(tabs)'); } else load();
+        if (!blocked) { goBack('/(tabs)'); } else load();
       } },
     ]);
   }
@@ -374,7 +302,7 @@ export function ProfileView({ userId, onTitle, back }: { userId: string; onTitle
           {/* top bar like Instagram: username + badge, then create / activity / menu (mine) or more (others) */}
           <Row gap={4} style={{ minHeight: 48, marginHorizontal: -6 }}>
             {back && (
-              <Tap onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))} accessibilityLabel={t('رجوع')} style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}>
+              <Tap onPress={() => goBack('/')} accessibilityLabel={t('رجوع')} style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}>
                 <ChevronRight size={24} color={C.ink} style={flip} />
               </Tap>
             )}
@@ -499,12 +427,12 @@ export function ProfileView({ userId, onTitle, back }: { userId: string; onTitle
         {canSee && (hls.length > 0 || mine) && (
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 12, paddingHorizontal: 18, paddingTop: 16, paddingBottom: 6 }}>
             {mine && (
-              <Tap onPress={() => setNewHl(true)} style={{ alignItems: 'center', gap: 6, width: 66 }} accessibilityLabel={t('هايلايت جديد')}>
-                <View style={{ width: 62, height: 62, borderRadius: 31, borderWidth: 1, borderColor: C.line, alignItems: 'center', justifyContent: 'center' }}><Plus size={26} color={C.ink} /></View>
+              <Tap onPress={() => setHlEdit('new')} style={{ alignItems: 'center', gap: 6, width: 70 }} accessibilityLabel={t('هايلايت جديد')}>
+                <View style={{ width: 66, height: 66, borderRadius: 33, borderWidth: 1, borderColor: C.line, alignItems: 'center', justifyContent: 'center' }}><Plus size={26} color={C.ink} /></View>
                 <T v="tiny">{t('جديد')}</T>
               </Tap>
             )}
-            {hls.map((h) => <HighlightBubble key={h.id} h={h} owner={userId} />)}
+            {hls.map((h) => <HighlightBubble key={h.id} h={h} owner={userId} onEdit={mine ? setHlEdit : undefined} />)}
           </ScrollView>
         )}
 
@@ -540,7 +468,7 @@ export function ProfileView({ userId, onTitle, back }: { userId: string; onTitle
         )}
       </ScrollView>
       <LikesSheet post={likesOf} onClose={() => setLikesOf(null)} />
-      {mine && <NewHighlight open={newHl} onClose={() => setNewHl(false)} onMade={load} />}
+      {mine && <HighlightEditor open={!!hlEdit} edit={hlEdit === 'new' ? null : hlEdit} onClose={() => setHlEdit(null)} onSaved={load} />}
     </>
   );
 }

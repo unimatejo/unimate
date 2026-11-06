@@ -15,7 +15,7 @@ import { Avatar, Button, Row, T, Tap } from '@/components/ui';
 import { useAuth } from '@/lib/auth';
 import { mediaUrl, supabase } from '@/lib/supabase';
 import { rtTopic } from '@/lib/realtime';
-import { C, F, isDark, shadow } from '@/lib/theme';
+import { C, F, isDark } from '@/lib/theme';
 import { bubble, SheetModal, subOn } from '@/components/chat/ChatExtras';
 import type { Message } from '@/lib/types';
 import { pickMedia, publicUrl, uploadFile } from '@/lib/upload';
