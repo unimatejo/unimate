@@ -1,6 +1,6 @@
 import * as Location from 'expo-location';
 import { router, useLocalSearchParams } from 'expo-router';
-import { ChevronRight, Crosshair, Footprints, Layers, MapPin, MapPinPlus, Maximize2, Navigation, Pause, Play, Search, Send, SkipBack, SkipForward, X } from 'lucide-react-native';
+import { ChevronRight, Crosshair, School, Footprints, Layers, MapPin, MapPinPlus, Maximize2, Navigation, Pause, Play, Search, Send, SkipBack, SkipForward, X } from 'lucide-react-native';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, FlatList, Keyboard, Linking, Platform, ScrollView, TextInput, View } from 'react-native';
 import MapView, { Marker, Polyline, PROVIDER_DEFAULT } from 'react-native-maps';
@@ -11,6 +11,7 @@ import { ShareToChat } from '@/components/chat/ShareToChat';
 import { FILTERS, inGroup, kindOf, localSearch, MINOR, TOUR_KINDS, type FilterKey, type Pin } from '@/components/map/kinds';
 import { DirectionBanner, NavCard } from '@/components/map/NavPanel';
 import { SuggestPlace } from '@/components/map/SuggestPlace';
+import { UniSwitcher } from '@/components/map/UniSwitcher';
 import { Button, Chip, Row, T, Tap } from '@/components/ui';
 import { GlyphTile } from '@/components/ui/Glyph';
 import { useAuth } from '@/lib/auth';
@@ -43,22 +44,21 @@ export default function CampusMap() {
     const la = Number(params.lat), ln = Number(params.lng);
     return params.lat && params.lng && Number.isFinite(la) && Number.isFinite(ln) ? { id: 'shared', kind: 'shared', name: params.name || t('موقع مشارك'), sub: t('من محادثة'), lat: la, lng: ln } : null;
   }, [params.lat, params.lng, params.name]);
-  // an admin opens any campus with ?uni=<id> (admin › campus maps); the database only gives admins other campuses' places
-  const wanted = params.uni && params.uni !== mine?.id ? params.uni : null;
+  // another university's map: from the switcher, or ?uni=<id> (admin › campus maps). Its buildings and places come from
+  // campus_pins (names and points only); the student's own campus reads the tables as before.
+  const [picked, setPicked] = useState<University | null>(null);
+  const [switching, setSwitching] = useState(false);
+  const wanted = picked ? null : params.uni && params.uni !== mine?.id ? params.uni : null;
   const [loaded, setLoaded] = useState<{ id: string; uni: University | null } | null>(null);
   useEffect(() => {
     if (!wanted) return;
     let live = true;
-    (async () => {
-      const { data: me } = await supabase.auth.getUser();
-      const { data: a } = me.user ? await supabase.from('admins').select('role').eq('user_id', me.user.id).maybeSingle() : { data: null };
-      const { data: u } = a ? await supabase.from('universities').select('*').eq('id', wanted).maybeSingle() : { data: null };
-      if (live) setLoaded({ id: wanted, uni: (u as University | null) ?? null });
-    })().catch(() => { if (live) setLoaded({ id: wanted, uni: null }); });
+    supabase.from('universities').select('*').eq('id', wanted).maybeSingle()
+      .then(({ data }) => { if (live) setLoaded({ id: wanted, uni: (data as University | null) ?? null }); }, () => { if (live) setLoaded({ id: wanted, uni: null }); });
     return () => { live = false; };
   }, [wanted]);
-  // undefined while an admin's preview is loading; null when it's the student's own campus (or not allowed)
-  const preview = !wanted ? null : loaded?.id === wanted ? loaded.uni : undefined;
+  // undefined while it loads; null on the student's own campus
+  const preview = picked ? (picked.id === mine?.id ? null : picked) : !wanted ? null : loaded?.id === wanted ? loaded.uni : undefined;
   const university = preview ?? mine;
   const [shareFor, setShareFor] = useState<Pin | null>(null);
   const map = useRef<MapView>(null);
@@ -91,6 +91,14 @@ export default function CampusMap() {
     if (!university) { setPinsState('empty'); return; }
     setPinsState('loading');
     try {
+      if (preview) {
+        const { data, error } = await supabase.rpc('campus_pins', { p_university: university.id });
+        if (error) { setPinsState('error'); return; }
+        const rows = (data ?? []) as { id: string; kind: string; name_ar: string; name_en: string | null; sub: string | null; lat: number; lng: number; advertiser_id: string | null }[];
+        setPins(rows.map((x) => ({ id: x.id, kind: x.kind, name: nm(x), sub: x.sub, lat: x.lat, lng: x.lng, advertiser_id: x.advertiser_id })));
+        setPinsState(rows.length ? 'ok' : 'empty');
+        return;
+      }
       const [{ data: b, error: be }, { data: p, error: pe }] = await Promise.all([
         supabase.from('buildings').select('id, name_ar, name_en, code, lat, lng').eq('university_id', university.id).not('lat', 'is', null),
         supabase.from('places').select('id, kind, name_ar, name_en, description, lat, lng, advertiser_id').eq('university_id', university.id).eq('state', 'approved'),
@@ -102,10 +110,15 @@ export default function CampusMap() {
       ]);
       setPinsState(((b ?? []).length + (p ?? []).length) ? 'ok' : 'empty');
     } catch { setPinsState('error'); }
-  }, [university]);
+  }, [university, preview]);
   useEffect(() => { loadPins(); }, [loadPins]);
   // the 3D campus: only this university's file, kept by the browser between visits
-  useEffect(() => { if (university) loadCampus(university.id).then(setCampus); }, [university]);
+  useEffect(() => {
+    if (!university) return;
+    let live = true;
+    loadCampus(university.id).then((d) => { if (live) setCampus(d); });
+    return () => { live = false; };
+  }, [university]);
 
   const near = useMemo(() => pins.filter((p) => distM({ lat: center.latitude, lng: center.longitude }, p) < 3000), [pins, center.latitude, center.longitude]);
   const fitAll = useCallback(() => {
@@ -299,7 +312,7 @@ export default function CampusMap() {
 
   return (
     <View style={{ flex: 1, backgroundColor: C.bg, overflow: 'hidden' }}>
-      <MapView ref={map} provider={PROVIDER_DEFAULT} style={{ flex: 1 }} showsUserLocation showsCompass={false} showsPointsOfInterests={false} showsBuildings pitchEnabled rotateEnabled
+      <MapView key={university?.id ?? 'none'} ref={map} provider={PROVIDER_DEFAULT} style={{ flex: 1 }} showsUserLocation showsCompass={false} showsPointsOfInterests={false} showsBuildings pitchEnabled rotateEnabled
         mapType={sat ? (Platform.OS === 'ios' ? 'hybridFlyover' : 'hybrid') : Platform.OS === 'ios' ? 'mutedStandard' : 'standard'}
         initialCamera={{ center, zoom: 16, heading: WEB ? -18 : 0, pitch: WEB ? 52 : 0 }} onPress={() => { Keyboard.dismiss(); }}
         onRegionChangeComplete={(r) => { setZoom((r as { zoom?: number }).zoom ?? Math.log2(360 / r.longitudeDelta)); mid.current = { lat: r.latitude, lng: r.longitude }; }}
@@ -402,11 +415,16 @@ export default function CampusMap() {
           </ScrollView>
         ))}
         {preview && (
-          <View pointerEvents="none" style={[{ alignSelf: 'flex-start', flexDirection: 'row', gap: 6, backgroundColor: C.primary, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 6 }, shadow]}>
-            <T v="tiny" color={C.onPrimary}>{t('معاينة المشرف · {0}', [nm(preview)])}</T>
-          </View>
+          <Tap onPress={() => setSwitching(true)} accessibilityLabel={t('غيّر الجامعة')}
+            style={[{ alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 36, backgroundColor: C.primary, borderRadius: 999, paddingHorizontal: 12 }, shadow]}>
+            <School size={15} color={C.onPrimary} />
+            <T v="tiny" color={C.onPrimary}>{t('بتتصفّح خريطة {0}', [nm(preview)])}</T>
+          </Tap>
         )}
       </SafeAreaView>
+
+      <UniSwitcher open={switching} onClose={() => setSwitching(false)} current={university?.id ?? null} mine={mine?.id ?? null}
+        onPick={(u) => { if (u.id === university?.id) return; stopAnim(); setTour(null); setWalker(null); setSuggest(false); setSel(null); setNav(null); setQ(''); setFilter('all'); setCampus(null); setPins([]); opened.current = false; setPicked(u); }} />
 
       {suggest && university && <SuggestPlace universityId={university.id} userId={profile?.id} at={() => mid.current ?? { lat: center.latitude, lng: center.longitude }} onClose={() => setSuggest(false)} />}
 
@@ -432,9 +450,15 @@ export default function CampusMap() {
             style={[{ width: 48, height: 48, borderRadius: 16, backgroundColor: sat ? C.inverse : C.card, alignItems: 'center', justifyContent: 'center' }, shadow]}>
             <Layers size={21} color={sat ? C.onInverse : C.ink} />
           </Tap>
-          <Tap onPress={() => setSuggest(true)} accessibilityLabel={t('اقترح مكان ناقص')}
-            style={[{ width: 48, height: 48, borderRadius: 16, backgroundColor: C.card, alignItems: 'center', justifyContent: 'center' }, shadow]}>
-            <MapPinPlus size={21} color={C.ink} />
+          {!preview && (
+            <Tap onPress={() => setSuggest(true)} accessibilityLabel={t('اقترح مكان ناقص')}
+              style={[{ width: 48, height: 48, borderRadius: 16, backgroundColor: C.card, alignItems: 'center', justifyContent: 'center' }, shadow]}>
+              <MapPinPlus size={21} color={C.ink} />
+            </Tap>
+          )}
+          <Tap onPress={() => setSwitching(true)} accessibilityLabel={t('خرائط الجامعات')}
+            style={[{ width: 48, height: 48, borderRadius: 16, backgroundColor: preview ? C.primary : C.card, alignItems: 'center', justifyContent: 'center' }, shadow]}>
+            <School size={21} color={preview ? C.onPrimary : C.ink} />
           </Tap>
           <Tap onPress={fitAll} accessibilityLabel={t('شوف الجامعة كاملة')}
             style={[{ width: 48, height: 48, borderRadius: 16, backgroundColor: C.card, alignItems: 'center', justifyContent: 'center' }, shadow]}>

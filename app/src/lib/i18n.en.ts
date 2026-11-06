@@ -2835,10 +2835,12 @@ export const EN: Record<string, string> = {
   "ما إلها مركز حرم. ضيفه من «الجامعات والخرائط» وبعدين ابني الخريطة.": "It has no campus point. Add one in “Universities and maps”, then build the map.",
   "متوسطة": "Partial",
   "متوسطة · {0}": "Partial · {0}",
-  "معاينة المشرف · {0}": "Admin preview · {0}",
   "ناقصة": "Sparse",
   "ناقصة · {0}": "Sparse · {0}",
   "اقتراحات الطلاب · {0}": "Student suggestions · {0}",
   "اقتراحات طلاب {0}": "Suggestions from {0} students",
   "القبول والرفض للمالك بس.": "Only the owner can accept or reject.",
+  "ابحث عن جامعة": "Search universities",
+  "بتتصفّح خريطة {0}": "Viewing the map of {0}",
+  "غيّر الجامعة": "Change university",
 };
