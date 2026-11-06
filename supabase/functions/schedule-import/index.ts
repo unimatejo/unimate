@@ -33,49 +33,57 @@ Deno.serve(async (req) => {
     if (typeof image !== 'string' || image.length < 100) return json({ error: 'no_image' }, 400);
     if (image.length > 7_000_000) return json({ error: 'too_big' }, 413);
 
-    // Google retires model names and is sometimes overloaded: try a short list with a time limit on each,
-    // then ask Google which Flash models this key has today and try those.
+    // Google retires model names and its "latest" aliases are the busiest: ask which Flash models this key has today
+    // (the exact names first), start the best one, and if it hasn't answered in a few seconds start the next one too.
+    // The first good reading wins. A reading with no courses counts as a miss, so a weaker model can't end the search.
     const started = Date.now();
-    const call = (model: string) => fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
-      method: 'POST',
-      headers: { 'content-type': 'application/json', 'x-goog-api-key': gemini },
-      signal: AbortSignal.timeout(Math.max(5000, Math.min(30000, 55000 - (Date.now() - started)))),
-      body: JSON.stringify({
-        contents: [{ role: 'user', parts: [{ inline_data: { mime_type: mime === 'image/png' ? 'image/png' : 'image/jpeg', data: image } }, { text: PROMPT }] }],
-        generationConfig: { responseMimeType: 'application/json', temperature: 0 },
-      }),
-    }).catch((e) => { console.error('gemini', model, String(e)); return null; });
-    async function available(): Promise<string[]> {
+    const left = () => 55000 - (Date.now() - started);
+    const body = JSON.stringify({
+      contents: [{ role: 'user', parts: [{ inline_data: { mime_type: mime === 'image/png' ? 'image/png' : 'image/jpeg', data: image } }, { text: PROMPT }] }],
+      generationConfig: { responseMimeType: 'application/json', temperature: 0 },
+    });
+    let busy = false;
+    async function read(model: string): Promise<Record<string, unknown> | null> {
+      if (left() < 4000) return null;
       try {
-        const r = await fetch('https://generativelanguage.googleapis.com/v1beta/models?pageSize=200', { headers: { 'x-goog-api-key': gemini! }, signal: AbortSignal.timeout(6000) });
+        const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
+          method: 'POST', headers: { 'content-type': 'application/json', 'x-goog-api-key': gemini! }, body, signal: AbortSignal.timeout(Math.min(35000, left())),
+        });
+        if (!r.ok) { if (r.status === 429 || r.status === 503) busy = true; console.error('gemini', model, r.status, (await r.text()).slice(0, 160)); return null; }
+        const go = await r.json();
+        const text: string = (go.candidates?.[0]?.content?.parts ?? []).map((x: { text?: string }) => x.text ?? '').join('');
+        const m = text.match(/\{[\s\S]*\}/);
+        const parsed = m ? JSON.parse(m[0]) : null;
+        if (!parsed || (!(Array.isArray(parsed.courses) && parsed.courses.length) && parsed.error !== 'not_schedule')) { console.error('gemini', model, 'empty'); return null; }
+        return parsed;
+      } catch (e) { console.error('gemini', model, String(e).slice(0, 120)); return null; }
+    }
+    async function models(): Promise<string[]> {
+      try {
+        const r = await fetch('https://generativelanguage.googleapis.com/v1beta/models?pageSize=200', { headers: { 'x-goog-api-key': gemini! }, signal: AbortSignal.timeout(5000) });
         const d = await r.json() as { models?: { name: string; supportedGenerationMethods?: string[] }[] };
-        return (d.models ?? []).filter((m) => /flash/.test(m.name) && !/image|tts|audio|live|thinking|exp/.test(m.name) && (m.supportedGenerationMethods ?? []).includes('generateContent'))
-          .map((m) => m.name.replace(/^models\//, '')).sort((a, b) => b.localeCompare(a, 'en', { numeric: true }));
+        const all = (d.models ?? []).filter((m) => /flash/.test(m.name) && !/image|tts|audio|live|thinking|exp|preview/.test(m.name) && (m.supportedGenerationMethods ?? []).includes('generateContent'))
+          .map((m) => m.name.replace(/^models\//, '')).filter((n) => !/latest/.test(n)).sort((a, b) => b.localeCompare(a, 'en', { numeric: true }));
+        return [...all.filter((n) => !/lite/.test(n)), ...all.filter((n) => /lite/.test(n))];
       } catch { return []; }
     }
-    const tried = new Set<string>();
-    let last: Response | null = null;
-    const attempt = async (list: string[]): Promise<Response | null> => {
-      for (const model of list) {
-        if (tried.has(model) || Date.now() - started > 50000) continue;
-        tried.add(model);
-        const r = await call(model);
-        if (r?.ok) return r;
-        if (r) { last = r; console.error('gemini', model, r.status, (await r.text()).slice(0, 200)); }
-      }
-      return null;
-    };
-    const first = [Deno.env.get('GEMINI_MODEL'), 'gemini-flash-latest', 'gemini-flash-lite-latest'].filter(Boolean) as string[];
-    let g = await attempt(first);
-    if (!g) g = await attempt((await available()).slice(0, 4));
-    // one more go at the main model if Google was only busy
-    if (!g && Date.now() - started < 40000) { tried.delete(first[0]); await new Promise((r) => setTimeout(r, 1500)); g = await attempt([first[0]]); }
-    if (!g) return json({ error: (last as Response | null)?.status === 429 || (last as Response | null)?.status === 503 ? 'busy' : 'read_failed' }, 502);
-    const go = await g.json();
-    const text: string = (go.candidates?.[0]?.content?.parts ?? []).map((x: { text?: string }) => x.text ?? '').join('');
-    const m = text.match(/\{[\s\S]*\}/);
-    if (!m) return json({ error: 'unreadable' }, 422);
-    const parsed = JSON.parse(m[0]);
+    const order = [...new Set([Deno.env.get('GEMINI_MODEL'), ...(await models()).slice(0, 3), 'gemini-flash-latest', 'gemini-flash-lite-latest'].filter(Boolean) as string[])];
+    let parsed: Record<string, unknown> | null = null;
+    await new Promise<void>((done) => {
+      let i = 0, running = 0, finished = false;
+      const finish = () => { if (!finished) { finished = true; done(); } };
+      const next = () => {
+        if (finished) return;
+        if (i >= order.length || left() < 4000) { if (!running) finish(); return; }
+        const model = order[i++]; running++;
+        // a model that hasn't answered in 9 seconds gets company; a failed one is replaced at once
+        const hedge = setTimeout(next, 9000);
+        read(model).then((p) => { running--; clearTimeout(hedge); if (p && !parsed) { parsed = p; finish(); } else if (!finished) next(); });
+      };
+      next();
+    });
+    if (!parsed) return json({ error: busy ? 'busy' : 'read_failed' }, 502);
+    parsed = parsed as Record<string, unknown>;
     const hhmm = (s: unknown) => (typeof s === 'string' && /^\d{1,2}:\d{2}$/.test(s.trim()) ? s.trim().padStart(5, '0') : null);
     const courses = (Array.isArray(parsed.courses) ? parsed.courses : []).slice(0, 15).map((c: Record<string, unknown>) => ({
       name: String(c.name ?? '').slice(0, 120), code: c.code ? String(c.code).slice(0, 20) : null,
