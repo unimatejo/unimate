@@ -120,7 +120,9 @@ or JSON: `[{"student_number":"2620387","term_gpa":3.71,"cumulative_gpa":3.60,"cr
   added to `places` with their `osm_id`; nothing already there is changed or removed.
   The campus outline is looked up by the university's name (Photon search, then the outline from the OSM API; the name
   must match, word for word) so a rough saved centre still lands the map on the real campus; if the centre is outside
-  that outline it is moved into it.
+  that outline it is moved into it. A university can have more than one campus (Yarmouk's south campus, Mutah's
+  military wing): every outline with the same name or a "campus / wing" name is kept (`campuses` in the file, main
+  one first, also in `campus` for older apps) and every on-campus test uses all of them.
 - **Every university, one at a time (`campus-import`).** Raw rows in `osm_stage` (OSM and Wikimapia, by university
   slug) become `buildings` and `places`. Dry run by default: the answer is the report (before → after, what would be
   added, what was left out and why, rows already in the tables that sit outside the campus or inside another
