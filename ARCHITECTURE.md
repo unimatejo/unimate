@@ -121,9 +121,21 @@ or JSON: `[{"student_number":"2620387","term_gpa":3.71,"cumulative_gpa":3.60,"cr
   The campus outline is looked up by the university's name (Photon search, then the outline from the OSM API; the name
   must match, word for word) so a rough saved centre still lands the map on the real campus; if the centre is outside
   that outline it is moved into it.
+- **Every university, one at a time (`campus-import`).** Raw rows in `osm_stage` (OSM and Wikimapia, by university
+  slug) become `buildings` and `places`. Dry run by default: the answer is the report (before → after, what would be
+  added, what was left out and why, rows already in the tables that sit outside the campus or inside another
+  university's). `{ apply: true }` inserts exactly that (new rows only) and rebuilds the 3D file. Rules: a row counts
+  when it is inside the campus outline (else near our known buildings) and never inside a neighbour's outline; known
+  kinds map to place kinds, hotels/schools/fuel/shops that aren't for students are left out; names with phone numbers,
+  links, chatter or someone's office are refused; a Wikimapia name only names a building when it falls inside a real
+  OSM outline we haven't named; duplicates (same OSM id, same building outline, same name close by, same kind within
+  25 m) are dropped; Arabic goes to `name_ar`, English to `name_en`, and a trailing "- the university's name" is cut.
+  Footprints and heights come from the OSM map API in `campus-osm` (Overpass refuses cloud servers) and are cached per
+  university in Storage (`campus/<id>.json`, versioned URL, browser cache).
 - **Admin.** Admin › خرائط الجامعات (`app/admin/maps.tsx`, RPCs `admin_campus_overview`, `admin_campus_rebuild`) lists
   every university's map with how complete it is (ready / partial / sparse), opens it as its students see it
-  (`/map?uni=<id>`, admins only: RLS already lets admins read every campus's buildings and places), or rebuilds it now.
+  (`/map?uni=<id>`, admins only: RLS already lets admins read every campus's buildings and places), rebuilds it now,
+  and lists that university's student suggestions (look at each on its own map, accept / reject: owner).
 - **Web.** `react-native-maps` is swapped for `components/map/webMaps.tsx` (metro.config.js): MapLibre GL, loaded on first
   use, with its own style (colours: `lib/campus/theme.ts`, one per app theme), extruded buildings with light and soft
   shadows, trees, a 3D route ribbon, the picked building highlighted, and markers placed from most to least important so
