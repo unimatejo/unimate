@@ -137,7 +137,7 @@ export default function Welcome() {
     staff
       ? [t('نوع الحساب'), profile?.title_verified && profile.academic_title ? titleLabel(profile.academic_title) : t('كادر الجامعة')]
       : [t('الرقم الجامعي'), priv?.student_number ?? '—'],
-    [t('التوثيق'), profile?.is_verified ? t('موثّق بمايكروسوفت') : t('بالإيميل')],
+    [t('التوثيق'), profile?.ms_verified ? t('موثّق بمايكروسوفت') : t('بالإيميل')],
   ];
 
   return (
@@ -163,7 +163,7 @@ export default function Welcome() {
                   <Avatar id={profile?.id} name={profile?.full_name} url={profile?.avatar_url} size={92} ring />
                   <Row gap={6}>
                     <T v="h1" style={{ textAlign: 'center' }}>{t('أهلاً فيك')}</T>
-                    {profile?.is_verified && <Animated.View entering={ZoomIn.delay(600)}><BadgeCheck size={26} color={C.white} fill={C.primary} /></Animated.View>}
+                    {profile?.ms_verified && <Animated.View entering={ZoomIn.delay(600)}><BadgeCheck size={26} color={C.white} fill={C.primary} /></Animated.View>}
                   </Row>
                   <T v="body" color={C.muted} style={{ textAlign: 'center' }}>{t('هاي معلوماتك من حسابك الجامعي، انعبّت لحالها.')}</T>
                 </View>

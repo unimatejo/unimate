@@ -22,6 +22,7 @@ import { nm, t } from '@/lib/i18n';
 import { ListSkeleton } from '@/components/ui/Skeleton';
 import { useScreenTimer } from '@/lib/perf';
 import { OnScreenProvider, useVisiblePosts } from '@/lib/videoFocus';
+import { readCache, writeCache } from '@/lib/cache';
 
 const TABS: FeedFilter['tab'][] = ['university', 'college', 'following'];
 const CAT_ICON = {
@@ -35,8 +36,10 @@ export default function Community() {
   const { profile, university } = useAuth();
   const [tab, setTab] = useState(0);
   const [cat, setCat] = useState<string | null>(null);
-  const [posts, setPosts] = useState<Post[]>([]);
-  const [loading, setLoading] = useState(true);
+  // each tab/category opens with what it showed last time, then refreshes quietly
+  const cacheKey = profile ? `feed:${profile.id}:${tab}:${cat ?? ''}` : null;
+  const [posts, setPosts] = useState<Post[]>(() => readCache<Post[]>(cacheKey) ?? []);
+  const [loading, setLoading] = useState(() => !readCache(cacheKey));
   useScreenTimer('feed', !loading);
   const [likesOf, setLikesOf] = useState<Post | null>(null);
 
@@ -49,11 +52,13 @@ export default function Community() {
   const load = useCallback(async () => {
     if (!profile) return;
     const key = ++reqKey.current;
-    setLoading(true);
+    const seen = readCache<Post[]>(cacheKey);
+    if (seen) { setPosts(seen); setLoading(false); } else { setPosts([]); setLoading(true); }
     try {
       const rows = await loadFeed(profile.id, { tab: TABS[tab], category: cat }, undefined, scope);
       if (key !== reqKey.current) return;
       setPosts(rows); setFailed(false); hasMore.current = rows.length >= 20;
+      writeCache(cacheKey, rows);
     } catch { if (key === reqKey.current) setFailed(true); }
     finally { if (key === reqKey.current) setLoading(false); }
     // eslint-disable-next-line react-hooks/exhaustive-deps

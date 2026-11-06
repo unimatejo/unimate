@@ -1,12 +1,15 @@
 import * as Haptics from 'expo-haptics';
-import { router } from 'expo-router';
-import { ChevronLeft, Search, ShieldAlert } from 'lucide-react-native';
+import { router, usePathname } from 'expo-router';
+import { ChevronLeft, Search, ShieldAlert, ShieldCheck } from 'lucide-react-native';
 import { useCallback, useEffect, useState, type ReactNode } from 'react';
-import { Alert, Platform, ScrollView, TextInput, View, type StyleProp, type ViewStyle } from 'react-native';
+import { Alert, Platform, ScrollView, TextInput, View, useWindowDimensions, type StyleProp, type ViewStyle } from 'react-native';
 
 import { SheetModal } from '@/components/chat/ChatExtras';
 import { Button, Chip, Empty, Field, Header, Loading, Row, Screen, T, Tap } from '@/components/ui';
+import { ADMIN_SECTIONS, GROUPS, type AdminCounts } from '@/components/admin/sections';
+import { useAuth } from '@/lib/auth';
 import { supabase } from '@/lib/supabase';
+import { useTeamStatus } from '@/lib/team';
 import { C, F, R, isDark } from '@/lib/theme';
 import { flip, isAR, t, ta } from '@/lib/i18n';
 
@@ -61,35 +64,133 @@ export const done = () => Haptics.notificationAsync(Haptics.NotificationFeedback
 
 // ---------- who is looking ----------
 type Role = 'owner' | 'moderator';
-let roleCache: Role | null | undefined;
+let roleCache: { uid: string; role: Role | null } | undefined;
+
 export function useAdminRole() {
-  const [role, setRole] = useState<Role | null | undefined>(roleCache);
+  const [role, setRole] = useState<Role | null | undefined>(roleCache?.role);
   useEffect(() => {
     let live = true;
     supabase.auth.getUser().then(async ({ data }) => {
       const id = data.user?.id;
-      if (!id) { if (live) setRole(null); return; }
+      if (!id) { roleCache = undefined; if (live) setRole(null); return; }
+      if (roleCache?.uid === id) { if (live) setRole(roleCache.role); return; }
       const { data: a } = await supabase.from('admins').select('role').eq('user_id', id).maybeSingle();
-      roleCache = (a?.role as Role) ?? null;
-      if (live) setRole(roleCache);
+      roleCache = { uid: id, role: (a?.role as Role) ?? null };
+      if (live) setRole(roleCache.role);
     });
     return () => { live = false; };
   }, []);
   return role;
 }
 
-/** Every admin screen: header + guard. Non-admins see one line and nothing else. */
+/** Badge counts for the menu (one shared copy, refreshed at most once a minute). */
+let countsCache: { at: number; c: AdminCounts } | null = null;
+export function useAdminCounts(enabled: boolean) {
+  const [c, setC] = useState<AdminCounts | null>(countsCache?.c ?? null);
+  useEffect(() => {
+    if (!enabled || (countsCache && Date.now() - countsCache.at < 60000)) return;
+    Promise.all([
+      supabase.rpc('admin_stats'),
+      supabase.from('title_requests').select('id', { count: 'exact', head: true }).eq('status', 'pending'),
+      supabase.from('moderation_queue').select('id', { count: 'exact', head: true }).eq('status', 'pending'),
+    ]).then(([st, tr, mq]) => {
+      if (!st.data) return;
+      countsCache = { at: Date.now(), c: { ...(st.data as AdminCounts), titles_pending: tr.count ?? 0, mod_pending: mq.count ?? 0 } };
+      setC(countsCache.c);
+    }, () => {});
+  }, [enabled]);
+  return c;
+}
+
+/** Wide screens (a computer, a tablet sideways) get the side menu; phones get the page alone. */
+export const useWide = () => useWindowDimensions().width >= 960;
+
+/** The side menu on wide screens: every section with its badge, and the way out. */
+function SideMenu({ role }: { role: Role }) {
+  const path = usePathname();
+  const counts = useAdminCounts(true);
+  const { session, signOut } = useAuth();
+  const team = useTeamStatus(session);
+  const current = path.replace(/^\/admin\/?/, '').split('/')[0];
+  return (
+    <View style={{ width: 268, borderEndWidth: 1, borderEndColor: C.line, backgroundColor: C.card }}>
+      <ScrollView contentContainerStyle={{ padding: 16, gap: 4 }}>
+        <Row gap={10} style={{ paddingHorizontal: 6, paddingBottom: 14 }}>
+          <View style={{ width: 38, height: 38, borderRadius: 12, backgroundColor: C.inverse, alignItems: 'center', justifyContent: 'center' }}>
+            <ShieldCheck size={20} color={C.onInverse} />
+          </View>
+          <View style={{ flex: 1 }}>
+            <T v="bold">{t('إدارة يونيميت')}</T>
+            <T v="tiny" color={C.muted}>{role === 'owner' ? t('المالك · كل الصلاحيات') : t('مشرف')}</T>
+          </View>
+        </Row>
+        {GROUPS.map((g) => {
+          const items = ADMIN_SECTIONS.filter((x) => x.group === g && (!x.owner || role === 'owner'));
+          if (!items.length) return null;
+          return (
+            <View key={g} style={{ gap: 2, marginBottom: 10 }}>
+              <T v="tiny" color={C.faint} style={{ paddingHorizontal: 10, paddingVertical: 4 }}>{g}</T>
+              {items.map((x) => {
+                const on = current === x.key;
+                const b = counts && x.badge ? x.badge(counts) : 0;
+                const Icon = x.icon;
+                return (
+                  <Tap key={x.key} haptic={false} scale={0.99} throttle={0} onPress={() => router.replace((x.key ? `/admin/${x.key}` : '/admin') as never)}
+                    accessibilityRole="link" accessibilityState={{ selected: on }}
+                    style={{ flexDirection: 'row', alignItems: 'center', gap: 10, minHeight: 42, paddingHorizontal: 10, borderRadius: 12, backgroundColor: on ? C.primarySoft : 'transparent' }}>
+                    <Icon size={18} color={on ? C.primaryDark : x.color} />
+                    <T v={on ? 'bold' : 'small'} color={on ? C.primaryDark : C.ink} style={{ flex: 1 }} numberOfLines={1}>{x.label}</T>
+                    {b > 0 && <View style={{ minWidth: 22, height: 22, borderRadius: 11, paddingHorizontal: 6, backgroundColor: C.primary, alignItems: 'center', justifyContent: 'center' }}><T v="tiny" color={C.onPrimary}>{b > 99 ? '99+' : b}</T></View>}
+                  </Tap>
+                );
+              })}
+            </View>
+          );
+        })}
+      </ScrollView>
+      <View style={{ padding: 16, borderTopWidth: 1, borderTopColor: C.line, gap: 8 }}>
+        {team?.team
+          ? <Button kind="soft" title={t('تسجيل خروج')} onPress={() => signOut()} />
+          : <Button kind="soft" title={t('رجوع للتطبيق')} onPress={() => router.replace('/(tabs)')} />}
+      </View>
+    </View>
+  );
+}
+
+/** Every admin screen: header + guard. Non-admins see one line and nothing else. Wide screens add the side menu. */
 export function AdminScreen({ title, subtitle, right, ownerOnly, children, scroll = true }: { title: string; subtitle?: string; right?: ReactNode; ownerOnly?: boolean; children: ReactNode; scroll?: boolean }) {
   const role = useAdminRole();
+  const wide = useWide();
   const allowed = role === 'owner' || (role === 'moderator' && !ownerOnly);
+  const body = role === undefined ? <Loading /> : !allowed ? (
+    <Empty icon={<ShieldAlert size={28} color={C.primary} />} title={t('للمشرفين بس')} body={ownerOnly && role ? t('هالقسم للمالك بس.') : t('هالحساب مش مشرف.')} />
+  ) : scroll ? (
+    <ScrollView contentContainerStyle={[{ padding: 16, paddingTop: 4, gap: 12, paddingBottom: 80 }, wide && { paddingHorizontal: 32, paddingTop: 8, maxWidth: 1120, width: '100%', alignSelf: 'center' }]} keyboardShouldPersistTaps="handled">{children}</ScrollView>
+  ) : <View style={{ flex: 1 }}>{children}</View>;
+  if (wide && role) {
+    return (
+      <Screen>
+        <View style={{ flex: 1, flexDirection: 'row' }}>
+          <SideMenu role={role} />
+          <View style={{ flex: 1 }}>
+            <Row gap={12} style={{ paddingHorizontal: 32, paddingTop: 22, paddingBottom: 14, maxWidth: 1120, width: '100%', alignSelf: 'center' }}>
+              <View style={{ flex: 1 }}>
+                <T v="h1" style={{ fontSize: 28, lineHeight: 40 }} numberOfLines={1}>{title}</T>
+                {subtitle && <T v="small" color={C.muted}>{subtitle}</T>}
+              </View>
+              {allowed ? right : null}
+            </Row>
+            {body}
+          </View>
+        </View>
+        <PromptHost />
+      </Screen>
+    );
+  }
   return (
     <Screen>
       <Header title={title} subtitle={subtitle} right={allowed ? right : undefined} />
-      {role === undefined ? <Loading /> : !allowed ? (
-        <Empty icon={<ShieldAlert size={28} color={C.primary} />} title={t('للمشرفين بس')} body={ownerOnly && role ? t('هالقسم للمالك بس.') : t('هالحساب مش مشرف.')} />
-      ) : scroll ? (
-        <ScrollView contentContainerStyle={{ padding: 16, paddingTop: 4, gap: 12, paddingBottom: 80 }} keyboardShouldPersistTaps="handled">{children}</ScrollView>
-      ) : <View style={{ flex: 1 }}>{children}</View>}
+      {body}
       <PromptHost />
     </Screen>
   );

@@ -22,6 +22,7 @@ import { C, F, shadow } from '@/lib/theme';
 import { WEEKDAYS_SHORT, clock, isWebUrl } from '@/lib/util';
 import { LOCALE, t } from '@/lib/i18n';
 import { useScreenTimer } from '@/lib/perf';
+import { featureOn, useAppContent } from '@/lib/appContent';
 
 const KIND: Record<string, [string, string, string]> = {
   lecture: [t('محاضرة'), C.primarySoft, C.primary],
@@ -49,6 +50,7 @@ function LiveDot() {
 }
 
 export default function Schedule() {
+  const content = useAppContent(); // the owner can switch tools off
   const { profile } = useAuth();
   const { meetings, events, loading, error, reload, now } = useSchedule(profile?.id);
   useScreenTimer('schedule', !loading);
@@ -173,11 +175,11 @@ export default function Schedule() {
 
         <Row gap={10}>
           {([
-            [t('غياباتي'), CalendarX, GRAD.red, '/attendance'],
-            [t('معدلي'), Calculator, GRAD.blue, '/gpa'],
-            [t('امتحاناتي'), Hourglass, GRAD.orange, '/exams'],
-            [t('توصيلات'), Car, GRAD.green, '/rides'],
-          ] as const).map(([label, Icon, g, to]) => (
+            [t('غياباتي'), CalendarX, GRAD.red, '/attendance', 'attendance'],
+            [t('معدلي'), Calculator, GRAD.blue, '/gpa', 'gpa'],
+            [t('امتحاناتي'), Hourglass, GRAD.orange, '/exams', 'exams'],
+            [t('توصيلات'), Car, GRAD.green, '/rides', 'rides'],
+          ] as const).filter((x) => featureOn(content, x[4])).map(([label, Icon, g, to]) => (
             <Tap key={to} onPress={() => router.push(to)} scale={0.95} accessibilityRole="button" accessibilityLabel={label}
               style={[{ flex: 1, backgroundColor: C.card, borderRadius: 22, paddingVertical: 12, alignItems: 'center', gap: 8 }, shadow]}>
               <GlyphTile icon={Icon} colors={g} size={42} />

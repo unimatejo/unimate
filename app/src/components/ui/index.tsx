@@ -210,7 +210,7 @@ export const Field = forwardRef<ComponentRef<typeof TextInput>, TextInputProps &
         ref={ref}
         placeholderTextColor={C.faint}
         {...p}
-        style={[{ minHeight: 52, borderRadius: 16, backgroundColor: C.field, paddingHorizontal: 16, fontFamily: F.body, fontSize: 16, color: C.ink, textAlign: ta, writingDirection: isAR ? 'rtl' : 'ltr' }, style]}
+        style={[{ minHeight: 52, borderRadius: 16, backgroundColor: C.field, borderWidth: 1, borderColor: C.line, paddingHorizontal: 16, fontFamily: F.body, fontSize: 16, color: C.ink, textAlign: ta, writingDirection: isAR ? 'rtl' : 'ltr' }, p.multiline && { paddingVertical: 12, minHeight: 84, textAlignVertical: 'top' }, style]}
       />
     </View>
   );

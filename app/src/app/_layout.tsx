@@ -15,6 +15,7 @@ import { MediaCropperHost } from '@/components/media/MediaCropper';
 import { useOtaUpdates } from '@/lib/ota';
 import { useWebPush } from '@/lib/webpush';
 import { AuthProvider, useAuth } from '@/lib/auth';
+import { useTeamStatus } from '@/lib/team';
 import { installGlobalErrorHandler, reportError, setScreen } from '@/lib/errors';
 import { isAR, syncDirection, t, ta } from '@/lib/i18n';
 import { C, F, isDark } from '@/lib/theme';
@@ -48,13 +49,15 @@ export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
 // Arabic first: make the whole layout right-to-left (needs one reload the first time in Expo Go)
 syncDirection();
 
-const AUTH_FREE = ['login', 'verify', 'callback'];
+const AUTH_FREE = ['login', 'verify', 'callback', 'team', 'team-password'];
+const TEAM_STEPS = ['team', 'team-password'];
 
 function Gate() {
   const { session, profile, loading, profileError, refreshProfile, signOut } = useAuth();
   const [retrying, setRetrying] = useState(false);
   const seg = useSegments() as string[];
   useWebPush(session?.user.id);
+  const team = useTeamStatus(session);
   useEffect(() => { setScreen(seg.join('/')); }, [seg]);
 
   // the splash stays until we know who is signed in
@@ -65,12 +68,21 @@ function Gate() {
     const inAuth = seg[0] === '(auth)';
     // signed out (also after "use another email" on the unsupported screen)
     if (!session) { if (!inAuth || !AUTH_FREE.includes(seg[1])) router.replace('/(auth)/login'); return; }
+    // the team sign-in screens lead on their own (password, then the authenticator code)
+    if (inAuth && TEAM_STEPS.includes(seg[1])) return;
+    // a team account only ever sees the admin panel, and only after its code
+    if (team?.team) {
+      if (team.aal !== 'aal2') router.replace('/(auth)/team');
+      else if (seg[0] !== 'admin') router.replace('/admin');
+      return;
+    }
+    if (session && !team) return; // still checking what kind of account this is
     if (!profile) return; // still loading or failed: the overlay below handles it
     if (!profile.university_id) { if (seg[1] !== 'unsupported') router.replace('/(auth)/unsupported'); return; }
     // the one-time setup decides on onboarding only
     if (!profile.onboarded) { if (seg[1] !== 'welcome') router.replace('/(auth)/welcome'); return; }
     if (inAuth) router.replace('/(tabs)');
-  }, [session, profile, loading, seg]);
+  }, [session, profile, loading, seg, team]);
 
   // signed in but the profile couldn't load: never leave the user stuck on a blank screen
   const blocked = !loading && !!session && !profile;
@@ -85,7 +97,7 @@ function Gate() {
 
   return (
     <>
-    <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: C.bg }, animation: isAR ? 'slide_from_left' : 'slide_from_right' }}>
+    <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: C.bg }, animation: isAR ? 'slide_from_left' : 'slide_from_right', animationDuration: 240 }}>
       <Stack.Screen name="(tabs)" />
       <Stack.Screen name="(auth)" options={{ animation: 'fade' }} />
       <Stack.Screen name="post/new" options={{ presentation: 'modal', animation: 'slide_from_bottom' }} />

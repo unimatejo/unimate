@@ -15,6 +15,7 @@ import { C, F, R } from '@/lib/theme';
 import { timeAgo } from '@/lib/util';
 import { isAR, nm, t } from '@/lib/i18n';
 import { run } from '@/lib/run';
+import { readCache, writeCache } from '@/lib/cache';
 
 // Server-made notification texts are Arabic; show them in English when the app is in English.
 const NOTE_EN: [RegExp, string][] = [
@@ -54,19 +55,23 @@ function Thumb({ path }: { path: string }) {
 
 export default function Notifications() {
   const { profile } = useAuth();
-  const [items, setItems] = useState<N[]>([]);
-  const [reqs, setReqs] = useState<FR[]>([]);
-  const [people, setPeople] = useState<Record<string, P>>({});
-  const [following, setFollowing] = useState<Record<string, 'accepted' | 'pending'>>({});
-  const [ringed, setRinged] = useState<Set<string>>(new Set());
-  const [thumbs, setThumbs] = useState<Record<string, string>>({});
+  // opens with last time's list, then refreshes quietly
+  type Saved = { items: N[]; reqs: FR[]; people: Record<string, P>; following: Record<string, 'accepted' | 'pending'>; ringed: string[]; thumbs: Record<string, string> };
+  const cacheKey = profile ? `notifs:${profile.id}` : null;
+  const seen = readCache<Saved>(cacheKey);
+  const [items, setItems] = useState<N[]>(seen?.items ?? []);
+  const [reqs, setReqs] = useState<FR[]>(seen?.reqs ?? []);
+  const [people, setPeople] = useState<Record<string, P>>(seen?.people ?? {});
+  const [following, setFollowing] = useState<Record<string, 'accepted' | 'pending'>>(seen?.following ?? {});
+  const [ringed, setRinged] = useState<Set<string>>(new Set(seen?.ringed ?? []));
+  const [thumbs, setThumbs] = useState<Record<string, string>>(seen?.thumbs ?? {});
   const [filter, setFilter] = useState<Filter>('all');
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(!seen);
   const [showReqs, setShowReqs] = useState(false);
 
   const load = useCallback(async () => {
     if (!profile) return;
-    setLoading(true);
+    if (!readCache(cacheKey)) setLoading(true);
     const [{ data: n }, { data: f }] = await Promise.all([
       supabase.from('notifications').select('*').eq('user_id', profile.id).order('created_at', { ascending: false }).limit(80),
       supabase.from('follows').select('follower_id, profile:profiles!follows_follower_id_fkey(id, full_name, avatar_url, major:majors!profiles_major_id_fkey(name_ar, name_en))').eq('followee_id', profile.id).eq('status', 'pending'),
@@ -80,17 +85,25 @@ export default function Notifications() {
       actors.length ? supabase.from('stories').select('author_id').in('author_id', actors).gt('expires_at', new Date().toISOString()) : Promise.resolve({ data: [] }),
       postIds.length ? supabase.from('post_media').select('post_id, url, position').in('post_id', postIds).eq('kind', 'image').order('position') : Promise.resolve({ data: [] }),
     ]);
-    setPeople(Object.fromEntries(((ps ?? []) as P[]).map((p) => [p.id, p])));
-    setFollowing(Object.fromEntries(((fl ?? []) as { followee_id: string; status: 'accepted' | 'pending' }[]).map((x) => [x.followee_id, x.status])));
-    setRinged(new Set(((st ?? []) as { author_id: string }[]).map((x) => x.author_id)));
+    const saved: Saved = {
+      items: list, reqs: (f ?? []) as unknown as FR[],
+      people: Object.fromEntries(((ps ?? []) as P[]).map((p) => [p.id, p])),
+      following: Object.fromEntries(((fl ?? []) as { followee_id: string; status: 'accepted' | 'pending' }[]).map((x) => [x.followee_id, x.status])),
+      ringed: ((st ?? []) as { author_id: string }[]).map((x) => x.author_id), thumbs: {},
+    };
+    setPeople(saved.people);
+    setFollowing(saved.following);
+    setRinged(new Set(saved.ringed));
     const th: Record<string, string> = {};
     for (const m of (md ?? []) as { post_id: string; url: string }[]) if (!th[m.post_id]) th[m.post_id] = m.url;
     setThumbs(th);
-    setItems(list); setReqs((f ?? []) as unknown as FR[]); setLoading(false);
+    setItems(list); setReqs(saved.reqs); setLoading(false);
+    // saved as read: the dots are for things that are new since then
+    writeCache(cacheKey, { ...saved, thumbs: th, items: list.map((i) => (i.read_at ? i : { ...i, read_at: new Date().toISOString() })) });
     const { error } = await supabase.from('notifications').update({ read_at: new Date().toISOString() }).eq('user_id', profile.id).is('read_at', null);
     // the dots disappear on screen too, after a moment so you can see what is new
     if (!error) setTimeout(() => setItems((x) => x.map((i) => (i.read_at ? i : { ...i, read_at: new Date().toISOString() }))), 2500);
-  }, [profile]);
+  }, [profile, cacheKey]);
   useFocusEffect(useCallback(() => { load(); }, [load]));
 
   const [busy, setBusy] = useState<string | null>(null);

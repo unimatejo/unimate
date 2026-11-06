@@ -20,6 +20,7 @@ import { timeAgo } from '@/lib/util';
 import { t, ta } from '@/lib/i18n';
 import { ListSkeleton } from '@/components/ui/Skeleton';
 import { useScreenTimer } from '@/lib/perf';
+import { readCache, writeCache } from '@/lib/cache';
 
 type Person = { id: string; full_name: string; avatar_url: string | null; is_verified?: boolean; academic_title?: string | null; title_verified?: boolean };
 type Item = {
@@ -45,12 +46,15 @@ export function Inbox({ inTab }: { inTab?: boolean }) {
   const { profile } = useAuth();
   const isTyping = useInboxTyping(profile?.id);
   const [tab, setTab] = useState(0);
-  const [items, setItems] = useState<Item[]>([]);
-  const [friends, setFriends] = useState<Person[]>([]);
+  // opens with last time's list, then refreshes quietly
+  const cacheKey = profile ? `inbox:${profile.id}` : null;
+  const seen = readCache<{ items: Item[]; friends: Person[]; notes: Record<string, string> }>(cacheKey);
+  const [items, setItems] = useState<Item[]>(seen?.items ?? []);
+  const [friends, setFriends] = useState<Person[]>(seen?.friends ?? []);
   const [q, setQ] = useState('');
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(!seen);
   useScreenTimer('inbox', !loading);
-  const [notes, setNotes] = useState<Record<string, string>>({});
+  const [notes, setNotes] = useState<Record<string, string>>(seen?.notes ?? {});
   const [noteOpen, setNoteOpen] = useState(false);
   const [noteText, setNoteText] = useState('');
   const [noteBusy, setNoteBusy] = useState(false);
@@ -58,11 +62,16 @@ export function Inbox({ inTab }: { inTab?: boolean }) {
   const [failed, setFailed] = useState(false);
   const load = useCallback(async () => {
     if (!profile) return;
-    setLoading(true); setFailed(false);
+    if (!readCache(cacheKey)) setLoading(true);
+    setFailed(false);
     try {
-    const { data: mine } = await supabase.from('conversation_members')
-      .select('state, last_read_at, conversation:conversations(id, kind, title, context_label, streak_days, last_message_at, created_by, community:communities(kind))')
-      .eq('user_id', profile.id).neq('state', 'left');
+    // the friends row doesn't depend on the chats: ask for both at once
+    const [{ data: mine }, { data: f }] = await Promise.all([
+      supabase.from('conversation_members')
+        .select('state, last_read_at, conversation:conversations(id, kind, title, context_label, streak_days, last_message_at, created_by, community:communities(kind))')
+        .eq('user_id', profile.id).neq('state', 'left'),
+      supabase.from('follows').select('p:profiles!follows_followee_id_fkey(id, full_name, avatar_url, is_verified, academic_title, title_verified)').eq('follower_id', profile.id).eq('status', 'accepted').limit(30),
+    ]);
      
     const rows = ((mine ?? []) as any[]).filter((r) => r.conversation);
     const ids = rows.map((r) => r.conversation.id);
@@ -89,7 +98,6 @@ export function Inbox({ inTab }: { inTab?: boolean }) {
     out.sort((a, b) => (b.last_at ?? '').localeCompare(a.last_at ?? ''));
     setItems(out);
     // mutual friends for the quick row
-    const { data: f } = await supabase.from('follows').select('p:profiles!follows_followee_id_fkey(id, full_name, avatar_url, is_verified, academic_title, title_verified)').eq('follower_id', profile.id).eq('status', 'accepted').limit(30);
      
     const fr: Person[] = ((f ?? []) as any[]).map((x) => x.p).filter(Boolean);
     // people you chat with directly also show in the notes row
@@ -98,11 +106,13 @@ export function Inbox({ inTab }: { inTab?: boolean }) {
     const nb = Object.fromEntries(((ns ?? []) as Note[]).map((n) => [n.user_id, n.body]));
     setNotes(nb);
     // friends with a note first
-    setFriends(fr.sort((a, b) => Number(!!nb[b.id]) - Number(!!nb[a.id])));
+    const sorted = fr.sort((a, b) => Number(!!nb[b.id]) - Number(!!nb[a.id]));
+    setFriends(sorted);
+    writeCache(cacheKey, { items: out, friends: sorted, notes: nb });
     } catch (e) {
       reportError(e); setFailed(true);
     } finally { setLoading(false); }
-  }, [profile]);
+  }, [profile, cacheKey]);
 
   useFocusEffect(useCallback(() => { load(); }, [load]));
 

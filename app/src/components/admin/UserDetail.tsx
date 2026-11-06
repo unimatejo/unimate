@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { BadgeCheck } from 'lucide-react-native';
 import { Alert, View } from 'react-native';
 
 import { Avatar, Field, Row, T } from '@/components/ui';
@@ -24,8 +25,8 @@ export function UserDetail({ id, onChanged }: { id: string; onChanged?: () => vo
   const [edit, setEdit] = useState<{ full_name: string; bio: string } | null>(null);
 
   useEffect(() => { setOpen(null); setEdit(null); }, [id]);
-  const { data: acad, reload: reloadAcad } = useLoad<{ academic_title: string | null; title_verified: boolean; account_type: string }>(
-    () => supabase.from('profiles').select('academic_title, title_verified, account_type').eq('id', id).single(), [id]);
+  const { data: acad, reload: reloadAcad } = useLoad<{ academic_title: string | null; title_verified: boolean; account_type: string; is_verified: boolean }>(
+    () => supabase.from('profiles').select('academic_title, title_verified, account_type, is_verified').eq('id', id).single(), [id]);
   const [pickTitle, setPickTitle] = useState(false);
   // Instagram / Snapchat on the profile (icons + bio): admins can remove them, and stop new ones
   const { data: soc, reload: reloadSoc } = useLoad<{ instagram: string | null; snapchat: string | null; blocked: boolean }>(
@@ -59,6 +60,16 @@ export function UserDetail({ id, onChanged }: { id: string; onChanged?: () => vo
     if (!ok) return;
     await supabase.rpc('admin_set_title', { p_user: id, p_title: k, p_type: k ? null : 'student' });
     done(); setPickTitle(false); reloadAcad(); onChanged?.();
+  }
+
+  // the blue check is for important people only (presidents, deans, people the owner picks)
+  async function setBlueCheck(on: boolean) {
+    const ok = await confirm(on ? t('تعطي {0} العلامة الزرقاء؟', [u?.full_name ?? '']) : t('تشيل العلامة الزرقاء؟'),
+      on ? t('العلامة الزرقاء للشخصيات المهمة بس: رئيس الجامعة، العمداء، ومن تختاره.') : t('بيرجع الحساب بدون علامة.'), on ? t('أعطيه') : t('شيلها'));
+    if (!ok) return;
+    const { error } = await supabase.rpc('admin_set_blue_check', { p_user: id, p_on: on });
+    if (error) { Alert.alert(t('ما زبط'), error.message); return; }
+    done(); reloadAcad(); onChanged?.();
   }
 
   async function setStatus(s: string) {
@@ -133,6 +144,18 @@ export function UserDetail({ id, onChanged }: { id: string; onChanged?: () => vo
           </Actions>
         )}
       </Panel>
+      {owner && <Section title={t('العلامة الزرقاء')} />}
+      {owner && <Panel>
+        <Row gap={8}>
+          {acad?.is_verified ? <BadgeCheck size={20} color={C.white} fill={C.primary} /> : null}
+          <Muted>{acad?.is_verified ? t('الحساب موثّق بالعلامة الزرقاء') : t('بدون علامة زرقاء')}</Muted>
+        </Row>
+        <Actions>
+          {acad?.is_verified
+            ? <Act label={t('شيل العلامة')} kind="danger" onPress={() => setBlueCheck(false)} />
+            : <Act label={t('أعطيه العلامة الزرقاء')} kind="primary" onPress={() => setBlueCheck(true)} />}
+        </Actions>
+      </Panel>}
       {owner && <Section title={t('اللقب الأكاديمي')} />}
       {owner && <Panel>
         <Row gap={8}>

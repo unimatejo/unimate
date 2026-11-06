@@ -1,5 +1,6 @@
 import { TitleBadge, titledName } from '@/components/profile/TitleBadge';
 import { router, useFocusEffect } from 'expo-router';
+import { readCache, writeCache } from '@/lib/cache';
 import { BarChart3, Check, ChevronRight, Clapperboard, FileText, Grid3x3, Heart, Lock, Menu, MoreHorizontal, Play, Plus, PlusSquare, Star, UserPlus, UserSquare2, UserX, WifiOff, X } from 'lucide-react-native';
 import { useCallback, useEffect, useState } from 'react';
 import * as Haptics from 'expo-haptics';
@@ -24,6 +25,7 @@ import type { Post, Profile } from '@/lib/types';
 import { flip, nm, t, ta, LOCALE } from '@/lib/i18n';
 import { Bone } from '@/components/ui/Skeleton';
 import { useScreenTimer } from '@/lib/perf';
+import { featureOn, useAppContent } from '@/lib/appContent';
 
 type Rel = 'none' | 'pending' | 'accepted';
 
@@ -176,6 +178,7 @@ function NewHighlight({ open, onClose, onMade }: { open: boolean; onClose: () =>
 export function ProfileView({ userId, onTitle, back }: { userId: string; onTitle?: (title: string) => void; back?: boolean }) {
   const { profile: me } = useAuth();
   const mine = me?.id === userId;
+  const content = useAppContent();
   const [p, setP] = useState<Profile | null>(null);
   const [rel, setRel] = useState<Rel>('none');
   const [followsMe, setFollowsMe] = useState(false);
@@ -193,38 +196,52 @@ export function ProfileView({ userId, onTitle, back }: { userId: string; onTitle
   const [newHl, setNewHl] = useState(false);
   const [tagged, setTagged] = useState<Post[] | null>(null);
 
+  const cacheKey = me ? `profile:${me.id}:${userId}` : null;
+  type Saved = { p: Profile; rel: Rel; followsMe: boolean; isClose: boolean; hasStory: boolean; hls: typeof hls; posts: Post[] };
+  // a profile opened before shows at once; the fresh copy replaces it
+  useEffect(() => {
+    const c = readCache<Saved>(cacheKey);
+    if (!c) return;
+    setP(c.p); setRel(c.rel); setFollowsMe(c.followsMe); setIsClose(c.isClose); setHasStory(c.hasStory); setHls(c.hls); setPosts(c.posts); setLoading(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cacheKey]);
+
   const load = useCallback(async () => {
     if (!me) return;
-    setLoading(true);
+    if (!readCache(cacheKey)) setLoading(true);
     try {
-    const { data, error } = await supabase.from('profiles').select('*, major:majors!profiles_major_id_fkey(name_ar, name_en), college:colleges!profiles_college_id_fkey(name_ar, name_en), university:universities!profiles_university_id_fkey(name_ar, name_en)').eq('id', userId).maybeSingle();
+    const now = new Date().toISOString();
+    const none = Promise.resolve({ data: null });
+    // one round trip: everything on the page is asked for at the same time
+    const [{ data, error }, { data: soc }, { data: f }, { data: back }, { data: cf }, { count: sc }, { data: hl }, { data: ps }] = await Promise.all([
+      supabase.from('profiles').select('*, major:majors!profiles_major_id_fkey(name_ar, name_en), college:colleges!profiles_college_id_fkey(name_ar, name_en), university:universities!profiles_university_id_fkey(name_ar, name_en)').eq('id', userId).maybeSingle(),
+      supabase.rpc('profile_socials', { p_user: userId }),
+      mine ? none : supabase.from('follows').select('status').eq('follower_id', me.id).eq('followee_id', userId).maybeSingle(),
+      mine ? none : supabase.from('follows').select('status').eq('follower_id', userId).eq('followee_id', me.id).eq('status', 'accepted').maybeSingle(),
+      mine ? none : supabase.from('close_friends').select('friend_id').eq('owner_id', userId).eq('friend_id', me.id).maybeSingle(),
+      supabase.from('stories').select('id', { count: 'exact', head: true }).eq('author_id', userId).gt('expires_at', now),
+      supabase.from('highlights').select('id, title, cover_url').eq('owner_id', userId).order('position'),
+      supabase.from('posts').select(POST_SELECT).eq('author_id', userId).order('created_at', { ascending: false }).limit(30),
+    ]);
     if (error) { setFailed('error'); return; }
     if (!data) { setFailed('missing'); return; }
     setFailed('none');
-    {
-      const { data: soc } = await supabase.rpc('profile_socials', { p_user: userId });
-      const s0 = (soc as { instagram: string | null; snapchat: string | null }[] | null)?.[0];
-      (data as Profile).instagram = s0?.instagram ?? null; (data as Profile).snapchat = s0?.snapchat ?? null;
-    }
-    setP(data as Profile);
-    onTitle?.((data as Profile).username ? `\u200E@${(data as Profile).username}` : (data as Profile).full_name ?? '');
-    if (!mine) {
-      const [{ data: f }, { data: back }, { data: cf }] = await Promise.all([
-        supabase.from('follows').select('status').eq('follower_id', me.id).eq('followee_id', userId).maybeSingle(),
-        supabase.from('follows').select('status').eq('follower_id', userId).eq('followee_id', me.id).eq('status', 'accepted').maybeSingle(),
-        supabase.from('close_friends').select('friend_id').eq('owner_id', userId).eq('friend_id', me.id).maybeSingle(),
-      ]);
-      setRel((f?.status as Rel) ?? 'none'); setFollowsMe(!!back); setIsClose(!!cf);
-    }
-    const { count: sc } = await supabase.from('stories').select('id', { count: 'exact', head: true }).eq('author_id', userId).gt('expires_at', new Date().toISOString());
+    const s0 = (soc as { instagram: string | null; snapchat: string | null }[] | null)?.[0];
+    const prof = { ...(data as Profile), instagram: s0?.instagram ?? null, snapchat: s0?.snapchat ?? null };
+    setP(prof);
+    onTitle?.(prof.username ? `\u200E@${prof.username}` : prof.full_name ?? '');
+    const relNow = ((f as { status?: Rel } | null)?.status) ?? 'none';
+    setRel(relNow); setFollowsMe(!!back); setIsClose(!!cf);
     setHasStory((sc ?? 0) > 0);
-    supabase.from('highlights').select('id, title, cover_url').eq('owner_id', userId).order('position').then(({ data }) => setHls(data ?? []));
-    const { data: ps } = await supabase.from('posts').select(POST_SELECT).eq('author_id', userId).order('created_at', { ascending: false }).limit(30);
-    setPosts(await withMine((ps ?? []) as unknown as Post[], me.id));
+    const hlNow = (hl ?? []) as typeof hls;
+    setHls(hlNow);
+    const postsNow = await withMine((ps ?? []) as unknown as Post[], me.id);
+    setPosts(postsNow);
+    writeCache(cacheKey, { p: prof, rel: relNow, followsMe: !!back, isClose: !!cf, hasStory: (sc ?? 0) > 0, hls: hlNow, posts: postsNow } satisfies Saved);
     } catch { setFailed((f) => (f === 'none' && !p ? 'error' : f)); }
     finally { setLoading(false); }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [me, userId, mine]);
+  }, [me, userId, mine, cacheKey]);
 
   // loads on first focus and quietly refreshes when coming back from edit profile / privacy
   // (no spinner: a programmatic pull-to-refresh spinner made the whole page jump down and up)
@@ -412,7 +429,7 @@ export function ProfileView({ userId, onTitle, back }: { userId: string; onTitle
               const full = p.birth_day ? new Date(`${p.birth_year}-${p.birth_day}T12:00:00`).toLocaleDateString(LOCALE, { day: 'numeric', month: 'long', year: 'numeric' }) : null;
               return <T v="small" color={isToday ? C.primary : C.ink2}>🎂 {isToday ? t('عيد ميلاده اليوم! 🎉') : full ? t('مواليد {0}', [full]) : t('مواليد {0}', [String(p.birth_year)])}</T>;
             })() : null}
-            {p.points > 0 && (
+            {p.points > 0 && featureOn(content, 'leaderboard') && (
               <Tap haptic={false} scale={0.97} onPress={() => router.push('/leaderboard')} accessibilityRole="button" style={{ alignSelf: 'flex-start' }}>
                 <Row gap={5}><Star size={14} color="#F59E0B" fill="#F59E0B" /><T v="tiny" color={C.muted}>{p.points} {t('نقطة مساعدة')}</T></Row>
               </Tap>

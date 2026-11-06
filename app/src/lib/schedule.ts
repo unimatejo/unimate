@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { AppState } from 'react-native';
 
+import { readCache, writeCache } from './cache';
 import { timed } from './perf';
 import { supabase } from './supabase';
 import { minutesUntil } from './util';
@@ -35,23 +36,35 @@ type AcademicEvent = {
 };
 
 export function useSchedule(userId?: string) {
-  const [meetings, setMeetings] = useState<Meeting[]>([]);
-  const [events, setEvents] = useState<AcademicEvent[]>([]);
-  const [loading, setLoading] = useState(true);
+  // last time's timetable shows at once; the fresh one replaces it when it arrives
+  const key = userId ? `schedule:${userId}` : null;
+  const cached = readCache<{ meetings: Meeting[]; events: AcademicEvent[] }>(key);
+  const [meetings, setMeetings] = useState<Meeting[]>(cached?.meetings ?? []);
+  const [events, setEvents] = useState<AcademicEvent[]>(cached?.events ?? []);
+  const [loading, setLoading] = useState(!cached);
   const [error, setError] = useState(false);
   const [now, setNow] = useState(() => new Date());
 
   const load = useCallback(async () => {
     if (!userId) return;
-    setLoading(true);
+    if (!readCache(key)) setLoading(true);
     try {
-    const { data: enr, error: enrErr } = await timed('schedule.enrollments', supabase
-      .from('enrollments')
-      .select(`section:sections(id, section_no, instructor,
-        course:courses(name_ar, name_en, code),
-        meetings:section_meetings(id, kind, weekday, starts_at, ends_at, online_url, room_text, source, confirmations,
-          room:rooms(code, floor, directions, building:buildings(id, name_ar, lat, lng))))`)
-      .eq('user_id', userId));
+    // everything that doesn't depend on another answer goes out at once
+    const [{ data: enr, error: enrErr }, { data: mine }, { data: pm }, { data: ev }] = await Promise.all([
+      timed('schedule.enrollments', supabase
+        .from('enrollments')
+        .select(`section:sections(id, section_no, instructor,
+          course:courses(name_ar, name_en, code),
+          meetings:section_meetings(id, kind, weekday, starts_at, ends_at, online_url, room_text, source, confirmations,
+            room:rooms(code, floor, directions, building:buildings(id, name_ar, lat, lng))))`)
+        .eq('user_id', userId)),
+      supabase.from('meeting_reports').select('section_id, weekday, starts_at').eq('user_id', userId),
+      supabase.from('personal_meetings').select('*').eq('user_id', userId),
+      supabase.from('academic_events')
+        .select('id, section_id, owner_id, kind, title, starts_at, location, section:sections(course:courses(name_ar, name_en))')
+        .gte('starts_at', new Date(Date.now() - 86400000).toISOString())
+        .order('starts_at'),
+    ]);
     if (enrErr) throw enrErr;
 
     const ms: Meeting[] = [];
@@ -73,7 +86,6 @@ export function useSchedule(userId?: string) {
     }
     // a Teams group can hold several real sections, so classmates' times pile up on one "section".
     // If I told the app my own times (photo of my timetable, or added them), I only see those for that section.
-    const { data: mine } = await supabase.from('meeting_reports').select('section_id, weekday, starts_at').eq('user_id', userId);
     const myTimes = new Map<string, Set<string>>();
     for (const r of (mine ?? []) as { section_id: string; weekday: number; starts_at: string }[]) {
       if (!myTimes.has(r.section_id)) myTimes.set(r.section_id, new Set());
@@ -84,7 +96,6 @@ export function useSchedule(userId?: string) {
       if (own && !own.has(`${ms[i].weekday}-${ms[i].starts_at.slice(0, 5)}`)) ms.splice(i, 1);
     }
     // my own changes (internal transfer, a moved lecture just for me): hide or replace section times, add my own
-    const { data: pm } = await supabase.from('personal_meetings').select('*').eq('user_id', userId);
     const personal = (pm ?? []) as { id: string; section_id: string; replaces: string | null; hidden: boolean; kind: Meeting['kind']; weekday: number | null; starts_at: string | null; ends_at: string | null; room_text: string | null }[];
     const replaced = new Set(personal.filter((p) => p.replaces).map((p) => p.replaces));
     const out = ms.filter((m) => !replaced.has(m.id));
@@ -120,19 +131,12 @@ export function useSchedule(userId?: string) {
       }
     }
     out.sort((a, b) => a.weekday - b.weekday || a.starts_at.localeCompare(b.starts_at));
-    setMeetings(out);
-
-    const { data: ev } = await supabase
-      .from('academic_events')
-      .select('id, section_id, owner_id, kind, title, starts_at, location, section:sections(course:courses(name_ar, name_en))')
-      .gte('starts_at', new Date(Date.now() - 86400000).toISOString())
-      .order('starts_at');
-     
-    setEvents(((ev ?? []) as any[]).map((x) => ({ ...x, course_name: x.section?.course?.name_ar ?? null })));
-    setError(false);
+    const evs = ((ev ?? []) as any[]).map((x) => ({ ...x, course_name: x.section?.course?.name_ar ?? null })) as AcademicEvent[];
+    setMeetings(out); setEvents(evs); setError(false);
+    writeCache(key, { meetings: out, events: evs });
     } catch { setError(true); }
     finally { setLoading(false); }
-  }, [userId]);
+  }, [userId, key]);
 
   useEffect(() => { load(); }, [load]);
   // keep "next lecture" / "today" fresh: re-render every minute, reload when the app comes back to the front

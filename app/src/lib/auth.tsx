@@ -4,6 +4,7 @@ import * as WebBrowser from 'expo-web-browser';
 import type { Session } from '@supabase/supabase-js';
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
 
+import { clearCache } from './cache';
 import { reportError } from './errors';
 import { getPref, setPref } from './prefs';
 import { toast } from './toast';
@@ -103,7 +104,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     signOut: async () => {
       await dropWebPush();
       try { await supabase.auth.signOut(); } catch (e) { reportError(e); await supabase.auth.signOut({ scope: 'local' }).catch(() => {}); }
-      clearMediaCache();
+      clearMediaCache(); clearCache();
       setProfile(null); setUniversity(null); setSession(null);
     },
   };
@@ -170,7 +171,7 @@ export async function signInWithMicrosoftAndCourses() {
   let r = await signInWithMicrosoft(TEAMS_SCOPES);
   if ('error' in r && r.error?.message === 'consent') r = await signInWithMicrosoft();
   const token = (r as { data?: { session?: { provider_token?: string | null } | null } }).data?.session?.provider_token;
-  if (token) { importTeamsInBackground(token); importMsPhoto(token); }
+  if (token) { importTeamsInBackground(token); importMsPhoto(token); importMsRole(token); }
   return r;
 }
 
@@ -194,6 +195,12 @@ export async function importMsPhoto(token?: string | null) {
     const url = supabase.storage.from('avatars').getPublicUrl(path).data.publicUrl;
     await supabase.from('profiles').update({ avatar_url: url }).eq('id', uid);
   } catch { /* the photo is a nice-to-have */ }
+}
+
+/** Doctors, deans and presidents are recognised from their Microsoft job title (checked on the server). */
+export function importMsRole(token?: string | null) {
+  if (!token) return;
+  supabase.functions.invoke('ms-role', { body: { token } }).catch(() => { /* the title can also come from the staff list */ });
 }
 
 /** Import Teams courses without making the student wait; tell them when it's done. */

@@ -9,10 +9,10 @@ import Animated, { FadeIn, Easing, useAnimatedStyle, useSharedValue, withDelay, 
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Button, Field, Row, T } from '@/components/ui';
-import { supabase } from '@/lib/supabase';
 import { sendEmailCode, signInWithMicrosoftAndCourses, universityForEmail } from '@/lib/auth';
 import { C, F } from '@/lib/theme';
 import { nm, t } from '@/lib/i18n';
+import { useAppContent } from '@/lib/appContent';
 
 // Microsoft sign-in shows only once the Azure app is set up (EXPO_PUBLIC_MS_LOGIN=1).
 const MS_READY = process.env.EXPO_PUBLIC_MS_LOGIN === '1';
@@ -31,6 +31,7 @@ function Bubble({ children, label, color, style, delay }: { children: ReactNode;
 }
 
 export default function Login() {
+  const content = useAppContent(); // texts the owner can change
   const [email, setEmail] = useState('');
   // one busy flag per button, so the spinner shows on the button you pressed and both are locked while one works
   const [msBusy, setMsBusy] = useState(false);
@@ -55,15 +56,14 @@ export default function Login() {
     try {
       let uni;
       try { uni = await universityForEmail(email); } catch { setError(t('تأكد من الإنترنت وجرّب كمان مرة.')); return; }
-      // the team's own (non-university) emails, e.g. the owner's admin account
-      const staff = !uni && (await supabase.rpc('is_staff_email', { p_email: email })).data === true;
-      if (!uni && !staff) { setError(t('اكتب إيميلك الجامعي، مثلاً 2021xxxx@hu.edu.jo')); return; }
+      // not a university email: this is the team's sign-in (password + authenticator code). It never says whether the email is on the team.
+      if (!uni) { router.push({ pathname: '/(auth)/team', params: { email: email.trim().toLowerCase() } }); return; }
       const { error: e } = await sendEmailCode(email);
       if (e) {
         setError(/rate|limit/i.test(e.message) ? t('وصلنا الحد المسموح من الإيميلات هلأ. جرّب بعد شوي.') : t('ما قدرنا نبعث الرسالة. تأكد من الإنترنت وجرّب مرة ثانية.'));
         return;
       }
-      router.push({ pathname: '/(auth)/verify', params: { email, uni: uni ? nm(uni) : t('حساب الإدارة') } });
+      router.push({ pathname: '/(auth)/verify', params: { email, uni: nm(uni) } });
     } catch {
       setError(t('ما قدرنا نبعث الرسالة. تأكد من الإنترنت وجرّب مرة ثانية.'));
     } finally { setMailBusy(false); }
@@ -96,8 +96,8 @@ export default function Login() {
 
           <SafeAreaView edges={['bottom']} style={{ flex: 1, paddingHorizontal: 24, paddingTop: 26, paddingBottom: 16, gap: 18 }}>
             <Animated.View entering={FadeIn.delay(100).duration(220)} style={{ gap: 8 }}>
-              <T v="h1">{t('جامعتك كلها بجيبتك')}</T>
-              <T v="body" color={C.muted}>{t('جدولك بيطلع لحاله، ومجتمع جامعتك كله بمكان واحد، ورسائل بدون رقم جوال.')}</T>
+              <T v="h1">{content.login?.title?.trim() || t('جامعتك كلها بجيبتك')}</T>
+              <T v="body" color={C.muted}>{content.login?.tagline?.trim() || t('جدولك بيطلع لحاله، ومجتمع جامعتك كله بمكان واحد، ورسائل بدون رقم جوال.')}</T>
             </Animated.View>
 
             {inApp && (

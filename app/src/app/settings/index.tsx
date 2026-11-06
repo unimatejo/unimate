@@ -15,6 +15,7 @@ import { run } from '@/lib/run';
 import { C, F, isDark, shadow, themePref } from '@/lib/theme';
 import { normalize } from '@/lib/util';
 import { flip, isAR, nm, t, ta } from '@/lib/i18n';
+import { featureOn, useAppContent } from '@/lib/appContent';
 
 function Group({ title, children, delay = 0 }: { title: string; children: ReactNode; delay?: number }) {
   return (
@@ -40,6 +41,7 @@ function Item({ icon, color, label, value, onPress, danger }: { icon: ReactNode;
 const ic = { size: 19, color: C.white };
 
 export default function Settings() {
+  const content = useAppContent();
   const { profile, university, signOut } = useAuth();
   const [q, setQ] = useState('');
   // the owner / moderators get the admin panel right here, signed in already
@@ -135,10 +137,10 @@ export default function Settings() {
               {profile?.username ? <T v="small" color={C.muted} style={{ writingDirection: 'ltr', textAlign: ta }}>@{profile.username}</T> : null}
               <T v="tiny" color={C.muted} numberOfLines={1}>{[nm(profile?.major), nm(university)].filter(Boolean).join(' · ')}</T>
             </View>
-            <Tap onPress={() => router.push('/leaderboard')} accessibilityLabel={t('لوحة الشرف')} scale={0.94}
+            {featureOn(content, 'leaderboard') && <Tap onPress={() => router.push('/leaderboard')} accessibilityLabel={t('لوحة الشرف')} scale={0.94}
               style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: C.orangeSoft, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 12 }}>
               <Star size={15} color={C.orange} fill={C.orange} /><T v="bold" color={C.orange} style={{ fontSize: 13 }}>{profile?.points ?? 0}</T>
-            </Tap>
+            </Tap>}
           </Tap>
         )}
 

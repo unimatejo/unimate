@@ -1,21 +1,23 @@
 import { router, useFocusEffect } from 'expo-router';
 import { PullRefresh } from '@/components/ui/PullRefresh';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Bell, BookOpen, CalendarDays, GraduationCap, MapPin, Navigation, PartyPopper, Repeat, Search, SearchCheck, ShoppingBag, Sparkles, Users } from 'lucide-react-native';
+import { Bell, CalendarDays, Navigation, Search, Users } from 'lucide-react-native';
 import { useCallback, useEffect, useState } from 'react';
-import { ScrollView, View, Platform } from 'react-native';
+import { Linking, ScrollView, View, Platform } from 'react-native';
 import Animated, { FadeIn, Easing, useAnimatedStyle, useSharedValue, withRepeat, withTiming } from 'react-native-reanimated';
 
 import { AdBanner } from '@/components/feed/AdBanner';
-import { GlyphTile, GRAD, Wiggle } from '@/components/ui/Glyph';
+import { GlyphTile, Wiggle } from '@/components/ui/Glyph';
 import { Card, IconButton, Row, Screen, T, Tap } from '@/components/ui';
 import { useAuth } from '@/lib/auth';
 import { placeLine, useSchedule } from '@/lib/schedule';
 import { supabase } from '@/lib/supabase';
 import { C, F } from '@/lib/theme';
-import { clock, greeting } from '@/lib/util';
+import { clock, greeting, isWebUrl } from '@/lib/util';
 import { nm, t } from '@/lib/i18n';
 import { useScreenTimer } from '@/lib/perf';
+import { QUICK } from '@/components/home/quick';
+import { featureOn, TONES, useAppContent } from '@/lib/appContent';
 
 function Glow({ color, size, style, dur }: { color: string; size: number; style: object; dur: number }) {
   const t = useSharedValue(0);
@@ -36,16 +38,6 @@ function Pulse() {
   );
 }
 
-const QUICK = [
-  { label: t('وين قاعتي'), icon: MapPin, g: GRAD.green, to: '/map' },
-  { label: t('تبديل شعب'), icon: Repeat, g: GRAD.blue, to: '/swap' },
-  { label: t('ملخصات'), icon: BookOpen, g: GRAD.violet, to: '/section/summaries' },
-  { label: t('السوق'), icon: ShoppingBag, g: GRAD.pink, to: '/section/market' },
-  { label: t('ندرس سوا'), icon: GraduationCap, g: GRAD.indigo, to: '/study' },
-  { label: t('فعاليات'), icon: PartyPopper, g: GRAD.orange, to: '/section/events' },
-  { label: t('مفقودات'), icon: SearchCheck, g: GRAD.teal, to: '/section/lost_found' },
-  { label: t('كل الأقسام'), icon: Sparkles, g: GRAD.yellow, to: '/sections' },
-] as const;
 
 export default function Home() {
   const { profile, university } = useAuth();
@@ -53,6 +45,15 @@ export default function Home() {
   useScreenTimer('home', !loading);
   const [unread, setUnread] = useState(0);
   const today = now.getDay();
+  // what the owner set in the admin panel (texts, banner, quick links, features)
+  const content = useAppContent();
+  const quick = (content.home?.quick?.length
+    ? content.home.quick.map((k) => QUICK.find((q) => q.key === k)).filter((q): q is (typeof QUICK)[number] => !!q)
+    : [...QUICK]).filter((q) => !('feature' in q) || featureOn(content, q.feature));
+  const first = profile?.full_name?.split(' ')[0] ?? '';
+  const hello = content.home?.greeting?.trim() ? content.home.greeting.replace('{name}', first) : `${greeting(now)}${t('،')} ${first}`;
+  const banner = content.home?.banner?.on && content.home.banner.title ? content.home.banner : null;
+  const notice = content.notice?.on && content.notice.text ? content.notice : null;
   const todays = meetings.filter((m) => m.weekday === today);
 
   // badge refreshes every time Home comes back into view (e.g. after reading notifications)
@@ -78,11 +79,17 @@ export default function Home() {
           </View>
           <View style={{ flex: 1 }}>
             <T v="tiny" color={university?.brand_color ?? C.blue}>{nm(university)}</T>
-            <T v="h2" style={{ fontFamily: F.display, fontSize: 22 }}>{greeting(now)}{t('،')} {profile?.full_name?.split(' ')[0]}</T>
+            <T v="h2" style={{ fontFamily: F.display, fontSize: 22 }}>{hello}</T>
           </View>
           <IconButton label={t('بحث')} onPress={() => router.push('/search')}><Search size={21} color={C.ink} /></IconButton>
           <IconButton label={t('الإشعارات')} badge={unread} onPress={() => router.push('/notifications')}><Wiggle trigger={unread}><Bell size={21} color={C.ink} /></Wiggle></IconButton>
         </Row>
+
+        {notice && (
+          <View accessibilityRole="alert" style={{ borderRadius: 18, paddingHorizontal: 16, paddingVertical: 12, backgroundColor: TONES[notice.tone ?? 'orange'][0] }}>
+            <T v="bold" color="#FFFFFF">{notice.text}</T>
+          </View>
+        )}
 
         <Animated.View entering={FadeIn.duration(220)}>
           <View style={{ borderRadius: 30, backgroundColor: '#101633', padding: 20, overflow: 'hidden', gap: 14 }}>
@@ -123,13 +130,23 @@ export default function Home() {
         </Animated.View>
 
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', rowGap: 16 }}>
-          {QUICK.map((q, i) => (
+          {quick.map((q, i) => (
             <Tap key={q.label} scale={0.88} onPress={() => router.push(q.to as never)} style={{ width: '25%', alignItems: 'center', gap: 8 }} accessibilityLabel={q.label}>
               <GlyphTile icon={q.icon} colors={q.g} size={58} pop delay={i * 50} live={i === 0} />
               <T v="tiny" style={{ textAlign: 'center' }}>{q.label}</T>
             </Tap>
           ))}
         </View>
+
+        {banner && (
+          <Tap disabled={!banner.link?.trim()} scale={0.98} style={{ borderRadius: 24, overflow: 'hidden' }}
+            onPress={() => { const l = banner.link?.trim(); if (!l) return; if (l.startsWith('/')) router.push(l as never); else if (isWebUrl(l)) Linking.openURL(l).catch(() => {}); }}>
+            <LinearGradient colors={TONES[banner.tone ?? 'blue']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={{ padding: 18, gap: 4 }}>
+              <T v="h3" color="#FFFFFF">{banner.title}</T>
+              {banner.body ? <T v="small" color="rgba(255,255,255,0.9)">{banner.body}</T> : null}
+            </LinearGradient>
+          </Tap>
+        )}
 
         <AdBanner placement="home_banner" />
 
