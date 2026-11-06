@@ -132,6 +132,9 @@ or JSON: `[{"student_number":"2620387","term_gpa":3.71,"cumulative_gpa":3.60,"cr
   links, chatter or someone's office are refused; a Wikimapia name only names a building when it falls inside a real
   OSM outline we haven't named; duplicates (same OSM id, same building outline, same name close by, same kind within
   25 m) are dropped; Arabic goes to `name_ar`, English to `name_en`, and a trailing "- the university's name" is cut.
+  People's homes, names and phone numbers never come in: `osm_stage` drops them on insert (trigger
+  `osm_stage_guard`, 0116) and the import refuses them too. Off-campus OSM places are hidden as `rejected`, never deleted
+  (0115: bus stops, gates and parking within 400 m and anything named after the university stay).
   Footprints and heights come from the OSM map API in `campus-osm` (Overpass refuses cloud servers) and are cached per
   university in Storage (`campus/<id>.json`, versioned URL, browser cache).
 - **Another university's map.** The map opens on the student's own campus (`profile.university_id`). The school button

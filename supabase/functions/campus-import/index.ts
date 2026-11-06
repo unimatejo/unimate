@@ -55,10 +55,14 @@ const NOT = /فندق|hotel|motel|شقق|apartment|سكن|مدرسة|مدارس|
 // names that are not a place's name: phone numbers, links, chatter, someone's office
 const JUNK = (x: string) => /\d{5,}|\d{3}[\s-]\d{3}|https?:|www\.|\.com|@/i.test(x) || x.split(/\s+/).length > 9 || x.length > 80 || /^مكتب\s/.test(x.trim());
 
+const PERSONAL = /\d{5,}|\d{3}[\s-]\d{3,}|07[789]\d{7}|منزل|مسكن خاص|شق[ةه] [أ-ي0-9]|فيلا [أ-ي]|المرحوم|مكان عمل|ديوان عشائر/;
+
 function classify(r: Stage): { kind: string | null; why?: string } {
   const name = r.name_ar || r.name_en || '';
   if (NOT.test(name)) return { kind: null, why: 'مش من الحرم (فندق، سكن، مدرسة…)' };
   if (name && JUNK(name)) return { kind: null, why: 'اسم مش صالح (رقم، رابط، كلام طويل، مكتب شخص)' };
+  // people's homes, names and phone numbers never become places (osm_stage drops them too: 0116)
+  if (PERSONAL.test(name)) return { kind: null, why: 'معلومات شخصية' };
   if (r.k === 'building' || r.k === 'named' || r.k === 'wm') {
     if (!name) return { kind: null, why: 'بدون اسم' };
     for (const [re, k] of WORDS) if (re.test(name)) return { kind: k };
