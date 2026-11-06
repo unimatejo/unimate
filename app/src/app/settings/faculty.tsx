@@ -13,7 +13,7 @@ import { isStaffEmail } from '@/lib/util';
 import { t } from '@/lib/i18n';
 
 // president, vice president and dean come only from the university's official list or Microsoft, never from a request
-const TOP = ['president', 'vice_president', 'dean'];
+const TOP = ['founder', 'team', 'president', 'vice_president', 'dean'];
 
 type Req = { id: string; title: string; department: string | null; status: 'pending' | 'approved' | 'rejected'; created_at: string };
 

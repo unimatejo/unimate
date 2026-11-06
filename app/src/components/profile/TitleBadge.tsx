@@ -1,4 +1,4 @@
-import { BookOpen, BriefcaseBusiness, Crown, GraduationCap, Landmark, Users } from 'lucide-react-native';
+import { BookOpen, BriefcaseBusiness, Crown, GraduationCap, Landmark, Sparkles, Users } from 'lucide-react-native';
 import { Text, View } from 'react-native';
 
 import { F } from '@/lib/theme';
@@ -7,9 +7,9 @@ import { t } from '@/lib/i18n';
 /** A verified academic title (set by an admin). Students have none. */
 type AcademicTitle =
   | 'prof' | 'assoc_prof' | 'asst_prof' | 'doctor' | 'lecturer' | 'teacher_assistant'
-  | 'dean' | 'vice_dean' | 'head' | 'president' | 'vice_president' | 'staff';
+  | 'dean' | 'vice_dean' | 'head' | 'president' | 'vice_president' | 'staff' | 'founder' | 'team';
 
-export const TITLE_ORDER: AcademicTitle[] = ['president', 'vice_president', 'dean', 'vice_dean', 'head', 'prof', 'assoc_prof', 'asst_prof', 'doctor', 'lecturer', 'teacher_assistant', 'staff'];
+export const TITLE_ORDER: AcademicTitle[] = ['founder', 'team', 'president', 'vice_president', 'dean', 'vice_dean', 'head', 'prof', 'assoc_prof', 'asst_prof', 'doctor', 'lecturer', 'teacher_assistant', 'staff'];
 
 export function titleLabel(k?: string | null): string {
   switch (k) {
@@ -25,12 +25,17 @@ export function titleLabel(k?: string | null): string {
     case 'president': return t('رئيس الجامعة');
     case 'vice_president': return t('نائب رئيس الجامعة');
     case 'staff': return t('موظف');
+    case 'founder': return t('مؤسس يونيميت');
+    case 'team': return t('مسؤول يونيميت');
     default: return '';
   }
 }
 
 // one colour family per level: leadership gold, heads violet, professors/doctors blue, teaching teal, staff slate
-const LOOK: Record<AcademicTitle, { bg: string; fg: string; icon: typeof Crown }> = {
+const LOOK: Record<AcademicTitle, { bg: string; fg: string; icon: typeof Crown; ring?: string }> = {
+  // UniMate's own people: deep plum with a gold crown, set apart from every university title
+  founder: { bg: '#3B1670', fg: '#FFD66B', icon: Crown, ring: '#FFD66B' },
+  team: { bg: '#3B1670', fg: '#FFFFFF', icon: Sparkles },
   president: { bg: '#F5B700', fg: '#3A2A00', icon: Crown },
   vice_president: { bg: '#F5B700', fg: '#3A2A00', icon: Crown },
   dean: { bg: '#F5B700', fg: '#3A2A00', icon: Landmark },
@@ -68,7 +73,7 @@ export function TitleBadge({ title, verified, size = 'sm', label }: { title?: st
   const md = size === 'md';
   return (
     <View accessibilityRole="text" accessibilityLabel={label || titleLabel(title)}
-      style={{ flexDirection: 'row', alignItems: 'center', gap: md ? 6 : 3, backgroundColor: l.bg, borderRadius: 999, paddingHorizontal: md ? 11 : 6, height: md ? 28 : 18, alignSelf: md ? 'flex-start' : 'center', flexShrink: 0 }}>
+      style={{ flexDirection: 'row', alignItems: 'center', gap: md ? 6 : 3, backgroundColor: l.bg, borderWidth: l.ring ? 1 : 0, borderColor: l.ring, borderRadius: 999, paddingHorizontal: md ? 11 : 6, height: md ? 28 : 18, alignSelf: md ? 'flex-start' : 'center', flexShrink: 0 }}>
       <Icon size={md ? 15 : 11} color={l.fg} strokeWidth={2.4} />
       <Text numberOfLines={1} style={{ fontFamily: F.bodyBold, fontSize: md ? 13 : 10, color: l.fg }}>{label || titleLabel(title)}</Text>
     </View>

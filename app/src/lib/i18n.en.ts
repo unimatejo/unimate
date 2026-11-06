@@ -2572,4 +2572,6 @@ export const EN: Record<string, string> = {
   "ما رح يقدر يلاقي حسابك أو يراسلك أو يشوف منشوراتك، وما بيعرف إنك حظرته.": "They won't be able to find your account, message you or see your posts, and they won't know you blocked them.",
   "هاليوزر مأخوذ.": "That username is taken.",
   "بتنشال وما بترجع لحالها، حتى لو عنده لقب عميد أو رئيس. بترجع بس إذا إنت أعطيته إياها.": "It's removed and won't come back by itself, even with a dean or president title. Only you can give it again.",
+  "مؤسس يونيميت": "UniMate founder",
+  "مسؤول يونيميت": "UniMate team",
 };
