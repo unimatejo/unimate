@@ -23,10 +23,12 @@ function place(meta: MediaMeta | null | undefined, W: number, H: number) {
 }
 
 /** A video that respects the crop editor's trim (start → end) and calls onEnd once it reaches the end. */
-export function TrimmedVideo({ uri, meta, loop = true, muted = true, autoPlay = true, paused = false, onEnd, onReady, onError, onSoundBlocked, style, fit = 'cover' }: {
+export function TrimmedVideo({ uri, meta, loop = true, muted = true, autoPlay = true, paused = false, onEnd, onReady, onError, onSoundBlocked, onSize, style, fit = 'cover' }: {
   uri: string; meta?: MediaMeta | null; loop?: boolean; muted?: boolean; autoPlay?: boolean; paused?: boolean; onEnd?: () => void; onReady?: () => void; onError?: () => void;
   /** the browser refused to start it with sound (needs a tap): it plays muted meanwhile */
   onSoundBlocked?: () => void;
+  /** the video's own width and height once known (phones) */
+  onSize?: (w: number, h: number) => void;
   style?: StyleProp<ViewStyle>; fit?: 'cover' | 'fill' | 'contain';
 }) {
   const trim = meta?.trim;
@@ -55,6 +57,10 @@ export function TrimmedVideo({ uri, meta, loop = true, muted = true, autoPlay = 
   }, [player, paused, autoPlay]);
   useEffect(() => {
     const subs = [
+      player.addListener('sourceLoad', ({ availableVideoTracks }) => {
+        const sz = availableVideoTracks?.[0]?.size;
+        if (sz?.width && sz?.height) onSize?.(sz.width, sz.height);
+      }),
       player.addListener('statusChange', ({ status }) => {
         // some players ignore a start time set before the video loaded
         if (status === 'readyToPlay' && trim && player.currentTime < trim.start - 0.2) player.currentTime = trim.start;
@@ -73,7 +79,7 @@ export function TrimmedVideo({ uri, meta, loop = true, muted = true, autoPlay = 
       onEnd?.();
     }));
     return () => subs.forEach((s) => s.remove());
-  }, [player, trim, loop, onEnd, onReady, onError]);
+  }, [player, trim, loop, onEnd, onReady, onError, onSize]);
   return <VideoView player={player} style={style ?? fill} contentFit={fit} nativeControls={false} playsInline allowsPictureInPicture={false} />;
 }
 
@@ -109,4 +115,18 @@ export function FramedMedia({ uri, kind, meta, style, video, onImageLoad }: {
       <FilterLayer id={meta?.filter} />
     </View>
   );
+}
+
+/** A video's own width and height as it is shown (rotation applied). Browsers only; phones report it through onSize. */
+export function measureVideo(uri: string): Promise<{ w: number; h: number } | null> {
+  if (Platform.OS !== 'web' || typeof document === 'undefined') return Promise.resolve(null);
+  return new Promise((resolve) => {
+    const v = document.createElement('video');
+    v.preload = 'metadata'; v.muted = true; v.playsInline = true;
+    const done = (r: { w: number; h: number } | null) => { v.removeAttribute('src'); v.load(); resolve(r); };
+    v.onloadedmetadata = () => done(v.videoWidth && v.videoHeight ? { w: v.videoWidth, h: v.videoHeight } : null);
+    v.onerror = () => done(null);
+    setTimeout(() => done(null), 6000);
+    v.src = uri;
+  });
 }

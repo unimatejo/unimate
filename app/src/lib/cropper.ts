@@ -24,6 +24,8 @@ export type MediaMeta = {
   caption?: string;
   /** stories: the author turned replies off */
   noReplies?: boolean;
+  /** stories: the video plays without its sound (turned off in the editor) */
+  muted?: boolean;
 };
 
 /** post: feed photos / reels · story: fixed 9:16 · chat: free crop, "send" · avatar: square */

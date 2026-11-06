@@ -2577,4 +2577,6 @@ export const EN: Record<string, string> = {
   "اسحب لفوق للشاشة كاملة": "Drag up for full screen",
   "اكبس للصوت": "Tap for sound",
   "شغّل الفيديو": "Play video",
+  "الصوت شغّال": "Sound on",
+  "الصوت مطفي": "Sound off",
 };

@@ -227,7 +227,7 @@ export default function StoryViewer() {
     <GestureDetector gesture={pull}>
     <Animated.View style={[{ flex: 1, overflow: 'hidden', backgroundColor: '#000' }, sheet]}>
       {!uri && <View style={{ position: 'absolute', top: 0, bottom: 0, left: 0, right: 0, padding: 8 }}><Bone h={H - 16} r={28} style={{ opacity: 0.25 }} /></View>}
-      {uri && s?.kind === 'video' ? <StoryVideo key={s.id} uri={uri} meta={s.meta} muted={muted} onEnd={next} onReady={markReady} onError={markFailed} onSoundBlocked={() => { setSoundBlocked(true); setMuted(true); }} />
+      {uri && s?.kind === 'video' ? <StoryVideo key={s.id} uri={uri} meta={s.meta} muted={muted || !!s.meta?.muted} onEnd={next} onReady={markReady} onError={markFailed} onSoundBlocked={() => { setSoundBlocked(true); setMuted(true); }} />
         : uri ? <FramedMedia key={uri} uri={uri} kind="image" meta={s?.meta} onImageLoad={markReady} /> : null}
       <Pressable style={{ position: 'absolute', top: 110, bottom: 130, width: '40%', ...(Platform.OS === 'web' ? (rtlLayout() ? { left: 0 } : { right: 0 }) : { end: 0 }) }} onPress={next} onLongPress={onHold} onPressOut={onRelease} delayLongPress={200} accessibilityLabel={t('التالي')} />
       <Pressable style={{ position: 'absolute', top: 110, bottom: 130, width: '40%', ...(Platform.OS === 'web' ? (rtlLayout() ? { right: 0 } : { left: 0 }) : { start: 0 }) }} onPress={prev} onLongPress={onHold} onPressOut={onRelease} delayLongPress={200} accessibilityLabel={t('السابق')} />
@@ -238,7 +238,7 @@ export default function StoryViewer() {
           </View>
         </View>
       )}
-      {s?.kind === 'video' && (soundBlocked || muted) && (
+      {s?.kind === 'video' && !s.meta?.muted && (soundBlocked || muted) && (
         <Tap onPress={() => { setSoundBlocked(false); setMuted(false); }} accessibilityLabel={t('شغّل الصوت')}
           style={{ position: 'absolute', bottom: 150, alignSelf: 'center', flexDirection: 'row', alignItems: 'center', gap: 8, minHeight: 44, paddingHorizontal: 18, borderRadius: 22, backgroundColor: 'rgba(0,0,0,0.6)' }}>
           <VolumeX size={18} color="#fff" /><T v="bold" color="#fff">{t('اكبس للصوت')}</T>

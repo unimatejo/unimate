@@ -1,7 +1,7 @@
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import {
-  AtSign, Brush, ChevronDown, ChevronLeft, ChevronUp, Download, MessageCircleOff, Palette, Scissors, Smile, Star, Trash2, Type, Wand2, X,
+  AtSign, Brush, ChevronDown, ChevronLeft, ChevronUp, Download, MessageCircleOff, Palette, Scissors, Smile, Star, Trash2, Type, Wand2, X, Volume2, VolumeX,
 } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import { memo, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
@@ -10,7 +10,7 @@ import { GestureDetector, GestureHandlerRootView, usePanGesture, usePinchGesture
 import Animated, { FadeIn, FadeOut, runOnJS, useAnimatedStyle, useSharedValue, withTiming, type SharedValue } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { TrimmedVideo } from '@/components/media/FramedMedia';
+import { measureVideo, TrimmedVideo } from '@/components/media/FramedMedia';
 import { MediaCropper } from '@/components/media/MediaCropper';
 import { DrawTool } from '@/components/story/DrawTool';
 import { BACKGROUNDS, FILTERS, FilterLayer } from '@/components/story/filters';
@@ -184,13 +184,22 @@ export function StoryEditor({ media, initial, onCancel, onDone, onShare, sharing
   const [caption, setCaption] = useState(media.meta?.caption ?? '');
   const [flash, setFlash] = useState<{ name: string; k: number } | null>(null);
   const [trim, setTrim] = useState(false);
+  // like Instagram: the video's own sound is on, one tap turns it off (saved with the story)
+  const [soundOff, setSoundOff] = useState(!!media.meta?.muted);
+  const [soundBlocked, setSoundBlocked] = useState(false);
 
   // the media's own shape (from the picker, or measured)
-  const [A, setA] = useState<number>(m.width && m.height ? m.width / m.height : 0);
+  // a video's shape is measured from the file itself (the picker's numbers can be swapped for phone videos), so a wide
+  // video is never zoomed in to fill a tall frame
+  const [A, setA] = useState<number>(m.kind === 'image' && m.width && m.height ? m.width / m.height : 0);
   useEffect(() => {
-    if (A || m.kind !== 'image') { if (!A) setA(9 / 16); return; }
-    RNImage.getSize(m.uri, (w, h) => setA(w && h ? w / h : 9 / 16), () => setA(9 / 16));
-  }, [m.uri, m.kind, A]);
+    if (A) return;
+    if (m.kind === 'image') { RNImage.getSize(m.uri, (w, h) => setA(w && h ? w / h : 9 / 16), () => setA(9 / 16)); return; }
+    if (Platform.OS === 'web') { measureVideo(m.uri).then((r) => setA(r ? r.w / r.h : m.width && m.height ? m.width / m.height : 9 / 16)); return; }
+    // phones: the player reports it (onSize below); the picker's shape until then
+    if (m.width && m.height) setA(m.width / m.height);
+  }, [m.uri, m.kind, A, m.width, m.height]);
+  const onVideoSize = useCallback((w: number, h: number) => setA(w / h), []);
   const ratio = A || 9 / 16;
   // starting size: taller photos fill the frame, wider ones fit the width (like Instagram)
   const base = useMemo(() => (ratio <= (W / H) * 1.06 ? { w: Math.max(W, H * ratio), h: Math.max(W, H * ratio) / ratio } : { w: W, h: W / ratio }), [ratio, W, H]);
@@ -301,6 +310,7 @@ export function StoryEditor({ media, initial, onCancel, onDone, onShare, sharing
       ...(filter !== 'none' ? { filter } : {}),
       ...(caption.trim() ? { caption: caption.trim().slice(0, 200) } : {}),
       ...(noReplies ? { noReplies: true } : {}),
+      ...(m.kind === 'video' && soundOff ? { muted: true } : {}),
     };
     const draw: Overlay[] = strokes.length ? [{ id: 'draw', kind: 'draw', text: '', x: 0.5, y: 0.5, size: 0.08, scale: 1, rotation: 0, color: '#FFFFFF', bg: 'none', font: 'display', data: { strokes: strokes.map((st) => ({ ...st, pts: st.pts.map((n) => Math.round(n * 1000) / 1000) })) } }] : [];
     return { media: { ...m, meta, aspect: W / H }, overlays: [...items, ...draw] };
@@ -339,7 +349,7 @@ export function StoryEditor({ media, initial, onCancel, onDone, onShare, sharing
           <View style={[fill, { direction: 'ltr' }]}>
             <Animated.View style={[{ position: 'absolute', left: W / 2 - base.w / 2, top: H / 2 - base.h / 2, width: base.w, height: base.h }, mstyle]}>
               {m.kind === 'video'
-                ? <TrimmedVideo uri={m.uri} meta={m.meta} fit="cover" style={fill} />
+                ? <TrimmedVideo uri={m.uri} meta={m.meta} fit="cover" style={fill} muted={soundOff || soundBlocked} onSoundBlocked={() => setSoundBlocked(true)} onSize={Platform.OS === 'web' ? undefined : onVideoSize} />
                 : <Image source={{ uri: m.uri }} style={fill} contentFit="cover" />}
               {/* a clear sheet over the picture, so the browser never starts dragging the <img> itself */}
               <View style={fill} />
@@ -380,6 +390,12 @@ export function StoryEditor({ media, initial, onCancel, onDone, onShare, sharing
         {/* the tools, down the side; the chevron shows their names and the extra tools */}
         {!busyUI && (
           <Animated.View style={[{ position: 'absolute', top: 10, gap: 10, alignItems: TOOL_ALIGN }, LTR, toolSide(10), uiStyle]}>
+            {m.kind === 'video' && (
+              <Tool label={soundOff ? t('الصوت مطفي') : t('الصوت شغّال')} show={expanded} active={soundOff}
+                onPress={() => { if (soundBlocked) { setSoundBlocked(false); setSoundOff(false); return; } setSoundOff((v) => !v); }}>
+                {soundOff || soundBlocked ? <VolumeX size={20} color={soundOff ? '#000' : '#fff'} /> : <Volume2 size={20} color="#fff" />}
+              </Tool>
+            )}
             <Tool label={t('نص')} show={expanded} onPress={() => setDraft({ text: '', color: '#FFFFFF', bg: 'none', style: 'classic', align: 'center', size: 0.075 })}>
               <Type size={20} color="#fff" />
             </Tool>
@@ -460,8 +476,7 @@ export function StoryEditor({ media, initial, onCancel, onDone, onShare, sharing
         </Pressable>
       </Animated.View>
 
-      <TextTool draft={draft} width={W} onChange={setDraft} onDone={saveDraft}
-        onMention={() => { saveDraft(); setTray('mention'); }} onPlace={() => { saveDraft(); setTray('place'); }} />
+      <TextTool draft={draft} width={W} onChange={setDraft} onDone={saveDraft} />
       <StickerTray open={!!tray} start={tray === 'mention' ? 'mention' : tray === 'place' ? 'place' : undefined} onClose={() => setTray(false)} onPick={addSticker} />
 
       {/* videos: choose the part to play (the framing stays the free one above) */}
