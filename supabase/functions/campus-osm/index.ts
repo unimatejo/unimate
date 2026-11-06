@@ -151,6 +151,15 @@ const words = (x: string) => plain(x).split(' ').filter((w) => w.length > 1 && !
 // a name made only of common words («الجامعة الأردنية», "The University of Jordan") must match whole
 const sameName = (q: string, name: string) => { const a = words(q), b = new Set(words(name)); return a.length ? a.every((w) => b.has(w)) : plain(q) === plain(name); };
 type Uni = { id: string; center_lat: number; center_lng: number; name_ar: string | null; name_en: string | null };
+// someone's home, a private flat or housing (as a word of its own: «كلية العمارة» is architecture), a family diwan, a phone number: never a campus place or a name on the map.
+// Student housing run by the university stays (سكن الطلاب / الطالبات / الجامعة / الداخلي).
+const PRIVATE = /\d{5,}|\d{3}[\s-]\d{3,}|07[789]\d{7}|منزل|مسكن|(^|\s)(شق[ةه]|فيلا|عمار[ةه]|بناي[ةه])\s|المرحوم|مكان عمل|ديوان|(بيت|سكن)\s+(رئيس|عميد|نائب|مدير|السيد|الدكتور|الحاج|المهندس|المحامي|أبو|ابو|أم|ام)\s/;
+const UNI_HOUSING = /سكن\s*(ال)?(طلاب|طالبات|طلبة|الطلبة|جامع|داخلي)/;
+const isPrivate = (name: string) => PRIVATE.test(name) || (/(^|\s)سكن\s/.test(name) && !UNI_HOUSING.test(name));
+
+// an OSM name that is someone's home stays off the map (the outline is still drawn)
+const publicName = (t: Record<string, string>) => { const n = nameOf(t); return n && !isPrivate(n) ? n : null; };
+
 async function outline(uni: Uni): Promise<{ ring: LL[]; center: { lat: number; lng: number }; extra: LL[][] } | null> {
   // Photon finds the campus by name (Nominatim refuses cloud servers); the OSM API then gives its full outline
   const c = { lat: uni.center_lat, lng: uni.center_lng };
@@ -195,7 +204,7 @@ async function outline(uni: Uni): Promise<{ ring: LL[]; center: { lat: number; l
 
 async function build(db: ReturnType<typeof createClient>, uni: Uni) {
   const [{ data: bs }, { data: ps }] = await Promise.all([
-    db.from('buildings').select('id, name_ar, name_en, code, lat, lng, floors, osm_id').eq('university_id', uni.id),
+    db.from('buildings').select('id, name_ar, name_en, code, lat, lng, floors, osm_id').eq('university_id', uni.id).eq('state', 'approved'),
     db.from('places').select('id, kind, name_ar, lat, lng, osm_id').eq('university_id', uni.id),
   ]);
   let c = { lat: uni.center_lat, lng: uni.center_lng };
@@ -243,7 +252,7 @@ async function build(db: ReturnType<typeof createClient>, uni: Uni) {
       for (const r of rings(el)) {
         if (area(r) < 12) continue;
         const mh = parseFloat(t.min_height ?? '') || (parseFloat(t['building:min_level'] ?? '') > 0 ? parseFloat(t['building:min_level']) * 3.4 : 0);
-        buildings.push({ o: el.id, c: r, h: heightOf(t), mh, n: nameOf(t), b: null, f: null, k: t.building ?? 'part', e: !!(t.height || t['building:levels']) });
+        buildings.push({ o: el.id, c: r, h: heightOf(t), mh, n: publicName(t), b: null, f: null, k: t.building ?? 'part', e: !!(t.height || t['building:levels']) });
       }
       const k = poiKind(t);
       const r0 = rings(el)[0];
@@ -313,7 +322,7 @@ async function build(db: ReturnType<typeof createClient>, uni: Uni) {
   const haveOsm = new Set(have.map((x) => String(x.osm_id ?? '').replace(/\D/g, '')).filter(Boolean));
   const fresh = pois.filter((x) => (x.n || ['bus', 'kiosk', 'atm', 'gate', 'cafeteria', 'restaurant', 'pharmacy', 'mosque', 'print'].includes(x.k))
     && !haveOsm.has(String(x.o)) && !have.some((h) => h.kind === x.k && dist({ lat: h.lat, lng: h.lng }, { lat: x.p[1], lng: x.p[0] }) < 20)
-    && onCampus(x.p));
+    && onCampus(x.p) && !(x.n && isPrivate(x.n)));
   let added = 0;
   for (let i = 0; i < fresh.length; i += 200) {
     const rows = fresh.slice(i, i + 200).map((x) => ({ university_id: uni.id, kind: x.k, name_ar: x.n ?? KIND_AR[x.k] ?? 'خدمة', lat: x.p[1], lng: x.p[0], state: 'approved', osm_id: String(x.o) }));

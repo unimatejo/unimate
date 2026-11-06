@@ -55,14 +55,18 @@ const NOT = /فندق|hotel|motel|شقق|apartment|سكن|مدرسة|مدارس|
 // names that are not a place's name: phone numbers, links, chatter, someone's office
 const JUNK = (x: string) => /\d{5,}|\d{3}[\s-]\d{3}|https?:|www\.|\.com|@/i.test(x) || x.split(/\s+/).length > 9 || x.length > 80 || /^مكتب\s/.test(x.trim());
 
-const PERSONAL = /\d{5,}|\d{3}[\s-]\d{3,}|07[789]\d{7}|منزل|مسكن خاص|شق[ةه] [أ-ي0-9]|فيلا [أ-ي]|المرحوم|مكان عمل|ديوان عشائر/;
+// someone's home, a private flat or housing (as a word of its own: «كلية العمارة» is architecture), a family diwan, a phone number: never a campus place or a name on the map.
+// Student housing run by the university stays (سكن الطلاب / الطالبات / الجامعة / الداخلي).
+const PRIVATE = /\d{5,}|\d{3}[\s-]\d{3,}|07[789]\d{7}|منزل|مسكن|(^|\s)(شق[ةه]|فيلا|عمار[ةه]|بناي[ةه])\s|المرحوم|مكان عمل|ديوان|(بيت|سكن)\s+(رئيس|عميد|نائب|مدير|السيد|الدكتور|الحاج|المهندس|المحامي|أبو|ابو|أم|ام)\s/;
+const UNI_HOUSING = /سكن\s*(ال)?(طلاب|طالبات|طلبة|الطلبة|جامع|داخلي)/;
+const isPrivate = (name: string) => PRIVATE.test(name) || (/(^|\s)سكن\s/.test(name) && !UNI_HOUSING.test(name));
 
 function classify(r: Stage): { kind: string | null; why?: string } {
   const name = r.name_ar || r.name_en || '';
   if (NOT.test(name)) return { kind: null, why: 'مش من الحرم (فندق، سكن، مدرسة…)' };
   if (name && JUNK(name)) return { kind: null, why: 'اسم مش صالح (رقم، رابط، كلام طويل، مكتب شخص)' };
   // people's homes, names and phone numbers never become places (osm_stage drops them too: 0116)
-  if (PERSONAL.test(name)) return { kind: null, why: 'معلومات شخصية' };
+  if (name && isPrivate(name)) return { kind: null, why: 'معلومات شخصية أو سكن خاص' };
   if (r.k === 'building' || r.k === 'named' || r.k === 'wm') {
     if (!name) return { kind: null, why: 'بدون اسم' };
     for (const [re, k] of WORDS) if (re.test(name)) return { kind: k };
@@ -104,12 +108,12 @@ Deno.serve(async (req) => {
 
   const [{ data: stage }, { data: bs }, { data: ps }] = await Promise.all([
     db.from('osm_stage').select('id, osm, k, name_ar, name_en, lat, lng, tags').eq('uni', uni.slug),
-    db.from('buildings').select('id, name_ar, name_en, lat, lng, osm_id').eq('university_id', uni.id),
+    db.from('buildings').select('id, name_ar, name_en, lat, lng, osm_id, state').eq('university_id', uni.id),
     db.from('places').select('id, kind, name_ar, name_en, lat, lng, osm_id, state').eq('university_id', uni.id),
   ]);
   const B = (bs ?? []) as { id: string; name_ar: string; name_en: string | null; lat: number | null; lng: number | null; osm_id: string | null }[];
   const P = (ps ?? []) as { id: string; kind: string; name_ar: string; name_en: string | null; lat: number; lng: number; osm_id: string | null; state: string }[];
-  const before = { buildings: B.length, places: P.filter((p) => p.state === 'approved').length };
+  const before = { buildings: B.filter((b) => (b as { state?: string }).state !== 'rejected').length, places: P.filter((p) => p.state === 'approved').length };
 
   const known = B.filter((b) => b.lat != null && dist(c, b as { lat: number; lng: number }) < 1500) as { lat: number; lng: number }[];
   const reach = Math.max(250, ...known.map((x) => dist(c, x) + 60));

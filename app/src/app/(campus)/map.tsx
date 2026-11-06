@@ -100,7 +100,7 @@ export default function CampusMap() {
         return;
       }
       const [{ data: b, error: be }, { data: p, error: pe }] = await Promise.all([
-        supabase.from('buildings').select('id, name_ar, name_en, code, lat, lng').eq('university_id', university.id).not('lat', 'is', null),
+        supabase.from('buildings').select('id, name_ar, name_en, code, lat, lng').eq('university_id', university.id).eq('state', 'approved').not('lat', 'is', null),
         supabase.from('places').select('id, kind, name_ar, name_en, description, lat, lng, advertiser_id').eq('university_id', university.id).eq('state', 'approved'),
       ]);
       if (be || pe) { setPinsState('error'); return; }
