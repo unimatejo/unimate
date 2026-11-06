@@ -9,6 +9,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ShareToChat } from '@/components/chat/ShareToChat';
 import { FILTERS, inGroup, kindOf, localSearch, MINOR, TOUR_KINDS, type FilterKey, type Pin } from '@/components/map/kinds';
+import { NativeCampus } from '@/components/map/NativeCampus';
 import { DirectionBanner, NavCard } from '@/components/map/NavPanel';
 import { SuggestPlace } from '@/components/map/SuggestPlace';
 import { UniSwitcher } from '@/components/map/UniSwitcher';
@@ -123,7 +124,7 @@ export default function CampusMap() {
   const near = useMemo(() => pins.filter((p) => distM({ lat: center.latitude, lng: center.longitude }, p) < 3000), [pins, center.latitude, center.longitude]);
   const fitAll = useCallback(() => {
     // the main campus only: colleges in other cities (Al-Balqa has many) would zoom the map out to all of Jordan
-    if (near.length < 2) { map.current?.animateCamera({ center, zoom: 16.4, pitch: WEB ? 52 : 0, heading: WEB ? -18 : 0 }, { duration: 700 }); return; }
+    if (near.length < 2) { map.current?.animateCamera({ center, zoom: 16.4, pitch: WEB ? 52 : 35, heading: WEB ? -18 : 0 }, { duration: 700 }); return; }
     map.current?.fitToCoordinates(near.map((p) => ({ latitude: p.lat, longitude: p.lng })), { edgePadding: { top: 170, bottom: 80, left: 40, right: 40 }, animated: true });
   }, [near, center]);
   const opened = useRef(false);
@@ -296,17 +297,42 @@ export default function CampusMap() {
   }, [params.go, campus, center.latitude, center.longitude]);
 
   // zoomed out, only the big landmarks; parking, bus stops and ATMs appear as you zoom in (or pick their filter)
-  const shown = useMemo(() => pins.filter((p) => inGroup(filter, p.kind) && (filter !== 'all' || zoom > 16.9 || !MINOR.includes(p.kind))), [pins, filter, zoom]);
+  const listed = useMemo(() => pins.filter((p) => inGroup(filter, p.kind) && (filter !== 'all' || zoom > 16.9 || !MINOR.includes(p.kind))), [pins, filter, zoom]);
+  // phones: the platform map has no collision handling, so place markers by importance on their real screen positions
+  // and leave out any that would sit on one already placed (the web map does this itself)
+  const [fits, setFits] = useState<Set<string> | null>(null);
+  const region = useRef(0);
+  const placeMarkers = useCallback(async () => {
+    if (WEB || !map.current) return;
+    const turn = ++region.current;
+    const rank = (p: Pin) => (p.id === sel?.id ? 0 : p.kind === 'building' ? 1 : MINOR.includes(p.kind) ? 3 : 2);
+    const order = [...listed].sort((a, b) => rank(a) - rank(b)).slice(0, 220);
+    const pts = await Promise.all(order.map((p) => map.current!.pointForCoordinate({ latitude: p.lat, longitude: p.lng }).catch(() => null)));
+    if (turn !== region.current) return;
+    const boxes: [number, number, number, number][] = [];
+    const keep = new Set<string>();
+    order.forEach((p, i) => {
+      const pt = pts[i];
+      if (!pt) return;
+      const w = p.kind === 'building' && zoom > 16.6 ? 120 : 36, h = 36;
+      const b: [number, number, number, number] = [pt.x - w / 2, pt.y - h / 2, pt.x + w / 2, pt.y + h / 2];
+      if (p.id !== sel?.id && boxes.some((o) => b[0] < o[2] && b[2] > o[0] && b[1] < o[3] && b[3] > o[1])) return;
+      boxes.push(b); keep.add(p.id);
+    });
+    setFits(keep);
+  }, [listed, sel?.id, zoom]);
+  useEffect(() => { placeMarkers(); }, [placeMarkers]);
+  const shown = WEB || !fits ? listed : listed.filter((p) => fits.has(p.id));
   const highlight = nav?.buildingId ?? (sel ? (sel.kind === 'building' ? sel.id : campus ? findBuilding(campus, null, sel)?.b ?? null : null) : null);
   const meters = sel && me ? Math.round(distM(me, sel) * 1.25) : null; // paths are ~25% longer than a straight line
   const walkMin = meters != null ? Math.max(1, Math.round(meters / 75)) : null;
   const busy = !!(nav || tour || suggest);
-  const web3d = WEB ? { campus, theme, highlight, route: nav?.route.line ?? null,
-    onBuildingPress: (b: { b: string | null; n: string | null; at: { latitude: number; longitude: number } }) => {
-      if (busy) return;
-      const p = (b.b && pins.find((x) => x.id === b.b)) || { id: b.b ?? `osm-${b.at.latitude}`, kind: 'building', name: b.n ?? t('مبنى'), lat: b.at.latitude, lng: b.at.longitude };
-      focus(p);
-    } } : {};
+  const pressBuilding = (b: { b: string | null; n: string | null; at: { latitude: number; longitude: number } }) => {
+    if (busy) return;
+    const p = (b.b && pins.find((x) => x.id === b.b)) || { id: b.b ?? `osm-${b.at.latitude}`, kind: 'building', name: b.n ?? t('مبنى'), lat: b.at.latitude, lng: b.at.longitude };
+    focus(p);
+  };
+  const web3d = WEB ? { campus, theme, highlight, route: nav?.route.line ?? null, onBuildingPress: pressBuilding } : {};
 
   if (preview === undefined) return <View style={{ flex: 1, backgroundColor: C.bg, alignItems: 'center', justifyContent: 'center' }}><ActivityIndicator color={C.primary} /></View>;
 
@@ -314,15 +340,16 @@ export default function CampusMap() {
     <View style={{ flex: 1, backgroundColor: C.bg, overflow: 'hidden' }}>
       <MapView key={university?.id ?? 'none'} ref={map} provider={PROVIDER_DEFAULT} style={{ flex: 1 }} showsUserLocation showsCompass={false} showsPointsOfInterests={false} showsBuildings pitchEnabled rotateEnabled
         mapType={sat ? (Platform.OS === 'ios' ? 'hybridFlyover' : 'hybrid') : Platform.OS === 'ios' ? 'mutedStandard' : 'standard'}
-        initialCamera={{ center, zoom: 16, heading: WEB ? -18 : 0, pitch: WEB ? 52 : 0 }} onPress={() => { Keyboard.dismiss(); }}
-        onRegionChangeComplete={(r) => { setZoom((r as { zoom?: number }).zoom ?? Math.log2(360 / r.longitudeDelta)); mid.current = { lat: r.latitude, lng: r.longitude }; }}
+        initialCamera={{ center, zoom: 16, heading: WEB ? -18 : 0, pitch: WEB ? 52 : 35 }} onPress={() => { Keyboard.dismiss(); }}
+        onRegionChangeComplete={(r) => { setZoom((r as { zoom?: number }).zoom ?? Math.log2(360 / r.longitudeDelta)); mid.current = { lat: r.latitude, lng: r.longitude }; placeMarkers(); }}
         {...web3d}>
+        {!WEB && campus && <NativeCampus campus={campus} theme={theme} zoom={zoom} highlight={highlight} onBuildingPress={pressBuilding} />}
         {!nav && shown.map((p) => {
           const on = sel?.id === p.id;
           const { g, icon: Icon } = kindOf(p.kind);
           const small = MINOR.includes(p.kind) && !on;
-          // on the 3D campus a building is its own shape: just its name, once you're close enough to read it
-          const bare = WEB && !!campus && p.kind === 'building' && !on;
+          // a drawn campus (3D on the web, shapes on phones): a building is its own shape, just its name once you're close
+          const bare = !!campus && p.kind === 'building' && !on;
           const label = on || (p.kind === 'building' ? zoom > 16.6 : zoom > 17.6);
           if (bare && !label) return null;
           return (
