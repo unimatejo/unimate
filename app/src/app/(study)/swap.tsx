@@ -7,6 +7,7 @@ import Animated, { FadeIn } from 'react-native-reanimated';
 
 import { Button, Chip, Empty, Header, Row, Screen, T, Tap } from '@/components/ui';
 import { useAuth } from '@/lib/auth';
+import { sectionKnown, sectionLabel } from '@/lib/sections';
 import { supabase } from '@/lib/supabase';
 import { run } from '@/lib/run';
 import { toast } from '@/lib/toast';
@@ -43,7 +44,8 @@ export default function Swap() {
       const { data: secs } = await supabase.from('sections').select('id, course_id, section_no, instructor, meetings:section_meetings(weekday, starts_at)').in('course_id', courseIds).order('section_no');
       const by: Record<string, Sec[]> = {};
        
-      for (const s of (secs ?? []) as any[]) (by[s.course_id] ??= []).push(s);
+      // only real sections: one whose number isn't known yet can't be swapped into
+      for (const s of (secs ?? []) as any[]) if (sectionKnown(s.section_no)) (by[s.course_id] ??= []).push(s);
       setOthers(by);
     }
     const { data: r } = await supabase.from('swap_requests').select('*').eq('user_id', (profile?.id ?? '')).neq('status', 'closed').order('created_at', { ascending: false });
@@ -127,7 +129,7 @@ export default function Swap() {
           return (
             <View key={mm.section.id} style={{ gap: 10, backgroundColor: C.card, borderRadius: 22, padding: 14 }}>
               <T v="bold">{nm(mm.section.course)}</T>
-              <T v="tiny" color={C.muted}>{t('شعبتك')} {mm.section.section_no} · {when(mm.section)}</T>
+              <T v="tiny" color={C.muted}>{sectionLabel(mm.section.section_no)} · {when(mm.section)}</T>
               {alts.length === 0 ? <T v="small" color={C.muted}>{t('ما في شعب تانية مسجلة لهالمادة لهلأ.')}</T> : (
                 <>
                   <Row gap={8} style={{ flexWrap: 'wrap' }}>

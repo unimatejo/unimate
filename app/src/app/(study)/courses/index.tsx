@@ -1,5 +1,5 @@
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
-import { ArrowLeftRight, BookOpen, CalendarClock, CheckCircle2, Clock, Plus, Sparkles, Trash2, User, Users } from 'lucide-react-native';
+import { ArrowLeftRight, BookOpen, CalendarClock, CheckCircle2, CircleAlert, Clock, Plus, Sparkles, Trash2, User, Users } from 'lucide-react-native';
 import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, Modal, Pressable, ScrollView, View } from 'react-native';
 import Animated, { FadeIn, SlideInDown } from 'react-native-reanimated';
@@ -9,8 +9,9 @@ import { ScheduleScan } from '@/components/study/ScheduleScan';
 import { TimeField } from '@/components/ui/TimeField';
 import { Button, Chip, Empty, Field, Header, Row, Screen, T, Tap } from '@/components/ui';
 import { importTeamsCourses, useAuth } from '@/lib/auth';
+import { sectionKnown, sectionLabel } from '@/lib/sections';
 import { supabase } from '@/lib/supabase';
-import { C } from '@/lib/theme';
+import { C, F } from '@/lib/theme';
 import { ListSkeleton } from '@/components/ui/Skeleton';
 import { WEEKDAYS_SHORT, clock } from '@/lib/util';
 import { nm, t, LOCALE } from '@/lib/i18n';
@@ -113,7 +114,7 @@ export default function Courses() {
     if (name.trim().length < 2) { Alert.alert(t('اكتب اسم المادة')); return; }
     if (busy) return;
     setBusy(true);
-    const { error } = await supabase.rpc('add_course', { course_name: name.trim(), section_no: secNo.trim() || '1' }).then((r) => r, () => ({ error: true }));
+    const { error } = await supabase.rpc('add_course', { course_name: name.trim(), section_no: secNo.trim() || null }).then((r) => r, () => ({ error: true }));
     setBusy(false);
     if (error) { Alert.alert(t('ما انضافت'), t('جرّب كمان مرة.')); return; }
     setAdding(false); setName(''); setSecNo(''); load();
@@ -277,10 +278,18 @@ export default function Courses() {
               <GlyphTile icon={BookOpen} colors={[GRAD.blue, GRAD.pink, GRAD.green, GRAD.orange, GRAD.violet][i % 5]} size={44} />
               <View style={{ flex: 1 }}>
                 <T v="bold" numberOfLines={2}>{nm(s.course)}</T>
-                <Row gap={6}><T v="tiny" color={C.muted}>{t('شعبة')} {s.section_no}</T><Users size={12} color={C.muted} /><T v="tiny" color={C.muted}>{s.mates}</T></Row>
+                <Row gap={6}><T v="tiny" color={sectionKnown(s.section_no) ? C.muted : C.orangeInk}>{sectionLabel(s.section_no)}</T><Users size={12} color={C.muted} /><T v="tiny" color={C.muted}>{s.mates}</T></Row>
               </View>
               <Tap onPress={() => leave(s)} accessibilityLabel={t('شيل المادة')} style={{ width: 38, height: 38, alignItems: 'center', justifyContent: 'center' }}><Trash2 size={18} color={C.faint} /></Tap>
             </Row>
+            {/* the number wasn't in the Team's name (or wasn't typed): until it's set, nothing section-wide reaches you */}
+            {!sectionKnown(s.section_no) && (
+              <Tap onPress={() => { setMoveFor(s); setNewSec(''); }} style={{ flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: C.orangeSoft, borderRadius: 14, padding: 10 }}>
+                <CircleAlert size={16} color={C.orangeInk} />
+                <T v="small" color={C.orangeInk} style={{ flex: 1 }}>{t('شو رقم شعبتك؟ حدّده عشان توصلك امتحانات ومواعيد شعبتك بس.')}</T>
+                <T v="tiny" color={C.orangeInk} style={{ fontFamily: F.bodyBold }}>{t('حدّد')}</T>
+              </Tap>
+            )}
             {s.meetings.map((m) => (
               <Tap key={m.id} haptic={false} scale={0.99} onPress={() => meetingMenu(m, s)} accessibilityLabel={t('عدّل الوقت')}
                 style={{ flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: m.mine ? C.violetSoft : C.soft, borderRadius: 14, padding: 10 }}>
@@ -316,7 +325,7 @@ export default function Courses() {
         <Animated.View entering={SlideInDown.duration(240)} style={{ backgroundColor: C.bg, borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: 18, gap: 12, paddingBottom: 40 }}>
           <T v="h3">{t('ضيف مادة')}</T>
           <Field label={t('اسم المادة')} value={name} onChangeText={setName} placeholder={t('مثلاً تفاضل وتكامل 1')} maxLength={120} />
-          <Field label={t('رقم الشعبة')} value={secNo} onChangeText={setSecNo} keyboardType="number-pad" placeholder="1" maxLength={4} />
+          <Field label={t('رقم الشعبة')} value={secNo} onChangeText={setSecNo} keyboardType="number-pad" placeholder={t('إذا بتعرفه')} maxLength={4} />
           <Button title={t('ضيفها')} loading={busy} onPress={addCourse} />
         </Animated.View>
       </Modal>
@@ -324,8 +333,10 @@ export default function Courses() {
       <Modal visible={!!moveFor} transparent animationType="fade" onRequestClose={() => setMoveFor(null)}>
         <Pressable style={{ flex: 1, backgroundColor: 'rgba(14,20,48,0.45)' }} onPress={() => setMoveFor(null)} />
         <Animated.View entering={SlideInDown.duration(240)} style={{ backgroundColor: C.bg, borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: 18, gap: 12, paddingBottom: 40 }}>
-          <T v="h3">{t('نقل لشعبة ثانية')}</T>
-          <T v="small" color={C.muted}>{t('{0} · إنت هلأ بشعبة {1}. لما تنتقل بتاخد أوقات الشعبة الجديدة وجروبها.', [nm(moveFor?.course), moveFor?.section_no ?? ''])}</T>
+          <T v="h3">{sectionKnown(moveFor?.section_no) ? t('نقل لشعبة ثانية') : t('شو رقم شعبتك؟')}</T>
+          <T v="small" color={C.muted}>{sectionKnown(moveFor?.section_no)
+            ? t('{0} · إنت هلأ بشعبة {1}. لما تنتقل بتاخد أوقات الشعبة الجديدة وجروبها.', [nm(moveFor?.course), moveFor?.section_no ?? ''])
+            : t('{0} · اكتب رقم شعبتك من بوابة الطالب أو جدولك، وبتنضم لشعبتك وجروبها.', [nm(moveFor?.course)])}</T>
           <Field label={t('رقم الشعبة الجديدة')} value={newSec} onChangeText={setNewSec} keyboardType="number-pad" placeholder="2" maxLength={6} autoFocus />
           <Button title={t('انقلني')} loading={busy} disabled={busy || !newSec.trim()} onPress={moveSection} />
         </Animated.View>

@@ -9,6 +9,7 @@ import { Button, Chip, Field, Header, Row, Screen, T, Tap, Toggle } from '@/comp
 import { useAuth } from '@/lib/auth';
 import { run } from '@/lib/run';
 import { supabase } from '@/lib/supabase';
+import { sectionKnown } from '@/lib/sections';
 import { C } from '@/lib/theme';
 import { toast } from '@/lib/toast';
 import { LOCALE, nm, t } from '@/lib/i18n';
@@ -17,7 +18,7 @@ const KINDS: [string, string][] = [
   ['exam_first', t('فيرست')], ['exam_second', t('سكند')], ['exam_mid', t('ميد')], ['exam_final', t('فاينل')],
   ['quiz', t('كويز')], ['assignment', t('واجب')], ['project', t('مشروع')], ['custom', t('تذكير خاص')],
 ];
-type Sec = { id: string; course: { name_ar: string } };
+type Sec = { id: string; section_no: string; course: { name_ar: string } };
 
 /**
  * Add an exam, deadline or reminder to my timetable. Ticking "for my section" doesn't push it to everyone: it counts
@@ -42,7 +43,7 @@ export default function NewEvent() {
 
   useEffect(() => {
     if (!profile) return;
-    supabase.from('enrollments').select('section:sections(id, course:courses(name_ar, name_en))').eq('user_id', (profile?.id ?? ''))
+    supabase.from('enrollments').select('section:sections(id, section_no, course:courses(name_ar, name_en))').eq('user_id', (profile?.id ?? ''))
        
       .then(({ data }) => { const s = ((data ?? []) as any[]).map((e) => e.section).filter(Boolean) as Sec[]; setSecs(s); if (!editId) setSection(s[0]?.id ?? null); });
   }, [profile, editId]);
@@ -64,7 +65,7 @@ export default function NewEvent() {
     if (!profile || busy) return;
     const ttl = title.trim() || [label, courseName].filter(Boolean).join(' · ');
     if (!ttl) { Alert.alert(t('اكتب عنوان')); return; }
-    const canShare = !!section && kind !== 'custom';
+    const canShare = !!section && kind !== 'custom' && sectionKnown(secs.find((x) => x.id === section)?.section_no);
     const toAll = admin && direct && canShare;
     const row = { kind, title: ttl, starts_at: date.toISOString(), location: location.trim() || null, section_id: section,
       owner_id: toAll ? null : profile.id, shared_ask: !toAll && share && canShare };
@@ -140,7 +141,12 @@ export default function NewEvent() {
         )}
         {show && Platform.OS === 'ios' && <Button kind="soft" title={t('تم')} onPress={() => setShow(null)} />}
         <Field label={t('المكان (اختياري)')} value={location} onChangeText={setLocation} placeholder={t('مثلاً قاعة 204 أو المدرج الكبير')} />
-        {section && kind !== 'custom' && !official && (
+        {section && kind !== 'custom' && !official && !sectionKnown(secs.find((x) => x.id === section)?.section_no) && (
+          <View style={{ backgroundColor: C.orangeSoft, borderRadius: 18, padding: 12 }}>
+            <T v="small" color={C.orangeInk}>{t('رقم شعبتك بهالمادة مش محدد، فالموعد بيضل عندك إنت بس. حدّده من «موادي» عشان تقدر تشاركه مع شعبتك.')}</T>
+          </View>
+        )}
+        {section && kind !== 'custom' && !official && sectionKnown(secs.find((x) => x.id === section)?.section_no) && (
           <View style={{ backgroundColor: C.card, borderRadius: 18, padding: 12, gap: 10 }}>
             <Toggle label={t('عند كل الشعبة')} value={share} onChange={setShare}
               hint={t('لما كم واحد من شعبتك يضيفوا نفس الموعد بنفس اليوم، بينزل تلقائي عند كل الشعبة. لحد ما يصير هيك بيضل عندك إنت بس.')} />

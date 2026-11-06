@@ -17,6 +17,7 @@ import { ListSkeleton } from '@/components/ui/Skeleton';
 import { scheduleLectureReminders } from '@/lib/notify';
 import { SectionAsks } from '@/components/study/SectionAsks';
 import { placeLine, useSchedule, ymd, type Meeting } from '@/lib/schedule';
+import { sectionLabel } from '@/lib/sections';
 import { toast } from '@/lib/toast';
 import { supabase } from '@/lib/supabase';
 import { C, F, shadow } from '@/lib/theme';
@@ -244,7 +245,7 @@ export default function Schedule() {
                     <GlyphTile icon={Icon} colors={g} size={46} live={live} />
                     <View style={{ flex: 1, gap: 2 }}>
                       <T v="bold" numberOfLines={2}>{m.course_name}</T>
-                      <T v="tiny" color={C.muted} numberOfLines={1}>{[m.instructor, t('شعبة {0}', [m.section_no])].filter(Boolean).join(' · ')}</T>
+                      <T v="tiny" color={C.muted} numberOfLines={1}>{[m.instructor, sectionLabel(m.section_no)].filter(Boolean).join(' · ')}</T>
                     </View>
                     {live ? (
                       <Row gap={6} style={{ backgroundColor: g[1], paddingHorizontal: 10, paddingVertical: 5, borderRadius: 999 }}><LiveDot /><T v="tiny" color={C.white}>{t('هلأ')}</T></Row>

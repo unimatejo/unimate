@@ -13,13 +13,15 @@ import { useAuth } from '@/lib/auth';
 import { scheduleExamReminders } from '@/lib/examReminders';
 import { reportError } from '@/lib/errors';
 import { MoodleImport } from '@/components/study/MoodleImport';
+import { EventSourceTag } from '@/components/study/EventSourceTag';
 import { SectionAsks } from '@/components/study/SectionAsks';
-import { EVENT_KIND } from '@/lib/events';
+import { EVENT_KIND, preferOfficial } from '@/lib/events';
+import { sectionLabel } from '@/lib/sections';
 import { supabase } from '@/lib/supabase';
 import { C, F, shadow } from '@/lib/theme';
 import { LOCALE, t } from '@/lib/i18n';
 
-type Ev = { id: string; section_id: string | null; owner_id: string | null; kind: string; title: string; starts_at: string; location: string | null; course_name: string | null; confirmations: number; shared_ask: boolean };
+type Ev = { id: string; section_id: string | null; owner_id: string | null; kind: string; title: string; starts_at: string; location: string | null; course_name: string | null; confirmations: number; shared_ask: boolean; source: string };
 type Sec = { id: string; name: string; section_no: string };
 type Mine = { section_id: string; place: string | null; until: string };
 type Mate = { user_id: string; full_name: string; username: string | null; avatar_url: string | null; place: string | null; until: string };
@@ -67,7 +69,7 @@ export default function Exams() {
       const s: Sec[] = ((enr ?? []) as any[]).map((e) => e.section).filter(Boolean).map((x) => ({ id: x.id, name: x.course?.name_ar ?? '', section_no: x.section_no }));
       setSecs(s);
        
-      const list = (ev ?? []) as Ev[];
+      const list = preferOfficial((ev ?? []) as Ev[]);
       setEvents(list);
        
       setMine(((st ?? []) as any[]).find((r) => r.user_id === profile.id) ?? null);
@@ -177,7 +179,7 @@ export default function Exams() {
                     <View style={{ flex: 1, gap: 2 }}>
                       <T v="bold" numberOfLines={1}>{c.name}</T>
                       <T v="tiny" color={C.muted} numberOfLines={1}>
-                        {c.next ? `${KIND[c.next.kind] ?? c.next.title} · ${leftLabel(daysLeft(c.next.starts_at, now))}` : t('شعبة {0}', [c.section_no])}
+                        {c.next ? `${KIND[c.next.kind] ?? c.next.title} · ${leftLabel(daysLeft(c.next.starts_at, now))}` : sectionLabel(c.section_no)}
                       </T>
                     </View>
                     {on ? (
@@ -299,8 +301,9 @@ function Row1({ e, now, onPress, past }: { e: Ev; now: number; onPress: () => vo
       <View style={{ flex: 1, gap: 2 }}>
         <T v="bold" numberOfLines={1}>{e.course_name ?? e.title}</T>
         <T v="tiny" color={C.muted} numberOfLines={1}>
-          {[KIND[e.kind] ?? e.title, date.toLocaleTimeString(LOCALE, { hour: 'numeric', minute: '2-digit' }), e.location, e.owner_id ? (e.shared_ask ? t('بانتظار زملاءك يأكدوه') : t('خاص فيك')) : e.confirmations > 1 ? t('أكّده {0}', [String(e.confirmations)]) : null].filter(Boolean).join(' · ')}
+          {[KIND[e.kind] ?? e.title, date.toLocaleTimeString(LOCALE, { hour: 'numeric', minute: '2-digit' }), e.location].filter(Boolean).join(' · ')}
         </T>
+        <EventSourceTag e={e} />
       </View>
       {!past && (
         <View style={{ backgroundColor: bg, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 4 }}>

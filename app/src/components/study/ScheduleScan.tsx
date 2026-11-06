@@ -74,7 +74,7 @@ export function ScheduleScan({ onDone, autoOpen }: { onDone: () => void; autoOpe
     try {
       for (const [i, c] of found.entries()) {
         if (skip.has(i)) continue;
-        const { data: sec, error } = await supabase.rpc('add_course', { course_name: c.name, section_no: c.section || '1', course_code: c.code, instructor: c.instructor });
+        const { data: sec, error } = await supabase.rpc('add_course', { course_name: c.name, section_no: c.section || null, course_code: c.code, instructor: c.instructor });
         if (error || !sec) continue;
         n++;
         // all the meetings of a course at once

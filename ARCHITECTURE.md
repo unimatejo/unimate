@@ -272,6 +272,7 @@ Admin › أخطاء التطبيق (`app/admin/errors.tsx`). Stale web code aft
 
 **study/**
 
+- `EventSourceTag.tsx` — The small tag on an exam / deadline that says how sure it is: official, from classmates (not official), or yours.
 - `MoodleImport.tsx` — Deadlines straight from Moodle: paste your calendar export link once, and assignments and quizzes land in your timetable (and count toward your section).…
 - `ScheduleScan.tsx` — "Scan my timetable": a screenshot of the registration page or a photo, read automatically, checked by you, then saved.
 - `SectionAsks.tsx` — "3 من شعبتك ضافوا امتحان أول الأحد 10:00": things classmates added that I haven't, before they become official. "صح، عندي" adds mine (one more toward the…
@@ -318,6 +319,7 @@ Admin › أخطاء التطبيق (`app/admin/errors.tsx`). Stale web code aft
 - `rides.ts` — offer: I have seats · need: I'm looking for a ride and someone with a car answers
 - `run.ts` — Run a Supabase call and never fail silently: returns { ok, data, error }, reports the error, and (unless quiet) shows a clear message to the user.
 - `schedule.ts` — Sunday of the week the schedule shows (after Thursday it shows next week).
+- `sections.ts` — A section whose number isn't known yet (a Teams team or a course added without one): stored as "?xxxxxx" (0106). It gets no section-wide events until the student says…
 - `settings.ts` — Update a field on my profile with an optimistic UI and refresh the session copy.
 - `share.ts` — Share a UniMate link: the phone's share sheet; a browser without one copies it instead (never does nothing). `message` is the text that goes with it on phones.
 - `stickerCut.ts` — Can we cut the background out on this device? iPhone on iOS 17+ (built in), or any modern browser (on-device model).
@@ -451,3 +453,4 @@ Admin › أخطاء التطبيق (`app/admin/errors.tsx`). Stale web code aft
 - `0103_moodle_links.sql` — UniMate · 0103 Moodle calendar import.
 - `0104_review_hardening.sql` — UniMate · 0104 hardening for review (NOT applied yet — waiting for the owner's approval).
 - `0105_highlights_mutes.sql` — UniMate · 0105 highlights like Instagram, and muting someone's stories.
+- `0106_sections_truth.sql` — UniMate · 0106 a student only gets what belongs to THEIR section (for review — not applied yet).

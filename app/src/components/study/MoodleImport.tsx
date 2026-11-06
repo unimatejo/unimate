@@ -19,7 +19,7 @@ const ERR: Record<string, string> = {
   bad_link: t('الرابط مش صحيح.'),
   moodle_refused: t('المودل ما قبل الرابط. يمكن انتهى، اعمل رابط جديد.'),
   moodle_unreachable: t('ما قدرنا نوصل للمودل هلأ، جرّب بعدين.'),
-  not_calendar: t('الرابط ما رجّع تقويم.'),
+  not_calendar: t('المودل ما قبل الرابط: يمكن انتهى أو انتسخ ناقص. اعمل رابط جديد والصقه كامل.'),
   too_big: t('التقويم كبير كثير.'),
 };
 
@@ -102,7 +102,7 @@ export function MoodleImport({ onImported }: { onImported?: () => void }) {
           </View>
           <View style={{ flex: 1 }}>
             <T v="bold">{t('جيب واجباتك من المودل')}</T>
-            <T v="tiny" color={C.muted}>{t('مرة وحدة بس، وبعدها كل تسليم جديد بيوصل لحاله')}</T>
+            <T v="tiny" color={C.muted}>{t('المصدر الرسمي: واجباتك وامتحاناتك حسب تسجيلك الحقيقي، وبتتحدّث لحالها')}</T>
           </View>
           <T v="small" color={C.primary} style={{ fontFamily: F.bodyBold }}>{t('اربط')}</T>
         </Tap>
@@ -110,7 +110,7 @@ export function MoodleImport({ onImported }: { onImported?: () => void }) {
 
       <RideSheet open={open} onClose={() => setOpen(false)} title={t('اربط المودل')} sub={t('بتاخد دقيقة وحدة')}>
         <View style={{ gap: 6, backgroundColor: C.soft, borderRadius: 16, padding: 12 }}>
-          {[t('افتح المودل تبع جامعتك من المتصفح وسجّل دخول.'), t('روح على «التقويم» وبعدين «تصدير التقويم».'),
+          {[t('افتح مودل جامعتك من المتصفح وسجّل دخول (الهاشمية: lms.hu.edu.jo).'), t('روح على «التقويم»، وتحت اكبس «استيراد أو تصدير التقويمات» وبعدين «تصدير التقويم».'),
             t('اختار «كل الأحداث» و«الأيام الـ60 القادمة» أو «الفترة المخصصة».'), t('اكبس «احصل على رابط التقويم» وانسخ الرابط والصقه هون.')]
             .map((s, i) => <T key={i} v="small" color={C.ink2}>{`${i + 1}. ${s}`}</T>)}
         </View>

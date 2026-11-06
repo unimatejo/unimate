@@ -11,3 +11,14 @@ export type SectionAsk = {
   section_id: string; course_name: string; course_name_en: string | null; kind: string; day: string;
   starts_at: string; title: string; count: number; needed: number;
 };
+
+type Ev = { section_id: string | null; owner_id: string | null; kind: string; starts_at: string; source?: string | null };
+const dayOf = (iso: string) => new Date(iso).toLocaleDateString('en-CA', { timeZone: 'Asia/Amman' });
+/**
+ * Moodle is the official source: when it has the same deadline (course section, kind, day) as one that classmates
+ * added, only Moodle's shows.
+ */
+export function preferOfficial<T extends Ev>(list: T[]): T[] {
+  const official = new Set(list.filter((e) => e.source === 'moodle' && e.section_id).map((e) => `${e.section_id}|${e.kind}|${dayOf(e.starts_at)}`));
+  return list.filter((e) => e.source === 'moodle' || !e.section_id || !official.has(`${e.section_id}|${e.kind}|${dayOf(e.starts_at)}`));
+}

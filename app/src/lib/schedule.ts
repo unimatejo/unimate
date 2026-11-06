@@ -3,6 +3,7 @@ import { AppState } from 'react-native';
 
 import { readCache, writeCache } from './cache';
 import { timed } from './perf';
+import { preferOfficial } from './events';
 import { supabase } from './supabase';
 import { minutesUntil } from './util';
 import { t } from './i18n';
@@ -34,7 +35,7 @@ type AcademicEvent = {
   id: string; section_id: string | null; owner_id: string | null; kind: string; title: string;
   starts_at: string; location: string | null; course_name?: string | null;
   /** how many classmates added it (official ones) · mine, waiting for the section to agree */
-  confirmations?: number; shared_ask?: boolean;
+  confirmations?: number; shared_ask?: boolean; source?: string;
 };
 
 export function useSchedule(userId?: string) {
@@ -142,7 +143,7 @@ export function useSchedule(userId?: string) {
       }
     }
     out.sort((a, b) => a.weekday - b.weekday || a.starts_at.localeCompare(b.starts_at));
-    const evs = (ev ?? []) as AcademicEvent[];
+    const evs = preferOfficial((ev ?? []) as AcademicEvent[]);
     setMeetings(out); setEvents(evs); setError(false);
     writeCache(key, { meetings: out, events: evs });
     } catch { setError(true); }
