@@ -1,7 +1,7 @@
 import * as Haptics from 'expo-haptics';
 import { router } from 'expo-router';
 import { BadgeCheck, Bookmark, FileText, MoreHorizontal, Heart, MessageCircle, Send } from 'lucide-react-native';
-import { useEffect, useState } from 'react';
+import { memo, useEffect, useRef, useState } from 'react';
 import * as WebBrowser from 'expo-web-browser';
 import { ActionSheetIOS, Alert, Platform, ScrollView, View } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withSequence, withSpring, withTiming } from 'react-native-reanimated';
@@ -92,8 +92,9 @@ function Photos({ paths, onDoubleTap }: { paths: string[]; onDoubleTap: () => vo
         {w > 0 && (paths.length === 1
           ? <Photo path={paths[0]} width={w} height={Math.max(height, 1)} onDoubleTap={onDoubleTap} onAspect={(a) => setAspect(a)} />
           : (
-            <ScrollView horizontal pagingEnabled showsHorizontalScrollIndicator={false} scrollEventThrottle={16}
-              onScroll={(e) => setI(Math.round(Math.abs(e.nativeEvent.contentOffset.x) / w))}>
+            <ScrollView horizontal pagingEnabled showsHorizontalScrollIndicator={false} scrollEventThrottle={32} nestedScrollEnabled
+              decelerationRate="fast" disableIntervalMomentum
+              onScroll={(e) => { const n = Math.round(Math.abs(e.nativeEvent.contentOffset.x) / w); if (n !== i) setI(n); }}>
               {paths.map((p, k) => <Photo key={p} path={p} width={w} height={Math.max(height, 1)} onDoubleTap={onDoubleTap} onAspect={k === 0 ? (a) => setAspect(a) : undefined} />)}
             </ScrollView>
           ))}
@@ -112,16 +113,23 @@ function Photos({ paths, onDoubleTap }: { paths: string[]; onDoubleTap: () => vo
   );
 }
 
-export function PostCard({ post, onLikes, compact, detail }: { post: Post; onLikes?: (p: Post) => void; compact?: boolean; detail?: boolean }) {
+/** Re-renders only when the post itself changes, so scrolling a long feed stays smooth. */
+export const PostCard = memo(PostCardView);
+
+function PostCardView({ post, onLikes, compact, detail }: { post: Post; onLikes?: (p: Post) => void; compact?: boolean; detail?: boolean }) {
   const { profile } = useAuth();
   const [p, setP] = useState(post);
-  useEffect(() => setP(post), [post]);
+  // the feed page brings likers along; only fetch them when it didn't, or when the count changes after that
+  const firstCount = useRef(post.likers ? post.like_count : -1);
+  useEffect(() => { setP(post); firstCount.current = post.likers ? post.like_count : -1; }, [post]);
   // a few faces of who liked it (refreshed when the count changes)
-  const [likers, setLikers] = useState<{ id: string; full_name: string; avatar_url: string | null }[]>([]);
+  const [likers, setLikers] = useState<NonNullable<Post['likers']>>(post.likers ?? []);
   useEffect(() => {
     if (!p.like_count) { setLikers([]); return; }
+    if (p.like_count === firstCount.current && post.likers) { setLikers(post.likers); return; }
     supabase.from('post_likes').select('p:profiles(id, full_name, avatar_url)').eq('post_id', p.id).order('created_at', { ascending: false }).limit(3)
       .then(({ data }) => setLikers(((data ?? []) as unknown as { p: { id: string; full_name: string; avatar_url: string | null } | null }[]).map((x) => x.p).filter((x): x is NonNullable<typeof x> => !!x)), () => {});
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [p.id, p.like_count]);
   const heart = useSharedValue(1);
   const heartStyle = useAnimatedStyle(() => ({ transform: [{ scale: heart.value }] }));
@@ -188,7 +196,7 @@ export function PostCard({ post, onLikes, compact, detail }: { post: Post; onLik
         </Tap>
       </Row>
 
-      {video && <PostVideo path={video.url} postId={p.id} onDoubleTap={() => { if (!p.liked) like(); }} />}
+      {video && <PostVideo path={video.url} meta={video.meta} postId={p.id} onDoubleTap={() => { if (!p.liked) like(); }} />}
       {images.length > 0 && <Photos paths={images.map((m) => m.url)} onDoubleTap={() => { if (!p.liked) like(); }} />}
       <Tap scale={0.99} haptic={false} disabled={detail} onPress={() => router.push({ pathname: '/post/[id]', params: { id: p.id } })}>
         <View style={{ paddingHorizontal: 16, paddingTop: 10, gap: 4 }}>

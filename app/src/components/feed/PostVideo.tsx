@@ -51,15 +51,17 @@ function Player({ uri, meta, postId, onDoubleTap }: { uri: string; meta?: MediaM
 const metaCache = new Map<string, MediaMeta | null>();
 
 /** A reel inside a post: plays on a loop while on screen, tap for sound (remembered for every reel), double tap likes. */
-export function PostVideo({ path, postId, onDoubleTap }: { path: string; postId?: string; onDoubleTap?: () => void }) {
+export function PostVideo({ path, meta: given, postId, onDoubleTap }: { path: string; meta?: unknown; postId?: string; onDoubleTap?: () => void }) {
   const [uri, setUri] = useState<string | null>(null);
-  const [meta, setMeta] = useState<MediaMeta | null | undefined>(metaCache.get(path));
+  // the feed brings the framing along with the post; older callers look it up once
+  const [meta, setMeta] = useState<MediaMeta | null | undefined>(given !== undefined ? (given as MediaMeta | null) : metaCache.get(path));
   useEffect(() => { mediaUrl('posts', path).then(setUri); }, [path]);
   useEffect(() => {
+    if (given !== undefined) return;
     if (metaCache.has(path)) { setMeta(metaCache.get(path)); return; }
     supabase.from('post_media').select('meta').eq('url', path).limit(1).maybeSingle()
       .then(({ data }) => { const m = (data?.meta ?? null) as MediaMeta | null; metaCache.set(path, m); setMeta(m); }, () => setMeta(null));
-  }, [path]);
+  }, [path, given]);
   if (!uri || meta === undefined) return (
     <View style={{ marginHorizontal: 10, aspectRatio: 9 / 14, maxHeight: 520, borderRadius: 22, backgroundColor: C.soft, alignItems: 'center', justifyContent: 'center' }}>
       <Play size={36} color={C.muted} />

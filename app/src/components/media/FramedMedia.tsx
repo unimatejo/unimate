@@ -64,7 +64,7 @@ export function TrimmedVideo({ uri, meta, loop = true, muted = true, autoPlay = 
     }));
     return () => subs.forEach((s) => s.remove());
   }, [player, trim, loop, onEnd, onReady, onError]);
-  return <VideoView player={player} style={style ?? fill} contentFit={fit} nativeControls={false} />;
+  return <VideoView player={player} style={style ?? fill} contentFit={fit} nativeControls={false} playsInline allowsPictureInPicture={false} />;
 }
 
 /**

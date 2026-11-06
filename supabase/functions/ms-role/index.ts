@@ -52,7 +52,7 @@ Deno.serve(async (req) => {
   // staff emails only (students' addresses are on std./stu. sub-domains or numeric)
   const [local, dom] = email.split('@');
   const { data: unis } = await db.from('universities').select('email_domains');
-  const staffDomain = (unis ?? []).some((x: { email_domains: string[] }) => x.email_domains.some((d) => dom === d && !/^(std|sta|ses|stu|student)\./.test(d)));
+  const staffDomain = (unis ?? []).some((x: { email_domains: string[] }) => x.email_domains.some((d) => dom === d && !/^(std|sta|st|ses|stu|student|students)\./.test(d)));
   if (!staffDomain || /^[0-9]+$/.test(local)) return json({ skipped: 'student' });
 
   const title = titleFrom(me.jobTitle ?? '');

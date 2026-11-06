@@ -143,6 +143,7 @@ export default function Chat() {
   useScreenTimer('chat', loaded);
   const [heart, setHeart] = useState<string | null>(null);
   const list = useRef<FlatList<Message>>(null);
+  const [openedAt] = useState(() => new Date().toISOString());
   const [typing, setTyping] = useState<string | null>(null);
   const typingCh = useRef<ReturnType<typeof supabase.channel> | null>(null);
   const lastTyped = useRef(0);
@@ -468,6 +469,7 @@ export default function Chat() {
   const [now, setNow] = useState(Date.now());
   useEffect(() => { const tm = setInterval(() => setNow(Date.now()), 20000); return () => clearInterval(tm); }, []);
   const visible = useMemo(() => msgs.filter((m) => !m.deleted_at && (m.is_saved || !m.vanishes_at || new Date(m.vanishes_at).getTime() > now)), [msgs, now]);
+  const lastMineIdx = useMemo(() => visible.findIndex((x) => x.sender_id === profile?.id), [visible, profile?.id]);
   const title = conv?.kind === 'direct' ? other?.full_name ?? (conv ? t('محادثة') : '') : conv?.title ?? '';
   const activity = useActivityLine(conv?.kind === 'direct' ? other?.id : null);
   const vanishLabel = VANISH.find((v) => v.key === conv?.vanish)?.label ?? '';
@@ -559,16 +561,17 @@ export default function Chat() {
             const newDay = !older || new Date(older.created_at).toDateString() !== new Date(m.created_at).toDateString();
             const sep = newDay || (older && new Date(m.created_at).getTime() - new Date(older.created_at).getTime() > 60 * 60000);
             const showName = conv?.kind !== 'direct' && !mine && m.sender_id && (older?.sender_id !== m.sender_id || sep);
-            const lastMine = mine && index === visible.findIndex((x) => x.sender_id === profile?.id);
+            const lastMine = mine && index === lastMineIdx;
             // a time under the last bubble of each run, like Instagram
             const endOfRun = !newer || newer.sender_id !== m.sender_id || new Date(newer.created_at).getTime() - new Date(m.created_at).getTime() > 5 * 60000;
             const seenDirect = otherRead && otherRead >= m.created_at;
-            if (m.kind === 'system') return <View>{sep && <DateSep iso={m.created_at} />}<Animated.View entering={FadeIn} style={{ alignSelf: 'center', backgroundColor: C.soft, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 5 }}><T v="tiny" color={C.ink2}>{m.body}</T></Animated.View></View>;
+            if (m.kind === 'system') return <View>{sep && <DateSep iso={m.created_at} />}<Animated.View entering={m.created_at > openedAt ? FadeIn : undefined} style={{ alignSelf: 'center', backgroundColor: C.soft, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 5 }}><T v="tiny" color={C.ink2}>{m.body}</T></Animated.View></View>;
             const plain = !['image', 'voice', 'story_reply', 'post_share', 'sticker', 'file', 'location', 'contact', 'poll', 'view_once'].includes(m.kind) || ((m.kind === 'image' || m.kind === 'voice' || m.kind === 'file') && !m.media_url);
             return (
               <View>
                 {sep && <DateSep iso={m.created_at} />}
-                <Animated.View entering={FadeInUp.springify().damping(20).stiffness(260)} style={{ alignSelf: mine ? 'flex-end' : 'flex-start', maxWidth: '78%', gap: 3, marginTop: showName ? 6 : 0 }}>
+                {/* only messages that arrive while the chat is open slide in; older ones just appear */}
+                <Animated.View entering={m.created_at > openedAt ? FadeInUp.springify().damping(20).stiffness(260) : undefined} style={{ alignSelf: mine ? 'flex-end' : 'flex-start', maxWidth: '78%', gap: 3, marginTop: showName ? 6 : 0 }}>
                   {showName && people[m.sender_id!] && (
                     <Row gap={6}>
                       <Avatar id={m.sender_id} name={people[m.sender_id!].full_name} url={people[m.sender_id!].avatar_url} size={20} />

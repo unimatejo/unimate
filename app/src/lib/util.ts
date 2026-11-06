@@ -62,3 +62,9 @@ export function handleFrom(input: string, site: 'instagram' | 'snapchat') {
   if (m) s = m[1];
   return s.replace(/^@+/, '').trim();
 }
+
+/** A university staff address: not a student number, not on a student sub-domain (the server checks it again). */
+export function isStaffEmail(email?: string | null) {
+  const [local, dom] = (email ?? '').toLowerCase().split('@');
+  return !!local && !!dom && /\.edu\.jo$/.test(dom) && !/^[0-9]+$/.test(local) && !/^(std|sta|st|ses|stu|student|students)\./.test(dom);
+}

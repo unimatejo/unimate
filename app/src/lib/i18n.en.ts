@@ -2502,4 +2502,13 @@ export const EN: Record<string, string> = {
   "هاد الدخول لفريق إدارة يونيميت بإيميلك الشخصي وكلمة السر.": "This sign-in is for the UniMate admin team, with your personal email and password.",
   "هاد الدخول لفريق يونيميت بس. الطلاب بيدخلوا بإيميل الجامعة.": "This sign-in is for the UniMate team only. Students sign in with their university email.",
   "وضع الامتحانات بصفحة الجدول": "Exam mode on the Timetable page",
+  "ادخل بإيميلك الوظيفي بالجامعة (مش إيميل الطالب)، وإذا بتدخل بمايكروسوفت لقبك بينحط لحاله.": "Sign in with your university work email (not a student email). If you sign in with Microsoft, your title is added automatically.",
+  "التوثيق بس لحسابات الموظفين": "Verification is for staff accounts only",
+  "بعدها بتحرّك الصورة وتكبّرها بإصبعين، وبتضيف نص وملصقات. الستوري بتختفي بعد 24 ساعة.": "Then move it and pinch to resize, and add text and stickers. Stories disappear after 24 hours.",
+  "جرّب كمان دقيقة، أو ضيف موادك بإيدك.": "Try again in a minute, or add your courses yourself.",
+  "خدمة القراءة مشغولة هلأ": "The reading service is busy right now",
+  "عادة بياخد ثواني، وأحياناً لحد دقيقة. خليك على هالصفحة.": "Usually a few seconds, sometimes up to a minute. Stay on this page.",
+  "عم نقرأ جدولك…": "Reading your timetable…",
+  "ما زبط إرسال الطلب. الطلب بس لإيميل الموظفين بالجامعة.": "Couldn't send the request. Requests are only for university staff emails.",
+  "من الصور والفيديوهات": "From photos and videos",
 };

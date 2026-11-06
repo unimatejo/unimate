@@ -1,22 +1,20 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import { PullRefresh } from '@/components/ui/PullRefresh';
 import { router, useFocusEffect } from 'expo-router';
-import { Briefcase, BookOpen, CircleAlert, Bus, Gift, GraduationCap, Image as ImageIcon, LayoutGrid, MessageSquare, NotebookPen, PartyPopper, Plus, Map as MapIcon, Landmark, Megaphone, Search, SearchCheck, ShoppingBag } from 'lucide-react-native';
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { FlatList, ScrollView, View } from 'react-native';
-import Animated, { FadeInDown } from 'react-native-reanimated';
+import { Briefcase, BookOpen, CircleAlert, Bus, Gift, GraduationCap, Image as ImageIcon, LayoutGrid, MessageSquare, NotebookPen, PartyPopper, Plus, Landmark, Megaphone, Search, SearchCheck, ShoppingBag, type LucideIcon } from 'lucide-react-native';
+import { useCallback, useRef, useState } from 'react';
+import { FlatList, Platform, ScrollView, View } from 'react-native';
 
 import { AdBanner } from '@/components/feed/AdBanner';
 import { LikesSheet } from '@/components/feed/LikesSheet';
 import { PostCard } from '@/components/feed/PostCard';
-import { GlyphTile, GRAD } from '@/components/ui/Glyph';
 import { StoriesRow } from '@/components/story/StoriesRow';
 import { SuggestedPeople } from '@/components/feed/SuggestedPeople';
 import { Avatar, Button, Empty, IconButton, Row, Screen, Segmented, T, Tap } from '@/components/ui';
 import { useAuth } from '@/lib/auth';
 import { loadFeed, type FeedFilter } from '@/lib/posts';
 import { supabase } from '@/lib/supabase';
-import { CATEGORY, C } from '@/lib/theme';
+import { CATEGORY, C, F, shadow } from '@/lib/theme';
 import type { Post } from '@/lib/types';
 import { nm, t } from '@/lib/i18n';
 import { ListSkeleton } from '@/components/ui/Skeleton';
@@ -25,11 +23,21 @@ import { OnScreenProvider, useVisiblePosts } from '@/lib/videoFocus';
 import { readCache, writeCache } from '@/lib/cache';
 
 const TABS: FeedFilter['tab'][] = ['university', 'college', 'following'];
-const CAT_ICON = {
-  square: [MessageSquare, GRAD.blue], summaries: [BookOpen, GRAD.green], assignments: [NotebookPen, GRAD.violet], tutoring: [GraduationCap, GRAD.indigo],
-  lost_found: [SearchCheck, GRAD.teal], market: [ShoppingBag, GRAD.orange], exchange: [Gift, GRAD.pink], transport_housing: [Bus, GRAD.teal],
-  events: [PartyPopper, GRAD.red], opportunities: [Briefcase, GRAD.slate],
-} as const;
+const CAT_ICON: Record<string, LucideIcon> = {
+  square: MessageSquare, summaries: BookOpen, assignments: NotebookPen, tutoring: GraduationCap, lost_found: SearchCheck,
+  market: ShoppingBag, exchange: Gift, transport_housing: Bus, events: PartyPopper, opportunities: Briefcase,
+};
+
+/** A category filter: a small pill with its icon, filled when it's on. */
+function CatChip({ label, icon: Icon, color, on, onPress }: { label: string; icon: LucideIcon; color: string; on: boolean; onPress: () => void }) {
+  return (
+    <Tap onPress={onPress} scale={0.94} accessibilityRole="button" accessibilityState={{ selected: on }} accessibilityLabel={label}
+      style={{ flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 38, paddingHorizontal: 13, borderRadius: 999, backgroundColor: on ? C.inverse : C.card, borderWidth: on ? 0 : 1, borderColor: C.line }}>
+      <Icon size={16} color={on ? C.onInverse : color} />
+      <T v="small" style={{ fontFamily: on ? F.bodyBold : F.bodyMd }} color={on ? C.onInverse : C.ink}>{label}</T>
+    </Tap>
+  );
+}
 
 export default function Community() {
   const { visible, onViewableItemsChanged, viewabilityConfig } = useVisiblePosts(); // reels play only while on screen
@@ -64,8 +72,7 @@ export default function Community() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [profile?.id, profile?.university_id, profile?.college_id, tab, cat]);
 
-  useEffect(() => { load(); }, [load]);
-  // new posts show up as soon as you come back from posting
+  // runs when the tab opens, when tab/category change, and when you come back from posting
   useFocusEffect(useCallback(() => { load(); }, [load]));
 
   async function more() {
@@ -82,6 +89,14 @@ export default function Community() {
     finally { paging.current = false; }
   }
 
+  const renderPost = useCallback(({ item, index }: { item: Post; index: number }) => (
+    <View style={{ paddingHorizontal: 18, gap: 14 }}>
+      <PostCard post={item} onLikes={setLikesOf} compact />
+      {index === 2 && <AdBanner placement="feed_card" />}
+      {index === 1 && <View style={{ marginHorizontal: -18 }}><SuggestedPeople /></View>}
+    </View>
+  ), []);
+
   return (
     <Screen>
       <OnScreenProvider value={visible}>
@@ -95,51 +110,42 @@ export default function Community() {
         refreshControl={<PullRefresh onRefresh={load} />}
         contentContainerStyle={{ gap: 14, paddingBottom: 180 }}
         ListHeaderComponent={
-          <View style={{ gap: 16, paddingTop: 6 }}>
-            <Row gap={8} style={{ paddingHorizontal: 18 }}>
+          <View style={{ gap: 14, paddingTop: 6, paddingBottom: 2 }}>
+            <Row gap={6} style={{ paddingHorizontal: 18 }}>
               <View style={{ flex: 1 }}>
                 <T v="h1">{t('المجتمع')}</T>
-                <T v="small" color={C.muted}>{nm(university)}</T>
+                <T v="small" color={C.muted} numberOfLines={1}>{nm(university)}</T>
               </View>
+              <IconButton label={t('بحث')} onPress={() => router.push('/search')}><Search size={21} color={C.ink} /></IconButton>
               <IconButton label={t('إعلانات رسمية')} onPress={() => router.push('/announcements')}><Megaphone size={21} color={C.ink} /></IconButton>
               <IconButton label={t('مجتمع الجامعة')} onPress={() => router.push('/directory')}><Landmark size={21} color={C.ink} /></IconButton>
-              <IconButton label={t('بحث')} onPress={() => router.push('/search')}><Search size={21} color={C.ink} /></IconButton>
-              <IconButton label={t('الخريطة')} onPress={() => router.push('/map')}><MapIcon size={21} color={C.ink} /></IconButton>
+              <IconButton label={t('منشور جديد')} dark onPress={() => router.push('/post/new')}><Plus size={22} color={C.onInverse} strokeWidth={2.4} /></IconButton>
             </Row>
             <StoriesRow />
             <View style={{ paddingHorizontal: 18 }}>
               <Segmented items={[t('جامعتي'), t('كليتي'), t('أتابعهم')]} value={tab} onChange={setTab} />
             </View>
-            <Tap onPress={() => router.push('/post/new')} scale={0.98} style={{ marginHorizontal: 18, flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: C.card, borderRadius: 22, padding: 10 }}>
-              <Avatar id={profile?.id} name={profile?.full_name} url={profile?.avatar_url} size={40} />
-              <T v="body" color={C.faint} style={{ flex: 1 }}>{t('شو ببالك؟ اسأل أو شارك ملخص...')}</T>
-              <View style={{ width: 40, height: 40, borderRadius: 14, backgroundColor: C.greenSoft, alignItems: 'center', justifyContent: 'center' }}><ImageIcon size={20} color={C.green} /></View>
-            </Tap>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 14, paddingHorizontal: 18 }}>
-              <Tap onPress={() => setCat(null)} scale={0.9} style={{ alignItems: 'center', gap: 5, width: 62, opacity: cat ? 0.55 : 1 }}>
-                <GlyphTile icon={LayoutGrid} colors={!cat ? GRAD.blue : GRAD.slate} size={50} />
-                <T v="tiny" numberOfLines={1}>{t('الكل')}</T>
-              </Tap>
-              {Object.entries(CATEGORY).map(([k, v]) => {
-                const [Icon, g] = CAT_ICON[k as keyof typeof CAT_ICON] ?? [MessageSquare, GRAD.blue];
-                const on = cat === k;
-                return (
-                  <Tap key={k} onPress={() => setCat(on ? null : k)} scale={0.9} accessibilityState={{ selected: on }} style={{ alignItems: 'center', gap: 5, width: 62, opacity: !cat || on ? 1 : 0.55 }}>
-                    <GlyphTile icon={Icon} colors={g} size={50} live={on} />
-                    <T v="tiny" numberOfLines={1} color={on ? C.ink : C.ink2}>{v.label}</T>
-                  </Tap>
-                );
-              })}
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingHorizontal: 18, paddingVertical: 4 }}>
+              <CatChip label={t('الكل')} icon={LayoutGrid} color={C.primary} on={!cat} onPress={() => setCat(null)} />
+              {Object.entries(CATEGORY).map(([k, v]) => (
+                <CatChip key={k} label={v.label} icon={CAT_ICON[k as keyof typeof CAT_ICON] ?? MessageSquare} color={v.ink} on={cat === k} onPress={() => setCat(cat === k ? null : k)} />
+              ))}
             </ScrollView>
+            <Tap onPress={() => router.push('/post/new')} scale={0.98} accessibilityLabel={t('منشور جديد')}
+              style={[{ marginHorizontal: 18, flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: C.card, borderRadius: 20, paddingHorizontal: 10, minHeight: 56 }, shadow]}>
+              <Avatar id={profile?.id} name={profile?.full_name} url={profile?.avatar_url} size={36} />
+              <T v="body" color={C.faint} style={{ flex: 1 }} numberOfLines={1}>{t('شو ببالك؟ اسأل أو شارك ملخص...')}</T>
+              <View style={{ width: 36, height: 36, borderRadius: 12, backgroundColor: C.greenSoft, alignItems: 'center', justifyContent: 'center' }}><ImageIcon size={19} color={C.green} /></View>
+            </Tap>
           </View>
         }
-        renderItem={({ item, index }) => (
-          <Animated.View entering={FadeInDown.delay(Math.min(index, 5) * 50)} style={{ paddingHorizontal: 18, gap: 14 }}>
-            <PostCard post={item} onLikes={setLikesOf} compact />
-            {index === 2 && <AdBanner placement="feed_card" />}
-            {index === 1 && <View style={{ marginHorizontal: -18 }}><SuggestedPeople /></View>}
-          </Animated.View>
-        )}
+        renderItem={renderPost}
+        // light on memory and smooth on every phone: draw a few screens around you, add more in small steps
+        initialNumToRender={4}
+        maxToRenderPerBatch={4}
+        windowSize={7}
+        updateCellsBatchingPeriod={60}
+        removeClippedSubviews={Platform.OS === 'android'}
         ListFooterComponent={!loading && posts.length < 2 ? <View style={{ marginTop: 10 }}><SuggestedPeople /></View> : undefined}
         ListEmptyComponent={loading ? <View style={{ paddingHorizontal: 18 }}><ListSkeleton n={3} kind="post" /></View>
           : failed ? <Empty icon={<CircleAlert size={28} color={C.red} />} title={t('ما قدرنا نحمّل')} body={t('تأكد من الإنترنت وجرّب كمان مرة.')}
@@ -150,12 +156,6 @@ export default function Community() {
             body={t('اسأل سؤال، شارك ملخص، أو بلّغ عن غرض ضايع.')} />}
       />
       </OnScreenProvider>
-      <Tap onPress={() => router.push('/post/new')} accessibilityLabel={t('منشور جديد')}
-        scale={0.88} style={{ position: 'absolute', left: 18, bottom: 104, width: 60, height: 60, borderRadius: 22, shadowColor: C.primary, shadowOpacity: 0.4, shadowRadius: 16, shadowOffset: { width: 0, height: 10 }, elevation: 8 }}>
-        <View style={{ flex: 1, borderRadius: 22, backgroundColor: C.primary, alignItems: 'center', justifyContent: 'center' }}>
-          <Plus size={30} color={C.onPrimary} strokeWidth={2.6} />
-        </View>
-      </Tap>
       <LikesSheet post={likesOf} onClose={() => setLikesOf(null)} />
     </Screen>
   );

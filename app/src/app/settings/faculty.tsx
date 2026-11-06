@@ -9,13 +9,18 @@ import { useAuth } from '@/lib/auth';
 import { run } from '@/lib/run';
 import { supabase } from '@/lib/supabase';
 import { C, R, shadow } from '@/lib/theme';
+import { isStaffEmail } from '@/lib/util';
 import { t } from '@/lib/i18n';
+
+// president, vice president and dean come only from the university's official list or Microsoft, never from a request
+const TOP = ['president', 'vice_president', 'dean'];
 
 type Req = { id: string; title: string; department: string | null; status: 'pending' | 'approved' | 'rejected'; created_at: string };
 
 /** Faculty and staff ask for their title (د. / عميد / …); an admin checks and confirms it. */
 export default function FacultyTitle() {
-  const { profile, refreshProfile } = useAuth();
+  const { profile, refreshProfile, session } = useAuth();
+  const staff = isStaffEmail(session?.user?.email);
   const [req, setReq] = useState<Req | null | undefined>(undefined);
   const [title, setTitle] = useState<string | null>(null);
   const [dept, setDept] = useState(profile?.department ?? '');
@@ -32,7 +37,7 @@ export default function FacultyTitle() {
   async function send() {
     if (!title || busy) return;
     setBusy(true);
-    const r = await run(supabase.rpc('request_title', { p_title: title, p_department: dept, p_note: note }), { msg: t('ما زبط إرسال الطلب، جرّب كمان مرة.') });
+    const r = await run(supabase.rpc('request_title', { p_title: title, p_department: dept, p_note: note }), { msg: t('ما زبط إرسال الطلب. الطلب بس لإيميل الموظفين بالجامعة.') });
     setBusy(false);
     if (!r.ok) return;
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
@@ -61,7 +66,12 @@ export default function FacultyTitle() {
             </View>
           )}
 
-          {pending ? (
+          {!staff && !verified ? (
+            <View style={card}>
+              <T v="bodyMd">{t('التوثيق بس لحسابات الموظفين')}</T>
+              <T v="small" color={C.muted}>{t('ادخل بإيميلك الوظيفي بالجامعة (مش إيميل الطالب)، وإذا بتدخل بمايكروسوفت لقبك بينحط لحاله.')}</T>
+            </View>
+          ) : pending ? (
             <View style={card}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                 <Clock size={20} color={C.orange} />
@@ -80,7 +90,7 @@ export default function FacultyTitle() {
               )}
               <T v="bold">{t('شو لقبك أو منصبك؟')}</T>
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-                {TITLE_ORDER.map((k) => <Chip key={k} label={titleLabel(k)} active={title === k} onPress={() => setTitle(k)} />)}
+                {TITLE_ORDER.filter((k) => !TOP.includes(k)).map((k) => <Chip key={k} label={titleLabel(k)} active={title === k} onPress={() => setTitle(k)} />)}
               </View>
               <Field label={t('القسم أو الكلية')} value={dept} onChangeText={setDept} maxLength={80} placeholder={t('مثلاً قسم الهندسة المدنية')} />
               <Field label={t('ملاحظة (اختياري)')} value={note} onChangeText={setNote} maxLength={300} multiline placeholder={t('رقم مكتبك، رابط صفحتك بالجامعة، أو أي إشي بيساعدنا نتأكد')} style={{ minHeight: 90, textAlignVertical: 'top', paddingTop: 14 }} />

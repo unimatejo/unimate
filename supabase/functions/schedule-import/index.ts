@@ -30,23 +30,44 @@ Deno.serve(async (req) => {
     if (typeof image !== 'string' || image.length < 100) return json({ error: 'no_image' }, 400);
     if (image.length > 7_000_000) return json({ error: 'too_big' }, 413);
 
-    // GEMINI_MODEL can pick the model; try the newest Flash first; if Google is busy (503/429) or a name is gone (404), fall back to the next one
-    const models = [Deno.env.get('GEMINI_MODEL'), 'gemini-flash-latest', 'gemini-2.5-flash', 'gemini-flash-lite-latest', 'gemini-2.5-flash-lite'].filter(Boolean) as string[];
-    let g: Response | null = null;
-    for (const model of [...new Set(models)]) {
-      g = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
-        method: 'POST',
-        headers: { 'content-type': 'application/json', 'x-goog-api-key': gemini },
-        body: JSON.stringify({
-          contents: [{ role: 'user', parts: [{ inline_data: { mime_type: mime === 'image/png' ? 'image/png' : 'image/jpeg', data: image } }, { text: PROMPT }] }],
-          generationConfig: { responseMimeType: 'application/json', temperature: 0 },
-        }),
-      });
-      if (g.ok) break;
-      console.error('gemini', model, g.status, (await g.text()).slice(0, 300));
-      if (![404, 429, 500, 503].includes(g.status)) break;
+    // Google retires model names and is sometimes overloaded: try a short list with a time limit on each,
+    // then ask Google which Flash models this key has today and try those.
+    const started = Date.now();
+    const call = (model: string) => fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', 'x-goog-api-key': gemini },
+      signal: AbortSignal.timeout(Math.max(5000, Math.min(30000, 55000 - (Date.now() - started)))),
+      body: JSON.stringify({
+        contents: [{ role: 'user', parts: [{ inline_data: { mime_type: mime === 'image/png' ? 'image/png' : 'image/jpeg', data: image } }, { text: PROMPT }] }],
+        generationConfig: { responseMimeType: 'application/json', temperature: 0 },
+      }),
+    }).catch((e) => { console.error('gemini', model, String(e)); return null; });
+    async function available(): Promise<string[]> {
+      try {
+        const r = await fetch('https://generativelanguage.googleapis.com/v1beta/models?pageSize=200', { headers: { 'x-goog-api-key': gemini! }, signal: AbortSignal.timeout(6000) });
+        const d = await r.json() as { models?: { name: string; supportedGenerationMethods?: string[] }[] };
+        return (d.models ?? []).filter((m) => /flash/.test(m.name) && !/image|tts|audio|live|thinking|exp/.test(m.name) && (m.supportedGenerationMethods ?? []).includes('generateContent'))
+          .map((m) => m.name.replace(/^models\//, '')).sort((a, b) => b.localeCompare(a, 'en', { numeric: true }));
+      } catch { return []; }
     }
-    if (!g || !g.ok) return json({ error: g?.status === 429 ? 'busy' : 'read_failed' }, 502);
+    const tried = new Set<string>();
+    let last: Response | null = null;
+    const attempt = async (list: string[]): Promise<Response | null> => {
+      for (const model of list) {
+        if (tried.has(model) || Date.now() - started > 50000) continue;
+        tried.add(model);
+        const r = await call(model);
+        if (r?.ok) return r;
+        if (r) { last = r; console.error('gemini', model, r.status, (await r.text()).slice(0, 200)); }
+      }
+      return null;
+    };
+    const first = [Deno.env.get('GEMINI_MODEL'), 'gemini-flash-latest', 'gemini-flash-lite-latest'].filter(Boolean) as string[];
+    let g = await attempt(first);
+    if (!g) g = await attempt((await available()).slice(0, 4));
+    // one more go at the main model if Google was only busy
+    if (!g && Date.now() - started < 40000) { tried.delete(first[0]); await new Promise((r) => setTimeout(r, 1500)); g = await attempt([first[0]]); }
+    if (!g) return json({ error: (last as Response | null)?.status === 429 || (last as Response | null)?.status === 503 ? 'busy' : 'read_failed' }, 502);
     const go = await g.json();
     const text: string = (go.candidates?.[0]?.content?.parts ?? []).map((x: { text?: string }) => x.text ?? '').join('');
     const m = text.match(/\{[\s\S]*\}/);

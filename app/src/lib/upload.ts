@@ -37,7 +37,8 @@ async function pickRaw(opts: { video?: boolean; videoOnly?: boolean; maxSec?: nu
   const maxSec = opts.maxSec ?? 15;
   // from the gallery a longer clip is fine when it goes through the editor: you trim it there
   const pickMax = opts.crop && !opts.camera ? Math.max(maxSec, 180) : maxSec;
-  const perm = opts.camera ? await ImagePicker.requestCameraPermissionsAsync() : await ImagePicker.requestMediaLibraryPermissionsAsync();
+  // the web needs no permission, and waiting for one would make the browser block the picker (it must open from the tap)
+  const perm = Platform.OS === 'web' ? { granted: true } : opts.camera ? await ImagePicker.requestCameraPermissionsAsync() : await ImagePicker.requestMediaLibraryPermissionsAsync();
   if (!perm.granted) {
     Alert.alert(opts.camera ? t('الكاميرا مسكّرة') : t('الصور مسكّرة'), t('افتح الإعدادات واسمح ليونيميت يوصل للصور والكاميرا.'), [
       { text: t('لاحقاً'), style: 'cancel' }, { text: t('افتح الإعدادات'), onPress: () => Linking.openSettings() },
@@ -119,17 +120,31 @@ async function readBytes(uri: string): Promise<ArrayBuffer> {
 
 /** Upload to <bucket>/<folder>/<uuid>.<ext>; returns the storage path. Throws a readable Arabic error. */
 export async function uploadFile(bucket: string, folder: string, file: { uri: string; mime: string; duration?: number | null; size?: number | null; width?: number; height?: number }): Promise<string> {
+  return (await uploadPicked(bucket, folder, file)).path;
+}
+
+/**
+ * Uploads a picked photo or video. A trimmed video is cut to the chosen part before it goes up (where the device can),
+ * and the returned meta then has no trim, because the file itself starts and ends there.
+ */
+export async function uploadPicked<M extends { trim?: { start: number; end: number } }>(bucket: string, folder: string,
+  file: { uri: string; mime: string; duration?: number | null; size?: number | null; width?: number; height?: number; meta?: M | null }): Promise<{ path: string; meta: M | null }> {
   // videos are made light enough for every phone to play before they go up
-  const small = file.mime.startsWith('video/') ? await shrinkVideo(file) : null;
+  const small = file.mime.startsWith('video/') ? await shrinkVideo(file, file.meta?.trim) : null;
   const mime = small?.mime ?? file.mime;
   const ext = mime.split('/')[1]?.replace('quicktime', 'mov').replace('jpeg', 'jpg') ?? 'bin';
   const path = `${folder}/${Crypto.randomUUID()}.${ext}`;
+  let meta = file.meta ?? null;
+  if (small?.trimmed && meta) { const { trim: _t, ...rest } = meta; meta = rest as M; }
   try {
     const buf = small?.blob ?? await readBytes(small?.uri ?? file.uri);
-    const timeout = new Promise<never>((_, rej) => setTimeout(() => rej(new Error('timeout')), 90000));
+    // big files get more time (about 150 KB/s on a slow connection), never less than 90 seconds
+    const bytes = (buf as { size?: number; byteLength?: number }).size ?? (buf as { byteLength?: number }).byteLength ?? 0;
+    const ms = Math.max(90_000, Math.min(600_000, 30_000 + bytes / 150));
+    const timeout = new Promise<never>((_, rej) => setTimeout(() => rej(new Error('timeout')), ms));
     const { error } = await Promise.race([supabase.storage.from(bucket).upload(path, buf, { contentType: mime, upsert: false }), timeout]);
     if (error) throw error;
-    return path;
+    return { path, meta };
   } catch (e) {
     reportError(e);
     const msg = e instanceof Error && e.message === 'timeout' ? t('الإنترنت بطيء، جرّب كمان مرة.') : t('ما زبط رفع الملف، تأكد من الإنترنت وجرّب كمان مرة.');

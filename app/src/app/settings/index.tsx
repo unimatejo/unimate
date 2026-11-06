@@ -13,7 +13,7 @@ import { supabase } from '@/lib/supabase';
 import { inviteFriends } from '@/lib/invite';
 import { run } from '@/lib/run';
 import { C, F, isDark, shadow, themePref } from '@/lib/theme';
-import { normalize } from '@/lib/util';
+import { isStaffEmail, normalize } from '@/lib/util';
 import { flip, isAR, nm, t, ta } from '@/lib/i18n';
 import { featureOn, useAppContent } from '@/lib/appContent';
 
@@ -42,7 +42,9 @@ const ic = { size: 19, color: C.white };
 
 export default function Settings() {
   const content = useAppContent();
-  const { profile, university, signOut } = useAuth();
+  const { profile, university, signOut, session } = useAuth();
+  // only university staff addresses (not student numbers or student sub-domains) can ask for a title
+  const staffEmail = isStaffEmail(session?.user?.email);
   const [q, setQ] = useState('');
   // the owner / moderators get the admin panel right here, signed in already
   const [admin, setAdmin] = useState(false);
@@ -86,7 +88,7 @@ export default function Settings() {
       { icon: <UserPen {...ic} />, color: C.primary, label: t('تعديل البروفايل'), onPress: () => router.push('/settings/edit-profile') },
       { icon: <Lock {...ic} />, color: C.violet, label: t('الخصوصية'), value: profile?.is_private ? t('خاص') : t('عام'), onPress: () => router.push('/settings/privacy') },
       { icon: <Users {...ic} />, color: C.green, label: t('الأصدقاء المقربين'), onPress: () => router.push('/settings/close-friends') },
-      { icon: <GraduationCap {...ic} />, color: '#3D6BFF', label: t('أنا عضو هيئة تدريس / موظف'), value: profile?.title_verified ? titleLabel(profile.academic_title) : undefined, onPress: () => router.push('/settings/faculty') },
+      ...(staffEmail || profile?.title_verified ? [{ icon: <GraduationCap {...ic} />, color: '#3D6BFF', label: t('أنا عضو هيئة تدريس / موظف'), value: profile?.title_verified ? titleLabel(profile.academic_title) : undefined, onPress: () => router.push('/settings/faculty') }] : []),
       { icon: <Bookmark {...ic} />, color: '#56627F', label: t('المحفوظات'), onPress: () => router.push('/settings/saved') },
     ] },
     { title: t('التنبيهات والرسائل'), items: [

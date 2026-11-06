@@ -1,4 +1,5 @@
 import { Image } from 'expo-image';
+import { LinearGradient } from 'expo-linear-gradient';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Camera, ChevronDown, ChevronRight, Copy, Crop, Expand, FileText, Images, Plus, Radio, Shrink, Wand2, X } from 'lucide-react-native';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -17,8 +18,9 @@ import { reportError } from '@/lib/errors';
 import { supabase } from '@/lib/supabase';
 import { C, CATEGORY, F, isDark, R, SPRING } from '@/lib/theme';
 import { autoCrop, openCropper, playLength } from '@/lib/cropper';
-import { pickMedia, pickPdf, pickPhotos, uploadFile, type Picked } from '@/lib/upload';
+import { pickMedia, pickPdf, pickPhotos, uploadFile, uploadPicked, type Picked } from '@/lib/upload';
 import { GalleryGrid } from '@/components/create/GalleryGrid';
+import { takeStoryDraft } from '@/lib/storyDraft';
 import { StoryCamera } from '@/components/create/StoryCamera';
 import { assetToPicked, cameraModule, galleryAlbums, mediaLibrary, type GalleryAlbum, type GalleryAsset } from '@/lib/nativeMedia';
 import { flip, rtlLayout, t, ta } from '@/lib/i18n';
@@ -101,6 +103,20 @@ export default function Create() {
   const [fit, setFit] = useState<'square' | 'original'>('square');
   const [camOpen, setCamOpen] = useState(false);
   const pickSeq = useRef(0);
+
+  // a photo/video already picked from the stories row ("+" on the web): straight to the editor, full screen
+  useEffect(() => {
+    if (!isStory) return;
+    const d = takeStoryDraft();
+    if (!d) return;
+    (async () => {
+      let m: Picked | null = d;
+      if (d.kind === 'video') { const r = await openCropper(d, { mode: 'story', maxSec }); m = r ? { ...r.media, aspect: r.aspect } : null; }
+      if (!m) return;
+      setItems([m]); setActive(0); setOverlays([]); setEditing(true);
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   function switchMode(m: Mode) {
     setMode(m); setStep('pick'); setItems([]); setActive(0); setOverlays([]); setAud(0); setPdf(null); setPoll(null); setPostAspect(null);
@@ -266,12 +282,19 @@ export default function Create() {
       if (isStory) {
         const m = story?.m ?? media;
         if (!m) { Alert.alert(t('ضيف صورة أو فيديو للستوري')); setBusy(false); return; }
-        const path = await uploadFile('stories', profile.id, m);
-        const { error } = await supabase.from('stories').insert({
-          author_id: profile.id, university_id: profile.university_id, kind: m.kind, media_url: path,
+        const up = await uploadPicked('stories', profile.id, m);
+        const row = {
+          author_id: profile.id, university_id: profile.university_id, kind: m.kind, media_url: up.path,
           duration_sec: playLength(m), caption: (m.meta?.caption ?? body.trim()) || null,
-          audience: story?.audience ?? STORY_AUD[aud][0], overlays: story?.o ?? overlays, meta: m.meta ?? null,
-        });
+          audience: story?.audience ?? STORY_AUD[aud][0], overlays: story?.o ?? overlays, meta: up.meta,
+        };
+        // the file is up: try saving the story a few times so a short network drop doesn't lose it
+        let error: unknown = null;
+        for (let i = 0; i < 3; i++) {
+          ({ error } = await supabase.from('stories').insert(row));
+          if (!error) break;
+          await new Promise((r) => setTimeout(r, 800 * (i + 1)));
+        }
         if (error) throw error;
       } else {
         const opts = poll?.map((o) => o.trim()).filter(Boolean) ?? null;
@@ -279,7 +302,8 @@ export default function Create() {
         if (mode === 'post' && !body.trim() && !items.length && !pdf) { Alert.alert(t('اكتب إشي أو ضيف صورة أو ملف')); setBusy(false); return; }
         if (mode === 'reel' && !media) { Alert.alert(t('اختار فيديو للريلز')); setBusy(false); return; }
         // upload files first, so a failed upload never leaves an empty post behind
-        const paths = await Promise.all(items.map((m) => uploadFile('posts', profile.id, m)));
+        const ups = await Promise.all(items.map((m) => uploadPicked('posts', profile.id, m)));
+        const paths = ups.map((u) => u.path);
         const pdfPath = pdf && mode === 'post' ? await uploadFile('posts', profile.id, pdf) : null;
         const price_jod = cat === 'market' && price ? Number(price.replace(/[٠-٩]/g, (d) => String('٠١٢٣٤٥٦٧٨٩'.indexOf(d))).replace(/[٫,]/g, '.')) : null;
         if (price_jod != null && !Number.isFinite(price_jod)) { Alert.alert(t('السعر بالدينار'), t('اكتب السعر أرقام بس.')); setBusy(false); return; }
@@ -293,7 +317,7 @@ export default function Create() {
         }).select('id').single();
         if (error) throw error;
         const rows = [
-          ...paths.map((url, i) => ({ post_id: post.id, kind: items[i].kind, url, position: i + 2, file_name: null as string | null, size_bytes: null as number | null, meta: items[i].meta ?? null })),
+          ...paths.map((url, i) => ({ post_id: post.id, kind: items[i].kind, url, position: i + 2, file_name: null as string | null, size_bytes: null as number | null, meta: ups[i].meta })),
           ...(pdfPath && pdf ? [{ post_id: post.id, kind: 'file', url: pdfPath, position: 1, file_name: pdf.name, size_bytes: pdf.size, meta: null }] : []),
         ];
         if (rows.length) {
@@ -520,6 +544,38 @@ export default function Create() {
         </Modal>
         {busyOverlay}
       </SafeAreaView>
+    );
+  }
+
+  // ---------- story without the in-app camera (web): a dark full screen with the camera and the photos, like Instagram ----------
+  if (isStory && !camera) {
+    return (
+      <View style={{ flex: 1, backgroundColor: '#05070F' }}>
+        <LinearGradient colors={['#1B1F4B', '#05070F']} style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }} />
+        <SafeAreaView style={{ flex: 1 }}>
+          <Row style={{ paddingHorizontal: 12, minHeight: 56 }}>
+            <Tap onPress={() => (router.canGoBack() ? router.back() : router.replace('/community'))} accessibilityLabel={t('إغلاق')} style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}><X size={26} color="#fff" /></Tap>
+            <T style={{ flex: 1, textAlign: 'center', fontFamily: F.bodyBold, fontSize: 17 }} color="#fff">{TITLES.story}</T>
+            <View style={{ width: 44 }} />
+          </Row>
+          <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: 18, paddingHorizontal: 28, paddingBottom: 90 }}>
+            <Tap onPress={addFromGallery} scale={0.96} accessibilityLabel={t('اختار من الصور')}
+              style={{ width: '100%', maxWidth: 340, minHeight: 120, borderRadius: 28, backgroundColor: 'rgba(255,255,255,0.1)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.16)', alignItems: 'center', justifyContent: 'center', gap: 10 }}>
+              <Images size={34} color="#fff" />
+              <T v="bold" color="#fff" style={{ fontSize: 17 }}>{t('من الصور والفيديوهات')}</T>
+            </Tap>
+            <Tap onPress={fromCamera} scale={0.96} accessibilityLabel={t('صوّر')}
+              style={{ width: '100%', maxWidth: 340, minHeight: 64, borderRadius: 22, backgroundColor: '#fff', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10 }}>
+              <Camera size={22} color="#05070F" />
+              <T v="bold" color="#05070F" style={{ fontSize: 16 }}>{t('صوّر هلأ')}</T>
+            </Tap>
+            <T v="tiny" color="rgba(255,255,255,0.6)" style={{ textAlign: 'center', maxWidth: 300 }}>{t('بعدها بتحرّك الصورة وتكبّرها بإصبعين، وبتضيف نص وملصقات. الستوري بتختفي بعد 24 ساعة.')}</T>
+          </View>
+        </SafeAreaView>
+        {modeBar}
+        {editorModal}
+        {busyOverlay}
+      </View>
     );
   }
 

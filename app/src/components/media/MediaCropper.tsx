@@ -370,7 +370,7 @@ export function MediaCropper({ src, opts, onDone, onCancel }: { src: Picked; opt
               {dims && stage.w > 0 && (
                 // the photo itself never takes the touch (a browser would start dragging the image file)
                 <Animated.View pointerEvents="none" style={[{ position: 'absolute', left: 0, top: 0, width: dims.w * base, height: dims.h * base }, media]}>
-                  {isVideo ? <VideoView player={player} style={{ flex: 1 }} contentFit="fill" nativeControls={false} />
+                  {isVideo ? <VideoView player={player} style={{ flex: 1 }} contentFit="fill" nativeControls={false} playsInline />
                     : <Image source={{ uri: cur.uri }} style={{ flex: 1 }} contentFit="fill" />}
                 </Animated.View>
               )}

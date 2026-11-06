@@ -14,12 +14,14 @@ const VIDEO_BPS = 2_500_000;
 /** small, already-light MP4s are left alone */
 const KEEP_BPS = 4_000_000;
 
-type Shrunk = { uri: string; mime: 'video/mp4'; blob?: Blob };
+/** `trimmed`: the file now holds only the chosen part (start → end), so it plays from 0 */
+type Shrunk = { uri: string; mime: 'video/mp4'; blob?: Blob; trimmed?: boolean };
+type Trim = { start: number; end: number } | null | undefined;
 
-export async function shrinkVideo(file: { uri: string; mime: string; duration?: number | null; size?: number | null; width?: number; height?: number }): Promise<Shrunk | null> {
+export async function shrinkVideo(file: { uri: string; mime: string; duration?: number | null; size?: number | null; width?: number; height?: number }, trim?: Trim): Promise<Shrunk | null> {
   const t0 = Date.now();
   try {
-    const out = Platform.OS === 'web' ? await shrinkWeb(file) : await shrinkNative(file);
+    const out = Platform.OS === 'web' ? await shrinkWeb(file, trim) : await shrinkNative(file);
     recordPerf('query', `video-shrink ${Platform.OS} ${out ? 'done' : 'kept'}`, Date.now() - t0);
     return out;
   } catch (e) {
@@ -39,19 +41,23 @@ const store = {
   set: (k: string, v: string) => { try { localStorage.setItem(k, v); } catch { /* private mode */ } },
   del: (k: string) => { try { localStorage.removeItem(k); } catch { /* private mode */ } },
 };
-function webShrinkAllowed() {
+function webShrinkAllowed(short: boolean) {
   if (store.get(RUNNING)) {
-    store.del(RUNNING); store.set(OFF, '1');
-    reportError(new Error('video-shrink: the page restarted while converting; turned off on this browser'));
+    store.del(RUNNING); store.set(OFF, String(Date.now()));
+    reportError(new Error('video-shrink: the page restarted while converting; turned off on this browser for a day'));
   }
-  return !store.get(OFF);
+  const off = Number(store.get(OFF) ?? 0);
+  // turned off for a day (older marks were '1'); a short trimmed clip is light enough to try anyway
+  if (off && (off === 1 || Date.now() - off > 86_400_000)) { store.del(OFF); return true; }
+  return !off || short;
 }
 /** converting must finish in this time, or the original is uploaded */
 const WEB_LIMIT_MS = 90_000;
 
 // ---------- web: WebCodecs through mediabunny (loaded only when a video is posted) ----------
-async function shrinkWeb(file: { uri: string; mime: string }): Promise<Shrunk | null> {
-  if (typeof VideoEncoder === 'undefined' || !webShrinkAllowed()) return null;
+async function shrinkWeb(file: { uri: string; mime: string }, trim: Trim): Promise<Shrunk | null> {
+  const cut = trim && trim.end > trim.start ? trim : null;
+  if (typeof VideoEncoder === 'undefined' || !webShrinkAllowed(!!cut && cut.end - cut.start <= 61)) return null;
   const blob = await (await fetch(file.uri)).blob();
   const mb = await import('mediabunny');
   const input = new mb.Input({ source: new mb.BlobSource(blob), formats: mb.ALL_FORMATS });
@@ -61,13 +67,16 @@ async function shrinkWeb(file: { uri: string; mime: string }): Promise<Shrunk | 
   const w = video.displayWidth, h = video.displayHeight;
   const secs = await input.computeDuration();
   const bps = secs > 0 ? (blob.size * 8) / secs : Infinity;
-  if (Math.max(w, h) <= LONG_SIDE && bps <= KEEP_BPS && file.mime === 'video/mp4') return null;
+  // a trimmed clip is always cut (only the chosen seconds go up), otherwise only heavy videos are converted
+  const cutting = !!cut && (cut.start > 0.3 || cut.end < secs - 0.3);
+  if (!cutting && Math.max(w, h) <= LONG_SIDE && bps <= KEEP_BPS && file.mime === 'video/mp4') return null;
 
   const output = new mb.Output({ format: new mb.Mp4OutputFormat({ fastStart: 'in-memory' }), target: new mb.BufferTarget() });
   const conversion = await mb.Conversion.init({
     input, output,
     video: { ...(w >= h ? { width: Math.min(w, LONG_SIDE) } : { height: Math.min(h, LONG_SIDE) }), codec: 'avc', bitrate: VIDEO_BPS, forceTranscode: true },
     audio: { codec: 'aac' },
+    ...(cutting && cut ? { trim: { start: cut.start, end: Math.min(cut.end, secs) } } : {}),
     showWarnings: false,
   });
   // never trade the sound for a smaller file
@@ -79,9 +88,9 @@ async function shrinkWeb(file: { uri: string; mime: string }): Promise<Shrunk | 
     if ((await Promise.race([conversion.execute(), late])) === 'late') { await conversion.cancel(); return null; }
   } finally { clearTimeout(timer); store.del(RUNNING); }
   const buf = output.target.buffer;
-  if (!buf || buf.byteLength >= blob.size) return null;
+  if (!buf || (!cutting && buf.byteLength >= blob.size)) return null;
   const out = new Blob([buf], { type: 'video/mp4' });
-  return { uri: URL.createObjectURL(out), mime: 'video/mp4', blob: out };
+  return { uri: URL.createObjectURL(out), mime: 'video/mp4', blob: out, trimmed: cutting };
 }
 
 // ---------- phones: the system's own encoder (react-native-compressor) ----------

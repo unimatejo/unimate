@@ -1,12 +1,14 @@
 import { router, useFocusEffect } from 'expo-router';
-import { Camera, Plus } from 'lucide-react-native';
-import { useCallback, useEffect, useState } from 'react';
-import { ScrollView, View } from 'react-native';
+import { Plus } from 'lucide-react-native';
+import { useCallback, useState } from 'react';
+import { Platform, ScrollView, View } from 'react-native';
 import Animated from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
 
 import { Avatar, T, Tap } from '@/components/ui';
 import { useAuth } from '@/lib/auth';
+import { setStoryDraft } from '@/lib/storyDraft';
+import { pickMedia } from '@/lib/upload';
 import { supabase } from '@/lib/supabase';
 import { C } from '@/lib/theme';
 import { t } from '@/lib/i18n';
@@ -26,6 +28,15 @@ function Ring({ seen, children }: { seen: boolean; children: React.ReactNode }) 
       <View style={{ padding: 3, borderRadius: 21, backgroundColor: C.bg }}>{children}</View>
     </View>
   );
+}
+
+/** "+": on the web the photo picker opens right from the tap (browsers need that), then the story editor; phones open the story camera. */
+async function addStory() {
+  if (Platform.OS !== 'web') { router.push({ pathname: '/post/new', params: { mode: 'story' } }); return; }
+  const p = await pickMedia({ video: true, maxSec: 180 });
+  if (!p) return;
+  setStoryDraft(p);
+  router.push({ pathname: '/post/new', params: { mode: 'story' } });
 }
 
 export function StoriesRow() {
@@ -51,30 +62,24 @@ export function StoriesRow() {
     setGroups(list);
   }, [profile]);
 
-  useEffect(() => { load(); }, [load]);
   useFocusEffect(useCallback(() => { load(); }, [load]));
 
   return (
     <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 12, paddingHorizontal: 18 }}>
-      {mineCount > 0 ? (
-        <View style={{ alignItems: 'center', gap: 6, width: 68 }}>
-          <Tap onPress={() => router.push({ pathname: '/story/[id]', params: { id: profile?.id ?? '' } })} accessibilityLabel={t('شوف قصتك')}>
-            <Ring seen={false}><Avatar id={profile?.id} name={profile?.full_name} url={profile?.avatar_url} size={56} radius={19} /></Ring>
-          </Tap>
-          <Tap onPress={() => router.push({ pathname: '/post/new', params: { mode: 'story' } })} accessibilityLabel={t('ضيف قصة')}
-            style={{ position: 'absolute', top: 44, left: 0, width: 24, height: 24, borderRadius: 12, backgroundColor: C.primary, borderWidth: 2, borderColor: C.bg, alignItems: 'center', justifyContent: 'center' }}>
-            <Plus size={14} color={C.onPrimary} strokeWidth={3} />
-          </Tap>
-          <T v="tiny">{t('قصتك')}</T>
-        </View>
-      ) : (
-        <Tap onPress={() => router.push({ pathname: '/post/new', params: { mode: 'story' } })} style={{ alignItems: 'center', gap: 6, width: 68 }}>
-          <View style={{ width: 66, height: 66, borderRadius: 24, borderWidth: 1.5, borderStyle: 'dashed', borderColor: C.faint, backgroundColor: C.card, alignItems: 'center', justifyContent: 'center' }}>
-            <Camera size={26} color={C.primary} />
-          </View>
-          <T v="tiny">{t('قصتك')}</T>
+      {/* like Instagram: your photo with a "+"; tap it to see your story, or to add one when you have none */}
+      <View style={{ alignItems: 'center', gap: 6, width: 68 }}>
+        <Tap onPress={() => (mineCount > 0 ? router.push({ pathname: '/story/[id]', params: { id: profile?.id ?? '' } }) : addStory())}
+          accessibilityLabel={mineCount > 0 ? t('شوف قصتك') : t('ضيف قصة')}>
+          {mineCount > 0
+            ? <Ring seen={false}><Avatar id={profile?.id} name={profile?.full_name} url={profile?.avatar_url} size={56} radius={19} /></Ring>
+            : <View style={{ width: 66, height: 66, alignItems: 'center', justifyContent: 'center' }}><Avatar id={profile?.id} name={profile?.full_name} url={profile?.avatar_url} size={60} radius={21} /></View>}
         </Tap>
-      )}
+        <Tap onPress={addStory} accessibilityLabel={t('ضيف قصة')} hitSlop={10}
+          style={{ position: 'absolute', top: 44, left: 0, width: 26, height: 26, borderRadius: 13, backgroundColor: C.primary, borderWidth: 2.5, borderColor: C.bg, alignItems: 'center', justifyContent: 'center' }}>
+          <Plus size={15} color={C.onPrimary} strokeWidth={3} />
+        </Tap>
+        <T v="tiny">{t('قصتك')}</T>
+      </View>
       {groups.map((g) => (
         <Tap key={g.author_id} onPress={() => router.push({ pathname: '/story/[id]', params: { id: g.author_id } })} style={{ alignItems: 'center', gap: 6, width: 68 }}>
           <Ring seen={g.seen}><Avatar id={g.author_id} name={g.name} url={g.avatar_url} size={56} radius={19} /></Ring>

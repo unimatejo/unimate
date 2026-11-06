@@ -23,6 +23,16 @@ AppState.addEventListener('change', (state) => {
 /** Public URL for a file in a public bucket, or a short-lived signed URL for a private one. */
 const signedCache = new Map<string, { url: string; exp: number }>();
 export function clearMediaCache() { signedCache.clear(); }
+/** Signs many private files in one request (a page of the feed), so each photo shows without its own round trip. */
+export async function primeMedia(bucket: string, paths: string[]) {
+  const need = [...new Set(paths)].filter((x) => x && !x.startsWith('http') && !((signedCache.get(bucket + '/' + x)?.exp ?? 0) > Date.now()));
+  if (!need.length) return;
+  try {
+    const { data } = await supabase.storage.from(bucket).createSignedUrls(need, 3600);
+    for (const d of data ?? []) if (d.path && d.signedUrl) signedCache.set(bucket + '/' + d.path, { url: d.signedUrl, exp: Date.now() + 50 * 60 * 1000 });
+  } catch { /* each photo signs itself as before */ }
+}
+
 export async function mediaUrl(bucket: string, path?: string | null): Promise<string | null> {
   if (!path) return null;
   if (path.startsWith('http')) return path;

@@ -1,15 +1,14 @@
 import { router, useFocusEffect } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { BadgeCheck, BookOpen, Camera, Inbox as InboxIcon, MessageCircle, PenSquare, Plus, Search, Users, UsersRound } from 'lucide-react-native';
-import { useCallback, useState } from 'react';
+import { memo, useCallback, useEffect, useRef, useState } from 'react';
 import { FlatList, KeyboardAvoidingView, Modal, Platform, Pressable, RefreshControl, ScrollView, TextInput, View } from 'react-native';
-import Animated, { FadeInDown, FadeOutLeft } from 'react-native-reanimated';
 
 import { TitleBadge } from '@/components/profile/TitleBadge';
 import { PushNudge } from '@/components/shell/PushNudge';
 import { OnlineDot } from '@/components/chat/OnlineDot';
 import { useInboxTyping } from '@/lib/presence';
-import { Avatar, Button, Empty, Header, IconButton, Row, Screen, StateView, T, Tap } from '@/components/ui';
+import { Avatar, Button, Empty, Header, Row, Screen, StateView, T, Tap } from '@/components/ui';
 import { useAuth } from '@/lib/auth';
 import { reportError } from '@/lib/errors';
 import { optimistic } from '@/lib/run';
@@ -75,8 +74,12 @@ export function Inbox({ inTab }: { inTab?: boolean }) {
      
     const rows = ((mine ?? []) as any[]).filter((r) => r.conversation);
     const ids = rows.map((r) => r.conversation.id);
+    // only one-to-one chats need the other person; big groups (a whole college) would bring hundreds of members
+    const directIds = rows.filter((r) => r.conversation.kind === 'direct').map((r) => r.conversation.id);
     const [{ data: members }, { data: lasts }, { data: counts }] = ids.length ? await Promise.all([
-      supabase.from('conversation_members').select('conversation_id, user_id, profile:profiles(id, full_name, avatar_url, is_verified, academic_title, title_verified)').in('conversation_id', ids).neq('user_id', profile.id),
+      directIds.length
+        ? supabase.from('conversation_members').select('conversation_id, user_id, profile:profiles(id, full_name, avatar_url, is_verified, academic_title, title_verified)').in('conversation_id', directIds).neq('user_id', profile.id)
+        : Promise.resolve({ data: [] }),
       supabase.rpc('inbox_last_messages', { conv_ids: ids }),
       supabase.rpc('unread_counts', { conv_ids: ids }),
     ]) : [{ data: [] }, { data: [] }, { data: [] }];
@@ -124,6 +127,11 @@ export function Inbox({ inTab }: { inTab?: boolean }) {
       () => supabase.rpc('answer_request', { conv: id, accept }));
     if (ok && accept) router.push({ pathname: '/messages/[id]', params: { id } });
   }
+
+  // stable for the memoised rows
+  const answerRef = useRef(answer);
+  useEffect(() => { answerRef.current = answer; });
+  const onAnswer = useCallback((id: string, accept: boolean) => answerRef.current(id, accept), []);
 
   async function openWith(p: Person) {
     const { data } = await supabase.rpc('start_direct', { target: p.id, context: null });
@@ -210,40 +218,7 @@ export function Inbox({ inTab }: { inTab?: boolean }) {
             {tab === 2 && <Button kind="soft" title={t('جروب جديد')} icon={<UsersRound size={18} color={C.primaryDark} />} onPress={() => router.push({ pathname: '/messages/new', params: { group: '1' } })} style={{ minHeight: 44 }} />}
           </View>
         }
-        renderItem={({ item, index }) => (
-          <Animated.View entering={FadeInDown.delay(Math.min(index, 8) * 35)} exiting={FadeOutLeft}>
-            <Tap scale={0.985} haptic={false} onPress={() => router.push({ pathname: '/messages/[id]', params: { id: item.id } })}
-              style={{ flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 72, paddingVertical: 8 }}>
-              {item.kind === 'direct' ? <View><Avatar id={item.other?.id} name={item.title} url={item.other?.avatar_url} size={54} /><OnlineDot id={item.other?.id} /></View>
-                : <GroupAvatar kind={item.course ? 'course' : item.kind === 'community' ? 'community' : 'group'} />}
-              <View style={{ flex: 1, minWidth: 0, gap: 3 }}>
-                <Row gap={5}>
-                  <T v={item.unread ? 'bold' : 'bodyMd'} numberOfLines={1} style={{ flexShrink: 1, fontSize: 15 }}>{item.title}</T>
-                  {item.other?.is_verified && <BadgeCheck size={14} color={C.onPrimary} fill={C.primary} />}
-                  <TitleBadge title={item.other?.academic_title} verified={item.other?.title_verified} />
-                  {item.streak > 1 && <T v="tiny" color="#E8590C">🔥{item.streak}</T>}
-                </Row>
-                <Row gap={4}>
-                  {isTyping(item.id) ? <T v="small" numberOfLines={1} color={C.primaryDark}>{t('عم يكتب…')}</T>
-                    : <T v="small" numberOfLines={1} style={{ flexShrink: 1 }} color={item.unread ? C.ink : C.muted}>{item.last ?? (item.kind === 'community' ? t('جروب تلقائي') : '')}</T>}
-                  {item.last_at ? <T v="small" color={C.faint}>{(item.last ?? (item.kind === 'community' ? 'x' : '')) ? '· ' : ''}{timeAgo(item.last_at)}</T> : null}
-                </Row>
-                {item.state === 'request' && (
-                  <Row gap={8} style={{ marginTop: 6 }}>
-                    <Button title={t('قبول')} onPress={() => answer(item.id, true)} style={{ flex: 1, minHeight: 40 }} />
-                    <Button kind="soft" title={t('تجاهل')} onPress={() => answer(item.id, false)} style={{ flex: 1, minHeight: 40 }} />
-                  </Row>
-                )}
-              </View>
-              {item.unread && (item.count ?? 0) > 0 ? (
-                <View style={{ minWidth: 22, height: 22, borderRadius: 11, paddingHorizontal: 6, backgroundColor: C.primary, alignItems: 'center', justifyContent: 'center' }}>
-                  <T v="tiny" color={C.onPrimary} style={{ fontSize: 11 }}>{(item.count ?? 0) >= 99 ? '99+' : item.count}</T>
-                </View>
-              ) : item.unread ? <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: C.primary }} />
-                : item.kind === 'direct' && item.state === 'active' ? <Camera size={22} color={C.faint} strokeWidth={1.8} /> : null}
-            </Tap>
-          </Animated.View>
-        )}
+        renderItem={({ item }) => <ChatRow item={item} typing={isTyping(item.id)} onAnswer={onAnswer} />}
         ListEmptyComponent={loading ? <ListSkeleton n={6} /> : failed ? <StateView error onRetry={load} /> : tab === 3
           ? <Empty icon={<InboxIcon size={28} color={C.primary} />} title={t('ما في طلبات')} body={t('لما حدا ما بتتابعه يراسلك، بيوصل هون أول.')} />
           : tab === 1 ? <Empty icon={<BookOpen size={28} color={C.primary} />} title={t('ما في جروبات مواد')} body={t('بتنضاف لجروب كل شعبة لما تضيف موادك بالجدول.')} />
@@ -270,6 +245,42 @@ export function Inbox({ inTab }: { inTab?: boolean }) {
     </Screen>
   );
 }
+
+/** One chat in the list. Redraws only when that chat changes, so the list scrolls smoothly. */
+const ChatRow = memo(function ChatRow({ item, typing, onAnswer }: { item: Item; typing: boolean; onAnswer: (id: string, accept: boolean) => void }) {
+  return (
+    <Tap scale={0.985} haptic={false} onPress={() => router.push({ pathname: '/messages/[id]', params: { id: item.id } })}
+      style={{ flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 72, paddingVertical: 8 }}>
+      {item.kind === 'direct' ? <View><Avatar id={item.other?.id} name={item.title} url={item.other?.avatar_url} size={54} /><OnlineDot id={item.other?.id} /></View>
+        : <GroupAvatar kind={item.course ? 'course' : item.kind === 'community' ? 'community' : 'group'} />}
+      <View style={{ flex: 1, minWidth: 0, gap: 3 }}>
+        <Row gap={5}>
+          <T v={item.unread ? 'bold' : 'bodyMd'} numberOfLines={1} style={{ flexShrink: 1, fontSize: 15 }}>{item.title}</T>
+          {item.other?.is_verified && <BadgeCheck size={14} color={C.onPrimary} fill={C.primary} />}
+          <TitleBadge title={item.other?.academic_title} verified={item.other?.title_verified} />
+          {item.streak > 1 && <T v="tiny" color="#E8590C">🔥{item.streak}</T>}
+        </Row>
+        <Row gap={4}>
+          {typing ? <T v="small" numberOfLines={1} color={C.primaryDark}>{t('عم يكتب…')}</T>
+            : <T v="small" numberOfLines={1} style={{ flexShrink: 1 }} color={item.unread ? C.ink : C.muted}>{item.last ?? (item.kind === 'community' ? t('جروب تلقائي') : '')}</T>}
+          {item.last_at ? <T v="small" color={C.faint}>{(item.last ?? (item.kind === 'community' ? 'x' : '')) ? '· ' : ''}{timeAgo(item.last_at)}</T> : null}
+        </Row>
+        {item.state === 'request' && (
+          <Row gap={8} style={{ marginTop: 6 }}>
+            <Button title={t('قبول')} onPress={() => onAnswer(item.id, true)} style={{ flex: 1, minHeight: 40 }} />
+            <Button kind="soft" title={t('تجاهل')} onPress={() => onAnswer(item.id, false)} style={{ flex: 1, minHeight: 40 }} />
+          </Row>
+        )}
+      </View>
+      {item.unread && (item.count ?? 0) > 0 ? (
+        <View style={{ minWidth: 22, height: 22, borderRadius: 11, paddingHorizontal: 6, backgroundColor: C.primary, alignItems: 'center', justifyContent: 'center' }}>
+          <T v="tiny" color={C.onPrimary} style={{ fontSize: 11 }}>{(item.count ?? 0) >= 99 ? '99+' : item.count}</T>
+        </View>
+      ) : item.unread ? <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: C.primary }} />
+        : item.kind === 'direct' && item.state === 'active' ? <Camera size={22} color={C.faint} strokeWidth={1.8} /> : null}
+    </Tap>
+  );
+});
 
 /** Instagram-style note: a small rounded bubble floating over the top of the avatar, one or two short lines. */
 function NoteBubble({ text, muted }: { text: string; muted?: boolean }) {

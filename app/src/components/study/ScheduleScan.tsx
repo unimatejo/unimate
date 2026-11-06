@@ -45,8 +45,12 @@ export function ScheduleScan({ onDone, autoOpen }: { onDone: () => void; autoOpe
       const b64 = await pick(camera);
       if (!b64) return;
       setReading(true);
-      const { data, error } = await supabase.functions.invoke('schedule-import', { body: { image: b64, mime: 'image/jpeg' } });
-      if ((error as { context?: { status?: number } } | null)?.context?.status === 429) { Alert.alert(t('وصلت الحد اليومي'), t('بتقدر تقرأ جدول بالصورة 15 مرة باليوم. جرّب بكرا، أو ضيف موادك بإيدك.')); return; }
+      // never spin forever: the server gives up after about a minute, so do we
+      const timeout = new Promise<{ data: null; error: Error }>((r) => setTimeout(() => r({ data: null, error: new Error('timeout') }), 70000));
+      const { data, error } = await Promise.race([supabase.functions.invoke('schedule-import', { body: { image: b64, mime: 'image/jpeg' } }), timeout]);
+      const status = (error as { context?: { status?: number } } | null)?.context?.status;
+      if (status === 429) { Alert.alert(t('وصلت الحد اليومي'), t('بتقدر تقرأ جدول بالصورة 15 مرة باليوم. جرّب بكرا، أو ضيف موادك بإيدك.')); return; }
+      if (error?.message === 'timeout' || status === 502) { Alert.alert(t('خدمة القراءة مشغولة هلأ'), t('جرّب كمان دقيقة، أو ضيف موادك بإيدك.')); return; }
       if (error || !data) throw new Error(data?.error ?? 'failed');
       if (data.error === 'not_configured') { Alert.alert(t('قراءة الجدول من الصورة لسا مش مفعّلة'), t('جرّب كمان شوي، أو ضيف موادك بإيدك.')); return; }
       if (!data.courses?.length) { Alert.alert(t('ما قدرنا نقرأ جدول بالصورة'), t('جرّب سكرين شوت أوضح لصفحة الجدول من بوابة الجامعة.')); return; }
@@ -73,9 +77,8 @@ export function ScheduleScan({ onDone, autoOpen }: { onDone: () => void; autoOpe
         const { data: sec, error } = await supabase.rpc('add_course', { course_name: c.name, section_no: c.section || '1', course_code: c.code, instructor: c.instructor });
         if (error || !sec) continue;
         n++;
-        for (const m of c.meetings) for (const d of m.days) {
-          await supabase.rpc('report_meeting', { sec, wd: d, st: m.start, en: m.end, k: m.kind, room: m.room ?? '' });
-        }
+        // all the meetings of a course at once
+        await Promise.all(c.meetings.flatMap((m) => m.days.map((d) => supabase.rpc('report_meeting', { sec, wd: d, st: m.start, en: m.end, k: m.kind, room: m.room ?? '' }))));
       }
       setFound(null); onDone();
       Alert.alert(t('انضافت {0} مواد ✓', [n]), t('وانضميت لجروب كل مادة. إذا في وقت غلط، اكبس عليه وعدّله.'));
@@ -96,6 +99,16 @@ export function ScheduleScan({ onDone, autoOpen }: { onDone: () => void; autoOpe
         </View>
         {reading && <ActivityIndicator color={C.primary} />}
       </Tap>
+
+      <Modal visible={reading} transparent animationType="fade">
+        <View style={{ flex: 1, backgroundColor: 'rgba(14,20,48,0.55)', alignItems: 'center', justifyContent: 'center', padding: 30 }}>
+          <View style={{ backgroundColor: C.card, borderRadius: 24, padding: 24, gap: 12, alignItems: 'center', maxWidth: 320 }}>
+            <ActivityIndicator size="large" color={C.primary} />
+            <T v="h3" style={{ textAlign: 'center' }}>{t('عم نقرأ جدولك…')}</T>
+            <T v="small" color={C.muted} style={{ textAlign: 'center' }}>{t('عادة بياخد ثواني، وأحياناً لحد دقيقة. خليك على هالصفحة.')}</T>
+          </View>
+        </View>
+      </Modal>
 
       <Modal visible={!!found} transparent animationType="fade" onRequestClose={() => setFound(null)}>
         <Pressable style={{ flex: 1, backgroundColor: 'rgba(14,20,48,0.45)' }} onPress={() => setFound(null)} />
