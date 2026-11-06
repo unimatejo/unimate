@@ -150,7 +150,7 @@ export default function NewEvent() {
           <View style={{ backgroundColor: C.card, borderRadius: 18, padding: 12, gap: 10 }}>
             <Toggle label={t('عند كل الشعبة')} value={share} onChange={setShare}
               hint={t('لما كم واحد من شعبتك يضيفوا نفس الموعد بنفس اليوم، بينزل تلقائي عند كل الشعبة. لحد ما يصير هيك بيضل عندك إنت بس.')} />
-            {admin && <Toggle label={t('نزّله رسمي هلأ (للإدارة)')} hint={t('بينزل لكل الشعبة فوراً بدون تأكيد')} value={direct} onChange={setDirect} />}
+            {admin && <Toggle label={t('نزّله رسمي هلأ (للإدارة)')} hint={t('لهالشعبة بس، فوراً. لمادة كاملة أو كلية: الإدارة › مواعيد رسمية')} value={direct} onChange={setDirect} />}
           </View>
         )}
         {official && !admin ? (

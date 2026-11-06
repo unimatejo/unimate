@@ -144,6 +144,7 @@ Admin › أخطاء التطبيق (`app/admin/errors.tsx`). Stale web code aft
 | `/admin/chats` | `app/admin/chats.tsx` | Every chat on the platform, newest first, refreshed live. Tap one to read it (and follow new messages as they arrive). |
 | `/admin/content` | `app/admin/content.tsx` | Admin › posts and stories: hide, pin or delete content. |
 | `/admin/errors` | `app/admin/errors.tsx` | How fast the app feels for students: time until each key screen shows its data, and slow requests. |
+| `/admin/events` | `app/admin/events.tsx` | Admin › an official exam or deadline, straight to exactly one scope (admin_post_event, 0106): one section, every section of a course this term, or… |
 | `/admin/grades` | `app/admin/grades.tsx` | Upload the university's official GPAs for the honor board. Students can never set these. |
 | `/admin` | `app/admin/index.tsx` | The admin home: what needs you now, today's numbers, the last two weeks, and every section. |
 | `/admin/look` | `app/admin/look.tsx` | The owner shapes the app: texts, the home banner and quick links, a notice for everyone, and which features are on. |
@@ -454,3 +455,4 @@ Admin › أخطاء التطبيق (`app/admin/errors.tsx`). Stale web code aft
 - `0104_review_hardening.sql` — UniMate · 0104 hardening for review (NOT applied yet — waiting for the owner's approval).
 - `0105_highlights_mutes.sql` — UniMate · 0105 highlights like Instagram, and muting someone's stories.
 - `0106_sections_truth.sql` — UniMate · 0106 a student only gets what belongs to THEIR section (for review — not applied yet).
+- `0107_highlight_covers.sql` — UniMate · 0107 a highlight's cover can be any photo from your gallery (Instagram's "edit cover").

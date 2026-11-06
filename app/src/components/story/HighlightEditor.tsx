@@ -1,6 +1,6 @@
 import * as Haptics from 'expo-haptics';
 import { Image } from 'expo-image';
-import { Check, Play, Trash2, X } from 'lucide-react-native';
+import { Check, ImagePlus, Play, Trash2, X } from 'lucide-react-native';
 import { useEffect, useMemo, useState } from 'react';
 import { Alert, Modal, Pressable, ScrollView, TextInput, useWindowDimensions, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -12,6 +12,7 @@ import { LOCALE, t, ta } from '@/lib/i18n';
 import { mediaUrl, photoWidth, supabase } from '@/lib/supabase';
 import { C, F, isDark, R } from '@/lib/theme';
 import { toast } from '@/lib/toast';
+import { pickMedia, uploadPicked } from '@/lib/upload';
 
 export type HighlightRef = { id: string; title: string; cover_url: string | null };
 type Story = { id: string; media_url: string; kind: 'image' | 'video'; created_at: string; uri?: string | null };
@@ -21,7 +22,7 @@ const ARCHIVE_DAYS = 30;
 
 /**
  * New or edit highlight, like Instagram: pick stories from your archive (photos and videos, last 30 days plus
- * everything already in a highlight), name it, choose its cover (one of its photos). Editing adds / removes stories, renames, changes the cover, or deletes the highlight.
+ * everything already in a highlight), name it, choose its cover (one of its photos, or any photo from the gallery). Editing adds / removes stories, renames, changes the cover, or deletes the highlight.
  */
 export function HighlightEditor({ open, edit, onClose, onSaved }: {
   open: boolean; edit?: HighlightRef | null; onClose: () => void; onSaved: () => void;
@@ -70,6 +71,17 @@ export function HighlightEditor({ open, edit, onClose, onSaved }: {
       setSel(sel.filter((x) => x !== s.id));
     } else if (sel.length >= MAX) toast(t('الحد {0} قصة بالهايلايت', [String(MAX)]));
     else setSel([...sel, s.id]);
+  }
+
+  /** any photo from the gallery, cropped round, saved in my own folder (readable by whoever sees my profile, 0107) */
+  async function coverFromGallery() {
+    if (!profile) return;
+    const m = await pickMedia({ crop: 'avatar' });
+    if (!m) return;
+    try {
+      const { path } = await uploadPicked('stories', profile.id, m);
+      setCover(path); setPickingCover(false);
+    } catch { toast.error(t('ما زبط رفع الصورة، جرّب كمان مرة.')); }
   }
 
   async function save() {
@@ -136,6 +148,9 @@ export function HighlightEditor({ open, edit, onClose, onSaved }: {
           <Row gap={8}>
             <Tap onPress={() => setPickingCover((v) => !v)} style={{ minHeight: 34, paddingHorizontal: 14, borderRadius: R.pill, backgroundColor: pickingCover ? C.inverse : C.soft, justifyContent: 'center' }}>
               <T v="small" color={pickingCover ? C.onInverse : C.ink} style={{ fontFamily: F.bodyBold }}>{pickingCover ? t('اختار صورة من تحت') : t('غيّر الغلاف')}</T>
+            </Tap>
+            <Tap onPress={coverFromGallery} accessibilityLabel={t('غلاف من صورك')} style={{ minHeight: 34, paddingHorizontal: 12, borderRadius: R.pill, backgroundColor: C.soft, flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              <ImagePlus size={16} color={C.ink} /><T v="small" style={{ fontFamily: F.bodyBold }}>{t('من صورك')}</T>
             </Tap>
           </Row>
           <TextInput value={title} onChangeText={setTitle} maxLength={30} placeholder={t('اسم الهايلايت، مثلاً «سنة أولى»')} placeholderTextColor={C.faint} keyboardAppearance={isDark ? 'dark' : 'light'}
