@@ -8,7 +8,7 @@ import { GestureDetector, usePanGesture } from 'react-native-gesture-handler';
 import Animated, { FadeIn, runOnJS, useSharedValue } from 'react-native-reanimated';
 
 import { Row, T, Tap } from '@/components/ui';
-import { CTA_DEFAULT, adAction, liveAds, openAdvertiser, trackAd, type Ad } from '@/lib/ads';
+import { adAction, ctaText, liveAds, openAdvertiser, trackAd, type Ad } from '@/lib/ads';
 import { isAR, t } from '@/lib/i18n';
 import { C, F, shadow } from '@/lib/theme';
 
@@ -94,6 +94,7 @@ export function HomeAds() {
  */
 export function AdSlide({ ad, onOpen, onAction }: { ad: Ad; onOpen?: () => void; onAction?: () => void }) {
   const text = ad.show_text || !ad.image_url;
+  const cta = ctaText(ad);
   const Icon = ad.cta_kind === 'map' ? Navigation : ad.cta_kind === 'call' ? Phone : ad.cta_kind === 'link' ? ExternalLink : Store;
   return (
     <Tap scale={0.98} onPress={onOpen} accessibilityLabel={t('إعلان ممول: {0}', [text ? ad.advertiser_name : `${ad.advertiser_name} · ${ad.title}`])}
@@ -136,10 +137,10 @@ export function AdSlide({ ad, onOpen, onAction }: { ad: Ad; onOpen?: () => void;
             {text && ad.body ? <T v="tiny" color="rgba(255,255,255,0.85)" numberOfLines={1}>{ad.body}</T> : null}
           </View>
           {/* words without a link (or call / map) open the shop's page, like a tap on the banner */}
-          {ad.cta_kind || ad.cta_label ? (
-            <Tap onPress={ad.cta_kind ? onAction : onOpen} accessibilityRole={ad.cta_kind === 'link' ? 'link' : 'button'} accessibilityLabel={ad.cta_label || CTA_DEFAULT[ad.cta_kind!]}
+          {cta ? (
+            <Tap onPress={ad.cta_kind ? onAction : onOpen} accessibilityRole={ad.cta_kind === 'link' ? 'link' : 'button'} accessibilityLabel={cta}
               style={{ minHeight: 42, paddingHorizontal: 14, borderRadius: 14, backgroundColor: '#FFFFFF', flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-              <T v="bold" color="#0E1430" style={{ fontSize: 14 }}>{ad.cta_label || CTA_DEFAULT[ad.cta_kind!]}</T>
+              <T v="bold" color="#0E1430" style={{ fontSize: 14 }}>{cta}</T>
               <Icon size={15} color="#0E1430" />
             </Tap>
           ) : null}

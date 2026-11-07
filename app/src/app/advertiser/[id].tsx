@@ -1,12 +1,14 @@
 import { Image } from 'expo-image';
-import { router, useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams } from 'expo-router';
 import { CircleAlert, Clock, MapPin, Phone } from 'lucide-react-native';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Alert, Linking, ScrollView, View } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
 
 import { Button, Empty, Header, Loading, Row, Screen, T, Tag } from '@/components/ui';
+import { shopOnMap } from '@/lib/ads';
 import { supabase } from '@/lib/supabase';
+import { publicUrl } from '@/lib/upload';
 import { C } from '@/lib/theme';
 import { t } from '@/lib/i18n';
 
@@ -14,27 +16,27 @@ type Adv = {
   id: string; name: string; category: string; description: string | null; phone: string | null; hours: string | null;
   menu: { name: string; price_jod?: number; photo_url?: string }[]; photos: string[]; logo_url: string | null; lat: number | null; lng: number | null;
   /** the building it's in on campus (0136): «وديني» walks there */
-  building_id?: string | null;
+  building_id: string | null;
+  university_id: string | null;
 };
 const CAT: Record<string, string> = { restaurant: t('مطعم'), cafe: t('كافيه'), bookshop: t('مكتبة'), print: t('طباعة'), housing: t('سكن'), courses: t('دورات'), shop: t('محل'), other: t('خدمة') };
 
 /** An advertiser's public page with its current offers. */
 export default function Advertiser() {
-  const { id, campaign } = useLocalSearchParams<{ id: string; campaign?: string }>();
+  const { id, campaign, cover: adCover } = useLocalSearchParams<{ id: string; campaign?: string; cover?: string }>();
   const [a, setA] = useState<Adv | null>(null);
   const [state, setState] = useState<'loading' | 'ok' | 'missing' | 'error'>('loading');
 
-  const load = () => {
-    setState('loading');
+  const load = useCallback(() => {
     supabase.rpc('advertiser_page', { adv: id }).then(({ data, error }) => {
       if (error) { setState('error'); return; }
       const row = ((data ?? []) as Adv[])[0] ?? null;
       if (!row) { setState('missing'); return; }
       setA({ ...row, photos: row.photos ?? [], menu: row.menu ?? [] }); setState('ok');
     }, () => setState('error'));
-  };
-   
-  useEffect(load, [id]);
+  }, [id]);
+  useEffect(load, [load]);
+  const retry = () => { setState('loading'); load(); };
 
   function call() {
     if (!a?.phone) return;
@@ -46,23 +48,23 @@ export default function Advertiser() {
     <Screen><Header title="" />
       {state === 'loading' ? <Loading /> : <Empty icon={<CircleAlert size={28} color={C.muted} />} title={state === 'missing' ? t('هذه الصفحة غير متوفرة') : t('تعذّر التحميل')}
         body={state === 'missing' ? t('ربما انتهى الإعلان.') : t('تحقق من اتصالك بالإنترنت وحاول مرة أخرى.')}
-        action={state === 'error' ? <Button kind="soft" title={t('حاول مرة أخرى')} onPress={load} style={{ paddingHorizontal: 24 }} /> : undefined} />}
+        action={state === 'error' ? <Button kind="soft" title={t('حاول مرة أخرى')} onPress={retry} style={{ paddingHorizontal: 24 }} /> : undefined} />}
     </Screen>
   );
-  const cover = a.photos[0];
+  // no photos of its own: the banner that brought the student here (only a picture from the app's own ads storage)
+  const cover = a.photos[0] ?? (adCover?.startsWith(publicUrl('ads', '')) ? adCover : undefined);
 
   return (
     <Screen>
       <Header title={a.name} subtitle={CAT[a.category]} right={<Tag label={t('ممول')} bg={C.orangeSoft} fg={C.orange} />} />
       <ScrollView contentContainerStyle={{ padding: 18, paddingTop: 4, gap: 14, paddingBottom: 60 }}>
-        {cover ? <Image source={{ uri: cover }} style={{ width: '100%', aspectRatio: 16 / 10, borderRadius: 24 }} contentFit="cover" transition={200} /> : null}
-        <Row gap={12}>
-          {a.logo_url ? <Image source={{ uri: a.logo_url }} style={{ width: 56, height: 56, borderRadius: 18 }} /> : null}
-          <View style={{ flex: 1 }}>
-            <T v="h2">{a.name}</T>
-            {a.description ? <T v="small" color={C.ink2}>{a.description}</T> : null}
-          </View>
-        </Row>
+        {cover ? <Image source={{ uri: cover }} style={{ width: '100%', aspectRatio: a.photos[0] ? 16 / 10 : 2, borderRadius: 24 }} contentFit="cover" transition={200} /> : null}
+        {a.logo_url || a.description ? (
+          <Row gap={12}>
+            {a.logo_url ? <Image source={{ uri: a.logo_url }} style={{ width: 56, height: 56, borderRadius: 18 }} /> : null}
+            {a.description ? <T v="small" color={C.ink2} style={{ flex: 1 }}>{a.description}</T> : null}
+          </Row>
+        ) : null}
         <Row gap={10}>
           {a.hours ? <Row gap={6} style={{ flex: 1, backgroundColor: C.card, borderRadius: 16, padding: 12 }}><Clock size={17} color={C.green} /><T v="small">{a.hours}</T></Row> : null}
           {a.phone ? <Button kind="green" title={t('اتصل')} icon={<Phone size={17} color={C.white} />} onPress={call} style={{ minHeight: 46 }} /> : null}
@@ -95,9 +97,7 @@ export default function Advertiser() {
                 <Marker coordinate={{ latitude: a.lat, longitude: a.lng }} title={a.name} />
               </MapView>
             </View>
-            {a.building_id
-              ? <Button title={t('الاتجاهات')} onPress={() => router.push({ pathname: '/map', params: { building: a.building_id, go: '1' } })} />
-              : <Button kind="soft" title={t('اعرضه على خريطة الجامعة')} onPress={() => router.push({ pathname: '/map', params: { advertiser: a.id } })} />}
+            <Button kind={a.building_id ? 'primary' : 'soft'} title={a.building_id ? t('الاتجاهات') : t('اعرضه على خريطة الجامعة')} onPress={() => shopOnMap(a)} />
           </View>
         )}
       </ScrollView>

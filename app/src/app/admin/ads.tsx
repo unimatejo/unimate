@@ -1,13 +1,14 @@
 import { Image } from 'expo-image';
 import { MapPin, X } from 'lucide-react-native';
 import { useState } from 'react';
-import { View } from 'react-native';
+import { Alert, View } from 'react-native';
 
 import { Act, Actions, AdminScreen, Muted, OptionPicker, Panel, Pill, Section, Sheet, State, UniPicker, audit, confirm, done, fmtNum, useLoad, useUnis } from '@/components/admin/kit';
 import { AdSlide } from '@/components/feed/HomeAds';
+import { afterSheet } from '@/components/chat/ChatExtras';
 import { Chip, Field, Row, T, Tap, Toggle } from '@/components/ui';
 import { DateField } from '@/components/ui/DateField';
-import { CTA_DEFAULT, PACKAGES, packageOf, type Ad, type CtaKind, type PackageKey } from '@/lib/ads';
+import { CTA_DEFAULT, CTA_WORDS, PACKAGES, packageOf, type Ad, type CtaKind, type PackageKey } from '@/lib/ads';
 import { t } from '@/lib/i18n';
 import { pickOnMap } from '@/lib/mapPick';
 import { supabase } from '@/lib/supabase';
@@ -44,14 +45,13 @@ const blankAdv = (): Adv => ({
 });
 /** The button in one tap: its words and what it does come together. */
 const CTA_ACTIONS: [string, CtaKind][] = [
-  [t('اطلب الآن'), 'link'], [t('اذهب إلى الموقع'), 'link'], [t('احجز الآن'), 'link'],
-  [t('شاهد العرض'), 'link'], [t('خذني إليه'), 'map'], [t('اتصل الآن'), 'call'],
+  ['اطلب الآن', 'link'], ['اذهب إلى الموقع', 'link'], ['احجز الآن', 'link'], ['شاهد العرض', 'link'], ['خذني إليه', 'map'], ['اتصل الآن', 'call'],
 ];
 
 /** Stop or start an advertiser or one ad straight from the list; logged. */
 async function switchOn(table: 'advertisers' | 'ad_campaigns', id: string, on: boolean, name: string) {
   const { error } = await supabase.from(table).update({ is_active: on }).eq('id', id);
-  if (error) return;
+  if (error) { Alert.alert(t('تعذّر الحفظ'), error.message); return; }
   await audit(on ? 'ad_on' : 'ad_off', table === 'advertisers' ? 'advertiser' : 'campaign', id, { name });
   done();
 }
@@ -66,16 +66,17 @@ function toAd(adv: Adv, c: Camp): Ad {
     campaign_id: c.id ?? 'preview', advertiser_id: adv.id ?? '', advertiser_name: adv.name || t('اسم المحل'), title: c.title || t('عنوان الإعلان'),
     body: c.body || null, image_url: c.image_url, offer: c.offer || null, logo_url: adv.logo_url, cta_url: c.cta_url?.trim() || null,
     cta_label: c.cta_label || null, priority: c.priority, cta_kind: c.cta_kind, show_text: c.show_text, building_id: adv.building_id, phone: adv.phone,
+    university_id: adv.university_id,
   };
 }
 
 /** Where a campaign stands for students right now. */
-function campState(c: Camp): [string, string] {
+function campState(c: Camp, onMap: boolean): [string, string] {
   const d = today();
   if (!c.is_active) return [t('موقوف'), ''];
   if (c.starts_on > d) return [t('يبدأ {0}', [c.starts_on]), 'blue'];
   if (c.ends_on < d) return [t('انتهت مدته'), ''];
-  if (!c.placements.length) return [t('على الخريطة فقط'), 'blue'];
+  if (!c.placements.length) return onMap ? [t('على الخريطة فقط'), 'blue'] : [t('لا يظهر في أي مكان'), 'orange'];
   return [t('يظهر الآن للطلاب'), 'green'];
 }
 
@@ -130,7 +131,12 @@ function CampaignForm({ adv: given, camp, onDone, onPickSpot }: { adv: Adv; camp
   const unis = useUnis();
   const [adv, setAdv] = useState<Adv>(given);
   // words saved without a link come back as their chip (the button then opens the shop's page)
-  const [c, setC] = useState<Camp>(() => (camp && !camp.cta_kind && camp.cta_label ? { ...camp, cta_kind: 'link' } : camp) ?? {
+  const [c, setC] = useState<Camp>(() => (camp && {
+    ...camp,
+    // the server keeps seconds (08:00:00): the form shows and checks hours and minutes
+    daily_from: camp.daily_from?.slice(0, 5) ?? null, daily_to: camp.daily_to?.slice(0, 5) ?? null,
+    cta_kind: camp.cta_kind ?? (camp.cta_label ? 'link' : null),
+  }) ?? {
     advertiser_id: given.id ?? '', university_ids: given.university_id ? [given.university_id] : [], college_ids: [], placements: ['home_banner'], title: '', body: '',
     image_url: null, offer: '', cta_url: '', cta_label: '', starts_on: today(), ends_on: ymd(new Date(Date.now() + 30 * 864e5)), daily_from: null, daily_to: null,
     priority: 10, is_active: true, cta_kind: given.phone ? 'call' : null, show_text: true,
@@ -151,11 +157,12 @@ function CampaignForm({ adv: given, camp, onDone, onPickSpot }: { adv: Adv; camp
     if (adv.on_map && adv.lat == null) { setMsg(t('حدّد مكان المحل على الخريطة، أو ألغِ اختيار «على خريطة الجامعة».')); return; }
     // nobody chosen: the shop's university, or every university
     const reach = c.university_ids.length ? c.university_ids : adv.university_id ? [adv.university_id] : unis.map((u) => u.id);
+    if (!reach.length) { setMsg(t('لم تُحمَّل قائمة الجامعات بعد. انتظر لحظة ثم احفظ.')); return; }
     const cta = c.cta_kind === 'link' ? c.cta_url?.trim() || null : null;
     if (cta && !/^https:\/\/\S+$/i.test(cta)) { setMsg(t('يجب أن يبدأ رابط الزر بـ https://')); return; }
     // no link: the words stay on the button, and it opens the shop's page in the app
     const kind = c.cta_kind === 'link' && !cta ? null : c.cta_kind;
-    if (c.cta_kind === 'map' && adv.lat == null) { setMsg(t('حدّد مكان المحل على الخريطة ليعمل زر «خذني إليه».')); return; }
+    if (c.cta_kind === 'map' && !adv.building_id && !(adv.on_map && adv.lat != null)) { setMsg(t('حدّد مكان المحل على الخريطة ليعمل زر «خذني إليه».')); return; }
     if (c.cta_kind === 'call' && !adv.phone?.trim()) { setMsg(t('اكتب رقم هاتف المحل ليعمل زر الاتصال.')); return; }
     const time = /^([01]\d|2[0-3]):[0-5]\d$/;
     if ((c.daily_from && !time.test(c.daily_from)) || (c.daily_to && !time.test(c.daily_to))) { setMsg(t('اكتب الوقت بهذا الشكل: 08:00')); return; }
@@ -173,10 +180,12 @@ function CampaignForm({ adv: given, camp, onDone, onPickSpot }: { adv: Adv; camp
       body: c.body?.trim() || null, offer: c.offer?.trim() || null, title: (c.title.trim() || adv.name.trim()).slice(0, 60),
       // a photo is the whole banner: only «ممول» and the button go on it
       show_text: !c.image_url, cta_kind: kind, cta_url: cta, cta_label: c.cta_kind ? c.cta_label?.trim() || CTA_DEFAULT[c.cta_kind] : null };
-    const { error } = c.id ? await supabase.from('ad_campaigns').update(row).eq('id', c.id) : await supabase.from('ad_campaigns').insert(row);
+    const saved = c.id
+      ? await supabase.from('ad_campaigns').update(row).eq('id', c.id).select('id').single()
+      : await supabase.from('ad_campaigns').insert(row).select('id').single();
     setBusy(false);
-    if (error) { setMsg(error.message); return; }
-    await audit(c.id ? 'edit_campaign' : 'add_campaign', 'campaign', c.id ?? advId!, { title: row.title, placements: c.placements, on_map: adv.on_map });
+    if (saved.error) { setMsg(saved.error.message); return; }
+    await audit(c.id ? 'edit_campaign' : 'add_campaign', 'campaign', saved.data.id, { title: row.title, placements: c.placements, on_map: adv.on_map });
     done(); onDone();
   }
 
@@ -252,7 +261,7 @@ function CampaignForm({ adv: given, camp, onDone, onPickSpot }: { adv: Adv; camp
           {step(t('الزر'))}
           <Panel>
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-              {CTA_ACTIONS.map(([w, k]) => <Chip key={w} label={w} active={c.cta_kind === k && (c.cta_label || CTA_DEFAULT[k]) === w} onPress={() => set({ cta_kind: k, cta_label: w })} />)}
+              {CTA_ACTIONS.map(([w, k]) => <Chip key={w} label={CTA_WORDS[w]} active={c.cta_kind === k && (c.cta_label || CTA_DEFAULT[k]) === w} onPress={() => set({ cta_kind: k, cta_label: w })} />)}
               <Chip label={t('بدون زر')} active={!c.cta_kind} onPress={() => set({ cta_kind: null, cta_label: '' })} />
             </View>
             {c.cta_kind === 'link' && (
@@ -329,6 +338,12 @@ function AdvEditor({ initial, onClose, onPickSpot, onEditAd }: {
 
   async function save() {
     if (!a.name.trim()) { setMsg(t('اكتب اسم المحل')); return; }
+    // an ad's button needs what it uses: the phone for a call, the place for the walk
+    const running = (camps.data ?? []).filter((c) => c.is_active && c.ends_on >= today());
+    if (!a.phone?.trim() && running.some((c) => c.cta_kind === 'call')) { setMsg(t('أحد إعلانات المحل فيه زر اتصال: أبقِ رقم الهاتف، أو غيّر الزر في الإعلان أولًا.')); return; }
+    if (!a.building_id && !(a.on_map && a.lat != null) && running.some((c) => c.cta_kind === 'map')) {
+      setMsg(t('أحد إعلانات المحل فيه زر «خذني إليه»: أبقِ مكانه على الخريطة، أو غيّر الزر في الإعلان أولًا.')); return;
+    }
     const { id, ...row } = a;
     const r = id ? await supabase.from('advertisers').update(row).eq('id', id).select('id').single() : await supabase.from('advertisers').insert(row).select('id').single();
     if (r.error) { setMsg(r.error.message); return; }
@@ -362,7 +377,7 @@ function AdvEditor({ initial, onClose, onPickSpot, onEditAd }: {
             </Panel>
           )}
           {(camps.data ?? []).map((c) => {
-            const [state, tone] = campState(c);
+            const [state, tone] = campState(c, a.on_map);
             return (
               <View key={c.id} style={{ gap: 8, opacity: c.is_active ? 1 : 0.6 }}>
                 {c.placements.length ? <AdSlide ad={toAd(a, c)} onOpen={() => onEditAd(a, c)} /> : null}
@@ -456,8 +471,11 @@ export default function Ads() {
     if (!a.university_id) return;
     setSheet(back(a)); setPicking(true);
     const p = await pickOnMap(a.university_id);
-    setPicking(false);
-    if (p) setSheet(back({ ...a, lat: p.lat, lng: p.lng, building_id: null, on_map: true }));
+    // back from the map: the sheet comes up again once the map has left (iOS can't show it while that is moving)
+    afterSheet(() => {
+      setPicking(false);
+      if (p) setSheet(back({ ...a, lat: p.lat, lng: p.lng, building_id: null, on_map: true }));
+    });
   };
   const close = () => { setSheet(null); reload(); };
 
@@ -467,8 +485,8 @@ export default function Ads() {
       <State loading={loading} error={error} empty={data?.length === 0}>
         <View style={{ gap: 18 }}>
           {(data ?? []).map((a) => {
-            const live = a.camps.find((c) => campState(c)[1] === 'green') ?? a.camps[0];
-            const [state, tone] = live ? campState(live) : [t('لا يوجد إعلان بعد'), 'orange'];
+            const live = a.camps.find((c) => campState(c, a.on_map)[1] === 'green') ?? a.camps[0];
+            const [state, tone] = live ? campState(live, a.on_map) : [t('لا يوجد إعلان بعد'), 'orange'];
             const open = () => setSheet({ k: 'shop', adv: plain(a) });
             return (
               <View key={a.id} style={{ gap: 8, opacity: a.is_active ? 1 : 0.55 }}>

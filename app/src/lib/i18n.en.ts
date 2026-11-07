@@ -2775,4 +2775,8 @@ export const EN: Record<string, string> = {
   "دبوس بإطار ذهبي وعلامة «ممول» لكل من يفتح الخريطة.": "A gold-ringed \"Sponsored\" pin for everyone who opens the map.",
   "يظهر بعد تحديد مكانه.": "Shows once its spot is set.",
   "هذا الإعلان على الخريطة فقط.": "This ad is on the map only.",
+  "لا يظهر في أي مكان": "Not shown anywhere",
+  "لم تُحمَّل قائمة الجامعات بعد. انتظر لحظة ثم احفظ.": "The universities haven't loaded yet. Wait a moment, then save.",
+  "أحد إعلانات المحل فيه زر اتصال: أبقِ رقم الهاتف، أو غيّر الزر في الإعلان أولًا.": "One of this shop's ads has a call button: keep the phone number, or change that ad's button first.",
+  "أحد إعلانات المحل فيه زر «خذني إليه»: أبقِ مكانه على الخريطة، أو غيّر الزر في الإعلان أولًا.": "One of this shop's ads has a \"Take me there\" button: keep its place on the map, or change that ad's button first.",
 };

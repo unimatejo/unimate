@@ -19,12 +19,34 @@ export type Ad = {
   show_text: boolean;
   building_id: string | null;
   phone: string | null;
+  /** the shop's university: its map is the one to open (an ad can reach students of other universities) */
+  university_id: string | null;
 };
 export type CtaKind = 'link' | 'map' | 'call';
 type Event = 'impression' | 'click' | 'call' | 'order' | 'directions';
 
-/** The button's words when the owner leaves them empty, by what it does. */
-export const CTA_DEFAULT: Record<CtaKind, string> = { link: t('اطلب الآن'), map: t('خذني إليه'), call: t('اتصل الآن') };
+/**
+ * The button's words, saved in Arabic (as the owner picks them) and shown in the student's language. Words outside
+ * this list (older ads) show as they were written.
+ */
+export const CTA_WORDS: Record<string, string> = {
+  'اطلب الآن': t('اطلب الآن'), 'اذهب إلى الموقع': t('اذهب إلى الموقع'), 'احجز الآن': t('احجز الآن'),
+  'شاهد العرض': t('شاهد العرض'), 'خذني إليه': t('خذني إليه'), 'اتصل الآن': t('اتصل الآن'),
+};
+/** The words when the owner leaves them empty, by what the button does. */
+export const CTA_DEFAULT: Record<CtaKind, string> = { link: 'اطلب الآن', map: 'خذني إليه', call: 'اتصل الآن' };
+
+/** What the ad's button says to this student; null when the ad has no button. */
+export function ctaText(ad: Pick<Ad, 'cta_kind' | 'cta_label'>): string | null {
+  const w = ad.cta_label?.trim() || (ad.cta_kind ? CTA_DEFAULT[ad.cta_kind] : null);
+  return w ? CTA_WORDS[w] ?? w : null;
+}
+
+/** The campus map at the shop: its building, or its own pin (on the shop's university map). */
+export function shopOnMap(shop: { id: string; building_id: string | null; university_id: string | null }) {
+  const uni = shop.university_id ? { uni: shop.university_id } : {};
+  router.push({ pathname: '/map', params: shop.building_id ? { ...uni, building: shop.building_id, go: '1' } : { ...uni, advertiser: shop.id } });
+}
 
 /** The packages the owner sells: a higher one shows first, ads in the same package take turns. */
 export const PACKAGES = { 30: t('ذهبية'), 20: t('فضية'), 10: t('عادية') } as const;
@@ -47,7 +69,7 @@ export function trackAd(campaign: string, what: Event) {
 /** The advertiser's page inside the app. */
 export function openAdvertiser(ad: Ad) {
   trackAd(ad.campaign_id, 'click');
-  router.push({ pathname: '/advertiser/[id]', params: { id: ad.advertiser_id, campaign: ad.campaign_id } });
+  router.push({ pathname: '/advertiser/[id]', params: { id: ad.advertiser_id, campaign: ad.campaign_id, ...(ad.image_url ? { cover: ad.image_url } : {}) } });
 }
 
 /**
@@ -63,7 +85,7 @@ export function adAction(ad: Ad) {
     Linking.openURL(url).catch(reportError);
   } else if (ad.cta_kind === 'map') {
     trackAd(ad.campaign_id, 'directions');
-    router.push({ pathname: '/map', params: ad.building_id ? { building: ad.building_id, go: '1' } : { advertiser: ad.advertiser_id } });
+    shopOnMap({ id: ad.advertiser_id, building_id: ad.building_id, university_id: ad.university_id });
   } else if (ad.cta_kind === 'call' && ad.phone) {
     trackAd(ad.campaign_id, 'call');
     Linking.openURL(`tel:${ad.phone.replace(/[^\d+]/g, '')}`).catch(reportError);
