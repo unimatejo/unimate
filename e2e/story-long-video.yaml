@@ -4,6 +4,8 @@
 appId: jo.unimate.app
 ---
 - launchApp
+# the link only once the app is up: one sent while it is still starting is dropped
+- extendedWaitUntil: { visible: "ابعتلي رابط على إيميلي", timeout: 90000 }
 - openLink: ${LOGIN_LINK}
 - extendedWaitUntil: { visible: "المجتمع", timeout: 90000 }
 # the newest update downloads on the first open and runs from the next
