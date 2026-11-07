@@ -39,7 +39,7 @@ function CatChip({ label, icon: Icon, color, on, onPress }: { label: string; ico
 }
 
 export default function Community() {
-  const { visible, onViewableItemsChanged, viewabilityConfig } = useVisiblePosts(); // reels play only while on screen
+  const { visible, onViewableItemsChanged, viewabilityConfig } = useVisiblePosts(); // videos play only while on screen
   const { profile, university } = useAuth();
   const [tab, setTab] = useState(0);
   const [cat, setCat] = useState<string | null>(null);

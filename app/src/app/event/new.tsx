@@ -23,7 +23,8 @@ type Sec = { id: string; section_no: string; course: { name_ar: string; name_en?
 /**
  * Add an exam, deadline or reminder to my timetable. Ticking "for my section" doesn't push it to everyone: it counts
  * as one classmate saying so, and once enough of them add the same thing it lands in the whole section (0102).
- * Admins can post straight to the section. Official events open read-only for students, with "this is wrong".
+ * Admins can post straight to the section. On an official event a student changes the date, time, place or title for
+ * themselves only (event_overrides, 0135), hides it from their own timetable, or says it's wrong for everyone.
  */
 export default function NewEvent() {
   const { profile } = useAuth();
@@ -39,6 +40,8 @@ export default function NewEvent() {
   const [share, setShare] = useState(true);
   const [official, setOfficial] = useState(false);
   const [direct, setDirect] = useState(false);
+  /** an official event this student already changed for themselves */
+  const [mine, setMine] = useState(false);
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
@@ -57,9 +60,20 @@ export default function NewEvent() {
       if (!data) { Alert.alert(t('الموعد مش موجود')); router.back(); return; }
       setKind(data.kind); setTitle(data.title); setDate(new Date(data.starts_at)); setLocation(data.location ?? '');
       setSection(data.section_id); setShare(!!data.shared_ask); setOfficial(!data.owner_id); setDirect(!data.owner_id);
+      if (data.owner_id) return;
+      // the student's own version of the section's event, if they changed it
+      supabase.from('event_overrides').select('starts_at, location, title').eq('event_id', editId).maybeSingle().then(({ data: o }) => {
+        if (!o) return;
+        setMine(true);
+        if (o.starts_at) setDate(new Date(o.starts_at));
+        if (o.title) setTitle(o.title);
+        setLocation(o.location ?? '');
+      });
     });
   }, [editId]);
 
+  // a section's official event: its kind and course are the section's; the student changes only their own time and place
+  const locked = official && !admin;
   const label = KINDS.find((k) => k[0] === kind)?.[1] ?? '';
   const courseName = secs.find((s) => s.id === section)?.course.name_ar;
 
@@ -101,6 +115,29 @@ export default function NewEvent() {
     ]);
   }
 
+  /** an official event changed for me only: the rest of the section keeps the official one */
+  async function saveMine(hidden = false) {
+    if (!editId || busy) return;
+    setBusy(true);
+    const r = await run(supabase.from('event_overrides').upsert({
+      event_id: editId, starts_at: date.toISOString(), location: location.trim() || null, title: title.trim() || null, hidden, updated_at: new Date().toISOString(),
+    }, { onConflict: 'user_id,event_id' }), { quiet: true });
+    setBusy(false);
+    if (!r.ok) { Alert.alert(t('ما زبط'), t('تأكد من الإنترنت وجرّب كمان مرة.')); return; }
+    toast(hidden ? t('انشال من جدولك ✓') : t('انحفظ عندك ✓ باقي الشعبة ما بيتغيّر عندهم'));
+    router.back();
+  }
+
+  async function backToOfficial() {
+    if (!editId || busy) return;
+    setBusy(true);
+    const r = await run(supabase.from('event_overrides').delete().eq('event_id', editId), { quiet: true });
+    setBusy(false);
+    if (!r.ok) { Alert.alert(t('ما زبط'), t('تأكد من الإنترنت وجرّب كمان مرة.')); return; }
+    toast(t('رجع للموعد الرسمي'));
+    router.back();
+  }
+
   async function dispute() {
     if (!editId || busy) return;
     setBusy(true);
@@ -120,12 +157,12 @@ export default function NewEvent() {
       <ScrollView contentContainerStyle={{ padding: 18, paddingTop: 4, gap: 14, paddingBottom: 60 }} keyboardShouldPersistTaps="handled">
         <View style={{ gap: 10 }}>
           <T v="bold" style={{ fontSize: 14 }}>{t('شو نوعه؟')}</T>
-          <Row gap={8} style={{ flexWrap: 'wrap' }}>{KINDS.map(([k, l]) => <Chip key={k} label={l} active={kind === k} onPress={() => setKind(k)} />)}</Row>
+          <Row gap={8} style={{ flexWrap: 'wrap' }}>{KINDS.map(([k, l]) => <Chip key={k} label={l} active={kind === k} onPress={() => !locked && setKind(k)} />)}</Row>
         </View>
         {secs.length > 0 && (
           <View style={{ gap: 10 }}>
             <T v="bold" style={{ fontSize: 14 }}>{t('المادة')}</T>
-            <Row gap={8} style={{ flexWrap: 'wrap' }}>{secs.map((s) => <Chip key={s.id} label={nm(s.course)} active={section === s.id} onPress={() => setSection(s.id)} />)}</Row>
+            <Row gap={8} style={{ flexWrap: 'wrap' }}>{secs.map((s) => <Chip key={s.id} label={nm(s.course)} active={section === s.id} onPress={() => !locked && setSection(s.id)} />)}</Row>
           </View>
         )}
         <Field label={t('العنوان')} value={title} onChangeText={setTitle} placeholder={[label, courseName].filter(Boolean).join(' · ')} maxLength={80} />
@@ -138,7 +175,7 @@ export default function NewEvent() {
           </Tap>
         </Row>
         {show && (
-          <DateTimePicker value={date} mode={show} display={Platform.OS === 'ios' ? 'spinner' : 'default'} minimumDate={new Date()} locale={LOCALE}
+          <DateTimePicker value={date} mode={show} display={Platform.OS === 'ios' ? 'spinner' : 'default'} minimumDate={editId ? undefined : new Date()} locale={LOCALE}
             onChange={(_, d) => { if (Platform.OS !== 'ios') setShow(null); if (d) setDate(d); }} />
         )}
         {show && Platform.OS === 'ios' && <Button kind="soft" title={t('تم')} onPress={() => setShow(null)} />}
@@ -156,9 +193,14 @@ export default function NewEvent() {
           </View>
         )}
         {official && !admin ? (
-          <View style={{ backgroundColor: C.card, borderRadius: 18, padding: 14, gap: 10 }}>
-            <T v="small" color={C.ink2}>{t('هاد الموعد لكل الشعبة، أكّده زملاءك. إذا غلط احكيلنا، ولما كفاية منكم يقولوا غلط بينشال.')}</T>
-            <Button kind="soft" title={t('الموعد غلط')} onPress={dispute} loading={busy} />
+          <View style={{ gap: 10 }}>
+            <View style={{ backgroundColor: C.card, borderRadius: 18, padding: 14 }}>
+              <T v="small" color={C.ink2}>{mine ? t('غيّرت هالموعد عندك. باقي الشعبة بيشوفوا الموعد الرسمي.') : t('هاد موعد رسمي لكل الشعبة. أي تعديل بتعمله بيضل عندك إنت بس.')}</T>
+            </View>
+            <Button title={t('احفظ عندي')} onPress={() => saveMine()} loading={busy} disabled={busy} />
+            {mine && <Button kind="soft" title={t('رجّع الموعد الرسمي')} onPress={backToOfficial} disabled={busy} />}
+            <Button kind="ghost" title={t('شيله من جدولي')} onPress={() => saveMine(true)} disabled={busy} />
+            <Button kind="ghost" title={t('الموعد غلط لكل الشعبة')} onPress={dispute} disabled={busy} />
           </View>
         ) : (
           <>

@@ -54,14 +54,14 @@ Admin › أخطاء التطبيق (`app/admin/errors.tsx`). Stale web code aft
 
 | Flow | Client | Database / server |
 |---|---|---|
-| University sign-in (email code, Microsoft) | `(auth)/login.tsx`, `verify.tsx`, `callback.tsx`, `lib/auth.tsx` | `handle_new_user`, `sync_verified`, Edge `ms-role` → `ms_apply_title` |
+| University sign-in (email code, Microsoft) | `(auth)/login.tsx`, `verify.tsx`, `callback.tsx`, `lib/auth.tsx` | `handle_new_user`, `sync_verified`, Edge `ms-role` → `ms_apply_title` (staff) / `ms_apply_student` (students' department) |
 | Team (admin) sign-in | `(auth)/team.tsx`, `team-password.tsx`, `lib/team.ts` | `private.team_accounts`, `is_team_account`, `admin_session_ok` (needs aal2) |
-| First setup + notifications intro | `(auth)/welcome.tsx`, `(auth)/notify.tsx`, `lib/notifPermission.ts` | `profiles.onboarded`, `notification_prefs` |
+| First setup + notifications intro | `(auth)/welcome.tsx`, `(auth)/notify.tsx`, `lib/notifPermission.ts` | `profiles.onboarded`, `notification_prefs`; major and entry year filled by `auto_academic` (university file `private.official_grades`, Microsoft department, `private.student_number_rules`) |
 | Feed | `(tabs)/community.tsx`, `components/feed/*`, `lib/posts.ts` | `posts`, `post_media`, `post_likes`, RPC `feed_likers`; checks `private.mod_post` |
-| Create post / story / reel | `post/new.tsx`, `components/create/*`, `components/story/StoryEditor.tsx` | Storage `posts`/`stories`, `stories`, `post_media`; image check Edge `moderate` |
+| Create post / story | `post/new.tsx`, `components/create/*` (`CoverPicker.tsx`: a video's cover from any frame or the gallery), `lib/videoCover.ts`, `components/story/StoryEditor.tsx` | Storage `posts`/`stories` (cover `<video>.jpg` + `.t.jpg`, path in `post_media.meta.cover`), `stories`, `post_media`; image check Edge `moderate` |
 | Stories | `components/story/StoriesRow.tsx`, `story/[id].tsx` | `stories`, `story_views`, `can_see_story` |
-| Chats | `(chat)/messages/*`, `components/chat/*`, `lib/unread.ts`, `lib/presence.ts` | `conversations`, `conversation_members`, `messages`, `inbox_last_messages`, `unread_counts` |
-| Timetable | `(tabs)/schedule.tsx`, `lib/schedule.ts`, `components/study/ScheduleScan.tsx` | `enrollments`, `sections`, `section_meetings`, `add_course`, Edge `schedule-import` (Gemini) |
+| Chats | `(chat)/messages/*`, `components/chat/*` (`PinnedBar.tsx`), `lib/unread.ts`, `lib/presence.ts` | `conversations`, `conversation_members`, `messages` (`is_saved` kept like Snapchat, `pinned_at` up to 3 through `pin_message`), `inbox_last_messages`, `unread_counts` |
+| Timetable and exams | `(tabs)/schedule.tsx` («عدّل» on a lecture → `(study)/courses`), `(study)/exams.tsx`, `event/new.tsx`, `lib/schedule.ts`, `components/study/ScheduleScan.tsx` | `enrollments`, `sections`, `section_meetings`, `personal_meetings` (my own lecture times), `event_overrides` + `my_events` (my own time for an official exam), `add_course`, Edge `schedule-import` (Gemini) |
 | Honor board and frames | `(study)/honor.tsx`, `components/honor/*`, `lib/frames.ts`, `Avatar` in `components/ui`, `admin/grades.tsx` | `honor_board`, `honor_status`, `honor_frames_visible`, `honor_frames`, `private.honor_rows`, `private.official_grades`, `admin_import_grades`, `admin_set_frame` |
 | Titles and blue check | `settings/faculty.tsx`, `admin/titles.tsx`, `components/admin/UserDetail.tsx` | `request_title`, `admin_review_title`, `admin_set_title`, `admin_set_blue_check`, `private.is_vip_title`, guards on `profiles` |
 | Announcements | `(campus)/announcements/*` | `post_announcement`, `can_announce` |
@@ -72,7 +72,7 @@ Admin › أخطاء التطبيق (`app/admin/errors.tsx`). Stale web code aft
 | Offline reading | `readCache`/`writeCache` (`lib/cache.ts`): inbox, each chat, community, profile, schedule, exams, announcements, honor board, campus places; `lib/campus/data.ts` keeps the campus file | — |
 | Opening animation | `components/brand/Intro.tsx` (mounted in `app/_layout.tsx`) | — |
 | Campus map | `(campus)/map.tsx`, `components/map/*`, `lib/campus/*` | `campus_maps`, Storage `campus`, Edge `campus-osm`, `buildings`, `places`, `campus_search` |
-| Admin panel | `app/admin/*`, `components/admin/kit.tsx`, `components/admin/sections.ts` | `admin_*` RPCs, `admin_stats`, `admin_series`, `admin_audit_log` |
+| Admin panel | `app/admin/*`, `components/admin/kit.tsx`, `components/admin/sections.ts`, `components/admin/UserDetail.tsx` (edit any profile, hide/delete posts, shown follower numbers) | `admin_*` RPCs, `admin_update_profile` (checked + logged), `profiles.shown_followers/shown_following`, `admin_stats`, `admin_series`, `admin_audit_log` |
 
 ## 4a. Honor board and frames
 
@@ -332,12 +332,14 @@ or JSON: `[{"student_number":"2620387","term_gpa":3.71,"cumulative_gpa":3.60,"cr
 - `ChatAttach.tsx` — The "+" sheet in the chat composer, like WhatsApp: photos, camera, document, location, contact, poll, stickers.
 - `ChatExtras.tsx` — Mine: coral accent with navy text; theirs: surface 2. Round 20 with a 6px "tail" corner on the sender's side.
 - `OnlineDot.tsx` — Green dot on an avatar's bottom corner while that person has UniMate open.
-- `PostShareBubble.tsx` — A post sent in a chat, like Instagram: who posted it, its first photo or reel, the start of the text; tap to open it.
+- `PinnedBar.tsx` — The chat's pinned messages under the header, newest first, like WhatsApp: one at a time, tap to go to it and show the next one. The small bars on the side say…
+- `PostShareBubble.tsx` — A post sent in a chat, like Instagram: who posted it, its first photo or video cover, the start of the text; tap to open it.
 - `ShareToChat.tsx` — Pick a chat and send it a place from the campus map (a location message with the place's name).
 - `Voice.tsx` — Mic button for the chat composer. Tap to record, tap send to send, trash to drop. Gives back a local file and its length; the chat screen uploads it.
 
 **create/**
 
+- `CoverPicker.tsx` — Choose a video's cover, like Instagram: slide along the video to the moment you want, or take a photo from the gallery instead. Only the part of the video that…
 - `GalleryGrid.tsx` — The phone's photos and videos, newest first, 4 per row like Instagram, loading more as you scroll.
 - `StoryCamera.tsx` — Instagram-style story camera: full screen, tap to shoot, hold to record, slide up while holding to zoom.
 
@@ -347,7 +349,7 @@ or JSON: `[{"student_number":"2620387","term_gpa":3.71,"cumulative_gpa":3.60,"cr
 - `HomeAds.tsx` — Home's sponsored banners: the best package first, one at a time, sliding on by itself or with a swipe.
 - `LikesSheet.tsx` — Bottom sheet listing who liked a post.
 - `PostCard.tsx` — Re-renders only when the post itself changes, so scrolling a long feed stays smooth.
-- `PostVideo.tsx` — A reel inside a post: plays on a loop while on screen, tap for sound (remembered for every reel), double tap likes.
+- `PostVideo.tsx` — A video inside a post: its cover until tapped, then plays on a loop while on screen; tap for sound (remembered for every video), double tap likes.
 - `SuggestedPeople.tsx` — "People you may know" row: classmates from your major, cohort and college.
 
 **home/**
@@ -449,6 +451,7 @@ or JSON: `[{"student_number":"2620387","term_gpa":3.71,"cumulative_gpa":3.60,"cr
 - `auth.tsx` — No internet and the sign-in's short-lived token has run out: Supabase can't renew it, so it reports no session. The sign-in saved on this phone still says who this is,…
 - `cache.ts` — What a screen showed last time, so it opens instantly and refreshes quietly in the background (like Instagram). Kept in memory and on the device; every key includes the…
 - `chatOutbox.ts` — Messages that wait for a connection, like WhatsApp: «بعت» always works. A message is kept on the phone with a 🕓 and goes the moment there's any signal, even for two…
+- `chatPreview.ts` — One line for a message where its bubble isn't shown: the inbox row, the pinned bar.
 - `crashMark.ts` — Native work that can take the whole app down (a video encoder, say) can't be caught from JavaScript. Before such a step a mark is saved; if the app starts again with the…
 - `cropper.ts` — How a photo / video sits in its frame after the crop editor (saved with the post / story).
 - `errors.ts` — Send an error report to the database so problems on real phones can be fixed. Never throws.
@@ -488,7 +491,8 @@ or JSON: `[{"student_number":"2620387","term_gpa":3.71,"cumulative_gpa":3.60,"cr
 - `unread.ts` — Unread chats + message requests. Refreshed when a new message pings my own private topic «inbox:<me>» (the database sends it, 0130: no app watches every message any…
 - `upload.ts` — Pick a photo or short video. `square` opens the system crop (like Instagram's profile photo); photos are resized and saved as JPEG so every phone (including HEIC…
 - `util.ts` — "13:30:00" -> "1:30 م" (or "1:30 PM" in English). Pass ampm=false for the bare time.
-- `videoFocus.ts` — Reels in the feed, like Instagram: one sound setting for all of them (turn sound on once and it stays on, even after the list reloads), and only the post that's on…
+- `videoCover.ts` — A still picked for a video: the frame at `at` seconds, or a photo from the gallery (no `at`).
+- `videoFocus.ts` — Videos in the feed, like Instagram: one sound setting for all of them (turn sound on once and it stays on, even after the list reloads), and only the post that's on…
 - `videoShrink.ts` — Phones record 1080p–4K at 10–20 Mbps: a 14 s clip can be 25 MB, slow to upload and too heavy for many phones and browsers to play. Before upload every video is brought…
 - `webpush.ts` — Where this browser stands with message notifications. 'install' = iPhone Safari: add to the home screen first.
 
@@ -637,3 +641,7 @@ or JSON: `[{"student_number":"2620387","term_gpa":3.71,"cumulative_gpa":3.60,"cr
 - `0129_inbox_queries.sql` — UniMate · 0129 the inbox's two hottest calls read only what they show
 - `0130_inbox_ping.sql` — UniMate · 0130 one private "you have a new message" ping per member, instead of every app watching every message
 - `0131_thumbnails_kept.sql` — UniMate · 0131 the small copies of photos are kept as long as their photo
+- `0132_feed_indexes.sql` — UniMate · 0132 the feed reads only the posts it shows
+- `0133_feed_likers_once.sql` — UniMate · 0133 "liked by …" under each post checks the post once, not once per like
+- `0134_privacy_checks_cached.sql` — UniMate · 0134 the privacy checks keep their query plans
+- `0135_pins_overrides_admin.sql` — UniMate · 0135 pinned messages, my own exam times, automatic major, admin profile editing, video covers

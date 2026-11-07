@@ -27,9 +27,8 @@ type Props = {
   onClose: () => void;
   /** the gallery button when the phone's gallery can't be listed (web, older app builds) */
   onSystemPicker: () => void;
-  /** post / story / reel switcher under the shutter */
+  /** post / story switcher under the shutter */
   footer?: ReactNode;
-  videoOnly?: boolean;
 };
 
 /** Instagram-style story camera: full screen, tap to shoot, hold to record, slide up while holding to zoom. */
@@ -38,13 +37,13 @@ const NO_PERM = (): [{ granted: boolean; canAskAgain: boolean } | null, () => Pr
 const useCameraPermissions = cameraModule()?.useCameraPermissions ?? NO_PERM;
 const useMicrophonePermissions = cameraModule()?.useMicrophonePermissions ?? NO_PERM;
 
-export function StoryCamera({ maxSec, onPicked, onClose, onSystemPicker, footer, videoOnly }: Props) {
+export function StoryCamera({ maxSec, onPicked, onClose, onSystemPicker, footer }: Props) {
   const Cam = cameraModule();
   const { width, height } = useWindowDimensions();
   const ref = useRef<import('expo-camera').CameraView | null>(null);
   const [facing, setFacing] = useState<'back' | 'front'>('back');
   const [flash, setFlash] = useState(false);
-  const [mode, setMode] = useState<'picture' | 'video'>(videoOnly ? 'video' : 'picture');
+  const [mode, setMode] = useState<'picture' | 'video'>('picture');
   const [ready, setReady] = useState(false);
   const [recording, setRecording] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -78,7 +77,6 @@ export function StoryCamera({ maxSec, onPicked, onClose, onSystemPicker, footer,
 
   async function shoot() {
     if (!ref.current || busy || recording || !ready) return;
-    if (videoOnly) { startRecord(); return; }
     setBusy(true);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
     try {
@@ -107,7 +105,7 @@ export function StoryCamera({ maxSec, onPicked, onClose, onSystemPicker, footer,
       setRecording(false);
       cancelAnimation(progress); progress.value = withTiming(0, { duration: 200 });
       press.value = withTiming(0, { duration: 180 });
-      if (!videoOnly) setMode('picture');
+      setMode('picture');
     }
   }
   function stopRecord() { if (recording) ref.current?.stopRecording(); }
@@ -164,7 +162,7 @@ export function StoryCamera({ maxSec, onPicked, onClose, onSystemPicker, footer,
           {footer}
           {top}
         </SafeAreaView>
-        <GallerySheet open={sheet} onClose={() => setSheet(false)} onPick={pickAsset} busyId={pickBusy} videoOnly={videoOnly} />
+        <GallerySheet open={sheet} onClose={() => setSheet(false)} onPick={pickAsset} busyId={pickBusy} />
       </View>
     );
   }
@@ -218,7 +216,7 @@ export function StoryCamera({ maxSec, onPicked, onClose, onSystemPicker, footer,
         </View>
         {footer}
       </SafeAreaView>
-      <GallerySheet open={sheet} onClose={() => setSheet(false)} onPick={pickAsset} busyId={pickBusy} videoOnly={videoOnly} />
+      <GallerySheet open={sheet} onClose={() => setSheet(false)} onPick={pickAsset} busyId={pickBusy} />
     </GestureHandlerRootView>
   );
 }
@@ -227,7 +225,7 @@ export function StoryCamera({ maxSec, onPicked, onClose, onSystemPicker, footer,
  * The photos sheet that slides up from the camera's gallery button (Instagram): drag the handle up for the full
  * screen, down to close. Three per row, newest first; a tap opens the photo or video full screen to frame it.
  */
-function GallerySheet({ open, onClose, onPick, busyId, videoOnly }: { open: boolean; onClose: () => void; onPick: (a: GalleryAsset) => void; busyId: string | null; videoOnly?: boolean }) {
+function GallerySheet({ open, onClose, onPick, busyId }: { open: boolean; onClose: () => void; onPick: (a: GalleryAsset) => void; busyId: string | null }) {
   const { height } = useWindowDimensions();
   const low = height * 0.62, high = height * 0.94;
   const h = useSharedValue(low);
@@ -252,7 +250,7 @@ function GallerySheet({ open, onClose, onPick, busyId, videoOnly }: { open: bool
               <T v="bold" color="#fff">{t('ضيف للقصة')}</T>
             </View>
           </GestureDetector>
-          {open && <GalleryGrid kind={videoOnly ? 'video' : 'all'} album={null} selected={[]} multi={false} cols={3} activeId={null} busyId={busyId} onPick={onPick} contentBottom={40} />}
+          {open && <GalleryGrid kind="all" album={null} selected={[]} multi={false} cols={3} activeId={null} busyId={busyId} onPick={onPick} contentBottom={40} />}
         </Animated.View>
       </GestureHandlerRootView>
     </Modal>

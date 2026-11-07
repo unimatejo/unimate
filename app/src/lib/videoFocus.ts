@@ -1,14 +1,14 @@
 import { createContext, useContext, useRef, useState, useSyncExternalStore } from 'react';
 
 /**
- * Reels in the feed, like Instagram: one sound setting for all of them (turn sound on once and it stays on,
+ * Videos in the feed, like Instagram: one sound setting for all of them (turn sound on once and it stays on,
  * even after the list reloads), and only the post that's on screen plays.
  */
 let muted = true;
 const listeners = new Set<() => void>();
 const subscribe = (fn: () => void) => { listeners.add(fn); return () => { listeners.delete(fn); }; };
 
-export function useReelSound(): [muted: boolean, setMuted: (m: boolean) => void] {
+export function useVideoSound(): [muted: boolean, setMuted: (m: boolean) => void] {
   const m = useSyncExternalStore(subscribe, () => muted, () => true);
   return [m, (v) => { muted = v; listeners.forEach((fn) => fn()); }];
 }

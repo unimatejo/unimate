@@ -14,13 +14,13 @@ import type { Message } from '@/lib/types';
 type Shared = {
   id: string; title: string | null; body: string;
   author: { id: string; full_name: string; username: string | null; avatar_url: string | null } | null;
-  media: { kind: string; url: string; position: number }[];
+  media: { kind: string; url: string; position: number; meta: { cover?: string } | null }[];
 };
 
 // a chat often shows the same shared post more than once
 const cache = new Map<string, Shared | null>();
 
-/** A post sent in a chat, like Instagram: who posted it, its first photo or reel, the start of the text; tap to open it. */
+/** A post sent in a chat, like Instagram: who posted it, its first photo or video cover, the start of the text; tap to open it. */
 export function PostShareBubble({ m, mine }: { m: Message; mine: boolean }) {
   const id = m.ref_id ?? '';
   const [post, setPost] = useState<Shared | null | undefined>(cache.get(id));
@@ -29,12 +29,14 @@ export function PostShareBubble({ m, mine }: { m: Message; mine: boolean }) {
     if (!id) { setPost(null); return; }
     if (cache.has(id)) { setPost(cache.get(id)); return; }
     supabase.from('posts')
-      .select('id, title, body, author:profiles!posts_author_id_fkey(id, full_name, username, avatar_url), media:post_media(kind, url, position)')
+      .select('id, title, body, author:profiles!posts_author_id_fkey(id, full_name, username, avatar_url), media:post_media(kind, url, position, meta)')
       .eq('id', id).maybeSingle()
       .then(({ data }) => { const p = (data ?? null) as unknown as Shared | null; cache.set(id, p); setPost(p); }, () => setPost(null));
   }, [id]);
   const first = post?.media?.filter((x) => x.kind === 'image' || x.kind === 'video').sort((a, b) => a.position - b.position)[0];
-  useEffect(() => { if (first?.kind === 'image') mediaUrl('posts', first.url, photoWidth(240)).then(setThumb); }, [first?.kind, first?.url]);
+  // a photo, or the cover of a video
+  const still = first?.kind === 'image' ? first.url : first?.meta?.cover ?? null;
+  useEffect(() => { if (still) mediaUrl('posts', still, photoWidth(240)).then(setThumb); }, [still]);
 
   const note = m.body?.trim();
   return (
@@ -57,6 +59,7 @@ export function PostShareBubble({ m, mine }: { m: Message; mine: boolean }) {
             </View>
           ) : first?.kind === 'video' ? (
             <View style={{ width: 240, height: 300, backgroundColor: '#000', alignItems: 'center', justifyContent: 'center' }}>
+              {thumb && <Image source={{ uri: thumb }} style={{ position: 'absolute', width: 240, height: 300 }} contentFit="cover" transition={150} />}
               <View style={{ width: 54, height: 54, borderRadius: 27, backgroundColor: 'rgba(255,255,255,0.18)', alignItems: 'center', justifyContent: 'center' }}>
                 <Play size={26} color="#fff" fill="#fff" />
               </View>

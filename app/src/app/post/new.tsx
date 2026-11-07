@@ -23,7 +23,9 @@ import { reportError } from '@/lib/errors';
 import { supabase } from '@/lib/supabase';
 import { C, CATEGORY, F, isDark, R, SPRING } from '@/lib/theme';
 import { autoCrop, openCropper, playLength } from '@/lib/cropper';
-import { pickMedia, pickPdf, pickPhotos, uploadFile, uploadPicked, type Picked } from '@/lib/upload';
+import { pickMedia, pickPdf, pickPhotos, uploadCover, uploadFile, uploadPicked, type Picked } from '@/lib/upload';
+import { frameAt } from '@/lib/videoCover';
+import { CoverPicker } from '@/components/create/CoverPicker';
 import { GalleryGrid } from '@/components/create/GalleryGrid';
 import { userMessage } from '@/lib/run';
 import { takeStoryDraft } from '@/lib/storyDraft';
@@ -37,9 +39,9 @@ import { latinDigits } from '@/lib/util';
 const POST_AUD = [['university', t('الجامعة')], ['college', t('كليتي')], ['major', t('تخصصي')], ['friends', t('أصدقائي')]] as const;
 const STORY_AUD = [['friends', t('أصدقائي')], ['close_friends', t('المقربين')], ['major', t('تخصصي')], ['university', t('الجامعة')]] as const;
 
-type Mode = 'post' | 'story' | 'reel' | 'live';
-const MODES: [Mode, string][] = [['post', t('منشور')], ['story', t('ستوري')], ['reel', t('ريلز')], ['live', t('مباشر')]];
-const TITLES: Record<Mode, string> = { post: t('منشور جديد'), story: t('ستوري جديدة'), reel: t('ريلز جديد'), live: t('بث مباشر') };
+type Mode = 'post' | 'story' | 'live';
+const MODES: [Mode, string][] = [['post', t('منشور')], ['story', t('ستوري')], ['live', t('مباشر')]];
+const TITLES: Record<Mode, string> = { post: t('منشور جديد'), story: t('ستوري جديدة'), live: t('بث مباشر') };
 
 /** a picked video, framed and trimmed the way it was set in the crop editor */
 function VideoPreview({ m }: { m: Picked }) {
@@ -61,7 +63,7 @@ function ModeSwitch({ mode, onChange }: { mode: Mode; onChange: (m: Mode) => voi
 }
 
 /**
- * Create, like Instagram: pick what to make at the bottom (post / story / reel / live), choose the photos or video,
+ * Create, like Instagram: pick what to make at the bottom (post / story / live), choose the photos or videos,
  * then "التالي" to write the caption and who sees it. Stories open the editor and can be shared straight from it.
  */
 /** The create screen opens as a sheet on iPhone, so it carries its own crop editor (see openCropper). */
@@ -78,7 +80,7 @@ function CreateScreen() {
   const { profile } = useAuth();
   const { width } = useWindowDimensions();
   const params = useLocalSearchParams<{ mode?: string; category?: string; community?: string }>();
-  const [mode, setMode] = useState<Mode>(params.mode === 'story' ? 'story' : params.mode === 'reel' ? 'reel' : 'post');
+  const [mode, setMode] = useState<Mode>(params.mode === 'story' ? 'story' : 'post');
   const [step, setStep] = useState<'pick' | 'compose'>('pick');
   const [items, setItems] = useState<Picked[]>([]);
   const [active, setActive] = useState(0);
@@ -93,10 +95,12 @@ function CreateScreen() {
   const [poll, setPoll] = useState<string[] | null>(null);
   const [overlays, setOverlays] = useState<Overlay[]>([]);
   const [editing, setEditing] = useState(false);
+  /** which picked video's cover is being chosen */
+  const [coverOf, setCoverOf] = useState<number | null>(null);
   // like Instagram: the first photo's shape (1:1, 4:5, …) is used for every photo of the post
   const [postAspect, setPostAspect] = useState<number | null>(null);
   const isStory = mode === 'story';
-  const maxSec = mode === 'reel' ? 60 : 15;
+  const maxSec = isStory ? 15 : 60;
   const cropMode = isStory ? 'story' : 'post';
   const media = items[active] ?? items[0] ?? null;
 
@@ -143,10 +147,9 @@ function CreateScreen() {
   /** the frame shape for a post: square, or the first photo's own shape kept between 4:5 and 1.91:1 like Instagram */
   const first = items[0];
   const naturalAspect = first?.width && first?.height ? Math.min(1.91, Math.max(0.8, first.width / first.height)) : 1;
-  const frameAspect = mode === 'reel' ? 9 / 16 : postAspect ?? (fit === 'square' ? 1 : naturalAspect);
+  const frameAspect = postAspect ?? (fit === 'square' ? 1 : naturalAspect);
 
   const pickAsset = useCallback(async (a: GalleryAsset) => {
-    if (mode === 'reel' && a.mediaType !== 'video') return;
     // a long video is never refused: the editor opens on it and the student keeps the part they want
     const i = sel.indexOf(a.id);
     if (multi && mode === 'post') {
@@ -171,7 +174,7 @@ function CreateScreen() {
         if (!r) return;
         m = { ...r.media, aspect: r.aspect };
       } else if (m.kind === 'video' && (m.duration ?? 0) > 60_500) {
-        const r = await openCropper(m, { mode: 'post', aspect: mode === 'reel' ? 9 / 16 : null, maxSec: 60 });
+        const r = await openCropper(m, { mode: 'post', maxSec: 60 });
         if (!r) return;
         m = r.media;
       }
@@ -185,7 +188,7 @@ function CreateScreen() {
     finally { if (seq === pickSeq.current) setLoadingId(null); }
   }, [mode, sel, multi, items, active, isStory, maxSec]);
 
-  const onFirstAsset = useCallback((a: GalleryAsset | null) => { if (a && !items.length && (mode !== 'reel' || a.mediaType === 'video')) pickAsset(a); }, [items.length, mode, pickAsset]);
+  const onFirstAsset = useCallback((a: GalleryAsset | null) => { if (a && !items.length) pickAsset(a); }, [items.length, pickAsset]);
 
   function toggleMulti() {
     Haptics.selectionAsync().catch(() => {});
@@ -199,7 +202,6 @@ function CreateScreen() {
   /** shots from the in-app camera join the chosen items like gallery picks */
   async function fromInAppCamera(m: Picked) {
     setCamOpen(false);
-    if (mode === 'reel' && m.kind !== 'video') return;
     const id = `cam-${Date.now()}`;
     if (multi && mode === 'post') { setItems((cur) => [...cur, m].slice(0, 10)); setSel((cur) => [...cur, id].slice(0, 10)); setActive(items.length); }
     else { setItems([m]); setSel([id]); setActive(0); setPostAspect(null); }
@@ -215,13 +217,20 @@ function CreateScreen() {
   async function addFromGallery() {
     try {
       if (mode === 'post') {
-        const ps = await pickPhotos(10 - items.length);
+        const picked = await pickPhotos(10 - items.length, true);
+        // videos: a long one opens the editor to keep up to a minute (like a gallery pick on the phone)
+        const ps: Picked[] = [];
+        for (const m of picked) {
+          if (m.kind !== 'video' || (m.duration ?? 0) <= maxSec * 1000 + 500) { ps.push(m); continue; }
+          const r = await openCropper(m, { mode: 'post', maxSec });
+          if (r) ps.push(r.media);
+        }
         if (!ps.length) return;
         let aspect = postAspect;
         let list: Picked[];
         if (aspect == null) {
-          // the first photo opens the crop editor; its shape is used for the rest (each can be adjusted by tapping it)
-          const r = await openCropper(ps[0], { mode: 'post' });
+          // the first one opens the crop editor; its shape is used for the rest (each can be adjusted by tapping it)
+          const r = await openCropper(ps[0], { mode: 'post', maxSec });
           if (!r) return;
           aspect = r.aspect;
           setPostAspect(aspect);
@@ -230,9 +239,8 @@ function CreateScreen() {
         setItems((cur) => [...cur, ...list].slice(0, 10)); setActive(items.length);
       } else {
         // stories: photos go straight to the story editor (it frames them freely, like Instagram); videos are trimmed first
-        const m = isStory ? await storyPick(false) : await pickMedia({ video: true, videoOnly: mode === 'reel', maxSec, crop: cropMode, aspect: mode === 'reel' ? 9 / 16 : null });
+        const m = isStory ? await storyPick(false) : await pickMedia({ video: true, maxSec, crop: cropMode });
         if (!m) return;
-        if (mode === 'reel' && m.kind !== 'video') { Alert.alert(t('الريلز فيديو'), t('اختار فيديو لحد دقيقة.')); return; }
         if (isStory) { openEditor(m, true); return; }
         setItems([m]); setActive(0);
       }
@@ -246,7 +254,7 @@ function CreateScreen() {
   }
   async function fromCamera() {
     try {
-      const m = isStory ? await storyPick(true) : await pickMedia({ camera: true, video: mode !== 'post', videoOnly: mode === 'reel', maxSec, crop: cropMode, aspect: mode === 'reel' ? 9 / 16 : mode === 'post' ? postAspect : null });
+      const m = isStory ? await storyPick(true) : await pickMedia({ camera: true, video: true, maxSec, crop: cropMode, aspect: mode === 'post' ? postAspect : null });
       if (!m) return;
       if (mode === 'post') { if (postAspect == null && m.aspect) setPostAspect(m.aspect); setItems((cur) => [...cur, m].slice(0, 10)); setActive(items.length); return; }
       if (isStory) { openEditor(m, true); return; }
@@ -268,7 +276,7 @@ function CreateScreen() {
     const it = items[i];
     if (!it) return;
     if (isStory) { setEditing(true); return; }
-    const r = await openCropper(it, { mode: 'post', aspect: mode === 'reel' ? 9 / 16 : items.length > 1 ? postAspect : null, maxSec });
+    const r = await openCropper(it, { mode: 'post', aspect: items.length > 1 ? postAspect : null, maxSec });
     if (!r) return;
     let next = items.map((x, j) => (j === i ? r.media : x));
     if (items.length === 1 && mode === 'post') setPostAspect(r.aspect);
@@ -279,22 +287,16 @@ function CreateScreen() {
   const [preparing, setPreparing] = useState(false);
   async function next() {
     if (mode === 'live' || preparing) return;
-    if (mode === 'reel' && !media) { addFromGallery(); return; }
     if (isStory && !media) { addFromGallery(); return; }
     if (isStory && media) { setEditing(true); return; }
     if (gallery && items.length) {
       setPreparing(true);
       try {
-        if (mode === 'reel') {
-          // reels: frame + trim in the editor (9:16, up to a minute) unless already done
-          if (!media?.meta) { const r = await openCropper(media!, { mode: 'post', aspect: 9 / 16, maxSec }); if (!r) return; setItems([r.media]); }
-        } else {
-          // photos picked from the grid are cut to the post's frame (the ones cropped by hand stay as they are)
-          const a = postAspect ?? frameAspect;
-          setPostAspect(a);
-          const out = await Promise.all(items.map((m) => (m.orig || m.meta ? m : autoCrop(m, a))));
-          setItems(out);
-        }
+        // photos picked from the grid are cut to the post's frame (the ones cropped by hand stay as they are)
+        const a = postAspect ?? frameAspect;
+        setPostAspect(a);
+        const out = await Promise.all(items.map((m) => (m.orig || m.meta ? m : autoCrop(m, a))));
+        setItems(out);
       } finally { setPreparing(false); }
     }
     setStep('compose');
@@ -337,16 +339,22 @@ function CreateScreen() {
         const opts = poll?.map((o) => o.trim()).filter(Boolean) ?? null;
         if (poll && (!body.trim() || (opts?.length ?? 0) < 2)) { Alert.alert(t('الاستطلاع'), t('اكتب السؤال فوق وخيارين على الأقل.')); setBusy(false); return; }
         if (mode === 'post' && !body.trim() && !items.length && !pdf) { Alert.alert(t('اكتب إشي أو ضيف صورة أو ملف')); setBusy(false); return; }
-        if (mode === 'reel' && !media) { Alert.alert(t('اختار فيديو للريلز')); setBusy(false); return; }
         // upload files first, so a failed upload never leaves an empty post behind
-        const ups = await Promise.all(items.map((m) => uploadPicked('posts', profile.id, m)));
+        const ups = await Promise.all(items.map(async (m) => {
+          const up = await uploadPicked('posts', profile.id, m);
+          if (m.kind !== 'video') return up;
+          // every video gets a cover: the one chosen, else the first frame of the part that's posted
+          const still = m.cover ?? await frameAt(m.uri, m.meta?.trim?.start ?? 0).catch(() => null);
+          const cover = still ? await uploadCover('posts', up.path, still) : null;
+          return cover ? { ...up, meta: { ...(up.meta ?? {}), cover } } : up;
+        }));
         const paths = ups.map((u) => u.path);
         const pdfPath = pdf && mode === 'post' ? await uploadFile('posts', profile.id, pdf) : null;
         const price_jod = cat === 'market' && price ? Number(latinDigits(price).replace(/,/g, '.')) : null;
         if (price_jod != null && !Number.isFinite(price_jod)) { Alert.alert(t('السعر بالدينار'), t('اكتب السعر أرقام بس.')); setBusy(false); return; }
         const { data: post, error } = await supabase.from('posts').insert({
           author_id: profile.id, university_id: profile.university_id, community_id: params.community ?? null,
-          category: mode === 'reel' ? 'square' : cat, audience: params.community ? 'community' : POST_AUD[aud][0],
+          category: cat, audience: params.community ? 'community' : POST_AUD[aud][0],
           title: mode === 'post' ? title.trim() || null : null, body: body.trim(),
           price_jod: mode === 'post' ? price_jod : null,
           lost_found: mode === 'post' && cat === 'lost_found' ? lf : null,
@@ -392,7 +400,7 @@ function CreateScreen() {
           <ScrollView contentContainerStyle={{ padding: 16, gap: 18, paddingBottom: 60 }} keyboardShouldPersistTaps="handled">
             <Row gap={12} center={false}>
               {media ? (
-                <View style={{ width: 84, height: mode === 'reel' ? 130 : 84, borderRadius: 16, overflow: 'hidden', backgroundColor: C.soft }}>
+                <View style={{ width: 84, height: 84, borderRadius: 16, overflow: 'hidden', backgroundColor: C.soft }}>
                   {media.kind === 'video' ? <VideoPreview m={media} /> : <Image source={{ uri: media.uri }} style={{ flex: 1 }} contentFit="cover" />}
                   {items.length > 1 && <View style={{ position: 'absolute', top: 6, left: 6, minWidth: 22, height: 22, borderRadius: 11, backgroundColor: 'rgba(0,0,0,0.5)', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 5 }}><T v="tiny" color="#fff">{items.length}</T></View>}
                 </View>
@@ -402,10 +410,28 @@ function CreateScreen() {
                   <TextInput keyboardAppearance={isDark ? 'dark' : 'light'} value={title} onChangeText={setTitle} placeholder={t('العنوان')} placeholderTextColor={C.faint} style={{ fontFamily: F.title, fontSize: 18, color: C.ink, textAlign: ta, minHeight: 40 }} />
                 )}
                 <TextInput keyboardAppearance={isDark ? 'dark' : 'light'} value={body} onChangeText={setBody} multiline autoFocus
-                  placeholder={mode === 'reel' ? t('اكتب وصف للريلز…') : t('شو ببالك؟ اسأل، شارك ملخص، أو احكي للدفعة...')} placeholderTextColor={C.faint}
+                  placeholder={t('شو ببالك؟ اسأل، شارك ملخص، أو احكي للدفعة...')} placeholderTextColor={C.faint}
                   style={{ fontFamily: F.body, fontSize: 17, lineHeight: 28, color: C.ink, textAlign: ta, minHeight: 110, textAlignVertical: 'top' }} accessibilityLabel={t('نص المنشور')} />
               </View>
             </Row>
+
+            {items.some((m) => m.kind === 'video') && (
+              <View style={{ gap: 10 }}>
+                <T v="bold">{t('غلاف الفيديو')}</T>
+                <Row gap={10} style={{ flexWrap: 'wrap' }}>
+                  {items.map((m, i) => m.kind === 'video' && (
+                    <Tap key={i} onPress={() => setCoverOf(i)} accessibilityLabel={t('اختار غلاف الفيديو')}
+                      style={{ width: 72, height: 96, borderRadius: 14, overflow: 'hidden', backgroundColor: C.soft, borderWidth: 1, borderColor: C.line }}>
+                      {m.cover ? <Image source={{ uri: m.cover.uri }} style={{ flex: 1 }} contentFit="cover" /> : <VideoPreview m={m} />}
+                      <View style={{ position: 'absolute', left: 0, right: 0, bottom: 0, paddingVertical: 4, backgroundColor: 'rgba(0,0,0,0.55)', alignItems: 'center' }}>
+                        <T v="tiny" color="#fff">{m.cover ? t('غيّر') : t('اختار')}</T>
+                      </View>
+                    </Tap>
+                  ))}
+                </Row>
+                <T v="tiny" color={C.muted}>{t('اختار اللقطة اللي بتبيّن بصفحتك قبل ما الفيديو يشتغل، أو صورة من الاستوديو.')}</T>
+              </View>
+            )}
 
             {mode === 'post' && pdf && (
               <Row gap={10} style={{ backgroundColor: C.card, borderWidth: 1, borderColor: C.line, borderRadius: 18, padding: 12 }}>
@@ -460,6 +486,10 @@ function CreateScreen() {
             )}
           </ScrollView>
         </KeyboardAvoidingView>
+        {coverOf !== null && items[coverOf] && (
+          <CoverPicker video={items[coverOf]} onCancel={() => setCoverOf(null)}
+            onDone={(c) => { setItems((cur) => cur.map((x, j) => (j === coverOf ? { ...x, cover: c } : x))); setCoverOf(null); }} />
+        )}
       </SafeAreaView>
     );
   }
@@ -518,17 +548,17 @@ function CreateScreen() {
     );
   }
 
-  // ---------- post / reel with the phone's gallery right under the preview (Instagram) ----------
-  if (gallery && (mode === 'post' || mode === 'reel')) {
-    const pw = mode === 'reel' ? Math.min(width, 440 * 9 / 16) : width;
-    const ph = mode === 'reel' ? pw * 16 / 9 : Math.min(width / frameAspect, width * 1.25);
+  // ---------- post with the phone's gallery right under the preview (Instagram) ----------
+  if (gallery && mode === 'post') {
+    const pw = width;
+    const ph = Math.min(width / frameAspect, width * 1.25);
     const header = (
       <View>
         <View style={{ width: pw, height: ph, alignSelf: 'center', backgroundColor: C.soft, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' }}>
           {media ? (
             <Animated.View key={media.uri} entering={FadeIn.duration(180)} style={{ position: 'absolute', top: 0, bottom: 0, left: 0, right: 0 }}>
               {media.kind === 'image' && !media.meta
-                ? <Image source={{ uri: media.uri }} style={{ flex: 1 }} contentFit={mode === 'reel' ? 'cover' : 'cover'} transition={120} />
+                ? <Image source={{ uri: media.uri }} style={{ flex: 1 }} contentFit="cover" transition={120} />
                 : <FramedMedia key={media.uri + JSON.stringify(media.meta ?? {})} uri={media.uri} kind={media.kind} meta={media.meta} />}
             </Animated.View>
           ) : <ActivityIndicator color={C.muted} />}
@@ -570,18 +600,18 @@ function CreateScreen() {
         <Row gap={8} style={{ paddingHorizontal: 12, minHeight: 52 }}>
           <Tap onPress={() => router.back()} accessibilityLabel={t('إغلاق')} style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}><X size={24} color={C.ink} /></Tap>
           <T style={{ flex: 1, textAlign: 'center', fontFamily: F.bodyBold, fontSize: 17 }}>{TITLES[mode]}</T>
-          <Tap onPress={next} disabled={preparing || (mode === 'reel' && !media)} accessibilityLabel={t('التالي')}
-            style={{ minHeight: 44, minWidth: 64, paddingHorizontal: 10, alignItems: 'center', justifyContent: 'center', opacity: preparing || (mode === 'reel' && !media) ? 0.4 : 1 }}>
+          <Tap onPress={next} disabled={preparing} accessibilityLabel={t('التالي')}
+            style={{ minHeight: 44, minWidth: 64, paddingHorizontal: 10, alignItems: 'center', justifyContent: 'center', opacity: preparing ? 0.4 : 1 }}>
             {preparing ? <ActivityIndicator color={C.blue} size="small" /> : <T v="bold" color={C.blue} style={{ fontSize: 16 }}>{t('التالي')}</T>}
           </Tap>
         </Row>
-        <GalleryGrid key={`${mode}|${album?.id ?? ''}`} kind={mode === 'reel' ? 'video' : 'all'} album={album?.id ?? null} selected={sel} multi={multi && mode === 'post'}
+        <GalleryGrid key={`${mode}|${album?.id ?? ''}`} kind="all" album={album?.id ?? null} selected={sel} multi={multi && mode === 'post'}
           activeId={sel[active] ?? null} busyId={loadingId} onPick={pickAsset} header={header} onFirst={onFirstAsset} contentBottom={110} />
         {modeBar}
 
         {albumSheet}
         <Modal visible={camOpen} animationType="slide" onRequestClose={() => setCamOpen(false)} statusBarTranslucent>
-          {camOpen && <StoryCamera maxSec={maxSec} videoOnly={mode === 'reel'} onPicked={fromInAppCamera} onClose={() => setCamOpen(false)}
+          {camOpen && <StoryCamera maxSec={maxSec} onPicked={fromInAppCamera} onClose={() => setCamOpen(false)}
             onSystemPicker={() => { setCamOpen(false); addFromGallery(); }} />}
         </Modal>
         {busyOverlay}
@@ -664,7 +694,7 @@ function CreateScreen() {
               <Animated.View entering={FadeInDown.springify().damping(SPRING.damping)} style={{ alignItems: 'center', gap: 10, padding: 24 }}>
                 <View style={{ width: 64, height: 64, borderRadius: 32, backgroundColor: C.soft, alignItems: 'center', justifyContent: 'center' }}><Images size={28} color={C.primary} /></View>
                 <T v="h3" style={{ textAlign: 'center' }}>{t('اختر من جهازك')}</T>
-                <T v="small" color={C.muted} style={{ textAlign: 'center' }}>{mode === 'reel' ? t('اختار فيديو لحد دقيقة') : mode === 'story' ? t('اختار صورة أو فيديو') : t('اختار صور، أو اكبس التالي لمنشور نص')}</T>
+                <T v="small" color={C.muted} style={{ textAlign: 'center' }}>{mode === 'story' ? t('اختار صورة أو فيديو') : t('اختار صور، أو اكبس التالي لمنشور نص')}</T>
               </Animated.View>
             )}
           </Tap>
@@ -710,7 +740,7 @@ function CreateScreen() {
 
       {modeBar}
       <Modal visible={camOpen} animationType="slide" onRequestClose={() => setCamOpen(false)} statusBarTranslucent>
-        {camOpen && <StoryCamera maxSec={maxSec} videoOnly={mode === 'reel'} onPicked={fromInAppCamera} onClose={() => setCamOpen(false)}
+        {camOpen && <StoryCamera maxSec={maxSec} onPicked={fromInAppCamera} onClose={() => setCamOpen(false)}
           onSystemPicker={() => { setCamOpen(false); addFromGallery(); }} />}
       </Modal>
       {editorModal}

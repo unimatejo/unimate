@@ -12,6 +12,7 @@ import { useAuth } from '@/lib/auth';
 import { reportError } from '@/lib/errors';
 import { optimistic } from '@/lib/run';
 import { inviteFriends } from '@/lib/invite';
+import { messagePreview } from '@/lib/chatPreview';
 import { supabase } from '@/lib/supabase';
 import { C, F, R, isDark } from '@/lib/theme';
 import { timeAgo } from '@/lib/util';
@@ -28,14 +29,6 @@ type Item = {
 
 const TABS = [t('الكل'), t('المواد'), t('المجموعات'), t('الطلبات')] as const;
 type Note = { user_id: string; body: string };
-
-function preview(m?: { kind: string; body: string | null } | null) {
-  if (!m) return null;
-  return m.kind === 'image' ? t('📷 صورة') : m.kind === 'view_once' ? t('📸 صورة بتنشاف مرة') : m.kind === 'voice' ? t('🎤 رسالة صوتية')
-    : m.kind === 'post_share' ? t('شارك منشور') : m.kind === 'story_reply' ? t('رد على قصتك: {0}', [m.body ?? ''])
-    : m.kind === 'sticker' ? t('ستيكر') : m.kind === 'file' ? t('📄 ملف') : m.kind === 'location' ? t('📍 موقع') : m.kind === 'contact' ? t('👤 حساب: {0}', [m.body ?? ''])
-    : m.kind === 'poll' ? t('📊 استطلاع رأي') : m.body;
-}
 
 /** Inbox like Instagram: chats with people you know, message requests, and groups (auto groups for your college, major and cohort). */
 export default function Messages() { return <Inbox />; }
@@ -91,7 +84,7 @@ export function Inbox({ inTab }: { inTab?: boolean }) {
       const other = c.kind === 'direct' ? ((members ?? []) as any[]).find((m) => m.conversation_id === c.id)?.profile ?? null : null;
       return {
         id: c.id, kind: c.kind, course: c.community?.kind === 'course_section', state: r.state, created_by: c.created_by, title: other?.full_name ?? c.title ?? t('محادثة'), other, context: c.context_label,
-        last: preview(lastBy.get(c.id)) ?? c.context_label, last_at: c.last_message_at,
+        last: messagePreview(lastBy.get(c.id)) ?? c.context_label, last_at: c.last_message_at,
         // my own last message is never "unread"
         // unread = real messages from others after I last opened the chat (an empty group isn't "unread")
         unread: (countBy.get(c.id) ?? 0) > 0, streak: c.streak_days, count: countBy.get(c.id) ?? 0,

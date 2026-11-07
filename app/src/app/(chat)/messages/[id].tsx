@@ -9,6 +9,7 @@ import Animated, { FadeIn, FadeInUp, useAnimatedStyle, useSharedValue, withDelay
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { OnlineDot } from '@/components/chat/OnlineDot';
+import { PinnedBar } from '@/components/chat/PinnedBar';
 import { PostShareBubble } from '@/components/chat/PostShareBubble';
 import { pingInboxTyping, useActivityLine } from '@/lib/presence';
 import { TitleBadge } from '@/components/profile/TitleBadge';
@@ -151,6 +152,9 @@ export default function Chat() {
   const [openedAt] = useState(() => new Date().toISOString());
   const [typing, setTyping] = useState<string | null>(null);
   const typingCh = useRef<ReturnType<typeof supabase.channel> | null>(null);
+  // pinned messages (up to 3, newest first) and whether I may pin here: anyone in a direct chat, owners and admins in a group
+  const [pins, setPins] = useState<Message[]>([]);
+  const [role, setRole] = useState<string | null>(null);
   const lastTyped = useRef(0);
 
   const shield = !!conv?.block_screenshots;
@@ -282,6 +286,7 @@ export default function Chat() {
     const mineMsg = m.sender_id === profile?.id;
     return [
       ...(m.kind === 'sticker' && m.media_url && profile ? [{ label: t('احفظ بستيكراتي'), onPress: async () => { if (await saveSticker(profile.id, m.media_url!)) Alert.alert(t('انحفظ الستيكر ✓'), t('بتلاقيه بستيكراتك بأي محادثة.')); } }] : []),
+      ...(canPin && m.kind !== 'system' && !waiting.some((j) => j.id === m.id) ? [{ label: m.pinned_at ? t('إلغاء التثبيت') : t('ثبّت بالمحادثة'), onPress: () => togglePin(m) }] : []),
       { label: m.is_saved ? t('إلغاء الحفظ') : t('احفظ بالمحادثة'), onPress: () => toggleSave(m) },
       mineMsg
         ? { label: t('إلغاء الإرسال'), danger: true, onPress: async () => { setMsgs((cur) => cur.filter((x) => x.id !== m.id)); await supabase.rpc('unsend_message', { msg: m.id }); } }
@@ -329,6 +334,10 @@ export default function Chat() {
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'messages', filter: `conversation_id=eq.${id}` }, (p) => {
         const m = p.new as Message;
         setMsgs((cur) => cur.map((x) => (x.id === m.id ? { ...x, ...m } : x)));
+        if ('pinned_at' in m) setPins((cur) => {
+          const rest = cur.filter((x) => x.id !== m.id);
+          return m.pinned_at && !m.deleted_at ? [m, ...rest].sort((a, b) => (b.pinned_at ?? '').localeCompare(a.pinned_at ?? '')).slice(0, 3) : rest;
+        });
       })
       .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'messages', filter: `conversation_id=eq.${id}` }, (p) => {
         const old = p.old as { id?: string };
@@ -457,6 +466,36 @@ export default function Chat() {
     if (data) { setViewer(await mediaUrl('chat', data as string)); setMsgs((cur) => cur.map((x) => x.id === m.id ? { ...x, viewed_once_at: new Date().toISOString() } : x)); }
   }
 
+  const loadPins = useCallback(async () => {
+    const { data } = await supabase.from('messages').select('*').eq('conversation_id', id).not('pinned_at', 'is', null).is('deleted_at', null)
+      .order('pinned_at', { ascending: false }).limit(3);
+    if (data) setPins(data as Message[]);
+  }, [id]);
+  useEffect(() => { loadPins(); }, [loadPins]);
+  const groupish = !!conv && conv.kind !== 'direct';
+  useEffect(() => {
+    if (groupish) supabase.rpc('conv_role', { conv: id }).then(({ data }) => setRole((data as string) ?? 'member'), () => {});
+  }, [groupish, id]);
+  const canPin = conv?.kind === 'direct' || role === 'owner' || role === 'admin';
+
+  async function togglePin(m: Message) {
+    const on = !m.pinned_at;
+    const { error } = await supabase.rpc('pin_message', { p_message: m.id, p_pin: on });
+    if (error) {
+      Alert.alert(t('ما زبط'), /pin_limit/.test(error.message) ? t('بتقدر تثبّت 3 رسائل بالكثير. شيل وحدة منهم أول.') : t('جرّب كمان مرة.'));
+      return;
+    }
+    Haptics.selectionAsync().catch(() => {});
+    loadPins();
+  }
+
+  /** the pinned bar: jump to that message if it's on screen, else say it's further up */
+  function openPin(m: Message) {
+    const i = visible.findIndex((x) => x.id === m.id);
+    if (i >= 0) list.current?.scrollToIndex({ index: i, viewPosition: 0.5, animated: true });
+    else toast(t('الرسالة أقدم من اللي ظاهر، اسحب لفوق لتوصلها'));
+  }
+
   async function toggleSave(m: Message) {
     await supabase.from('messages').update({ is_saved: !m.is_saved }).eq('id', m.id);
     setMsgs((cur) => cur.map((x) => x.id === m.id ? { ...x, is_saved: !m.is_saved } : x));
@@ -491,6 +530,7 @@ export default function Chat() {
       .reverse();
     return [...wait, ...shown];
   }, [msgs, now, waiting]);
+  const firstNames = useMemo(() => Object.fromEntries(Object.entries(people).map(([k, v]) => [k, v.full_name.split(' ')[0]])), [people]);
   const lastMineIdx = useMemo(() => visible.findIndex((x) => x.sender_id === profile?.id), [visible, profile?.id]);
   const title = conv?.kind === 'direct' ? other?.full_name ?? (conv ? t('محادثة') : '') : conv?.title ?? '';
   const activity = useActivityLine(conv?.kind === 'direct' ? other?.id : null);
@@ -523,6 +563,7 @@ export default function Chat() {
           <Tap onPress={openInfo} accessibilityLabel={t('إعدادات المحادثة')} style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}><MoreHorizontal size={22} color={C.ink} /></Tap>
         </Row>
       </SafeAreaView>
+      <PinnedBar pins={pins} names={firstNames} onOpen={openPin} />
 
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
         <FlatList

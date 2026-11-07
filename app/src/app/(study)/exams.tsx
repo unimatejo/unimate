@@ -22,7 +22,7 @@ import { supabase } from '@/lib/supabase';
 import { C, F, shadow } from '@/lib/theme';
 import { LOCALE, t } from '@/lib/i18n';
 
-type Ev = { id: string; section_id: string | null; owner_id: string | null; kind: string; title: string; starts_at: string; location: string | null; course_name: string | null; confirmations: number; shared_ask: boolean; source: string };
+type Ev = { id: string; section_id: string | null; owner_id: string | null; kind: string; title: string; starts_at: string; location: string | null; course_name: string | null; confirmations: number; shared_ask: boolean; source: string; edited?: boolean };
 type Sec = { id: string; name: string; section_no: string };
 type Mine = { section_id: string; place: string | null; until: string };
 type Mate = { user_id: string; full_name: string; username: string | null; avatar_url: string | null; place: string | null; until: string };

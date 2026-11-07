@@ -18,7 +18,7 @@ import { OnScreenProvider, useVisiblePosts } from '@/lib/videoFocus';
 
 /** Settings › saved posts. */
 export default function Saved() {
-  const { visible, onViewableItemsChanged, viewabilityConfig } = useVisiblePosts(); // reels play only while on screen
+  const { visible, onViewableItemsChanged, viewabilityConfig } = useVisiblePosts(); // videos play only while on screen
   const { profile } = useAuth();
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);

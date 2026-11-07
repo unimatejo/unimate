@@ -28,6 +28,7 @@ import { goBack } from '@/lib/nav';
 import { shareLink } from '@/lib/share';
 import { HighlightEditor, type HighlightRef } from '@/components/story/HighlightEditor';
 import { HonorChip } from '@/components/honor/HonorChip';
+import type { MediaMeta } from '@/lib/cropper';
 
 type Rel = 'none' | 'pending' | 'accepted';
 
@@ -66,12 +67,14 @@ function HighlightBubble({ h, owner, onEdit }: { h: HighlightRef; owner: string;
 /** One square in the profile grid. Tap opens the post, double tap likes it (heart pulse + haptic). */
 export function GridTile({ post, i }: { post: Post; i: number }) {
   const { profile } = useAuth();
-  const img = (post.media ?? []).find((m) => m.kind === 'image');
+  const first = (post.media ?? []).find((m) => m.kind === 'image' || m.kind === 'video');
   const video = (post.media ?? []).some((m) => m.kind === 'video');
+  // a photo, else the cover of the first video
+  const still = first?.kind === 'image' ? first.url : (first?.meta as MediaMeta | null)?.cover ?? null;
   const file = (post.media ?? []).some((m) => m.kind === 'file');
   const [uri, setUri] = useState<string | null>(null);
   const [liked, setLiked] = useState(!!post.liked);
-  useEffect(() => { if (img) mediaUrl('posts', img.url, photoWidth(140)).then(setUri); }, [img]);
+  useEffect(() => { if (still) mediaUrl('posts', still, photoWidth(140)).then(setUri); }, [still]);
   const burst = useSharedValue(0);
   const burstStyle = useAnimatedStyle(() => ({ opacity: burst.value, transform: [{ scale: 0.5 + burst.value * 0.7 }] }));
   const [last, setLast] = useState(0);
@@ -92,7 +95,7 @@ export function GridTile({ post, i }: { post: Post; i: number }) {
   return (
     <Tap haptic={false} scale={0.98} throttle={0} onPress={press} style={{ width: '33.333%', aspectRatio: 1, padding: 1 }} accessibilityLabel={post.title ?? post.body.slice(0, 40)}>
       <View style={{ flex: 1, overflow: 'hidden', backgroundColor: C.soft, alignItems: 'center', justifyContent: 'center' }}>
-        {img ? (uri ? <Image source={{ uri }} style={{ position: 'absolute', top: 0, bottom: 0, left: 0, right: 0 }} contentFit="cover" transition={150} /> : null) : (
+        {still ? (uri ? <Image source={{ uri }} style={{ position: 'absolute', top: 0, bottom: 0, left: 0, right: 0 }} contentFit="cover" transition={150} /> : null) : (
           <LinearGradient colors={TILE_G[i % TILE_G.length]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={{ position: 'absolute', top: 0, bottom: 0, left: 0, right: 0, padding: 8, justifyContent: 'center' }}>
             {video ? <Play size={30} color="#fff" fill="#fff" style={{ alignSelf: 'center' }} /> : <T v="tiny" color="#fff" numberOfLines={5} style={{ fontSize: 11, lineHeight: 16 }}>{post.title || post.body}</T>}
           </LinearGradient>
@@ -182,7 +185,10 @@ export function ProfileView({ userId, onTitle, back }: { userId: string; onTitle
   const [pulling, setPulling] = useState(false);
   const pull = useCallback(async () => { setPulling(true); try { await load(); } finally { setPulling(false); } }, [load]);
 
-  const bump = (d: number) => setP((x) => (x ? { ...x, follower_count: Math.max(0, (x.follower_count ?? 0) + d) } : x));
+  const bump = (d: number) => setP((x) => (x ? {
+    ...x, follower_count: Math.max(0, (x.follower_count ?? 0) + d),
+    shown_followers: x.shown_followers == null ? x.shown_followers : Math.max(0, x.shown_followers + d),
+  } : x));
 
   async function doFollow() {
     if (!me || busy) return;
@@ -278,8 +284,8 @@ export function ProfileView({ userId, onTitle, back }: { userId: string; onTitle
   const canSee = mine || !p.is_private || rel === 'accepted';
   const friends = rel === 'accepted' && followsMe;
   const socialsVisible = mine || (p.socials_visible_to === 'everyone') || (p.socials_visible_to === 'friends' && friends) || (p.socials_visible_to === 'close_friends' && isClose);
-  const reels = posts.filter((x) => (x.media ?? []).some((m) => m.kind === 'video'));
-  const shown = tab === 0 ? posts : tab === 1 ? reels : (tagged ?? []);
+  const videos = posts.filter((x) => (x.media ?? []).some((m) => m.kind === 'video'));
+  const shown = tab === 0 ? posts : tab === 1 ? videos : (tagged ?? []);
    
   const uni = nm((p as any).university);
   const staffAcct = p.title_verified && (p.account_type === 'faculty' || p.account_type === 'staff');
@@ -340,7 +346,7 @@ export function ProfileView({ userId, onTitle, back }: { userId: string; onTitle
               )}
             </View>
             <View style={{ flex: 1, flexDirection: 'row' }}>
-              {([[p.post_count, t('منشور'), true, null], [p.follower_count, t('متابِع'), mine || !p.hide_followers, 'followers'], [p.following_count, t('متابَع'), mine || !p.hide_following, 'following']] as [number, string, boolean, string | null][]).map(([n, l, open, type]) => (
+              {([[p.post_count, t('منشور'), true, null], [p.shown_followers ?? p.follower_count, t('متابِع'), mine || !p.hide_followers, 'followers'], [p.shown_following ?? p.following_count, t('متابَع'), mine || !p.hide_following, 'following']] as [number, string, boolean, string | null][]).map(([n, l, open, type]) => (
                 // like Instagram: the number always shows; the list opens only if it isn't hidden and you can see the account
                 <Tap key={l} haptic={false} scale={0.98} disabled={!type}
                   onPress={() => {
@@ -434,7 +440,7 @@ export function ProfileView({ userId, onTitle, back }: { userId: string; onTitle
         {canSee ? (
           <View style={{ marginTop: 10 }}>
             <View accessibilityRole="tablist" style={{ flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: C.line }}>
-              {([[Grid3x3, t('المنشورات')], [Clapperboard, t('الريلز')], [UserSquare2, t('الإشارات')]] as [typeof Grid3x3, string][]).map(([I, label], i) => (
+              {([[Grid3x3, t('المنشورات')], [Clapperboard, t('الفيديوهات')], [UserSquare2, t('الإشارات')]] as [typeof Grid3x3, string][]).map(([I, label], i) => (
                 <Tap key={i} haptic={false} onPress={() => setTab(i)} accessibilityRole="tab" accessibilityLabel={label} accessibilityState={{ selected: tab === i }}
                   style={{ flex: 1, alignItems: 'center', justifyContent: 'center', minHeight: 46, borderBottomWidth: 2, borderBottomColor: tab === i ? C.ink : 'transparent', marginBottom: -1 }}>
                   <I size={22} color={tab === i ? C.ink : C.muted} />
@@ -445,9 +451,9 @@ export function ProfileView({ userId, onTitle, back }: { userId: string; onTitle
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', paddingTop: 1 }}>{[0, 1, 2].map((k) => <View key={k} style={{ width: '33.333%', aspectRatio: 1, padding: 1 }}><Bone h={200} r={0} style={{ flex: 1 }} /></View>)}</View>
             ) : shown.length === 0 ? (
               <Empty icon={tab === 1 ? <Clapperboard size={28} color={C.primary} /> : tab === 2 ? <UserSquare2 size={28} color={C.primary} /> : <Grid3x3 size={28} color={C.primary} />}
-                title={tab === 1 ? t('ما في ريلز لهلأ') : tab === 2 ? t('ما في إشارات لهلأ') : t('ما في منشورات لهلأ')}
+                title={tab === 1 ? t('ما في فيديوهات لهلأ') : tab === 2 ? t('ما في إشارات لهلأ') : t('ما في منشورات لهلأ')}
                 body={tab === 2 ? t('المنشورات اللي بتذكر @{0} بتطلع هون.', [p.username ?? '']) : undefined}
-                action={mine && tab !== 2 ? <Button kind="soft" title={tab === 1 ? t('نزّل ريلز') : t('شارك أول منشور')} onPress={() => router.push({ pathname: '/post/new', params: tab === 1 ? { mode: 'reel' } : {} })} style={{ marginTop: 8, paddingHorizontal: 22 }} /> : undefined} />
+                action={mine && tab !== 2 ? <Button kind="soft" title={tab === 1 ? t('نزّل فيديو') : t('شارك أول منشور')} onPress={() => router.push('/post/new')} style={{ marginTop: 8, paddingHorizontal: 22 }} /> : undefined} />
             ) : (
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', paddingTop: 1 }}>
                 {shown.map((x, i) => <GridTile key={x.id} post={x} i={i} />)}

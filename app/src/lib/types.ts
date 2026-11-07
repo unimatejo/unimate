@@ -18,6 +18,8 @@ export type Profile = {
   is_verified?: boolean; ms_verified?: boolean; entry_year?: number | null; onboarded?: boolean;
   show_activity?: boolean; account_type?: 'student' | 'faculty' | 'staff'; academic_title?: string | null; title_verified?: boolean; department?: string | null; position_title?: string | null;
   follower_count: number; following_count: number; post_count: number;
+  /** set by an admin: the number shown on the profile instead of the real one (the lists stay real) */
+  shown_followers?: number | null; shown_following?: number | null;
   university?: University | null;
   college?: { id: string; name_ar: string } | null;
   major?: { id: string; name_ar: string } | null;
@@ -48,4 +50,6 @@ export type Message = {
   id: string; conversation_id: string; sender_id: string | null; kind: string; body: string | null;
   media_url: string | null; ref_id?: string | null; is_saved: boolean; viewed_once_at: string | null; vanishes_at: string | null;
   deleted_at: string | null; created_at: string;
+  /** set while the message is pinned to the top of the chat (0135) */
+  pinned_at?: string | null;
 };

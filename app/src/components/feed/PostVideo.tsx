@@ -1,19 +1,20 @@
-import { FramedMedia } from '@/components/media/FramedMedia';
-import { Play, Volume2, VolumeX , Heart } from 'lucide-react-native';
+import { Image } from 'expo-image';
 import { useIsFocused } from 'expo-router';
+import { Heart, Play, Volume2, VolumeX } from 'lucide-react-native';
 import { useEffect, useRef, useState } from 'react';
 import { View } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withSequence, withTiming } from 'react-native-reanimated';
 
+import { FramedMedia } from '@/components/media/FramedMedia';
 import { Tap } from '@/components/ui';
 import type { MediaMeta } from '@/lib/cropper';
-import { mediaUrl, supabase } from '@/lib/supabase';
-import { useOnScreen, useReelSound } from '@/lib/videoFocus';
+import { mediaUrl, photoWidth, supabase } from '@/lib/supabase';
+import { useOnScreen, useVideoSound } from '@/lib/videoFocus';
 import { C } from '@/lib/theme';
 import { t } from '@/lib/i18n';
 
-function Player({ uri, meta, postId, onDoubleTap }: { uri: string; meta?: MediaMeta | null; postId?: string; onDoubleTap?: () => void }) {
-  const [muted, setMuted] = useReelSound();
+function Player({ uri, cover, meta, postId, onDoubleTap }: { uri: string; cover: string | null; meta?: MediaMeta | null; postId?: string; onDoubleTap?: () => void }) {
+  const [muted, setMuted] = useVideoSound();
   const onScreen = useOnScreen(postId);
   const focused = useIsFocused();
   // nothing plays by itself when the feed opens: a tap starts it (with sound), and it stops when it scrolls away
@@ -41,7 +42,10 @@ function Player({ uri, meta, postId, onDoubleTap }: { uri: string; meta?: MediaM
     <Tap haptic={false} scale={0.995} throttle={0} onPress={press} accessibilityLabel={!started ? t('شغّل الفيديو') : muted ? t('شغّل الصوت') : t('اكتم الصوت')}
       style={{ marginHorizontal: 10, aspectRatio: 9 / 14, maxHeight: 520, borderRadius: 22, overflow: 'hidden', backgroundColor: '#000', alignItems: 'center', justifyContent: 'center' }}>
       {/* framed and trimmed the way it was set in the crop editor */}
-      <FramedMedia uri={uri} kind="video" meta={meta} video={{ loop: true, muted: muted || !live, paused: !live }} />
+      {/* the cover until it's tapped: no video is loaded for a post that's only scrolled past */}
+      {started || !cover
+        ? <FramedMedia uri={uri} kind="video" meta={meta} video={{ loop: true, muted: muted || !live, paused: !live }} />
+        : <Image source={{ uri: cover }} style={{ position: 'absolute', top: 0, bottom: 0, left: 0, right: 0 }} contentFit="cover" transition={150} />}
       {!started && (
         <View pointerEvents="none" style={{ position: 'absolute', width: 68, height: 68, borderRadius: 34, backgroundColor: 'rgba(0,0,0,0.45)', alignItems: 'center', justifyContent: 'center' }}>
           <Play size={30} color="#fff" fill="#fff" />
@@ -55,10 +59,10 @@ function Player({ uri, meta, postId, onDoubleTap }: { uri: string; meta?: MediaM
   );
 }
 
-// framing / trim of each reel (from the crop editor), looked up once per video
+// framing / trim of each video (from the crop editor), looked up once per video
 const metaCache = new Map<string, MediaMeta | null>();
 
-/** A reel inside a post: plays on a loop while on screen, tap for sound (remembered for every reel), double tap likes. */
+/** A video inside a post: its cover until tapped, then plays on a loop while on screen; tap for sound (remembered for every video), double tap likes. */
 export function PostVideo({ path, meta: given, postId, onDoubleTap }: { path: string; meta?: unknown; postId?: string; onDoubleTap?: () => void }) {
   const [uri, setUri] = useState<string | null>(null);
   // the feed brings the framing along with the post; older callers look it up once
@@ -70,10 +74,13 @@ export function PostVideo({ path, meta: given, postId, onDoubleTap }: { path: st
     supabase.from('post_media').select('meta').eq('url', path).limit(1).maybeSingle()
       .then(({ data }) => { const m = (data?.meta ?? null) as MediaMeta | null; metaCache.set(path, m); setMeta(m); }, () => setMeta(null));
   }, [path, given]);
+  const coverPath = meta?.cover ?? null;
+  const [cover, setCover] = useState<string | null>(null);
+  useEffect(() => { if (coverPath) mediaUrl('posts', coverPath, photoWidth(400)).then(setCover); }, [coverPath]);
   if (!uri || meta === undefined) return (
     <View style={{ marginHorizontal: 10, aspectRatio: 9 / 14, maxHeight: 520, borderRadius: 22, backgroundColor: C.soft, alignItems: 'center', justifyContent: 'center' }}>
       <Play size={36} color={C.muted} />
     </View>
   );
-  return <Player uri={uri} meta={meta} postId={postId} onDoubleTap={onDoubleTap} />;
+  return <Player uri={uri} cover={cover} meta={meta} postId={postId} onDoubleTap={onDoubleTap} />;
 }

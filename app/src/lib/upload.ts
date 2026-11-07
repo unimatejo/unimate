@@ -10,6 +10,7 @@ import { openCropper, type CropMode, type MediaMeta } from './cropper';
 import { reportError } from './errors';
 import { UserError } from './run';
 import { supabase, thumbPath } from './supabase';
+import type { Cover } from './videoCover';
 import { shrinkVideo } from './videoShrink';
 import { t } from './i18n';
 
@@ -21,6 +22,8 @@ export type Picked = {
   aspect?: number;
   /** the photo as picked, so editing again starts from the full picture */
   orig?: { uri: string; width?: number; height?: number };
+  /** videos: the still chosen as the cover (a frame of the video or a gallery photo) */
+  cover?: Cover;
 };
 
 /**
@@ -34,7 +37,7 @@ export function fitLongSide(ctx: { resize: (s: { width?: number; height?: number
   if (W >= H) ctx.resize({ width: max }); else ctx.resize({ height: max });
 }
 
-export async function pickMedia(opts: { video?: boolean; videoOnly?: boolean; maxSec?: number; camera?: boolean; square?: boolean; maxWidth?: number; crop?: CropMode; aspect?: number | null; anyLength?: boolean } = {}): Promise<Picked | null> {
+export async function pickMedia(opts: { video?: boolean; maxSec?: number; camera?: boolean; square?: boolean; maxWidth?: number; crop?: CropMode; aspect?: number | null; anyLength?: boolean } = {}): Promise<Picked | null> {
   const p = await pickRaw(opts);
   if (!p || !opts.crop) return p;
   // like Instagram: every photo / video goes through the crop editor before it's used
@@ -42,7 +45,7 @@ export async function pickMedia(opts: { video?: boolean; videoOnly?: boolean; ma
   return r ? { ...r.media, aspect: r.aspect } : null;
 }
 
-async function pickRaw(opts: { video?: boolean; videoOnly?: boolean; maxSec?: number; camera?: boolean; square?: boolean; maxWidth?: number; crop?: CropMode; anyLength?: boolean }): Promise<Picked | null> {
+async function pickRaw(opts: { video?: boolean; maxSec?: number; camera?: boolean; square?: boolean; maxWidth?: number; crop?: CropMode; anyLength?: boolean }): Promise<Picked | null> {
   const maxSec = opts.maxSec ?? 15;
   // from the gallery a video of any length is fine when it goes to the editor next: the student picks the part to keep there
   const trimLater = (!!opts.crop || !!opts.anyLength) && !opts.camera;
@@ -56,7 +59,7 @@ async function pickRaw(opts: { video?: boolean; videoOnly?: boolean; maxSec?: nu
     return null;
   }
   const options: ImagePicker.ImagePickerOptions = {
-    mediaTypes: opts.videoOnly ? ['videos'] : opts.video ? ['images', 'videos'] : ['images'],
+    mediaTypes: opts.video ? ['images', 'videos'] : ['images'],
     quality: 0.85,
     videoMaxDuration: opts.camera ? maxSec : trimLater ? undefined : pickMax,
     videoQuality: ImagePicker.UIImagePickerControllerQualityType.IFrame960x540,
@@ -96,8 +99,11 @@ export async function pickPdf(): Promise<{ uri: string; mime: string; name: stri
   return { uri: a.uri, mime: 'application/pdf', name: a.name ?? t('ملف.pdf'), size: a.size ?? null };
 }
 
-/** Pick up to `max` photos at once (posts with several photos). Each is saved as JPEG, kept large: the crop step resizes. */
-export async function pickPhotos(max = 10): Promise<Picked[]> {
+/**
+ * Pick up to `max` photos at once (posts with several photos), and videos too when `videos` is set. Photos are saved
+ * as JPEG, kept large: the crop step resizes. Videos come as they are (the editor trims them).
+ */
+export async function pickPhotos(max = 10, videos = false): Promise<Picked[]> {
   const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
   if (!perm.granted) {
     Alert.alert(t('الصور مسكّرة'), t('افتح الإعدادات واسمح ليونيميت يوصل للصور والكاميرا.'), [
@@ -105,10 +111,16 @@ export async function pickPhotos(max = 10): Promise<Picked[]> {
     ]);
     return [];
   }
-  const res = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], allowsMultipleSelection: true, selectionLimit: max, orderedSelection: true, quality: 0.85 });
+  const res = await ImagePicker.launchImageLibraryAsync({ mediaTypes: videos ? ['images', 'videos'] : ['images'], allowsMultipleSelection: true, selectionLimit: max, orderedSelection: true, quality: 0.85 });
   if (res.canceled) return [];
   const out: Picked[] = [];
   for (const a of res.assets.slice(0, max)) {
+    if (a.type === 'video') {
+      // the browser reports seconds, phones milliseconds
+      const ms = a.duration == null ? null : Platform.OS === 'web' ? a.duration * 1000 : a.duration;
+      out.push({ uri: a.uri, mime: a.mimeType ?? 'video/mp4', kind: 'video', duration: ms, size: a.fileSize, width: a.width || undefined, height: a.height || undefined });
+      continue;
+    }
     try {
       const ctx = ImageManipulator.manipulate(a.uri);
       fitLongSide(ctx, a.width, a.height, 2400);
@@ -149,6 +161,22 @@ async function uploadThumb(bucket: string, path: string, f: { uri: string; width
     const { error } = await supabase.storage.from(bucket).upload(thumbPath(path), await readBytes(out.uri), { contentType: 'image/jpeg', upsert: false });
     if (error) throw error;
   } catch (e) { reportError(e); } // the full photo still shows; lists just use it instead
+}
+
+/**
+ * A video's cover: the still shown before it plays and in the profile grid, stored next to the video
+ * (`<name>.jpg`, with its small copy `<name>.t.jpg`). Returns its path, or null if it couldn't go up
+ * (the video is posted anyway and shows its first frame).
+ */
+export async function uploadCover(bucket: string, videoPath: string, cover: { uri: string; width?: number; height?: number }): Promise<string | null> {
+  try {
+    const f = await lightImage({ ...cover, mime: 'image/jpeg' });
+    const path = videoPath.replace(/\.[a-z0-9]+$/i, '.jpg');
+    const { error } = await supabase.storage.from(bucket).upload(path, await readBytes(f.uri), { contentType: 'image/jpeg', upsert: false });
+    if (error) throw error;
+    await uploadThumb(bucket, path, f);
+    return path;
+  } catch (e) { reportError(e); return null; }
 }
 
 async function readBytes(uri: string): Promise<ArrayBuffer> {

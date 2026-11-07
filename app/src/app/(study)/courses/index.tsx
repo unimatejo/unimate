@@ -1,6 +1,6 @@
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { ArrowLeftRight, BookOpen, CalendarClock, CheckCircle2, CircleAlert, Clock, Plus, Sparkles, Trash2, User, Users } from 'lucide-react-native';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, Modal, Pressable, ScrollView, View } from 'react-native';
 import Animated, { FadeIn, SlideInDown } from 'react-native-reanimated';
 
@@ -40,7 +40,7 @@ function comingDays(n: number) { const out: string[] = []; const d = new Date();
 /** My courses: brought in from Microsoft Teams, or added once by anyone in the section. Times added once fill in for all classmates. */
 export default function Courses() {
   const { profile } = useAuth();
-  const { add, teams, scan } = useLocalSearchParams<{ add?: string; teams?: string; scan?: string }>();
+  const { add, teams, scan, meeting } = useLocalSearchParams<{ add?: string; teams?: string; scan?: string; meeting?: string }>();
   const [rows, setRows] = useState<Sec[] | null>(null);
   const [importing, setImporting] = useState(false);
   const [adding, setAdding] = useState(false);
@@ -198,6 +198,17 @@ export default function Courses() {
       { text: t('تمام'), style: 'cancel' },
     ]);
   }
+
+  // the timetable's "عدّل" on a lecture lands here with that lecture's options open
+  const askedFor = useRef<string | null>(null);
+  useEffect(() => {
+    if (!meeting || !rows || askedFor.current === meeting) return;
+    askedFor.current = meeting;
+    for (const sec of rows) {
+      const m = sec.meetings.find((x) => x.id === meeting || x.replaces === meeting);
+      if (m) { meetingMenu(m, sec); return; }
+    }
+  }, [meeting, rows]); // eslint-disable-line react-hooks/exhaustive-deps
 
   /** Tap a time: change it for everyone, only for me, hide it for me, or delete my own. */
   function meetingMenu(m: Mt, s: Sec) {

@@ -18,7 +18,7 @@ import { OnScreenProvider, useVisiblePosts } from '@/lib/videoFocus';
 
 /** One community section (summaries, market, lost & found…): its posts only, with a button to post in it. */
 export default function SectionScreen() {
-  const { visible, onViewableItemsChanged, viewabilityConfig } = useVisiblePosts(); // reels play only while on screen
+  const { visible, onViewableItemsChanged, viewabilityConfig } = useVisiblePosts(); // videos play only while on screen
   const { category } = useLocalSearchParams<{ category: string }>();
   const { profile } = useAuth();
   const meta = CATEGORY[category] ?? CATEGORY.square;

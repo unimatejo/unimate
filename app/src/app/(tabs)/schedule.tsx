@@ -1,7 +1,7 @@
 import { router } from 'expo-router';
 import { PullRefresh } from '@/components/ui/PullRefresh';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Bell, BellOff, BookOpen, Calculator, Car, CalendarPlus, CalendarX, ScanLine, Clock, FlaskConical, Hourglass, MapPin, MessagesSquare, Navigation, UserX, Video, EyeOff, MonitorSmartphone } from 'lucide-react-native';
+import { Bell, BellOff, BookOpen, Calculator, Car, CalendarPlus, CalendarX, ScanLine, Clock, FlaskConical, Hourglass, MapPin, MessagesSquare, Navigation, UserX, Video, EyeOff, MonitorSmartphone, Pencil } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import { useEffect, useMemo, useState } from 'react';
 import { Alert, Linking, ScrollView, View } from 'react-native';
@@ -284,6 +284,10 @@ export default function Schedule() {
                         </Tap>
                       );
                     })()}
+                    <Tap onPress={() => router.push({ pathname: '/courses', params: { meeting: m.id } })} accessibilityLabel={t('عدّل وقت المحاضرة')}
+                      style={{ height: 38, paddingHorizontal: 10, borderRadius: 12, backgroundColor: C.soft, flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+                      <Pencil size={15} color={C.muted} /><T v="tiny" color={C.muted}>{t('عدّل')}</T>
+                    </Tap>
                     {m.source !== 'personal' && m.source !== 'change' && (
                       <Tap onPress={() => notMine(m)} accessibilityLabel={t('مش محاضرتي')}
                         style={{ height: 38, paddingHorizontal: 10, borderRadius: 12, backgroundColor: C.soft, flexDirection: 'row', alignItems: 'center', gap: 5 }}>

@@ -26,13 +26,15 @@ export type MediaMeta = {
   noReplies?: boolean;
   /** stories: the video plays without its sound (turned off in the editor) */
   muted?: boolean;
+  /** post videos: storage path of the cover still (lib/upload uploadCover) */
+  cover?: string;
 };
 
-/** post: feed photos / reels · story: fixed 9:16 · chat: free crop, "send" · avatar: square */
+/** post: feed photos / videos · story: fixed 9:16 · chat: free crop, "send" · avatar: square */
 export type CropMode = 'post' | 'story' | 'chat' | 'avatar';
 export type CropOpts = {
   mode: CropMode;
-  /** lock the frame to this width/height (e.g. the first photo of a post decides the rest, reels are 9:16) */
+  /** lock the frame to this width/height (e.g. the first photo of a post decides the rest) */
   aspect?: number | null;
   /** longest video the result may play (seconds) */
   maxSec?: number;

@@ -1,18 +1,22 @@
-import { useEffect, useState } from 'react';
+import { router } from 'expo-router';
 import { BadgeCheck } from 'lucide-react-native';
+import { useEffect, useState } from 'react';
 import { Alert, View } from 'react-native';
 
 import { Avatar, Field, Row, T } from '@/components/ui';
+import { MajorPicker } from '@/components/profile/MajorPicker';
 import { ChatViewer } from './ChatViewer';
 import { TITLE_ORDER, TitleBadge, titleLabel } from '@/components/profile/TitleBadge';
 import { Act, Actions, Item, Muted, Panel, Pill, Section, Status, audit, confirm, done, fmtDate, fmtNum, promptText, useAdminRole, useLoad } from './kit';
 import { refreshFrames, useFrame, type FrameLevel } from '@/lib/frames';
 import { supabase } from '@/lib/supabase';
 import { C } from '@/lib/theme';
+import { latinDigits } from '@/lib/util';
 import { t } from '@/lib/i18n';
 
 export type UserRow = { id: string; full_name: string; username: string | null; avatar_url: string | null; status: string; university: string | null; major: string | null; email: string | null; student_number: string | null; created_at: string; post_count: number; follower_count: number; is_admin: boolean };
 const FRAME_LEVELS: [FrameLevel, string][] = [['gold', t('ذهبي')], ['silver', t('فضي')], ['bronze', t('برونزي')], ['blue', t('أزرق')]];
+type Edit = { full_name: string; bio: string; university_id: string | null; college_id: string | null; major_id: string | null; entry_year: string; student_number: string; shown_followers: string; shown_following: string };
 type Conv = { id: string; kind: string; title: string | null; context_label: string | null; last_message_at: string; members: { id: string; name: string; state: string }[]; message_count: number };
 
 /** One user in the admin panel: profile, status, blue check, title, chats (owner) and actions. */
@@ -23,10 +27,11 @@ export function UserDetail({ id, onChanged }: { id: string; onChanged?: () => vo
   const owner = useAdminRole() === 'owner';
   const frame = useFrame(id);
   const { data: convs } = useLoad<Conv[]>(() => owner ? supabase.rpc('admin_user_conversations', { target: id }) as never : Promise.resolve({ data: [], error: null }), [id, owner]);
-  const { data: posts } = useLoad<{ id: string; body: string; category: string; created_at: string; is_hidden: boolean }[]>(
+  const { data: posts, reload: reloadPosts } = useLoad<{ id: string; body: string; category: string; created_at: string; is_hidden: boolean }[]>(
     () => supabase.from('posts').select('id, body, category, created_at, is_hidden').eq('author_id', id).order('created_at', { ascending: false }).limit(20), [id]);
   const [open, setOpen] = useState<Conv | null>(null);
-  const [edit, setEdit] = useState<{ full_name: string; bio: string } | null>(null);
+  const [edit, setEdit] = useState<Edit | null>(null);
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => { setOpen(null); setEdit(null); }, [id]);
   const { data: acad, reload: reloadAcad } = useLoad<{ academic_title: string | null; title_verified: boolean; account_type: string; is_verified: boolean; username: string | null; lapsed_blue: boolean; lapsed_title: boolean; position_title: string | null }>(
@@ -111,11 +116,47 @@ export function UserDetail({ id, onChanged }: { id: string; onChanged?: () => vo
     await supabase.rpc('admin_set_status', { target: id, new_status: s, reason });
     done(); reload(); onChanged?.();
   }
+  async function openEdit() {
+    const { data: p } = await supabase.from('profiles').select('full_name, bio, university_id, college_id, major_id, entry_year, shown_followers, shown_following').eq('id', id).single();
+    if (!p) { Alert.alert(t('ما زبط'), t('جرّب كمان مرة.')); return; }
+    setEdit({
+      full_name: p.full_name ?? '', bio: p.bio ?? '', university_id: p.university_id, college_id: p.college_id, major_id: p.major_id,
+      entry_year: p.entry_year ? String(p.entry_year) : '', student_number: u?.student_number ?? '',
+      shown_followers: p.shown_followers != null ? String(p.shown_followers) : '', shown_following: p.shown_following != null ? String(p.shown_following) : '',
+    });
+  }
+  /** one checked, logged change on the server (admin_update_profile, 0135); empty numbers clear what's shown */
   async function saveEdit() {
-    if (!edit) return;
-    await supabase.from('profiles').update({ full_name: edit.full_name, bio: edit.bio }).eq('id', id);
-    await audit('edit_profile', 'user', id, edit);
+    if (!edit || saving) return;
+    const num = (v: string) => (v.trim() === '' ? null : Number(latinDigits(v.trim())));
+    const shownF = num(edit.shown_followers), shownG = num(edit.shown_following), year = num(edit.entry_year);
+    if ([shownF, shownG, year].some((n) => n !== null && (!Number.isInteger(n) || n < 0))) { Alert.alert(t('الأرقام'), t('اكتب أرقام صحيحة بس.')); return; }
+    setSaving(true);
+    const { error } = await supabase.rpc('admin_update_profile', { p_user: id, p_changes: {
+      full_name: edit.full_name.trim(), bio: edit.bio, major_id: edit.major_id, college_id: edit.college_id,
+      entry_year: year, student_number: latinDigits(edit.student_number.trim()), shown_followers: shownF, shown_following: shownG,
+    } });
+    setSaving(false);
+    if (error) {
+      Alert.alert(t('ما انحفظ'), /bad_name/.test(error.message) ? t('الاسم لازم يكون بين 2 و 60 حرف.')
+        : /bad_student_number/.test(error.message) ? t('الرقم الجامعي أرقام وحروف إنجليزية بس.') : t('جرّب كمان مرة.'));
+      return;
+    }
     done(); setEdit(null); reload(); onChanged?.();
+  }
+
+  async function setPostHidden(postId: string, hide: boolean) {
+    const { error } = await supabase.from('posts').update({ is_hidden: hide }).eq('id', postId);
+    if (error) { Alert.alert(t('ما زبط'), t('جرّب كمان مرة.')); return; }
+    await audit(hide ? 'hide_post' : 'unhide_post', 'post', postId, { author: id });
+    done(); reloadPosts();
+  }
+  async function deletePost(postId: string) {
+    if (!(await confirm(t('تحذف المنشور؟'), t('بينحذف عند الكل وما بيرجع.'), t('احذف')))) return;
+    const { error } = await supabase.from('posts').delete().eq('id', postId);
+    if (error) { Alert.alert(t('ما زبط'), t('جرّب كمان مرة.')); return; }
+    await audit('delete_post', 'post', postId, { author: id });
+    done(); reloadPosts(); onChanged?.();
   }
   async function removeAvatar() {
     if (!(await confirm(t('تشيل صورة البروفايل؟'), t('الصورة بتنشال عند الكل.'), t('شيلها')))) return;
@@ -144,12 +185,25 @@ export function UserDetail({ id, onChanged }: { id: string; onChanged?: () => vo
         {u.status !== 'active' && <Act label={t('فعّل الحساب')} kind="green" onPress={() => setStatus('active')} />}
         {u.status !== 'suspended' && <Act label={t('إيقاف مؤقت')} onPress={() => setStatus('suspended')} />}
         {u.status !== 'banned' && <Act label={t('حظر نهائي')} kind="danger" onPress={() => setStatus('banned')} />}
-        <Act label={t('تعديل')} onPress={async () => {
-          const { data: p } = await supabase.from('profiles').select('bio').eq('id', id).single();
-          setEdit({ full_name: u.full_name, bio: p?.bio ?? '' });
-        }} />
+        <Act label={edit ? t('إلغاء التعديل') : t('تعديل')} onPress={() => (edit ? setEdit(null) : openEdit())} />
         {u.avatar_url && <Act label={t('شيل الصورة')} onPress={removeAvatar} />}
       </Actions>
+      {edit && (
+        <Panel>
+          <Field label={t('الاسم')} value={edit.full_name} maxLength={60} onChangeText={(v) => setEdit({ ...edit, full_name: v })} />
+          <Field label={t('النبذة')} value={edit.bio} maxLength={300} onChangeText={(v) => setEdit({ ...edit, bio: v })} multiline />
+          <Field label={t('الرقم الجامعي')} value={edit.student_number} maxLength={20} autoCapitalize="none" autoCorrect={false} onChangeText={(v) => setEdit({ ...edit, student_number: v })} />
+          <Field label={t('سنة الدخول')} value={edit.entry_year} maxLength={4} keyboardType="number-pad" onChangeText={(v) => setEdit({ ...edit, entry_year: v })} />
+          <MajorPicker universityId={edit.university_id ?? undefined} collegeId={edit.college_id} majorId={edit.major_id} onChange={(c, m) => setEdit({ ...edit, college_id: c, major_id: m })} />
+          <Section title={t('الأرقام اللي بتبيّن على البروفايل')} />
+          <Muted>{t('بتبيّن فوق بالبروفايل بس. قائمة المتابعين لما حدا يفتحها بتضل الحقيقية. فاضي = الرقم الحقيقي ({0} متابِع).', [fmtNum(u.follower_count)])}</Muted>
+          <Row gap={10}>
+            <View style={{ flex: 1 }}><Field label={t('المتابِعين')} value={edit.shown_followers} keyboardType="number-pad" maxLength={9} onChangeText={(v) => setEdit({ ...edit, shown_followers: v })} /></View>
+            <View style={{ flex: 1 }}><Field label={t('اللي بيتابعهم')} value={edit.shown_following} keyboardType="number-pad" maxLength={9} onChangeText={(v) => setEdit({ ...edit, shown_following: v })} /></View>
+          </Row>
+          <Actions><Act label={t('احفظ')} kind="primary" loading={saving} onPress={saveEdit} /><Act label={t('إلغاء')} onPress={() => setEdit(null)} /></Actions>
+        </Panel>
+      )}
       <Section title={t('حسابات التواصل')} />
       <Panel>
         <Row gap={8} style={{ flexWrap: 'wrap' }}>
@@ -233,14 +287,6 @@ export function UserDetail({ id, onChanged }: { id: string; onChanged?: () => vo
           </View>
         )}
       </Panel>}
-      {edit && (
-        <Panel>
-          <Field label={t('الاسم')} value={edit.full_name} onChangeText={(v) => setEdit({ ...edit, full_name: v })} />
-          <Field label={t('النبذة')} value={edit.bio} onChangeText={(v) => setEdit({ ...edit, bio: v })} multiline />
-          <Actions><Act label={t('احفظ')} kind="primary" onPress={saveEdit} /><Act label={t('إلغاء')} onPress={() => setEdit(null)} /></Actions>
-        </Panel>
-      )}
-
       {owner && <>
       <Section title={t('المحادثات ({0})', [String(convs?.length ?? 0)])} right={open ? <Act label={t('رجوع')} onPress={() => setOpen(null)} /> : undefined} />
       {open ? (
@@ -262,7 +308,16 @@ export function UserDetail({ id, onChanged }: { id: string; onChanged?: () => vo
 
       <Section title={t('آخر المنشورات')} />
       <View style={{ gap: 8 }}>
-        {(posts ?? []).map((p) => <Item key={p.id} title={p.body.slice(0, 120)} sub={`${p.category} · ${fmtDate(p.created_at)}${p.is_hidden ? ` · ${t('مخفي')}` : ''}`} dim={p.is_hidden} />)}
+        {(posts ?? []).map((p) => (
+          <View key={p.id} style={{ gap: 6 }}>
+            <Item title={p.body.slice(0, 120) || t('(بدون نص)')} sub={`${p.category} · ${fmtDate(p.created_at)}${p.is_hidden ? ` · ${t('مخفي')}` : ''}`} dim={p.is_hidden}
+              onPress={() => router.push({ pathname: '/post/[id]', params: { id: p.id } })} />
+            <Actions>
+              <Act label={p.is_hidden ? t('رجّعه') : t('خبّيه')} onPress={() => setPostHidden(p.id, !p.is_hidden)} />
+              <Act label={t('احذف')} kind="danger" onPress={() => deletePost(p.id)} />
+            </Actions>
+          </View>
+        ))}
         {posts?.length === 0 && <Muted>{t('ما في منشورات.')}</Muted>}
       </View>
     </View>

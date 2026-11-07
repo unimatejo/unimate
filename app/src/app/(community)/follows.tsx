@@ -8,7 +8,7 @@ import { Avatar, Button, Empty, Header, Row, Screen, Segmented, T, Tap } from '@
 import { useAuth } from '@/lib/auth';
 import { supabase } from '@/lib/supabase';
 import { C, F, isDark } from '@/lib/theme';
-import { nm, t, ta } from '@/lib/i18n';
+import { LOCALE, nm, t, ta } from '@/lib/i18n';
 import { ListSkeleton } from '@/components/ui/Skeleton';
 
 type P = { id: string; full_name: string; avatar_url: string | null; username: string | null; academic_title?: string | null; title_verified?: boolean; major: { name_ar: string } | null };
@@ -22,6 +22,12 @@ export default function Follows() {
   const [mineFollow, setMineFollow] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [q, setQ] = useState('');
+  // the numbers on the tabs, the same ones the profile shows
+  const [counts, setCounts] = useState<[number, number] | null>(null);
+  useEffect(() => {
+    supabase.from('profiles').select('follower_count, following_count, shown_followers, shown_following').eq('id', params.user).maybeSingle()
+      .then(({ data }) => { if (data) setCounts([data.shown_followers ?? data.follower_count, data.shown_following ?? data.following_count]); }, () => {});
+  }, [params.user]);
 
   useEffect(() => {
     (async () => {
@@ -55,7 +61,7 @@ export default function Follows() {
     <Screen>
       <Header title={params.name || t('المتابعات')} />
       <View style={{ paddingHorizontal: 18, gap: 10 }}>
-        <Segmented items={[t('المتابِعين'), t('يتابع')]} value={tab} onChange={setTab} />
+        <Segmented items={counts ? [t('{0} متابِع', [counts[0].toLocaleString(LOCALE)]), t('{0} بيتابع', [counts[1].toLocaleString(LOCALE)])] : [t('المتابِعين'), t('يتابع')]} value={tab} onChange={setTab} />
         <Row gap={8} style={{ minHeight: 44, borderRadius: 14, backgroundColor: C.card, paddingHorizontal: 12 }}>
           <Search size={18} color={C.muted} />
           <TextInput keyboardAppearance={isDark ? 'dark' : 'light'} value={q} onChangeText={setQ} placeholder={t('دوّر')} placeholderTextColor={C.faint} style={{ flex: 1, fontFamily: F.body, fontSize: 14, color: C.ink, textAlign: ta }} />

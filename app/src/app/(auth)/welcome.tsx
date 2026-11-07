@@ -46,6 +46,8 @@ export default function Welcome() {
   const [teamsBusy, setTeamsBusy] = useState(false);
   const [ready, setReady] = useState(false);
   const [dept, setDept] = useState('');
+  /** what was filled for them from the university's records (major, entry year), so the screen can say so */
+  const [found, setFound] = useState<{ major?: boolean; year?: boolean }>({});
   // a university staff email (name@uni.edu.jo, not a student number): doctors, deans and staff skip the student questions
   const staff = profile?.account_type === 'faculty' || profile?.account_type === 'staff';
 
@@ -60,6 +62,18 @@ export default function Welcome() {
     });
     setReady(true);
   }, [profile, ready]);
+
+  // major and entry year from the university's student file, Microsoft and the student number, where they're known (0135)
+  const studentId = profile && profile.account_type === 'student' ? profile.id : null;
+  useEffect(() => {
+    if (!studentId) return;
+    supabase.rpc('auto_academic').then(({ data }) => {
+      const d = (data ?? {}) as { entry_year?: number; major_id?: string; college_id?: string };
+      if (d.entry_year) setEntry((e) => e ?? d.entry_year ?? null);
+      if (d.major_id) { setMaj((m) => m ?? d.major_id ?? null); setCol((c) => c ?? d.college_id ?? null); }
+      setFound({ major: !!d.major_id, year: !!d.entry_year });
+    }, () => {});
+  }, [studentId]);
 
   useEffect(() => {
     const t = setInterval(() => setAuto((s) => (s >= 4 ? s : s + 1)), 450);
@@ -217,7 +231,7 @@ export default function Welcome() {
             {step === 2 && !staff && (
               <>
                 <T v="h1">{t('شو بتدرس؟')}</T>
-                <T v="small" color={C.muted}>{t('بنضيفك تلقائياً لجروب كليتك وتخصصك ودفعتك.')}</T>
+                <T v="small" color={C.muted}>{found.major ? t('اخترناه من سجلات جامعتك. إذا مش صح غيّره.') : t('بنضيفك تلقائياً لجروب كليتك وتخصصك ودفعتك.')}</T>
                 <MajorPicker universityId={university?.id} collegeId={col} majorId={maj} onChange={(c, m) => { setCol(c); setMaj(m); }} />
                 <Button kind="soft" title={teams === null ? t('جيب موادي هالفصل من Teams') : teams > 0 ? t('انضافت {0} مواد ✓', [teams]) : t('ما لقينا مواد، بتضيفها بعدين')} loading={teamsBusy}
                   onPress={async () => { setTeamsBusy(true); const r = await importTeamsCourses(); setTeamsBusy(false); if ('count' in r) setTeams(r.count); else if (r.error !== 'cancelled' && r.error !== 'redirecting') { setTeams(0); Alert.alert(t('ما زبط'), t('بتقدر تضيف موادك من صفحة الجدول.')); } }} />
@@ -229,6 +243,7 @@ export default function Welcome() {
                 <T v="h1">{t('عنك')}</T>
                 {!staff && <View style={{ gap: 8 }}>
                   <T v="bold">{t('أي سنة دخلت الجامعة؟')}</T>
+                  {found.year && <T v="small" color={C.muted}>{t('عرفناها من رقمك الجامعي.')}</T>}
                   <Row gap={8} style={{ flexWrap: 'wrap' }}>
                     {years.map((y) => <Chip key={y} label={String(y)} active={entry === y} onPress={() => setEntry(y)} />)}
                   </Row>

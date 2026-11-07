@@ -1,6 +1,7 @@
 // After a Microsoft sign-in: read the person's job title from Microsoft and set their academic title
 // (doctor, professor, dean, president…). The title comes from Microsoft itself, checked to be the same
 // account as the signed-in user and a staff (not student) university email, never from the app.
+// For a student, the department Microsoft has can fill in their major instead.
 import { createClient } from 'npm:@supabase/supabase-js@2.45.4';
 
 const cors = { 'Access-Control-Allow-Origin': 'https://app.unimate.my', 'Access-Control-Allow-Headers': 'authorization, content-type, apikey, x-client-info', 'Access-Control-Allow-Methods': 'POST, OPTIONS' };
@@ -53,7 +54,12 @@ Deno.serve(async (req) => {
   const [local, dom] = email.split('@');
   const { data: unis } = await db.from('universities').select('email_domains');
   const staffDomain = (unis ?? []).some((x: { email_domains: string[] }) => x.email_domains.some((d) => dom === d && !/^(std|sta|st|ses|stu|student|students)\./.test(d)));
-  if (!staffDomain || /^[0-9]+$/.test(local)) return json({ skipped: 'student' });
+  if (!staffDomain || /^[0-9]+$/.test(local)) {
+    // a student: the department Microsoft has can fill their major (only if they haven't chosen one)
+    const { data: filled, error } = await db.rpc('ms_apply_student', { p_user: user.id, p_department: me.department ?? null });
+    if (error) console.error('ms_apply_student', error.message);
+    return json({ student: true, filled: filled ?? null });
+  }
 
   // no job title any more (left the university, role ended): a title that came from Microsoft is removed
   const title = titleFrom(me.jobTitle ?? '');
