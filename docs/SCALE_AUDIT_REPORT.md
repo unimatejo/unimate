@@ -2,18 +2,18 @@
 
 Date: 2026-11-07 · Project: `unimate` (`slkfyblvpewlxrifzrhg`, eu-central-1, Micro) · Code: `github.com/unimatejo/unimate` (`app/` Expo SDK 58)
 
-> **Nothing in this report has been applied to production.** Fixes 0127–0130 are migration files tested inside
-> transactions that were rolled back. The app-side fixes are committed locally but not released. Both wait for approval.
+> **Applied to production on 2026-11-07 (approved):** backup, migration history repair (0001–0126), 0127–0131, and the
+> app update (#16–18). **Waiting for approval:** 0132–0134, found by the load test below (tested on the staging copy only).
 
 ## الخلاصة لمحمد
 
-- **القرار:** نقدر نطلق على جامعة وحدة (الهاشمية) على الخطة الحالية (Micro)، **بس بعد** ما تتطبق الإصلاحات الأربعة الجاهزة وتنزل نسخة التطبيق المعدّلة.
+- **القرار:** نقدر نطلق على جامعة وحدة (الهاشمية) على الخطة الحالية (Micro)، **بس بعد** ما تتطبق 0132–0134 (طلعهم اختبار الضغط، تحت).
 - **أكبر خطرين على المصاري، مش على السرعة:**
   1. تصغير الصور على السيرفر (Image Transformations) بينحسب بالصورة.
   2. استهلاك الفيديو للنت (egress).
   - الحل موجود ومجاني، وهو إنه الجوال يعمل نسخة صغيرة من الصورة قبل ما يرفعها. بس هاد شغل بالتطبيق لسا ما انعمل.
 - **سقف حقيقي:** خطة Pro فيها **500 اتصال Realtime بنفس اللحظة**. يعني لو صاروا أكثر من 500 طالب فاتحين التطبيق بنفس الوقت، بندفع زيادة. السعر مذكور تحت.
-- **ما في اختبار ضغط حقيقي لهلأ:** المرحلة الثالثة (k6 على نسخة تجريبية من السيرفر) لسا ما انعملت. الأرقام تحت **تقدير هندسي، مش قياس**.
+- **اختبار الضغط انعمل** على نسخة تجريبية فيها 20,000 طالب، 200 ألف منشور، مليون لايك، 2 مليون رسالة. طلّع 3 مشاكل كانت رح توقّع الصفحة الرئيسية لما يكبر المحتوى، وانحلّوا على النسخة التجريبية (0132–0134). السقف المقاس تحت.
 
 ## Phase 0 — Ground truth
 
@@ -60,7 +60,7 @@ Severity · evidence · fix · file · before → after.
 |---|---|---|---|---|
 | 16 | P0 | `lib/presence.ts`: one app-wide presence channel `online`. Each open/close goes to every online student: traffic grows with the square of users and eats the 5M realtime-message quota. | Removed. «نشط الآن» is now last-seen within 4 min, looked up in one batched call (≤100 people, ≤1 per 60 s). `touch_seen` every 90 s. | committed, not released |
 | 17 | P0 | `lib/unread.ts:24` (see #6) | Private ping, bursts folded into one refresh, safety poll 45 s → 120 s | committed, not released |
-| 18 | P0 (cost) | `lib/supabase.ts:52`: every feed/chat image is a separately signed **transformed** image (`width`/`quality`). Supabase bills transformations per origin image (100 included, then **$5 per 1,000** per month), and signing costs one storage lookup per image (#2 query by DB time). | Make the small copy on the phone at upload (`-s.jpg`, 480 px) and show it in lists; full size on tap; no server transformations. Batch-sign per page (`createSignedUrls`). | **not done**: next task, needs approval of the approach |
+| 18 | P0 (cost) | `lib/supabase.ts:52`: every feed/chat image is a separately signed **transformed** image (`width`/`quality`). Supabase bills transformations per origin image (100 included, then **$5 per 1,000** per month), and signing costs one storage lookup per image (#2 query by DB time). | The phone uploads a small copy (`.t.jpg`, 480 px) next to each photo; lists show it, full size on tap; no server transformations. Signing batched per page (`createSignedUrls`, ≤100 per call). `0131` keeps small copies as long as their photo. | released (OTA). Turn off Image Transformations in the dashboard about a day after the update. |
 | 19 | P1 | Per-bubble queries: `PostShareBubble` (2), `StoryReplyBubble` (2), `ContactBubble` (1), `PollBubble` (1 + **its own realtime channel**, `ChatAttach.tsx:430`) | Batch by the page's `ref_id`s, one poll channel per chat | not done |
 | 20 | P1 | `StoriesRow.tsx:71`: pulls every view row of 200 stories to know "seen" | Filter `views.viewer_id = me` or an RPC returning `seen` | not done |
 | 21 | P1 | Chat opens as a 4-step waterfall (`[id].tsx:188`) and also polls members every 15 s | `Promise.all`, drop the poll (realtime already covers it) | not done |
@@ -69,37 +69,80 @@ Severity · evidence · fix · file · before → after.
 | 24 | OK | Pagination | Every list pages by `created_at` (keyset). No offset paging. |
 | 25 | OK | Resilience (audit P0 #8) | Done this week: offline outbox for chat (text, photo, voice, location) and stories, last copy shown offline for chats, inbox, feed, profile, schedule, exams, announcements, honor board and campus map, resumable uploads, lighter story video (≤ ~9 MB). |
 
-## Capacity (estimate, not measured)
+## Phase 3 — Load test (measured, 2026-11-07)
 
-Assumptions for the Hashemite peak (between lectures): one app open ≈ 15–25 requests in the first 10 s (feed or home), then ≈ 1 request / 30 s while open. After fixes 1–6 and 16–17, typical requests take 2–15 ms.
+**Setup.** Staging branch `staging-loadtest`: same schema, policies and grants as production (policies hash-compared;
+grants copied from production), same size class (Micro: 60 connections, 2 shared vCPU). Seeded: 30 universities,
+20,000 students (5,000 in one university), 300k follows, **200k posts** (40k in the big university), 1M likes,
+100k comments, 100k chats with **2M messages**, 100k enrollments, 200k notifications, 5k live stories. 1.2 GB.
 
-| Concurrent open | Requests/s at peak | Micro (2 vCPU shared, 1 GB, 60 conns) |
+**The student session.** Home (unread count, feed page as PostgREST builds it with author + media, my likes/saves on
+those posts, "liked by", ads, `touch_seen`) → schedule (enrollments with sections/meetings/rooms, personal meetings,
+`my_events`) → inbox (my chats, friends row, `inbox_last_messages`, `unread_counts`) → open a chat (60 messages) →
+40% send a message (all triggers run: moderation, rate limit, inbox ping, push) → 20% open the map. Every screen runs
+as the signed-in student (`authenticated` + the student's claims), so every RLS rule runs.
+
+**How it was driven.** From inside the database (N sessions at once through `dblink`, no pause between screens).
+Two outside drivers were tried and dropped: k6 from this workspace is blocked by Cloudflare in front of supabase.co
+(one IP, tool user agent), and an edge function adds ~100 ms network per query, which hides the database cost.
+So the numbers below are the **database ceiling**; PostgREST/Auth share the same machine, which is accounted for
+in the capacity line.
+
+### Found and fixed (on staging; production waits for approval)
+
+| # | Sev | Evidence | Fix | Before → after |
+|---|---|---|---|---|
+| 26 | **P0** | The feed (`posts … order by is_pinned desc, created_at desc limit 20`) had no index in that order: Postgres read every post of the university, ran `can_see_post` on each, sorted, kept 20. | Index per feed tab (university, college, community) in that order | `0132_feed_indexes.sql` · 40k posts: **> 20 s (timeout) → 27 ms** |
+| 27 | **P0** | `feed_likers` ("liked by …") ran as the student: the like policy calls `can_see_post` twice per like row. | Check each post once; read the newest likes per post (new index) until 3 visible likers. Same people shown (hash-compared for 6 identities incl. admin, blocked liker, team account, hidden likes, own like on an unseen post). | `0133_feed_likers_once.sql` · 20 posts × 5 likes: **250 ms → 8 ms**; no longer grows with likes |
+| 28 | **P0** | The 18 helper checks behind the row rules (`my_university`, `is_admin`, `is_member`, `is_blocked_between`, `can_see_post`, `can_see_user`…) were plain SQL functions, which Postgres re-plans on every call. `can_see_post` 1.14 ms, `can_see_user` 0.47 ms per call. | Same rules, PL/pgSQL (keeps plans per connection; `#variable_conflict use_column` keeps SQL's name rule). Same answers for 3,305 posts × 2,187 people × 5 identities, and same visible rows in 20 tables per identity. | `0134_privacy_checks_cached.sql` · `can_see_post` **1,140 → 121 µs**, `can_see_user` **472 → 95 µs** |
+| 29 | P0 (dashboard) | Auth answered **429 "Request rate limit reached"** after ~100 sign-ins from one IP in a few minutes. On campus, many students share one Wi-Fi IP. | Raise the per-IP limits in Auth → Rate Limits before launch day (sign-ins/OTP verifications), together with custom SMTP (#12). | dashboard |
+
+### Results (Micro size class, 60 s per step, 0 errors at every step)
+
+| Sessions at once (no pause) | Before 0132–0134 | After: sessions/s | Home p50 / p95 | Schedule p95 | Inbox p95 | Send p95 |
+|---|---|---|---|---|---|---|
+| 1 | Home > 20 s at 40k posts (0132 alone: Home 300 ms, ~13 sessions/s) | 27 | 19 / 25 ms | 5 ms | 31 ms | 5 ms |
+| 2 | ~18 sessions/s (saturated) | **46** (saturated) | 28 / 30 ms | 7 ms | 6 ms | 5 ms |
+| 8 | | 45 | 123 / 133 ms | 29 ms | 25 ms | 18 ms |
+| 32 | | 46 | 501 / 564 ms | 138 ms | 110 ms | 123 ms |
+
+The database saturates at **~45 full student sessions per second** (2 vCPU). Past that nothing fails: screens slow
+down evenly (queueing), no errors, no timeouts.
+
+### Capacity
+
+A real student at peak opens these 4–5 screens over ~30 s (reading between them). 45 sessions/s × 30 s ≈ **1,350
+students actively using the app at the same moment at 100% DB CPU**. Leaving room for PostgREST/Auth on the same
+machine and keeping CPU under ~60%: **~600 at once comfortably, ~1,000 at the edge** on Micro. "Open but idle" apps
+cost almost nothing (one `touch_seen` per 90 s).
+
+| Active at once | Micro (now) | What to do |
 |---|---|---|
-| 250 | ~60–120 | comfortable |
-| 500 | ~120–250 | OK, CPU ~40–60% (estimate) |
-| 1,000 | ~250–500 | limit: needs measuring; Small likely |
-| 2,000+ | 500–1,000 | Small/Medium |
+| ≤ 600 | comfortable | nothing |
+| 600–1,000 | busy (CPU 60–90%) | watch; Large if it stays there |
+| > 1,000 | over the ceiling | **Large** ($110/mo, 2 *dedicated* vCPU) or **XL** ($210/mo, 4 vCPU). Small/Medium add memory and connections but the same shared CPU, so they don't raise this ceiling. Billed per hour: can go up for exam weeks only. |
 
-**Hard ceiling regardless of compute:** Pro includes **500 concurrent Realtime connections**. Each open app holds one.
+**Hard ceiling regardless of compute:** Pro includes **500 concurrent Realtime connections** (each open app holds one).
+Over that: $10 per extra 1,000.
 
 ## Costs money (waiting for your decision)
 
 | Item | When | Price (supabase.com/pricing, read 2026-11-07) |
 |---|---|---|
 | Realtime connections over 500 concurrent | >500 open apps | **$10 per extra 1,000** concurrent / month |
-| Compute Small (2 GB) | if the load test shows Micro saturates | $15/month instead of Micro's $10 (the $10 credit covers Micro), so **+$5/month**; billed per hour, can step back after the peak |
-| Compute Medium (4 GB) | peak weeks only | $60/month, so **+$50/month** (per hour) |
+| Compute Large (2 dedicated vCPU, 8 GB) | > ~1,000 students active at once (measured above) | ~$110/month (the $10 credit covers Micro, so about **+$100/month**); per hour, can step back after the peak |
+| Compute XL (4 dedicated vCPU) | > ~2,000 active at once | ~$210/month |
 | Egress over 250 GB | video / photos at scale | $0.09/GB (uncached), $0.03/GB (CDN-cached) |
-| Image transformations over 100 origin images | **now**, unless #18 is done | $5 per 1,000 images / month |
-| Staging branch for the load test | Phase 3, a few hours | $0.01344/hour while it exists (plus its compute) |
+| Image transformations over 100 origin images | until they're turned off (#18 is released) | $5 per 1,000 images / month |
+| Staging branch for the load test | used 2026-11-07; delete after 0132–0134 are approved | $0.01344/hour while it exists (plus its compute) |
 | Realtime messages over 5M/month | busy chats | $2.50 per million |
 | Custom SMTP | free tier first (Resend/Brevo) | $0 → ~$20/month later |
 
 ## Not done yet (honest list)
 
-- Phase 3 load test (k6 on a seeded staging branch) has not been run, so every capacity number above is an estimate.
-- #18 thumbnails (cost), #19–23 client batching, merging permissive policies (#7), Realtime Broadcast for in-chat messages (the open chat still uses filtered postgres_changes, acceptable at launch scale), counter columns for likes/followers, cron batching review, PDPL (Jordan 2023) data inventory, PITR + restore drill, alerts at 70%.
+- Load test from real phones/HTTP at scale (the database was measured from inside; Realtime connections over 500 and the HTTP layer were not driven at volume).
+- #19–23 client batching, merging permissive policies (#7), Realtime Broadcast for in-chat messages (the open chat still uses filtered postgres_changes, acceptable at launch scale), counter columns for likes/followers, cron batching review, PDPL (Jordan 2023) data inventory, PITR + restore drill, alerts at 70%.
 
 ## Go / no-go
 
-**Go for one university on Micro** once: (a) 0127–0130 are applied, (b) the app update with #16–17 is out, (c) custom SMTP is confirmed, (d) leaked-password protection is on, (e) #18 is done or image transformations are capped. Open the next university only after a week of real numbers (DB CPU, realtime connections, egress).
+**Go for one university on Micro** once: (a) 0132–0134 are applied (without them Home slows to seconds as posts grow), (b) custom SMTP is confirmed and Auth rate limits are raised (#12, #29), (c) leaked-password protection is on, (d) image transformations are turned off. Already done: 0127–0131 and the app update (#16–18). Open the next university only after a week of real numbers (DB CPU, realtime connections, egress).
