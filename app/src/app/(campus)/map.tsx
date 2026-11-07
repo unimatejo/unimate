@@ -98,7 +98,7 @@ export default function CampusMap() {
   const [q, setQ] = useState('');
   const [hits, setHits] = useState<Hit[]>([]);
   const [sel, setSel] = useState<Pin | null>(null);
-  const [me, setMe] = useState<{ lat: number; lng: number } | null>(null);
+  const [me, setMe] = useState<{ lat: number; lng: number; acc: number } | null>(null);
   const [sat, setSat] = useState(false);
   const [zoom, setZoom] = useState(16);
   const [look, setLook] = useState<{ lat: number; lng: number } | null>(null); // the map's centre after each move
@@ -176,7 +176,15 @@ export default function CampusMap() {
         return false;
       }
       watch.current?.remove();
-      watch.current = await Location.watchPositionAsync({ accuracy: Location.Accuracy.High, distanceInterval: 4 }, (pos) => setMe({ lat: pos.coords.latitude, lng: pos.coords.longitude }));
+      // a fix much worse than the last good one (indoors, a jump of the signal) is skipped for 15 s, so the blue dot
+      // and the turn-by-turn don't hop between buildings
+      let good = { acc: Infinity, at: 0 };
+      watch.current = await Location.watchPositionAsync({ accuracy: Location.Accuracy.High, distanceInterval: 3 }, (pos) => {
+        const acc = pos.coords.accuracy ?? 30, now = Date.now();
+        if (acc > 60 && acc > good.acc * 2.5 && now - good.at < 15000) return;
+        if (acc <= 60) good = { acc, at: now };
+        setMe({ lat: pos.coords.latitude, lng: pos.coords.longitude, acc });
+      });
       return true;
     } catch { return false; }
   }, []);
@@ -226,7 +234,7 @@ export default function CampusMap() {
   }, [campus, me, gate, center, cam]);
 
   // where I am on the route; off it by more than 35 m → a new route from here (at most every 8 s)
-  const live = useMemo(() => (nav && me && nav.from === 'me' ? progress(nav.route, [me.lng, me.lat]) : null), [nav, me]);
+  const live = useMemo(() => (nav && me && nav.from === 'me' ? progress(nav.route, [me.lng, me.lat], me.acc) : null), [nav, me]);
   const lastReroute = useRef(0);
   useEffect(() => {
     if (!nav || !me) return;

@@ -67,6 +67,8 @@ Admin › أخطاء التطبيق (`app/admin/errors.tsx`). Stale web code aft
 | Announcements | `(campus)/announcements/*` | `post_announcement`, `can_announce` |
 | Content checks | (automatic) | `moderation_words`, `private.mod_*` triggers, `moderation_queue`, Edge `moderate`; Admin › فحص المحتوى |
 | App look (owner) | `admin/look.tsx`, `lib/appContent.ts`, `components/home/quick.ts` | `app_content`, `admin_set_app_content` |
+| Ads (owner) | `admin/ads.tsx`, `lib/ads.ts`, `components/feed/HomeAds.tsx` (Home banners), `AdBanner.tsx` (feed, market) | `advertisers`, `ad_campaigns` (package = `priority` 30/20/10, `cta_url` «اطلب الآن», https only), `live_ads`, `track_ad` (one view a day per student, taps capped), `admin_ad_stats` |
+| Opening animation | `components/brand/Intro.tsx` (mounted in `app/_layout.tsx`) | — |
 | Campus map | `(campus)/map.tsx`, `components/map/*`, `lib/campus/*` | `campus_maps`, Storage `campus`, Edge `campus-osm`, `buildings`, `places`, `campus_search` |
 | Admin panel | `app/admin/*`, `components/admin/kit.tsx`, `components/admin/sections.ts` | `admin_*` RPCs, `admin_stats`, `admin_series`, `admin_audit_log` |
 
@@ -176,8 +178,13 @@ or JSON: `[{"student_number":"2620387","term_gpa":3.71,"cumulative_gpa":3.60,"cr
   Own style (colours: `lib/campus/theme.ts`, one per app theme), extruded buildings with light and soft shadows, trees,
   a 3D route ribbon, the picked building highlighted, markers placed from most to least important so labels never
   overlap. Base tiles: OpenFreeMap; satellite: Esri. A later «عرض واقعي» could add Google Photorealistic 3D Tiles.
-- **Routes.** `lib/campus/route.ts`: snap both ends to the nearest path, A* over the path network, turns → steps
-  («بعد 40 م، لِف يمين»), live progress and a new route when you wander 35 m off. No path nearby → a straight line, labelled.
+- **Routes.** `lib/campus/route.ts`: the path network with its small drawing gaps closed (and short open-ground links up
+  to 25 m where no building is in the way); both ends may join at any of the nearest paths, never through another
+  building's walls, and a building is reached from whichever side is shortest; a straight walk across open ground (≤ 200 m,
+  nothing in the way) is taken only when the paths go well round. A* finds the walk, turns → steps («بعد 40 م، لِف يمين»),
+  live progress, and a new route when you wander off (35 m, or more when the phone itself reports a vague fix).
+  No path nearby → a straight line, labelled. Checked on every campus from every gate to every named building
+  (19.6k routes: straight-line fallbacks 3.8% → 0.04%, big detours 4.1% → 1.8%).
 - **Entry points.** `/map?building=<id>&go=1&room=<code>&floor=<n>` starts walking there: the lecture card on Home and
   Schedule (`roomRoute` in `lib/schedule.ts`) and the lecture reminder (tapping it opens the route).
 - **Search.** What's on the map answers instantly (names, and kind words like «كشك», «باص», «صراف», Arabic spelling
@@ -220,7 +227,7 @@ or JSON: `[{"student_number":"2620387","term_gpa":3.71,"cumulative_gpa":3.60,"cr
 | `/announcements` | `app/(campus)/announcements/index.tsx` | Official announcements from the university leadership, deans and the dean's office. |
 | `/announcements/new` | `app/(campus)/announcements/new.tsx` | Write (or edit with ?id=) an official announcement. Only verified leadership / dean's office can open this. |
 | `/directory` | `app/(campus)/directory.tsx` | Everyone at your university, from the president down to the students. Ranks come from the university email + the official staff list — nobody sets… |
-| `/map` | `app/(campus)/map.tsx` | The campus map, all inside the app. On the web: a real 3D campus (MapLibre: buildings with height, light and shadow, trees, green areas, paths) built… |
+| `/map` | `app/(campus)/map.tsx` | The campus map, all inside the app: a real 3D campus (MapLibre: buildings with height, light and shadow, trees, green areas, paths) built from… |
 | `/rides/[id]` | `app/(campus)/rides/[id].tsx` | One ride: the details, and for the driver the requests to accept or decline. |
 | `/rides` | `app/(campus)/rides/index.tsx` | Rides to and from campus, offered by students of the same university. |
 | `/rides/new` | `app/(campus)/rides/new.tsx` | Offer a ride, or ask for one ("بدي توصيلة"): the areas it passes through, where on campus, when, seats, price, and optionally a phone that only the… |
@@ -246,7 +253,7 @@ or JSON: `[{"student_number":"2620387","term_gpa":3.71,"cumulative_gpa":3.60,"cr
 | `/swap` | `app/(study)/swap.tsx` | Section swaps: offer your section of a course for another one, matched automatically. |
 | `/community` | `app/(tabs)/community.tsx` | A category filter: a small pill with its icon, filled when it's on. |
 | `/inbox` | `app/(tabs)/inbox.tsx` | The messages tab (the inbox inside the tab bar). |
-| `/` | `app/(tabs)/index.tsx` | Home: greeting, today's classes, quick links, the owner's banner and notice. |
+| `/` | `app/(tabs)/index.tsx` | Home: greeting, sponsored banners, the next class, quick links, the owner's banner and notice. |
 | `/profile` | `app/(tabs)/profile.tsx` | My profile tab (the shared ProfileView for the signed-in account). |
 | `/schedule` | `app/(tabs)/schedule.tsx` | The timetable tab: the week's classes, attendance, GPA and exams tools, and reading a timetable photo. |
 | `/_layout` | `app/_layout.tsx` | Shown instead of closing the app when a screen fails to draw. |
@@ -261,6 +268,7 @@ or JSON: `[{"student_number":"2620387","term_gpa":3.71,"cumulative_gpa":3.60,"cr
 | `/admin/grades` | `app/admin/grades.tsx` | Upload the university's official GPAs for the honor board. Students can never set these. |
 | `/admin` | `app/admin/index.tsx` | The admin home: what needs you now, today's numbers, the last two weeks, and every section. |
 | `/admin/look` | `app/admin/look.tsx` | The owner shapes the app: texts, the home banner and quick links, a notice for everyone, and which features are on. |
+| `/admin/maps` | `app/admin/maps.tsx` | Every university's campus map: how complete it is, open it as its students see it, or rebuild it now. |
 | `/admin/moderation` | `app/admin/moderation.tsx` | Content the automatic checks held back (bad words, or a photo flagged by the image check). Approve = it goes live as if nothing happened. Remove = it… |
 | `/admin/notify` | `app/admin/notify.tsx` | Admin › send a notification to everyone, one university or one college (owner only). |
 | `/admin/offers` | `app/admin/offers.tsx` | Offers: in-app to students who keep "offers" on, and by email to those who opted in. |
@@ -274,7 +282,7 @@ or JSON: `[{"student_number":"2620387","term_gpa":3.71,"cumulative_gpa":3.60,"cr
 | `/call/[id]` | `app/call/[id].tsx` | Call screen. Signalling (ringing / answered / ended) runs live through the database. Audio and video need a real-time media service and a development… |
 | `/event/new` | `app/event/new.tsx` | Add an exam, deadline or reminder to my timetable. Ticking "for my section" doesn't push it to everyone: it counts as one classmate saying so, and… |
 | `/post/[id]` | `app/post/[id].tsx` | posts opened before show instantly when you come back (then refresh quietly) |
-| `/post/new` | `app/post/new.tsx` | Create, like Instagram: pick what to make at the bottom (post / story / reel / live), choose the photos or video, then "التالي" to write the caption… |
+| `/post/new` | `app/post/new.tsx` | The create screen opens as a sheet on iPhone, so it carries its own crop editor (see openCropper). |
 | `/report` | `app/report.tsx` | Report a post, message, story or account to the admins. |
 | `/settings/about` | `app/settings/about.tsx` | Who made UniMate, and how to reach us. |
 | `/settings/appearance` | `app/settings/appearance.tsx` | Theme (navy / black / light) and language (Arabic / English / follow phone). Changing either reloads the app once. |
@@ -306,6 +314,10 @@ or JSON: `[{"student_number":"2620387","term_gpa":3.71,"cumulative_gpa":3.60,"cr
 
 - `AnnouncementCard.tsx` — One official announcement: who posted it (with their verified title), to whom, and the text.
 
+**brand/**
+
+- `Intro.tsx` — The opening on every cold start: the U of the logo draws itself, its dot drops in, «UniMate» rises letter by letter and «صديقك الجامعي» fades in under it.…
+
 **chat/**
 
 - `ChatAttach.tsx` — The "+" sheet in the chat composer, like WhatsApp: photos, camera, document, location, contact, poll, stickers.
@@ -322,7 +334,8 @@ or JSON: `[{"student_number":"2620387","term_gpa":3.71,"cumulative_gpa":3.60,"cr
 
 **feed/**
 
-- `AdBanner.tsx` — First-party sponsored card. Always labelled t('ممول'). Opens the advertiser page inside the app.
+- `AdBanner.tsx` — A sponsored card between posts and in the market (Home has its own banners, HomeAds). Always labelled «ممول».
+- `HomeAds.tsx` — Home's sponsored banners: the best package first, one at a time, sliding on by itself or with a swipe.
 - `LikesSheet.tsx` — Bottom sheet listing who liked a post.
 - `PostCard.tsx` — Re-renders only when the post itself changes, so scrolling a long feed stays smooth.
 - `PostVideo.tsx` — A reel inside a post: plays on a loop while on screen, tap for sound (remembered for every reel), double tap likes.
@@ -340,10 +353,17 @@ or JSON: `[{"student_number":"2620387","term_gpa":3.71,"cumulative_gpa":3.60,"cr
 
 **map/**
 
+- `Campus3D.tsx` — The 3D campus on a phone: Expo runs this file in a web view, so the app shows exactly what the site shows. The campus file is fetched here from its address,…
+- `Campus3DView.tsx` — The 3D campus (MapLibre) with its markers: what the web page shows, and what a phone shows inside Campus3D.
+- `Map3D.tsx` — Phones: the 3D campus in a web view (Map3D.web.tsx draws it straight in the page).
+- `Map3D.web.tsx` — The web: the 3D campus right in the page (MapLibre stays a chunk of its own, loaded when the map opens).
+- `NativeCampus.tsx` — The campus on phones until the app's next build brings the MapLibre 3D view: the same file the web map draws, as native shapes on the platform map. Campus…
 - `NavPanel.tsx` — The big direction at the top while walking: what to do next and in how many metres.
 - `SuggestPlace.tsx` — "Suggest a missing place": move the map under the pin, name it, and the team approves it.
+- `UniSwitcher.tsx` — Pick a university to look at its campus map; yours is first and always one tap back.
 - `kinds.ts` — Small things that only show once you zoom in (or pick their filter), so the campus never looks cluttered.
-- `webMaps.tsx` — A React view pinned to a point; MapLibre moves it (GPU transform), React only renders it when its content changes.
+- `markers.tsx` — `onPin` gets the place's id for a pin, or the marker's type ('shared', …) for the others.
+- `webMaps.tsx` — The phone's 3D view has MapLibre in its own bundle (a web view can't load split chunks), so it hands it over here.
 
 **media/**
 
@@ -381,7 +401,7 @@ or JSON: `[{"student_number":"2620387","term_gpa":3.71,"cumulative_gpa":3.60,"cr
 - `HighlightEditor.tsx` — New or edit highlight, like Instagram: pick stories from your archive (photos and videos, last 30 days plus everything already in a highlight), name it, choose…
 - `StickerBody.tsx` — A text overlay in one of Instagram's looks.
 - `StickerTray.tsx` — Instagram's sticker tray: search, sticker chips (each opens its little form), then emoji and UniMate stickers.
-- `StoriesRow.tsx` — "+": on the web the photo picker opens right from the tap (browsers need that), then the story editor; phones open the story camera.
+- `StoriesRow.tsx` — A story going up in the background: a ring that fills around "قصتك", like Instagram (red with ↻ if it stopped).
 - `StoryActivity.tsx` — The pill at the bottom of your own story: the first viewers' faces and how many saw it. Tap or swipe up for the details.
 - `StoryEditor.tsx` — Instagram's story editor: move, pinch and turn the photo or video anywhere on the frame, a gradient or blurred background, text in six looks, stickers (place,…
 - `StoryMenu.tsx` — The story's "⋯" sheet (Instagram's): one row per option; the screen decides which options there are. `onClose` is dismissing it (the story plays on); picking a…
@@ -415,9 +435,11 @@ or JSON: `[{"student_number":"2620387","term_gpa":3.71,"cumulative_gpa":3.60,"cr
 
 ### Shared logic (`app/src/lib`)
 
+- `ads.ts` — First-party ads (restaurants, cafés, print shops near the campus). Every ad is labelled «ممول», nothing tracks a student across apps: the server counts one view a day…
 - `appContent.ts` — What the owner sets from the admin panel ("شكل التطبيق"): texts, the home banner and quick links, a notice for everyone, and which features are on. Anything not set…
 - `auth.tsx` — University domain check before we send a code: only university emails can join.
 - `cache.ts` — What a screen showed last time, so it opens instantly and refreshes quietly in the background (like Instagram). Kept in memory and on the device; every key includes the…
+- `crashMark.ts` — Native work that can take the whole app down (a video encoder, say) can't be caught from JavaScript. Before such a step a mark is saved; if the app starts again with the…
 - `cropper.ts` — How a photo / video sits in its frame after the crop editor (saved with the post / story).
 - `errors.ts` — Send an error report to the database so problems on real phones can be fixed. Never throws.
 - `events.ts` — Exams, deadlines and reminders: the kinds the database knows (event_kind), in plain words.
@@ -447,6 +469,7 @@ or JSON: `[{"student_number":"2620387","term_gpa":3.71,"cumulative_gpa":3.60,"cr
 - `stickerCut.ts` — Can we cut the background out on this device? iPhone on iOS 17+ (built in), or any modern browser (on-device model).
 - `storyDraft.ts` — A photo or video picked for a story before the create screen opened (on the web the picker has to open straight from the tap, like Instagram's "+"). The create screen…
 - `storyOverlay.ts` — Things placed on a story. Positions and sizes are fractions of the frame so they look the same on every screen.
+- `storyQueue.ts` — Stories on phones go up in the background, like Instagram: "شارك" returns at once and the student carries on. Each story is first copied into the app's own folder (so it…
 - `supabase.ts` — Public URL for a file in a public bucket, or a short-lived signed URL for a private one.
 - `team.ts` — Team (admin) sign-in: a personal email, a password and a 6-digit code from an authenticator app. The database gives a team account admin powers only after the code…
 - `theme.ts` — The three looks, for the picker in Settings.
@@ -461,6 +484,8 @@ or JSON: `[{"student_number":"2620387","term_gpa":3.71,"cumulative_gpa":3.60,"cr
 
 ### Edge functions (`supabase/functions`)
 
+- `campus-footprints` — Building footprints from Microsoft's Global ML Building Footprints (from satellite imagery, CDLA Permissive 2.0),
+- `campus-import` — One university at a time: turn its raw OpenStreetMap / Wikimapia rows (`osm_stage`) into `buildings` and `places`.
 - `campus-osm` — Campus map data, from OpenStreetMap, one file per university (Storage: campus/<university>.json).
 - `moderate` — Checks a new photo (post photo, story, profile photo) with Gemini. If it shows nudity, sexual content,
 - `moodle-import` — iCal date → Date. "…Z" is UTC; a TZID or floating time is Jordan time (UTC+3 all year since 2022).
@@ -583,3 +608,17 @@ or JSON: `[{"student_number":"2620387","term_gpa":3.71,"cumulative_gpa":3.60,"cr
 - `0110_honor_major_match.sql` — UniMate · 0110 the university's file names a major in words («هندسة مدنية»): match it to our majors list so it
 - `0111_campus_maps.sql` — UniMate · 0111 campus maps: one OpenStreetMap file per university (Storage campus/<id>.json, built by the
 - `0112_points_gone.sql` — UniMate · 0112 the points system is gone for good (switched off in 0108; nothing calls it, every balance is 0
+- `0113_admin_campus_maps.sql` — Admin: every university's campus map at a glance (what the 3D file holds, our buildings and places), and a
+- `0114_campus_all_universities.sql` — REVIEW BEFORE APPLYING. Every university's campus map for every student.
+- `0115_hide_off_campus_osm_places.sql` — REVIEW BEFORE APPLYING. Hide places imported from OpenStreetMap that sit outside the campus.
+- `0116_osm_stage_no_personal_data.sql` — osm_stage (raw OSM / Wikimapia rows, never shown to anyone) held people's homes, names and phone numbers from
+- `0117_hide_private_homes.sql` — Private homes off the maps. Places already hide as `rejected`; buildings get the same: a state, approved by default.
+- `0118_private_housing_and_names.sql` — The owner's decisions on the personal-names list (26 names, 2026-11-06). Hidden as `rejected`, never deleted.
+- `0119_hide_junk_names.sql` — Not the university's: four Al-Balqa buildings named «aa» (test data), and three schools / a kindergarten next to
+- `0120_hu_official_map.sql` — Hashemite University: matched against the ElCoM campus map (a student committee's map; each college links to its
+- `0121_uj_official_map.sql` — University of Jordan: matched against the official campus map of the university's IT centre (itc.ju.edu.jo, the
+- `0122_uj_hide_off_campus.sql` — REVIEW BEFORE APPLYING. University of Jordan: rows outside the campus outline that still show on its map
+- `0123_uj_review.sql` — University of Jordan, after the owner's review (2026-11-07):
+- `0124_yu_official_map.sql` — Yarmouk University: matched against the university's official campus plan (yu.edu.jo, the disability access and
+- `0125_every_place_named.sql` — Every place on a campus can be told apart: one OSM left nameless («بوابة», «موقف سيارات»…) takes the name of the
+- `0126_home_ads_and_honor.sql` — UniMate · 0126 home ad banners with an «اطلب الآن» link, and the honor board on Home

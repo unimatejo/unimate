@@ -6,7 +6,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Linking, ScrollView, View, Platform } from 'react-native';
 import Animated, { FadeIn, Easing, useAnimatedStyle, useSharedValue, withRepeat, withTiming } from 'react-native-reanimated';
 
-import { AdBanner } from '@/components/feed/AdBanner';
+import { HomeAds } from '@/components/feed/HomeAds';
 import { GlyphTile, Wiggle } from '@/components/ui/Glyph';
 import { Card, IconButton, Row, Screen, T, Tap } from '@/components/ui';
 import { useAuth } from '@/lib/auth';
@@ -39,7 +39,7 @@ function Pulse() {
 }
 
 
-/** Home: greeting, today's classes, quick links, the owner's banner and notice. */
+/** Home: greeting, sponsored banners, the next class, quick links, the owner's banner and notice. */
 export default function Home() {
   const { profile, university } = useAuth();
   const { meetings, next, reload, loading, now } = useSchedule(profile?.id);
@@ -91,6 +91,8 @@ export default function Home() {
             <T v="bold" color="#FFFFFF">{notice.text}</T>
           </View>
         )}
+
+        <HomeAds />
 
         <Animated.View entering={FadeIn.duration(220)}>
           <View style={{ borderRadius: 30, backgroundColor: '#101633', padding: 20, overflow: 'hidden', gap: 14 }}>
@@ -148,8 +150,6 @@ export default function Home() {
             </LinearGradient>
           </Tap>
         )}
-
-        <AdBanner placement="home_banner" />
 
         <Animated.View entering={FadeIn.delay(160).duration(220)}>
           <Card>

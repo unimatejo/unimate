@@ -8,6 +8,7 @@ import { ActivityIndicator, Platform, Pressable, Text, View } from 'react-native
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
+import { Intro } from '@/components/brand/Intro';
 import { ToastHost } from '@/components/shell/Toast';
 import { ZoomHost } from '@/components/media/ZoomPhoto';
 import { WebAlertHost } from '@/components/shell/WebAlert';
@@ -32,6 +33,8 @@ if (Platform.OS !== 'web') setTimeout(resumeStoryQueue, 4000);
 
 /** Shown instead of closing the app when a screen fails to draw. */
 export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
+  // the opening never ran: don't leave the native splash covering this screen
+  useEffect(() => { SplashScreen.hideAsync().catch(() => {}); }, []);
   // a new version went live while this page was open: its old code files are gone, so load the new version
   // (once per version: the mark holds the page's own build, so the next deploy can reload again)
   const stale = typeof window !== 'undefined' && /Loading module|Failed to fetch dynamically imported module|ChunkLoadError|Importing a module script failed/i.test(error.message);
@@ -72,9 +75,6 @@ function Gate() {
   // the one-time notifications screen, right after the first setup (never again once answered)
   const notifDue = useNotifIntroDue(!!profile?.onboarded);
   useEffect(() => { setScreen(seg.join('/')); }, [seg]);
-
-  // the splash stays until we know who is signed in
-  useEffect(() => { if (!loading) SplashScreen.hideAsync().catch(() => {}); }, [loading]);
 
   useEffect(() => {
     if (loading) return;
@@ -141,6 +141,12 @@ function Gate() {
   );
 }
 
+/** The animated opening (components/brand/Intro) stays until we know who is signed in. */
+function Opening() {
+  const { loading } = useAuth();
+  return <Intro ready={!loading} />;
+}
+
 export default function RootLayout() {
   useOtaUpdates();
   // loaded fine: a later stale-code error may reload again
@@ -158,6 +164,7 @@ export default function RootLayout() {
         <AuthProvider>
           <StatusBar style={isDark ? 'light' : 'dark'} />
           <Gate />
+          <Opening />
           <ZoomHost />
           <ToastHost />
           <WebAlertHost />

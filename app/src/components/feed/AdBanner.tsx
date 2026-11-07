@@ -1,35 +1,31 @@
 import { Image } from 'expo-image';
-import { router } from 'expo-router';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { View } from 'react-native';
 
 import { Row, T, Tap, Tag } from '@/components/ui';
-import { supabase } from '@/lib/supabase';
+import { liveAds, openAdvertiser, openOrder, trackAd, type Ad } from '@/lib/ads';
 import { C, shadow } from '@/lib/theme';
 import { t } from '@/lib/i18n';
 
-type Ad = { campaign_id: string; advertiser_id: string; advertiser_name: string; title: string; body: string | null; image_url: string | null; offer: string | null };
-
-/** First-party sponsored card. Always labelled t('ممول'). Opens the advertiser page inside the app. */
-export function AdBanner({ placement }: { placement: 'home_banner' | 'feed_card' | 'market_banner' }) {
+/** A sponsored card between posts and in the market (Home has its own banners, HomeAds). Always labelled «ممول». */
+export function AdBanner({ placement }: { placement: 'feed_card' | 'market_banner' }) {
   const [ad, setAd] = useState<Ad | null>(null);
-  const tracked = useRef(false);
 
   useEffect(() => {
-    supabase.rpc('live_ads', { placement_filter: placement }).then(({ data }) => {
-      const a = (data as Ad[] | null)?.[0] ?? null;
-      setAd(a);
-      if (a && !tracked.current) { tracked.current = true; supabase.rpc('track_ad', { campaign: a.campaign_id, what: 'impression' }).then(() => {}, () => {}); }
+    let live = true;
+    liveAds(placement).then((a) => {
+      const first = a[0] ?? null;
+      if (!live) return;
+      setAd(first);
+      if (first) trackAd(first.campaign_id, 'impression');
     });
+    return () => { live = false; };
   }, [placement]);
 
   if (!ad) return null;
   return (
-    <Tap
-      accessibilityLabel={t('إعلان ممول: {0}', [ad.advertiser_name])}
-      onPress={() => { supabase.rpc('track_ad', { campaign: ad.campaign_id, what: 'click' }).then(() => {}, () => {}); router.push({ pathname: '/advertiser/[id]', params: { id: ad.advertiser_id, campaign: ad.campaign_id } }); }}
-      style={[{ backgroundColor: C.card, borderRadius: 22, overflow: 'hidden' }, shadow]}
-    >
+    <Tap accessibilityLabel={t('إعلان ممول: {0}', [ad.advertiser_name])} onPress={() => openAdvertiser(ad)}
+      style={[{ backgroundColor: C.card, borderRadius: 22, overflow: 'hidden' }, shadow]}>
       {ad.image_url ? <Image source={{ uri: ad.image_url }} style={{ height: 120, width: '100%' }} contentFit="cover" /> : null}
       <Row gap={10} style={{ padding: 14 }}>
         <View style={{ flex: 1, gap: 2 }}>
@@ -37,9 +33,10 @@ export function AdBanner({ placement }: { placement: 'home_banner' | 'feed_card'
           <T v="bold">{ad.title}</T>
           {ad.offer ? <T v="small" color={C.greenInk}>{ad.offer}</T> : ad.body ? <T v="small" color={C.muted}>{ad.body}</T> : null}
         </View>
-        <View style={{ minHeight: 40, paddingHorizontal: 14, borderRadius: 12, backgroundColor: C.primarySoft, justifyContent: 'center' }}>
-          <T v="bold" color={C.primary} style={{ fontSize: 13 }}>{t('شوف')}</T>
-        </View>
+        <Tap onPress={ad.cta_url ? () => openOrder(ad) : () => openAdvertiser(ad)}
+          style={{ minHeight: 40, paddingHorizontal: 14, borderRadius: 12, backgroundColor: C.primarySoft, justifyContent: 'center' }}>
+          <T v="bold" color={C.primary} style={{ fontSize: 13 }}>{ad.cta_url ? ad.cta_label || t('اطلب الآن') : t('شوف')}</T>
+        </Tap>
       </Row>
     </Tap>
   );
