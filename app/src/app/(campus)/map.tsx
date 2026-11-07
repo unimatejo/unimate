@@ -18,7 +18,7 @@ import { UniSwitcher } from '@/components/map/UniSwitcher';
 import { Button, Chip, Row, T, Tap } from '@/components/ui';
 import { GlyphTile } from '@/components/ui/Glyph';
 import { useAuth } from '@/lib/auth';
-import { readCache, writeCache } from '@/lib/cache';
+import { fetchPins, keptPins } from '@/lib/campus/pins';
 import { CAMPUS_BASE, centroid, distM, findBuilding, loadCampus, type CampusData, type LL } from '@/lib/campus/data';
 import { progress, walkRoute, type Route } from '@/lib/campus/route';
 import { mapTheme } from '@/lib/campus/theme';
@@ -131,26 +131,13 @@ export default function CampusMap() {
         return;
       }
       // what this campus showed last time comes up at once, and is all there is without internet
-      const key = `campus_pins:${university.id}`;
-      const kept = readCache<Pin[]>(key);
+      const kept = keptPins(university.id);
       if (kept?.length) { setPins(kept); setPinsState('ok'); }
-      const [{ data: b, error: be }, { data: p, error: pe }, { data: al }] = await Promise.all([
-        supabase.from('buildings').select('id, name_ar, name_en, code, lat, lng').eq('university_id', university.id).eq('state', 'approved').not('lat', 'is', null),
-        supabase.from('places').select('id, kind, name_ar, name_en, description, lat, lng, advertiser_id').eq('university_id', university.id).eq('state', 'approved'),
-        supabase.from('place_aliases').select('alias, building_id, place_id').eq('university_id', university.id).eq('state', 'approved'),
-      ]);
-      if (be || pe) { if (!kept?.length) setPinsState('error'); return; }
-      // nicknames («المجمع»، «C11») so search finds them offline too
-      const alt = new Map<string, string[]>();
-      for (const a of al ?? []) { const id = a.building_id ?? a.place_id; if (id) alt.set(id, [...(alt.get(id) ?? []), a.alias]); }
-      const next: Pin[] = [
-        ...(b ?? []).map((x) => ({ id: x.id, kind: 'building', name: nm(x), sub: x.code, lat: x.lat!, lng: x.lng!, alt: alt.get(x.id) })),
-        ...(p ?? []).map((x) => ({ id: x.id, kind: x.kind, name: nm(x), sub: x.description, lat: x.lat, lng: x.lng, advertiser_id: x.advertiser_id, alt: alt.get(x.id) })),
-      ];
-      writeCache(key, next);
-      setPins(next);
-      setPinsState(next.length ? 'ok' : 'empty');
-    } catch { if (!readCache<Pin[]>(`campus_pins:${university.id}`)?.length) setPinsState('error'); }
+      const fresh = await fetchPins(university.id);
+      if (!fresh) { if (!kept?.length) setPinsState('error'); return; }
+      setPins(fresh);
+      setPinsState(fresh.length ? 'ok' : 'empty');
+    } catch { if (!keptPins(university.id)?.length) setPinsState('error'); }
   }, [university, preview]);
   useEffect(() => { loadPins(); }, [loadPins]);
   // the 3D campus: only this university's file, kept by the browser between visits

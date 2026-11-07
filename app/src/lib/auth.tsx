@@ -109,18 +109,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [applyKept]);
 
   useEffect(() => {
+    // No connection (or a campus signal that barely works): Supabase keeps trying to renew the sign-in for a long
+    // time before it answers. After 3 s the app opens with the sign-in and profile saved on this phone, and takes
+    // the real answer whenever it comes.
+    let settled = false;
+    const early = setTimeout(() => {
+      const saved = savedSession();
+      if (settled || !saved || !applyKept(saved.user.id)) return;
+      settled = true;
+      setSession(saved);
+      setLoading(false);
+    }, 3000);
     supabase.auth.getSession()
       .then(async ({ data, error }) => {
         const offline = !data.session && error?.name === 'AuthRetryableFetchError';
         const session = data.session ?? (offline ? savedSession() : null);
+        if (settled && offline) return; // already open from the saved sign-in
+        settled = true;
         setSession(session);
         const uid = session?.user.id;
         // seen before on this phone: open now with it, and bring it up to date in the background
         if (uid && applyKept(uid)) { setLoading(false); void loadProfile(uid); return; }
         await loadProfile(uid);
       })
-      .catch((e) => { reportError(e); setProfileError(true); })
-      .finally(() => setLoading(false));
+      .catch((e) => { reportError(e); if (!settled) setProfileError(true); })
+      .finally(() => { clearTimeout(early); setLoading(false); });
     const { data: sub } = supabase.auth.onAuthStateChange((event, s) => {
       // the first answer is getSession's above (it also covers opening offline with an expired token)
       if (event === 'INITIAL_SESSION') return;
@@ -129,7 +142,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (event === 'TOKEN_REFRESHED' && s?.user.id === uidRef.current) return;
       loadProfile(s?.user.id);
     });
-    return () => sub.subscription.unsubscribe();
+    return () => { clearTimeout(early); sub.subscription.unsubscribe(); };
   }, [loadProfile, applyKept]);
 
   const value: Ctx = {

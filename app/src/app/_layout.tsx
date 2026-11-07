@@ -20,6 +20,7 @@ import { useTeamStatus } from '@/lib/team';
 import { useNotifIntroDue } from '@/lib/notifPermission';
 import { checkCrashMarks, checkTrail } from '@/lib/crashMark';
 import { resumeStoryQueue } from '@/lib/storyQueue';
+import { prepareOfflineCampus } from '@/lib/campus/pins';
 import { installGlobalErrorHandler, reportError, setScreen } from '@/lib/errors';
 import { isAR, syncDirection, t } from '@/lib/i18n';
 import { C, F, isDark } from '@/lib/theme';
@@ -75,6 +76,8 @@ function Gate() {
   // the one-time notifications screen, right after the first setup (never again once answered)
   const notifDue = useNotifIntroDue(!!profile?.onboarded);
   useEffect(() => { setScreen(seg.join('/')); }, [seg]);
+  // the student's own campus map is made ready on the phone in the background, so it works there without internet
+  useEffect(() => { if (profile?.onboarded) prepareOfflineCampus(profile.university_id); }, [profile?.onboarded, profile?.university_id]);
 
   useEffect(() => {
     if (loading) return;

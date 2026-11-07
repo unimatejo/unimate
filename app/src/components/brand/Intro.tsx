@@ -46,10 +46,13 @@ export function Intro({ ready }: { ready: boolean }) {
     tag.value = withDelay(1050, withTiming(1, { duration: 380 }, (ok) => { if (ok) runOnJS(setPlayed)(true); }));
   }, [reduce, draw, dot, tag]);
 
+  // never more than 6 s, whatever the sign-in check is doing (the screens behind have their own loading states)
+  const [late, setLate] = useState(false);
+  useEffect(() => { const tm = setTimeout(() => setLate(true), 6000); return () => clearTimeout(tm); }, []);
   useEffect(() => {
-    if (!played || !ready) return;
+    if (!played || (!ready && !late)) return;
     out.value = withTiming(0, { duration: 260, reduceMotion: ReduceMotion.Never }, (ok) => { if (ok) runOnJS(setGone)(true); });
-  }, [played, ready, out]);
+  }, [played, ready, late, out]);
 
   const uProps = useAnimatedProps(() => ({ strokeDashoffset: U_LEN * (1 - draw.value) }));
   const dotProps = useAnimatedProps(() => ({ r: 66.56 * dot.value }));
@@ -58,7 +61,7 @@ export function Intro({ ready }: { ready: boolean }) {
 
   if (gone) return null;
   return (
-    <Animated.View style={[StyleSheet.absoluteFill, s.bg, wrap]} pointerEvents={played && ready ? 'none' : 'auto'}
+    <Animated.View style={[StyleSheet.absoluteFill, s.bg, wrap]} pointerEvents={played && (ready || late) ? 'none' : 'auto'}
       accessible accessibilityLabel="UniMate">
       <Svg width={150} height={150} viewBox="180 110 680 680">
         <Defs>

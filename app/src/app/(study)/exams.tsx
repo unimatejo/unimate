@@ -60,7 +60,7 @@ export default function Exams() {
   const load = useCallback(async () => {
     if (!profile) return;
     try {
-      const [{ data: enr }, { data: ev }, { data: st }] = await Promise.all([
+      const [{ data: enr }, { data: ev, error: evError }, { data: st }] = await Promise.all([
         supabase.from('enrollments').select('section:sections(id, section_no, course:courses(name_ar))').eq('user_id', profile.id),
         supabase.rpc('my_events', { p_from: new Date(Date.now() - 14 * DAY).toISOString(), p_to: new Date(Date.now() + 120 * DAY).toISOString() }),
         supabase.from('studying_now').select('section_id, place, until, user_id').gt('until', new Date().toISOString()),
@@ -73,7 +73,8 @@ export default function Exams() {
       setEvents(list);
        
       setMine(((st ?? []) as any[]).find((r) => r.user_id === profile.id) ?? null);
-      scheduleExamReminders(list).catch(reportError);
+      // only a list that really came back replaces the reminders: offline they stay on the phone and still ring
+      if (!evError) scheduleExamReminders(list).catch(reportError);
       // classmates studying, for the courses on screen
       const ids = [...new Set(s.map((x) => x.id))].slice(0, 12);
       const res = await Promise.all(ids.map((id) => supabase.rpc('studying_classmates', { p_section: id }).then(({ data }) => [id, (data ?? []) as Mate[]] as const)));

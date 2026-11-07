@@ -35,17 +35,21 @@ const roomUrl = (m: Meeting) => { const r = roomRoute(m); return `${r.pathname}?
 
 async function doSchedule(meetings: Meeting[], off: Record<string, boolean>, userId?: string, override?: Override) {
   if (Platform.OS === 'web') return; // the browser has no scheduled local notifications (web push covers messages)
-  // clear old lecture reminders first (also when the schedule became empty)
+  if (!userId) return;
+  // the settings first: without internet this fails and the reminders already on the phone stay as they are (they
+  // ring offline); only with fresh settings are the old ones replaced (also when the schedule became empty)
+  const [{ data: prefs, error: pe }, { data: per, error: re }] = await Promise.all([
+    supabase.from('notification_prefs').select('lectures, lecture_minutes, nightly_summary').eq('user_id', userId).maybeSingle(),
+    supabase.from('reminders').select('meeting_id, minutes').eq('user_id', userId).not('meeting_id', 'is', null).not('minutes', 'is', null),
+  ]);
+  if (pe) throw pe;
+  if (re) throw re;
   const existing = await Notifications.getAllScheduledNotificationsAsync();
   await Promise.all(existing.filter((n) => n.identifier.startsWith('lec-') || n.identifier.startsWith('night-')).map((n) => Notifications.cancelScheduledNotificationAsync(n.identifier)));
-  if (!meetings.length || !userId) return;
+  if (!meetings.length) return;
   if (!(await ensurePermission())) return;
-  const { data: prefs, error: pe } = await supabase.from('notification_prefs').select('lectures, lecture_minutes, nightly_summary').eq('user_id', userId).maybeSingle();
-  if (pe) throw pe;
   const lectures = override?.lectures ?? prefs?.lectures ?? true;
   const base = override?.lecture_minutes ?? prefs?.lecture_minutes ?? 10;
-  const { data: per, error: re } = await supabase.from('reminders').select('meeting_id, minutes').eq('user_id', userId).not('meeting_id', 'is', null).not('minutes', 'is', null);
-  if (re) throw re;
   const perMin: Record<string, number | null> = { ...Object.fromEntries((per ?? []).map((r) => [r.meeting_id as string, r.minutes as number])), ...(override?.perMin ?? {}) };
 
   // tomorrow's summary at 9 PM: one weekly reminder per evening that lists the next day's lectures
