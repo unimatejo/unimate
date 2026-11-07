@@ -468,7 +468,7 @@ or JSON: `[{"student_number":"2620387","term_gpa":3.71,"cumulative_gpa":3.60,"cr
 - `perf.ts` — Light performance reports: how long key screens take to show their data, and any request slower than 2 seconds. Samples are batched and sent every 20 seconds; the admin…
 - `posts.ts` — Something new was posted: the feed fetches again the next time it shows (instead of waiting its 30 s).
 - `prefs.ts` — Tiny synchronous key-value store for app preferences (theme, language). Read at startup before the first render.
-- `presence.ts` — Activity status like Instagram: one app-wide realtime presence channel says who is open right now, and last_seen_at (written at most every 2 minutes) says "active 5 m…
+- `presence.ts` — Activity status like Instagram, without a live channel for the whole app (one app-wide presence channel sends every open / close to every other student: traffic grows…
 - `realtime.ts` — A unique topic for a channel that only listens to database changes (postgres_changes). supabase-js hands back the SAME channel object for a repeated topic, so a second…
 - `rides.ts` — offer: I have seats · need: I'm looking for a ride and someone with a car answers
 - `run.ts` — Run a Supabase call and never fail silently: returns { ok, data, error }, reports the error, and (unless quiet) shows a clear message to the user.
@@ -480,12 +480,12 @@ or JSON: `[{"student_number":"2620387","term_gpa":3.71,"cumulative_gpa":3.60,"cr
 - `storyDraft.ts` — A photo or video picked for a story before the create screen opened (on the web the picker has to open straight from the tap, like Instagram's "+"). The create screen…
 - `storyOverlay.ts` — Things placed on a story. Positions and sizes are fractions of the frame so they look the same on every screen.
 - `storyQueue.ts` — Stories on phones go up in the background, like Instagram: "شارك" returns at once and the student carries on. Each story is first copied into the app's own folder (so it…
-- `supabase.ts` — Public URL for a file in a public bucket, or a short-lived signed URL for a private one.
+- `supabase.ts` — Addresses for files. Public buckets get their public URL. Private ones get a short-lived signed URL, and every request made in the same moment (a page of the feed, a…
 - `team.ts` — Team (admin) sign-in: a personal email, a password and a 6-digit code from an authenticator app. The database gives a team account admin powers only after the code…
 - `theme.ts` — The three looks, for the picker in Settings.
 - `toast.ts` — Tiny global toast: toast('Saved ✓') or toast.error('...'). Shown by <ToastHost/> in the root layout.
 - `types.ts` — Shapes of the main database rows used across the app.
-- `unread.ts` — Unread chats + message requests, refreshed on new messages (realtime), app focus, and every 45s.
+- `unread.ts` — Unread chats + message requests. Refreshed when a new message pings my own private topic «inbox:<me>» (the database sends it, 0130: no app watches every message any…
 - `upload.ts` — Pick a photo or short video. `square` opens the system crop (like Instagram's profile photo); photos are resized and saved as JPEG so every phone (including HEIC…
 - `util.ts` — "13:30:00" -> "1:30 م" (or "1:30 PM" in English). Pass ampm=false for the bare time.
 - `videoFocus.ts` — Reels in the feed, like Instagram: one sound setting for all of them (turn sound on once and it stays on, even after the list reloads), and only the post that's on…
@@ -521,8 +521,8 @@ or JSON: `[{"student_number":"2620387","term_gpa":3.71,"cumulative_gpa":3.60,"cr
 - `0011_story_video.sql` — stories: allow bigger videos (15s at 960x540 is ~10-20MB)
 - `0012_identity.sql` — Usernames: unique (case-insensitive), searchable, fixed once chosen.
 - `0013_birth.sql` — 
+- `00141_cohort_enum.sql` — 
 - `0014_groups.sql` — Automatic groups: every student is placed in their college, major and cohort (college + entry year) groups,
-- `0014a_cohort_enum.sql` — 
 - `0015_courses_auto.sql` — Courses come in automatically: from the student's Microsoft Teams classes at sign-in,
 - `0016_delete_account_fix.sql` — Deleting an account sets messages.sender_id to null (on delete set null); the edit guard must allow that.
 - `0017_suggestions.sql` — People you may know: same university, ranked by same major, cohort, college, and mutual follows.
@@ -567,8 +567,8 @@ or JSON: `[{"student_number":"2620387","term_gpa":3.71,"cumulative_gpa":3.60,"cr
 - `0060_group_roles.sql` — UniMate · 0060 group roles (Instagram-like group details).
 - `0061_chat_strikes.sql` — UniMate · 0061 bad words in group / course / community chats: the message is hidden, the sender gets a
 - `0062_auto_follow_founder.sql` — UniMate · 0062 new accounts follow the founder automatically (unfollow works as usual)
+- `00631_ms_photo.sql` — UniMate · 0063 bring the Microsoft (university) profile photo in once; if the student removes it, it never comes back
 - `0063_auto_follow_backfill.sql` — UniMate · 0063 existing accounts also follow the founder (owner's request; unfollow works as usual)
-- `0063_ms_photo.sql` — UniMate · 0063 bring the Microsoft (university) profile photo in once; if the student removes it, it never comes back
 - `0064_staff_directory.sql` — University community directory: everyone signed up at a university, ordered by academic rank.
 - `0065_security_hardening.sql` — Security audit fixes (Nov 2026). No data is deleted or changed; only who can read what.
 - `0066_ai_quota.sql` — Schedule photo reading uses a paid reading service: one account can't run it without limit (15 per day; admins unlimited).
@@ -632,3 +632,8 @@ or JSON: `[{"student_number":"2620387","term_gpa":3.71,"cumulative_gpa":3.60,"cr
 - `0124_yu_official_map.sql` — Yarmouk University: matched against the university's official campus plan (yu.edu.jo, the disability access and
 - `0125_every_place_named.sql` — Every place on a campus can be told apart: one OSM left nameless («بوابة», «موقف سيارات»…) takes the name of the
 - `0126_home_ads_and_honor.sql` — UniMate · 0126 home ad banners with an «اطلب الآن» link, and the honor board on Home
+- `0127_rls_once_per_query.sql` — UniMate · 0127 row-level security that asks "who is this?" once per query, not once per row
+- `0128_indexes_and_hygiene.sql` — UniMate · 0128 indexes for every foreign key, keys for the two log tables, fixed search paths
+- `0129_inbox_queries.sql` — UniMate · 0129 the inbox's two hottest calls read only what they show
+- `0130_inbox_ping.sql` — UniMate · 0130 one private "you have a new message" ping per member, instead of every app watching every message
+- `0131_thumbnails_kept.sql` — UniMate · 0131 the small copies of photos are kept as long as their photo

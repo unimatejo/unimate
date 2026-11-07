@@ -20,40 +20,72 @@ AppState.addEventListener('change', (state) => {
   else supabase.auth.stopAutoRefresh();
 });
 
-/** Public URL for a file in a public bucket, or a short-lived signed URL for a private one. */
+/**
+ * Addresses for files. Public buckets get their public URL. Private ones get a short-lived signed URL, and every
+ * request made in the same moment (a page of the feed, a chat's photos) is signed together in ONE call. Nothing is
+ * resized on the server (Supabase bills that per photo): a photo shown small (lists, grids, thumbnails) uses the small
+ * copy made on the phone at upload (`<name>.t.jpg`, lib/upload), or the photo itself for older ones without it.
+ */
 const signedCache = new Map<string, { url: string; exp: number }>();
 export function clearMediaCache() { signedCache.clear(); }
-/** Signs many private files in one request (a page of the feed), so each photo shows without its own round trip. */
+const TTL = 3600, KEEP_MS = 50 * 60 * 1000;
+/** the small copy's name: `a/b.jpg` → `a/b.t.jpg` */
+export const thumbPath = (path: string) => path.replace(/\.[a-z0-9]+$/i, '.t.jpg');
+const SMALL = 480;
+
+type Want = { path: string; resolve: (u: string | null) => void };
+const queue = new Map<string, Want[]>(); // bucket → waiting
+let flushing: ReturnType<typeof setTimeout> | null = null;
+
+function flush() {
+  flushing = null;
+  for (const [bucket, wants] of queue) {
+    queue.delete(bucket);
+    const paths = [...new Set(wants.map((w) => w.path))];
+    (async () => {
+      for (let i = 0; i < paths.length; i += 100) {
+        const part = paths.slice(i, i + 100);
+        try {
+          const { data } = await supabase.storage.from(bucket).createSignedUrls(part, TTL);
+          for (const d of data ?? []) if (d.path && d.signedUrl) signedCache.set(bucket + '/' + d.path, { url: d.signedUrl, exp: Date.now() + KEEP_MS });
+        } catch { /* left unsigned: each caller gets null */ }
+      }
+      for (const w of wants) w.resolve(signedCache.get(bucket + '/' + w.path)?.url ?? null);
+    })();
+  }
+}
+
+/** Signed URL for one private file, batched with every other one asked for in the same moment. */
+function signed(bucket: string, path: string): Promise<string | null> {
+  const hit = signedCache.get(bucket + '/' + path);
+  if (hit && hit.exp > Date.now()) return Promise.resolve(hit.url);
+  return new Promise((resolve) => {
+    queue.set(bucket, [...(queue.get(bucket) ?? []), { path, resolve }]);
+    if (!flushing) flushing = setTimeout(flush, 16);
+  });
+}
+
+/** Signs many private files ahead (a page of the feed), so each one shows without waiting. */
 export async function primeMedia(bucket: string, paths: string[]) {
-  const need = [...new Set(paths)].filter((x) => x && !x.startsWith('http') && !((signedCache.get(bucket + '/' + x)?.exp ?? 0) > Date.now()));
-  if (!need.length) return;
-  try {
-    const { data } = await supabase.storage.from(bucket).createSignedUrls(need, 3600);
-    for (const d of data ?? []) if (d.path && d.signedUrl) signedCache.set(bucket + '/' + d.path, { url: d.signedUrl, exp: Date.now() + 50 * 60 * 1000 });
-  } catch { /* each photo signs itself as before */ }
+  await Promise.all([...new Set(paths)].filter((x) => x && !x.startsWith('http')).map((x) => signed(bucket, x)));
 }
 
 /**
- * `width`: a photo resized on the server for where it's shown (feed, grid, thumbnail) — a fraction of the original's size.
- * Only for photos; videos and files always use the original.
+ * `width`: how wide (pixels) the photo is shown. At 480 or less the small copy is used when there is one.
+ * Videos and files always use the original.
  */
 export async function mediaUrl(bucket: string, path?: string | null, width?: number): Promise<string | null> {
   if (!path) return null;
   if (path.startsWith('http')) return path;
-  if (bucket === 'avatars' || bucket === 'ads' || bucket === 'campus') {
+  if (bucket === 'avatars' || bucket === 'ads' || bucket === 'campus' || bucket === 'stickers') {
     return supabase.storage.from(bucket).getPublicUrl(path).data.publicUrl;
   }
-  const sized = !!width && /\.(jpe?g|png|webp)$/i.test(path);
-  const k = bucket + '/' + path + (sized ? `@${width}` : '');
-  const hit = signedCache.get(k);
-  if (hit && hit.exp > Date.now()) return hit.url;
-  let data: { signedUrl: string } | null = null;
-  try {
-    ({ data } = await supabase.storage.from(bucket).createSignedUrl(path, 3600, sized ? { transform: { width, quality: 75, resize: 'contain' } } : undefined));
-  } catch { return null; }
-  if (!data) return null;
-  signedCache.set(k, { url: data.signedUrl, exp: Date.now() + 50 * 60 * 1000 });
-  return data.signedUrl;
+  if (width && width <= SMALL && /\.(jpe?g|png|webp)$/i.test(path) && !/\.t\.jpg$/i.test(path)) {
+    // asked together with the original, so a photo without a small copy costs no second round trip
+    const [small, full] = await Promise.all([signed(bucket, thumbPath(path)), signed(bucket, path)]);
+    return small ?? full;
+  }
+  return signed(bucket, path);
 }
 
 /** The width (in pixels) a photo needs to look sharp at `points` wide on this screen, in a few fixed steps so caches are shared. */

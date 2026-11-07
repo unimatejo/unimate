@@ -9,7 +9,7 @@ import { Alert, Linking, Platform } from 'react-native';
 import { openCropper, type CropMode, type MediaMeta } from './cropper';
 import { reportError } from './errors';
 import { UserError } from './run';
-import { supabase } from './supabase';
+import { supabase, thumbPath } from './supabase';
 import { shrinkVideo } from './videoShrink';
 import { t } from './i18n';
 
@@ -138,6 +138,19 @@ export async function lightImage<T extends { uri: string; mime: string; width?: 
   } catch (e) { reportError(e); return f; }
 }
 
+const THUMB_BUCKETS = new Set(['posts', 'chat', 'stories']);
+/** The small copy of a photo shown in lists and grids (`<name>.t.jpg` next to it), see `thumbPath` in lib/supabase. */
+const THUMB_SIDE = 480;
+async function uploadThumb(bucket: string, path: string, f: { uri: string; width?: number; height?: number }) {
+  try {
+    const ctx = ImageManipulator.manipulate(f.uri);
+    fitLongSide(ctx, f.width ?? THUMB_SIDE + 1, f.height ?? 0, THUMB_SIDE);
+    const out = await (await ctx.renderAsync()).saveAsync({ compress: 0.7, format: SaveFormat.JPEG });
+    const { error } = await supabase.storage.from(bucket).upload(thumbPath(path), await readBytes(out.uri), { contentType: 'image/jpeg', upsert: false });
+    if (error) throw error;
+  } catch (e) { reportError(e); } // the full photo still shows; lists just use it instead
+}
+
 async function readBytes(uri: string): Promise<ArrayBuffer> {
   if (Platform.OS === 'web') return (await fetch(uri)).arrayBuffer();
   return new File(uri).arrayBuffer();
@@ -177,6 +190,8 @@ export async function uploadPicked<M extends { trim?: { start: number; end: numb
     const timeout = new Promise<never>((_, rej) => setTimeout(() => rej(new Error('timeout')), ms));
     const { error } = await Promise.race([supabase.storage.from(bucket).upload(path, buf, { contentType: mime, upsert: false }), timeout]);
     if (error) throw error;
+    // photos also get a small copy made here on the phone: lists show it, and nothing is resized (or billed) on the server
+    if (mime.startsWith('image/') && THUMB_BUCKETS.has(bucket)) await uploadThumb(bucket, path, file);
     return { path, meta };
   } catch (e) {
     reportError(e);
