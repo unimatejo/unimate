@@ -653,3 +653,4 @@ or JSON: `[{"student_number":"2620387","term_gpa":3.71,"cumulative_gpa":3.60,"cr
 - `0137_shown_likes.sql` — UniMate · 0137 the like number an admin may show on a post (the likers list stays real)
 - `0138_server_texts_msa.sql` — UniMate · 0138 the server's own words (notifications, chat lines, admin alerts) in فصحى
 - `0139_targeting_ad_pins_error_alerts.sql` — UniMate · 0139 notifications to a college / major / intake year, advertisers as gold pins on the map, crash alerts to the owner
+- `0140_ad_placements_on_map.sql` — UniMate · 0140 one ad in any banner places together (or map only); a shop's map pin by choice
