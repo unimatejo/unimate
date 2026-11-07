@@ -9,11 +9,18 @@ import { recordPerf } from './perf';
 /**
  * Phones record 1080p–4K at 10–20 Mbps: a 14 s clip can be 25 MB, slow to upload and too heavy for many phones
  * and browsers to play. Before upload every video is brought down to at most 1280 px on its long side
- * (H.264 + AAC in MP4, about 2 Mbps: a 15 s story is ~4 MB), like Instagram and WhatsApp do.
+ * (H.264 + AAC in MP4, about 2 Mbps; stories on phones lighter, see STORY_BPS), like Instagram and WhatsApp do.
  * Anything that can't be converted on this device is uploaded as it is, so posting never breaks.
  */
 const LONG_SIDE = 1280;
 const VIDEO_BPS = 2_000_000;
+/**
+ * Stories on a phone: the whole clip goes up even when only 15 s of it plays (cutting needs the next app build), so
+ * they get a lighter rate, and a long clip a lower one still: never much over 9 MB, never below 0.8 Mbps. A 30 s
+ * clip is ~5.5 MB instead of ~10 MB, and it still looks sharp on a phone screen.
+ */
+const STORY_BPS = 1_500_000, STORY_MAX_BITS = 72_000_000, STORY_MIN_BPS = 800_000;
+const storyRate = (secs: number) => (secs > 0 ? Math.max(STORY_MIN_BPS, Math.min(STORY_BPS, STORY_MAX_BITS / secs)) : STORY_BPS);
 /** small, already-light MP4s are left alone */
 const KEEP_BPS = 4_000_000;
 
@@ -21,10 +28,13 @@ const KEEP_BPS = 4_000_000;
 type Shrunk = { uri: string; mime: 'video/mp4'; blob?: Blob; trimmed?: boolean };
 type Trim = { start: number; end: number } | null | undefined;
 
-export async function shrinkVideo(file: { uri: string; mime: string; duration?: number | null; size?: number | null; width?: number; height?: number }, trim?: Trim): Promise<Shrunk | null> {
+type VideoFile = { uri: string; mime: string; duration?: number | null; size?: number | null; width?: number; height?: number };
+
+/** `story`: a story's lighter rate (phones). */
+export async function shrinkVideo(file: VideoFile, trim?: Trim, opts?: { story?: boolean }): Promise<Shrunk | null> {
   const t0 = Date.now();
   try {
-    const out = Platform.OS === 'web' ? await shrinkWeb(file, trim) : await shrinkNative(file);
+    const out = Platform.OS === 'web' ? await shrinkWeb(file, trim) : await shrinkNative(file, !!opts?.story);
     recordPerf('query', `video-shrink ${Platform.OS} ${out ? 'done' : 'kept'}`, Date.now() - t0);
     return out;
   } catch (e) {
@@ -106,13 +116,14 @@ function nativeCompressor(): typeof import('react-native-compressor') | null {
   return require('react-native-compressor') as typeof import('react-native-compressor');
 }
 
-async function shrinkNative(file: { uri: string; mime: string; duration?: number | null; size?: number | null; width?: number; height?: number }): Promise<Shrunk | null> {
+async function shrinkNative(file: VideoFile, story: boolean): Promise<Shrunk | null> {
   const c = nativeCompressor();
   if (!c || !allowed('video-compress')) return null;
   const long = Math.max(file.width ?? 0, file.height ?? 0);
   const secs = file.duration ? file.duration / 1000 : 0;
   const bps = secs > 0 && file.size ? (file.size * 8) / secs : Infinity;
-  if (long && long <= LONG_SIDE && bps <= KEEP_BPS && file.mime === 'video/mp4') return null;
+  const rate = story ? storyRate(secs) : VIDEO_BPS;
+  if (long && long <= LONG_SIDE && bps <= (story ? rate * 1.5 : KEEP_BPS) && file.mime === 'video/mp4') return null;
   // the encoder gets a plain copy in the app's own folder: a Photos-library address (with a "#…" tail, or one the
   // app may only read for a moment) is what native encoders trip on
   const src = await localCopy(file.uri);
@@ -123,7 +134,7 @@ async function shrinkNative(file: { uri: string; mime: string; duration?: number
   const limit = new Promise<'late'>((res) => { timer = setTimeout(() => res('late'), Math.min(60_000, 20_000 + secs * 2000)); });
   try {
     const out = await guarded('video-compress', () => Promise.race([
-      c.Video.compress(src, { compressionMethod: 'manual', maxSize: LONG_SIDE, bitrate: VIDEO_BPS, minimumFileSizeForCompress: 0, getCancellationId: (id) => { cancelId = id; } }),
+      c.Video.compress(src, { compressionMethod: 'manual', maxSize: LONG_SIDE, bitrate: Math.round(rate), minimumFileSizeForCompress: 0, getCancellationId: (id) => { cancelId = id; } }),
       limit,
     ]));
     if (out === 'late') {

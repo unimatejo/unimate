@@ -111,7 +111,7 @@ async function send(j: Job) {
   if (j.kind === 'video' && !j.shrunk) {
     set(0.05);
     step('story', 'compress');
-    const small = await shrinkVideo({ uri: j.file, mime: j.mime, duration: j.duration, size: j.size ?? src.size, width: j.width, height: j.height });
+    const small = await shrinkVideo({ uri: j.file, mime: j.mime, duration: j.duration, size: j.size ?? src.size, width: j.width, height: j.height }, null, { story: true });
     if (small?.uri) {
       const light = new File(folder(), `${j.id}-light.mp4`);
       await LegacyFS.moveAsync({ from: small.uri, to: light.uri });
