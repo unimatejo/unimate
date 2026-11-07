@@ -86,8 +86,9 @@ function Gate() {
     const inAuth = seg[0] === '(auth)';
     // signed out (also after "use another email" on the unsupported screen)
     if (!session) { if (!inAuth || !AUTH_FREE.includes(seg[1])) router.replace('/(auth)/login'); return; }
-    // the team sign-in screens lead on their own (password, then the authenticator code)
-    if (inAuth && TEAM_STEPS.includes(seg[1])) return;
+    // the team sign-in screens lead on their own (password, then the authenticator code); a student who lands there
+    // (after the app recovered from an error, say) is sent on like anywhere else
+    if (inAuth && TEAM_STEPS.includes(seg[1]) && team?.team !== false) return;
     // a team account only ever sees the admin panel, and only after its code
     if (team?.team) {
       if (team.aal !== 'aal2') router.replace('/(auth)/team');

@@ -89,14 +89,29 @@ export default function CampusMap() {
   }, [ready3d, failed3d]);
   const threeRef = useRef(three);
   useEffect(() => { threeRef.current = three; }, [three]);
+  // The phone's 3D view answers only once it has loaded: a move asked for before then (opening the map straight on a
+  // shop or a building) waits and runs when it's ready, instead of calling a method that isn't there yet.
+  type Move = (m: Campus3DHandle | MapView) => void;
+  const waiting = useRef<Move | null>(null);
+  const readyRef = useRef(ready3d);
+  const move = useCallback((f: Move) => {
+    if (!threeRef.current) { if (flat.current) f(flat.current); return; }
+    if (readyRef.current && deep.current?.animateCamera) f(deep.current); else waiting.current = f;
+  }, []);
+  // the 3D view gave up: the flat map takes the waiting move
+  useEffect(() => { if (!three && waiting.current && flat.current) { waiting.current(flat.current); waiting.current = null; } }, [three]);
+  useEffect(() => {
+    readyRef.current = ready3d;
+    if (ready3d && waiting.current && deep.current?.animateCamera) { waiting.current(deep.current); waiting.current = null; }
+  }, [ready3d]);
   // one camera for whichever map is showing; tilted further in 3D
   const cam = useMemo(() => ({
     animateCamera: (c: { center?: { latitude: number; longitude: number }; zoom?: number; pitch?: number; heading?: number }, o?: { duration?: number }) =>
-      threeRef.current ? deep.current?.animateCamera(c, o) : flat.current?.animateCamera(c, o),
+      move((m) => m.animateCamera(c, o)),
     fitToCoordinates: (cs: { latitude: number; longitude: number }[], o: { edgePadding: { top: number; bottom: number; left: number; right: number }; animated: boolean }) =>
-      threeRef.current ? deep.current?.fitToCoordinates(cs, o) : flat.current?.fitToCoordinates(cs, o),
+      move((m) => m.fitToCoordinates(cs, o)),
     tilt: (deg3d: number, flatDeg: number) => (threeRef.current ? deg3d : flatDeg),
-  }), []);
+  }), [move]);
   const [pins, setPins] = useState<Pin[]>([]);
   const [pinsState, setPinsState] = useState<'loading' | 'ok' | 'empty' | 'error'>('loading');
   const [campus, setCampus] = useState<CampusData | null>(null);
