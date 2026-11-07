@@ -3,8 +3,9 @@ import { PullRefresh } from '@/components/ui/PullRefresh';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Bell, CalendarDays, Navigation, Search, Users } from 'lucide-react-native';
 import { useCallback, useEffect, useState } from 'react';
-import { Linking, ScrollView, View, Platform } from 'react-native';
+import { Linking, ScrollView, View } from 'react-native';
 import Animated, { FadeIn, Easing, useAnimatedStyle, useSharedValue, withRepeat, withTiming } from 'react-native-reanimated';
+import Svg, { Circle, Defs, RadialGradient, Stop } from 'react-native-svg';
 
 import { HomeAds } from '@/components/feed/HomeAds';
 import { GlyphTile, Wiggle } from '@/components/ui/Glyph';
@@ -19,11 +20,26 @@ import { useScreenTimer } from '@/lib/perf';
 import { DEFAULT_QUICK, QUICK } from '@/components/home/quick';
 import { featureOn, TONES, useAppContent } from '@/lib/appContent';
 
+/** A soft light drifting behind the class card: a radial fade (same look on phones and the web, no blur filter needed). */
 function Glow({ color, size, style, dur }: { color: string; size: number; style: object; dur: number }) {
   const t = useSharedValue(0);
   useEffect(() => { t.value = withRepeat(withTiming(1, { duration: dur, easing: Easing.inOut(Easing.sin) }), -1, true); }, [t, dur]);
   const a = useAnimatedStyle(() => ({ transform: [{ translateX: t.value * 24 }, { translateY: t.value * 18 }, { scale: 1 + t.value * 0.12 }] }));
-  return <Animated.View pointerEvents="none" style={[{ position: 'absolute', width: size, height: size, borderRadius: size / 2, backgroundColor: color, opacity: 0.55 }, Platform.OS === 'web' ? ({ filter: `blur(${Math.round(size / 5)}px)`, opacity: 0.45 } as object) : null, style, a]} />;
+  const id = `glow${color.replace('#', '')}`;
+  return (
+    <Animated.View pointerEvents="none" style={[{ position: 'absolute', width: size, height: size }, style, a]}>
+      <Svg width={size} height={size}>
+        <Defs>
+          <RadialGradient id={id} cx="50%" cy="50%" r="50%">
+            <Stop offset="0" stopColor={color} stopOpacity={0.6} />
+            <Stop offset="0.55" stopColor={color} stopOpacity={0.22} />
+            <Stop offset="1" stopColor={color} stopOpacity={0} />
+          </RadialGradient>
+        </Defs>
+        <Circle cx={size / 2} cy={size / 2} r={size / 2} fill={`url(#${id})`} />
+      </Svg>
+    </Animated.View>
+  );
 }
 
 function Pulse() {
@@ -96,8 +112,8 @@ export default function Home() {
 
         <Animated.View entering={FadeIn.duration(220)}>
           <View style={{ borderRadius: 30, backgroundColor: '#101633', padding: 20, overflow: 'hidden', gap: 14 }}>
-            <Glow color={C.blue} size={260} style={{ top: -120, left: -90 }} dur={8000} />
-            <Glow color={C.pink} size={200} style={{ bottom: -100, left: 40 }} dur={10000} />
+            <Glow color={C.blue} size={340} style={{ top: -160, left: -130 }} dur={8000} />
+            <Glow color={C.pink} size={280} style={{ bottom: -140, left: 0 }} dur={10000} />
             {nxt ? (
               <>
                 <Row gap={8}><Pulse /><T v="small" color="#C9D1F0">{t('محاضرتك الجاية بعد')}</T></Row>
