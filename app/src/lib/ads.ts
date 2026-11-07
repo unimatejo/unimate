@@ -24,7 +24,7 @@ export type CtaKind = 'link' | 'map' | 'call';
 type Event = 'impression' | 'click' | 'call' | 'order' | 'directions';
 
 /** The button's words when the owner leaves them empty, by what it does. */
-export const CTA_DEFAULT: Record<CtaKind, string> = { link: t('اطلب الآن'), map: t('الاتجاهات'), call: t('اتصل الآن') };
+export const CTA_DEFAULT: Record<CtaKind, string> = { link: t('اطلب الآن'), map: t('خذني إليه'), call: t('اتصل الآن') };
 
 /** The packages the owner sells: a higher one shows first, ads in the same package take turns. */
 export const PACKAGES = { 30: t('ذهبية'), 20: t('فضية'), 10: t('عادية') } as const;

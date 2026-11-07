@@ -33,9 +33,11 @@ const PLACES: Record<string, string> = { home_banner: t('بانر الرئيسي
 const ymd = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 const today = () => ymd(new Date());
 const blankAdv = (): Adv => ({ university_id: null, name: '', category: 'restaurant', description: '', phone: '', hours: '', menu: [], photos: [], logo_url: null, lat: null, lng: null, contact_name: '', notes: '', is_active: true, building_id: null });
-const CTA_KINDS: [CtaKind | null, string][] = [[null, t('بدون زر')], ['link', t('رابط موقعه')], ['map', t('خذني إليه')], ['call', t('اتصال')]];
-/** ready words for the button, any of them can be changed by hand */
-const CTA_WORDS = [t('اطلب الآن'), t('اذهب إلى الموقع'), t('احجز الآن'), t('مشاهدة العرض'), t('الاتجاهات'), t('اتصل الآن')];
+/** The button in one tap: its words and what it does come together (the words can still be changed by hand). */
+const CTA_ACTIONS: [string, CtaKind][] = [
+  [t('اطلب الآن'), 'link'], [t('اذهب إلى الموقع'), 'link'], [t('احجز الآن'), 'link'],
+  [t('شاهد العرض'), 'link'], [t('خذني إليه'), 'map'], [t('اتصل الآن'), 'call'],
+];
 
 /** Stop or start an advertiser or one ad straight from the list; logged. */
 async function switchOn(table: 'advertisers' | 'ad_campaigns', id: string, on: boolean, name: string) {
@@ -90,7 +92,7 @@ function CampaignForm({ adv, camp, onDone }: { adv: Adv; camp: Camp | null; onDo
     if (!c.title.trim() || c.university_ids.length === 0) { setMsg(t('أدخل عنوانًا واختر جامعة واحدة على الأقل.')); return; }
     const cta = c.cta_kind === 'link' ? c.cta_url?.trim() || null : null;
     if (c.cta_kind === 'link' && (!cta || !/^https:\/\/\S+$/i.test(cta))) { setMsg(t('يجب أن يبدأ رابط الزر بـ https://')); return; }
-    if (c.cta_kind === 'map' && !adv.building_id && adv.lat == null) { setMsg(t('حدّد موقع المعلن (المبنى) في الأعلى ليعمل زر «الاتجاهات».')); return; }
+    if (c.cta_kind === 'map' && !adv.building_id && adv.lat == null) { setMsg(t('حدّد مكان المحل على الخريطة في الأعلى ليعمل زر «خذني إليه».')); return; }
     if (c.cta_kind === 'call' && !adv.phone?.trim()) { setMsg(t('أدخل رقم هاتف المعلن في الأعلى ليعمل زر الاتصال.')); return; }
     const time = /^([01]\d|2[0-3]):[0-5]\d$/;
     if ((c.daily_from && !time.test(c.daily_from)) || (c.daily_to && !time.test(c.daily_to))) { setMsg(t('اكتب الوقت بهذا الشكل: 08:00')); return; }
@@ -113,25 +115,23 @@ function CampaignForm({ adv, camp, onDone }: { adv: Adv; camp: Camp | null; onDo
         options={PACKAGES as Record<PackageKey, string> as unknown as Record<string, string>} onChange={(v) => set({ priority: Number(v) })} />
       <T v="small" color={C.muted}>{t('زر الإعلان')}</T>
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-        {CTA_KINDS.map(([k, l]) => <Chip key={l} label={l} active={c.cta_kind === k} onPress={() => set({ cta_kind: k })} />)}
+        {CTA_ACTIONS.map(([w, k]) => <Chip key={w} label={w} active={c.cta_kind === k && (c.cta_label || CTA_DEFAULT[k]) === w} onPress={() => set({ cta_kind: k, cta_label: w })} />)}
+        <Chip label={t('بدون زر')} active={!c.cta_kind} onPress={() => set({ cta_kind: null, cta_label: '' })} />
       </View>
       {c.cta_kind === 'link' && (
         <Field label={t('رابط موقعه أو صفحة الطلب')} value={c.cta_url ?? ''} onChangeText={(v) => set({ cta_url: v })} placeholder="https://"
           autoCapitalize="none" autoCorrect={false} keyboardType="url" maxLength={500} />
       )}
-      {c.cta_kind === 'map' && <Muted>{t('يفتح خريطة الجامعة ويرشد الطالب إلى مكان المعلن.')}</Muted>}
-      {c.cta_kind === 'call' && <Muted>{t('يتصل برقم المعلن: {0}', [adv.phone || t('(لا يوجد رقم بعد)')])}</Muted>}
+      {c.cta_kind === 'map' && <Muted>{adv.lat != null || adv.building_id
+        ? t('يفتح خريطة الجامعة ويرشد الطالب إلى المحل خطوة بخطوة.')
+        : t('حدّد مكان المحل على الخريطة في الأعلى ليعمل هذا الزر.')}</Muted>}
+      {c.cta_kind === 'call' && <Muted>{adv.phone?.trim() ? t('يتصل برقم المحل: {0}', [adv.phone]) : t('أضف رقم هاتف المحل في الأعلى ليعمل هذا الزر.')}</Muted>}
       {c.cta_kind && (
-        <>
-          <Field label={t('الكلمة على الزر')} value={c.cta_label ?? ''} onChangeText={(v) => set({ cta_label: v })} placeholder={CTA_DEFAULT[c.cta_kind]} maxLength={20} />
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-            {CTA_WORDS.map((w) => <Chip key={w} label={w} active={c.cta_label === w} onPress={() => set({ cta_label: w })} />)}
-          </View>
-        </>
+        <Field label={t('كلمة مختلفة على الزر (اختياري)')} value={c.cta_label ?? ''} onChangeText={(v) => set({ cta_label: v })} placeholder={CTA_DEFAULT[c.cta_kind]} maxLength={20} />
       )}
       <T v="small" color={C.muted}>{t('صورة البانر (تُقصّ بحسب شكل البانر)')}</T>
       <Row gap={10}>
-        <Act label={c.image_url ? t('غيّر الصورة') : t('أضف صورة')} onPress={async () => { try { const u = await pickAndUpload(true); if (u) set({ image_url: u }); } catch (e) { setMsg((e as Error).message); } }} />
+        <Act kind={c.image_url ? 'soft' : 'primary'} label={c.image_url ? t('غيّر الصورة') : t('أضف صورة')} onPress={async () => { try { const u = await pickAndUpload(true); if (u) set({ image_url: u }); } catch (e) { setMsg((e as Error).message); } }} />
         {c.image_url ? <Act label={t('إزالة الصورة')} onPress={() => set({ image_url: null })} /> : null}
       </Row>
       {c.image_url ? <Toggle value={!c.show_text} onChange={(v) => set({ show_text: !v })} label={t('النص جاهز على الصورة')}
