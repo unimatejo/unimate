@@ -21,15 +21,16 @@ export function HomeAds() {
   const seen = useRef(new Set<string>());
   const dx = useSharedValue(0);
 
-  useEffect(() => {
+  // asked again each time Home comes back, so a banner the owner just published shows without restarting
+  useFocusEffect(useCallback(() => {
     let live = true;
     liveAds('home_banner').then((a) => {
       if (!live) return;
-      setAds(a);
+      setAds((old) => (JSON.stringify(old) === JSON.stringify(a) ? old : a));
       a.slice(1).forEach((x) => { if (x.image_url) Image.prefetch(x.image_url).catch(() => {}); });
     });
     return () => { live = false; };
-  }, []);
+  }, []));
 
   // one view per banner actually shown (the server keeps one a day per student)
   const ad = ads[i % Math.max(ads.length, 1)];

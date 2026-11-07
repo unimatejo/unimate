@@ -87,50 +87,105 @@ function BuildingPicker({ universityId, value, onChange }: { universityId: strin
   );
 }
 
-function CampaignForm({ adv, camp, onDone }: { adv: Adv; camp: Camp | null; onDone: () => void }) {
+/**
+ * One ad, quick: a photo (which then is the whole banner) or a headline, a button, and how long. A new shop is
+ * written right here (its name and phone) and saved with the ad; everything else about it can wait.
+ */
+function CampaignForm({ adv: given, camp, onDone }: { adv: Adv; camp: Camp | null; onDone: () => void }) {
   const unis = useUnis();
+  const [adv, setAdv] = useState<Adv>(given);
   const [c, setC] = useState<Camp>(() => camp ?? {
-    advertiser_id: adv.id!, university_ids: adv.university_id ? [adv.university_id] : [], college_ids: [], placement: 'home_banner', title: '', body: '', image_url: null,
-    offer: '', cta_url: '', cta_label: '', starts_on: today(), ends_on: ymd(new Date(Date.now() + 30 * 864e5)), daily_from: null, daily_to: null, priority: 10, is_active: true,
-    cta_kind: 'link', show_text: true,
+    advertiser_id: given.id ?? '', university_ids: given.university_id ? [given.university_id] : [], college_ids: [], placement: 'home_banner', title: '', body: '',
+    image_url: null, offer: '', cta_url: '', cta_label: '', starts_on: today(), ends_on: ymd(new Date(Date.now() + 30 * 864e5)), daily_from: null, daily_to: null,
+    priority: 10, is_active: true, cta_kind: given.phone ? 'call' : null, show_text: true,
   });
   const [msg, setMsg] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
   const set = (p: Partial<Camp>) => setC((x) => ({ ...x, ...p }));
+  const everywhere = unis.length > 0 && unis.every((u) => c.university_ids.includes(u.id));
 
   async function save() {
-    if (!c.title.trim() || c.university_ids.length === 0) { setMsg(t('أدخل عنوانًا واختر جامعة واحدة على الأقل.')); return; }
+    setMsg(null);
+    if (!adv.name.trim()) { setMsg(t('اكتب اسم المحل')); return; }
+    if (!c.image_url && !c.title.trim()) { setMsg(t('أضف صورة للبانر أو اكتب عنوانًا.')); return; }
+    // nobody chosen: the shop's university, or every university
+    const reach = c.university_ids.length ? c.university_ids : adv.university_id ? [adv.university_id] : unis.map((u) => u.id);
     const cta = c.cta_kind === 'link' ? c.cta_url?.trim() || null : null;
     if (c.cta_kind === 'link' && (!cta || !/^https:\/\/\S+$/i.test(cta))) { setMsg(t('يجب أن يبدأ رابط الزر بـ https://')); return; }
-    if (c.cta_kind === 'map' && !adv.building_id && adv.lat == null) { setMsg(t('حدّد مكان المحل على الخريطة في الأعلى ليعمل زر «خذني إليه».')); return; }
-    if (c.cta_kind === 'call' && !adv.phone?.trim()) { setMsg(t('أدخل رقم هاتف المعلن في الأعلى ليعمل زر الاتصال.')); return; }
+    if (c.cta_kind === 'map' && !adv.building_id && adv.lat == null) { setMsg(t('حدّد مكان المحل على الخريطة من صفحة المحل ليعمل زر «خذني إليه».')); return; }
+    if (c.cta_kind === 'call' && !adv.phone?.trim()) { setMsg(t('اكتب رقم هاتف المحل ليعمل زر الاتصال.')); return; }
     const time = /^([01]\d|2[0-3]):[0-5]\d$/;
     if ((c.daily_from && !time.test(c.daily_from)) || (c.daily_to && !time.test(c.daily_to))) { setMsg(t('اكتب الوقت بهذا الشكل: 08:00')); return; }
-    const row = { ...c, daily_from: c.daily_from || null, daily_to: c.daily_to || null, body: c.body?.trim() || null, offer: c.offer?.trim() || null,
-      title: c.title.trim(), cta_url: cta, cta_label: c.cta_kind ? c.cta_label?.trim() || null : null };
+    if (c.ends_on < c.starts_on) { setMsg(t('تاريخ النهاية قبل تاريخ البداية.')); return; }
+    setBusy(true);
+    // a new shop is saved first, with what was written here
+    let advId = adv.id;
+    if (!advId) {
+      const { id: _drop, ...row } = adv; void _drop;
+      const r = await supabase.from('advertisers').insert({ ...row, name: adv.name.trim(), phone: adv.phone?.trim() || null }).select('id').single();
+      if (r.error) { setBusy(false); setMsg(r.error.message); return; }
+      advId = r.data.id; setAdv((x) => ({ ...x, id: advId }));
+      await audit('add_advertiser', 'advertiser', advId!, { name: adv.name });
+    } else if ((adv.phone ?? '') !== (given.phone ?? '')) {
+      await supabase.from('advertisers').update({ phone: adv.phone?.trim() || null }).eq('id', advId);
+    }
+    const row = { ...c, advertiser_id: advId, university_ids: reach, daily_from: c.daily_from || null, daily_to: c.daily_to || null,
+      body: c.body?.trim() || null, offer: c.offer?.trim() || null, title: (c.title.trim() || adv.name.trim()).slice(0, 60),
+      // a photo is the whole banner: only «ممول» and the button go on it
+      show_text: !c.image_url, cta_url: cta, cta_label: c.cta_kind ? c.cta_label?.trim() || null : null };
     const { error } = c.id ? await supabase.from('ad_campaigns').update(row).eq('id', c.id) : await supabase.from('ad_campaigns').insert(row);
+    setBusy(false);
     if (error) { setMsg(error.message); return; }
-    await audit(c.id ? 'edit_campaign' : 'add_campaign', 'campaign', c.id ?? adv.id!, { title: c.title });
+    await audit(c.id ? 'edit_campaign' : 'add_campaign', 'campaign', c.id ?? advId!, { title: row.title });
     done(); onDone();
   }
 
-  const preview = <AdSlide ad={toAd(adv, c)} />;
+  const preview = <AdSlide ad={toAd(adv, { ...c, show_text: !c.image_url })} />;
   return (
     <View style={{ gap: 12 }}>
-      <Row gap={8}>
-        <T v="h3" style={{ flex: 1 }}>{c.id ? t('تعديل الإعلان') : t('إعلان جديد لـ {0}', [adv.name])}</T>
-        <Act label={t('رجوع')} onPress={onDone} />
-      </Row>
+      {given.id ? (
+        <Row gap={8}>
+          <T v="h3" style={{ flex: 1 }}>{c.id ? t('تعديل الإعلان') : t('إعلان جديد لـ {0}', [adv.name])}</T>
+          <Act label={t('رجوع')} onPress={onDone} />
+        </Row>
+      ) : null}
       <T v="small" color={C.muted}>{t('هكذا سيظهر للطلاب في الرئيسية، ويتغير وأنت تكتب:')}</T>
       {preview}
 
-      <Section title={t('1. الكلام')} />
+      {!adv.id && (
+        <>
+          <Section title={t('المحل')} />
+          <Panel>
+            <Field label={t('اسم المحل')} value={adv.name} onChangeText={(v) => setAdv((x) => ({ ...x, name: v }))} placeholder={t('مثلًا: أفران الشام')} />
+            <Field label={t('رقم الهاتف (اختياري)')} value={adv.phone ?? ''} onChangeText={(v) => setAdv((x) => ({ ...x, phone: v }))} keyboardType="phone-pad" />
+            <Muted>{t('باقي معلومات المحل (مكانه على الخريطة، شعاره، قائمته) تضيفها لاحقًا من صفحته.')}</Muted>
+          </Panel>
+        </>
+      )}
+
+      <Section title={t('1. صورة البانر')} />
       <Panel>
-        <Field label={t('العنوان الكبير (60 حرفًا)')} value={c.title} onChangeText={(v) => set({ title: v })} maxLength={60} placeholder={t('مثلًا: فطور الطلاب بدينار')} />
-        <Field label={t('العرض (يظهر بشارة صفراء)')} value={c.offer ?? ''} onChangeText={(v) => set({ offer: v })} placeholder={t('خصم 20% للطلاب')} />
-        <Field label={t('سطر صغير تحت العنوان (اختياري)')} value={c.body ?? ''} onChangeText={(v) => set({ body: v })} maxLength={140} />
+        <Row gap={10}>
+          <Act kind={c.image_url ? 'soft' : 'primary'} label={c.image_url ? t('غيّر الصورة') : t('أضف صورة')} onPress={async () => { try { const u = await pickAndUpload(true); if (u) set({ image_url: u }); } catch (e) { setMsg((e as Error).message); } }} />
+          {c.image_url ? <Act label={t('إزالة الصورة')} onPress={() => set({ image_url: null })} /> : null}
+        </Row>
+        <Muted>{c.image_url
+          ? t('الصورة هي البانر كاملًا: لا شعار ولا كلام فوقها، فقط «ممول» والزر.')
+          : t('بصورة: تصبح هي البانر كاملًا. دونها: يُبنى البانر من العنوان والعرض أدناه.')}</Muted>
       </Panel>
 
-      <Section title={t('2. الزر')} />
+      {!c.image_url && (
+        <>
+          <Section title={t('2. الكلام')} />
+          <Panel>
+            <Field label={t('العنوان الكبير (60 حرفًا)')} value={c.title} onChangeText={(v) => set({ title: v })} maxLength={60} placeholder={t('مثلًا: فطور الطلاب بدينار')} />
+            <Field label={t('العرض (يظهر بشارة صفراء، اختياري)')} value={c.offer ?? ''} onChangeText={(v) => set({ offer: v })} placeholder={t('خصم 20% للطلاب')} />
+            <Field label={t('سطر صغير تحت العنوان (اختياري)')} value={c.body ?? ''} onChangeText={(v) => set({ body: v })} maxLength={140} />
+          </Panel>
+        </>
+      )}
+
+      <Section title={c.image_url ? t('2. الزر') : t('3. الزر')} />
       <Panel>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
           {CTA_ACTIONS.map(([w, k]) => <Chip key={w} label={w} active={c.cta_kind === k && (c.cta_label || CTA_DEFAULT[k]) === w} onPress={() => set({ cta_kind: k, cta_label: w })} />)}
@@ -140,41 +195,34 @@ function CampaignForm({ adv, camp, onDone }: { adv: Adv; camp: Camp | null; onDo
           <Field label={t('رابط موقعه أو صفحة الطلب')} value={c.cta_url ?? ''} onChangeText={(v) => set({ cta_url: v })} placeholder="https://"
             autoCapitalize="none" autoCorrect={false} keyboardType="url" maxLength={500} />
         )}
+        {c.cta_kind === 'call' && adv.id && (
+          <Field label={t('رقم هاتف المحل')} value={adv.phone ?? ''} onChangeText={(v) => setAdv((x) => ({ ...x, phone: v }))} keyboardType="phone-pad" />
+        )}
         {c.cta_kind === 'map' && <Muted>{adv.lat != null || adv.building_id
           ? t('يفتح خريطة الجامعة ويرشد الطالب إلى المحل خطوة بخطوة.')
-          : t('حدّد مكان المحل على الخريطة في الأعلى ليعمل هذا الزر.')}</Muted>}
-        {c.cta_kind === 'call' && <Muted>{adv.phone?.trim() ? t('يتصل برقم المحل: {0}', [adv.phone]) : t('أضف رقم هاتف المحل في الأعلى ليعمل هذا الزر.')}</Muted>}
-        {c.cta_kind && (
-          <Field label={t('كلمة مختلفة على الزر (اختياري)')} value={c.cta_label ?? ''} onChangeText={(v) => set({ cta_label: v })} placeholder={CTA_DEFAULT[c.cta_kind]} maxLength={20} />
-        )}
+          : t('حدّد مكان المحل على الخريطة من صفحة المحل ليعمل هذا الزر.')}</Muted>}
         <Muted>{t('الضغط على أي مكان في البانر يفتح صفحة المحل: رقمه وموقعه وقائمته.')}</Muted>
       </Panel>
 
-      <Section title={t('3. الصورة')} />
+      <Section title={c.image_url ? t('3. المدة ولمن') : t('4. المدة ولمن')} />
       <Panel>
-        <Row gap={10}>
-          <Act kind={c.image_url ? 'soft' : 'primary'} label={c.image_url ? t('غيّر الصورة') : t('أضف صورة')} onPress={async () => { try { const u = await pickAndUpload(true); if (u) set({ image_url: u }); } catch (e) { setMsg((e as Error).message); } }} />
-          {c.image_url ? <Act label={t('إزالة الصورة')} onPress={() => set({ image_url: null })} /> : null}
-        </Row>
-        <Muted>{t('تُقصّ بشكل البانر، وتُظلَّل أطرافها تلقائيًا ليظهر الكلام واضحًا. دون صورة يظهر شعار المحل على خلفية متدرّجة.')}</Muted>
-        {c.image_url ? <Toggle value={!c.show_text} onChange={(v) => set({ show_text: !v })} label={t('الكلام مكتوب على الصورة نفسها')}
-          hint={t('يظهر البانر كما هو، وفوقه «ممول» والزر فقط.')} /> : null}
-      </Panel>
-
-      <Section title={t('4. أين ومتى')} />
-      <Panel>
-        <OptionPicker label={t('مكانه في التطبيق')} value={c.placement} options={PLACES} onChange={(v) => set({ placement: v })} />
-        <T v="small" color={C.muted}>{t('يظهر لطلاب')}</T>
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-          {unis.map((u) => {
-            const on = c.university_ids.includes(u.id);
-            return <Chip key={u.id} label={u.name_ar} active={on} onPress={() => set({ university_ids: on ? c.university_ids.filter((x) => x !== u.id) : [...c.university_ids, u.id] })} />;
-          })}
-        </View>
         <Row gap={8}>
           <View style={{ flex: 1, gap: 6 }}><T v="small" color={C.muted}>{t('من تاريخ')}</T><DateField value={new Date(c.starts_on)} onChange={(d) => set({ starts_on: ymd(d) })} /></View>
           <View style={{ flex: 1, gap: 6 }}><T v="small" color={C.muted}>{t('إلى تاريخ')}</T><DateField value={new Date(c.ends_on)} onChange={(d) => set({ ends_on: ymd(d) })} /></View>
         </Row>
+        <T v="small" color={C.muted}>{t('يظهر لطلاب')}</T>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+          <Chip label={t('كل الجامعات')} active={everywhere} onPress={() => set({ university_ids: everywhere ? [] : unis.map((u) => u.id) })} />
+          {unis.map((u) => {
+            const on = c.university_ids.includes(u.id);
+            return <Chip key={u.id} label={u.name_ar} active={on && !everywhere} onPress={() => set({ university_ids: everywhere ? [u.id] : on ? c.university_ids.filter((x) => x !== u.id) : [...c.university_ids, u.id] })} />;
+          })}
+        </View>
+        {!c.university_ids.length && <Muted>{adv.university_id ? t('لم تختر: يظهر لطلاب جامعة المحل.') : t('لم تختر: يظهر لطلاب كل الجامعات.')}</Muted>}
+      </Panel>
+
+      <Section title={t('خيارات إضافية (اختياري)')} />
+      <Panel>
         <Row gap={8}>
           <View style={{ flex: 1 }}><Field label={t('كل يوم من الساعة')} value={c.daily_from ?? ''} onChangeText={(v) => set({ daily_from: v })} placeholder="08:00" /></View>
           <View style={{ flex: 1 }}><Field label={t('للساعة')} value={c.daily_to ?? ''} onChangeText={(v) => set({ daily_to: v })} placeholder="23:00" /></View>
@@ -182,13 +230,12 @@ function CampaignForm({ adv, camp, onDone }: { adv: Adv; camp: Camp | null; onDo
         <Muted>{t('اترك الساعات فارغة ليظهر طول اليوم.')}</Muted>
         <OptionPicker label={t('الباقة (الأعلى يظهر أولًا)')} value={String(packageOf(c.priority))}
           options={PACKAGES as Record<PackageKey, string> as unknown as Record<string, string>} onChange={(v) => set({ priority: Number(v) })} />
+        <OptionPicker label={t('مكانه في التطبيق')} value={c.placement} options={PLACES} onChange={(v) => set({ placement: v })} />
       </Panel>
 
-      <Section title={t('5. راجِع وانشر')} />
-      {preview}
       <Toggle value={c.is_active} onChange={(v) => set({ is_active: v })} label={t('منشور')} hint={t('أوقفه متى شئت دون حذفه.')} />
       {msg && <T v="small" color={C.red}>{msg}</T>}
-      <Actions><Act label={c.id ? t('احفظ التعديلات') : t('انشر الإعلان')} kind="primary" onPress={save} /><Act label={t('إلغاء')} onPress={onDone} /></Actions>
+      <Actions><Act label={c.id ? t('احفظ التعديلات') : t('انشر الإعلان')} kind="primary" loading={busy} onPress={save} /><Act label={t('إلغاء')} onPress={onDone} /></Actions>
     </View>
   );
 }
@@ -327,6 +374,8 @@ function AdvEditor({ initial, onClose, onPickSpot }: { initial: Adv; onClose: ()
 /** Admin › ads: advertisers, their campaigns and results (owner only). */
 export default function Ads() {
   const [sel, setSel] = useState<Adv | null>(null);
+  // «+ إعلان»: which shop first (one of them, or a new one written in the ad itself)
+  const [quick, setQuick] = useState<'choose' | Adv | null>(null);
   const { data, loading, error, reload } = useLoad<(Adv & { university: { name_ar: string } | null; camps: Camp[] })[]>(
     () => supabase.from('advertisers').select('*, university:universities(name_ar), camps:ad_campaigns(*)').order('created_at', { ascending: false }) as never, []);
 
@@ -346,7 +395,7 @@ export default function Ads() {
   const open = (a: Adv & { university?: unknown; camps?: unknown }) => { const { university, camps, ...rest } = a; void university; void camps; setSel(rest); };
 
   return (
-    <AdminScreen ownerOnly title={t('الإعلانات')} subtitle={t('مطاعم ومحلات حول الجامعات · كل إعلان يحمل علامة «ممول»')} right={<Act label={t('+ محل')} kind="primary" onPress={() => setSel(blankAdv())} />}>
+    <AdminScreen ownerOnly title={t('الإعلانات')} subtitle={t('مطاعم ومحلات حول الجامعات · كل إعلان يحمل علامة «ممول»')} right={<Act label={t('+ إعلان')} kind="primary" onPress={() => setQuick((data ?? []).length ? 'choose' : blankAdv())} />}>
       <State loading={loading} error={error} empty={data?.length === 0}>
         <View style={{ gap: 18 }}>
           {(data ?? []).map((a) => {
@@ -373,7 +422,18 @@ export default function Ads() {
           })}
         </View>
       </State>
-      {!loading && (data ?? []).length === 0 && <Muted>{t('أضف أول محل من الزر في الأعلى.')}</Muted>}
+      {!loading && (data ?? []).length === 0 && <Muted>{t('أضف أول إعلان من الزر في الأعلى.')}</Muted>}
+      <Sheet open={!!quick} onClose={() => { setQuick(null); reload(); }} title={t('إعلان جديد')}>
+        {quick === 'choose' ? (
+          <View style={{ gap: 10 }}>
+            <T v="bodyMd">{t('لأي محل؟')}</T>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+              {(data ?? []).map((a) => <Chip key={a.id} label={a.name} onPress={() => { const { university, camps, ...rest } = a; void university; void camps; setQuick(rest); }} />)}
+              <Chip label={t('+ محل جديد')} onPress={() => setQuick(blankAdv())} />
+            </View>
+          </View>
+        ) : quick ? <CampaignForm adv={quick} camp={null} onDone={() => { setQuick(null); reload(); }} /> : null}
+      </Sheet>
       <Sheet open={!!sel && !picking} onClose={close} title={sel?.id ? sel.name : t('محل جديد')}>
         {sel && !picking && <AdvEditor key={`${sel.id ?? 'new'}-${sel.lat}`} initial={sel} onPickSpot={pickSpot} onClose={() => { setSel(null); reload(); }} />}
       </Sheet>
