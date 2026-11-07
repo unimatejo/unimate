@@ -50,12 +50,12 @@ export default function SectionScreen() {
         contentContainerStyle={{ padding: 18, paddingTop: 4, gap: 14, paddingBottom: 110 }}
         ListHeaderComponent={
           <View style={{ gap: 12 }}>
-            {category === 'lost_found' && <Segmented items={[t('الكل'), t('ضاع مني'), t('لقيت')]} value={lf} onChange={setLf} />}
+            {category === 'lost_found' && <Segmented items={[t('الكل'), t('مفقود'), t('وجدت')]} value={lf} onChange={setLf} />}
             {category === 'market' && <AdBanner placement="market_banner" />}
           </View>
         }
         renderItem={({ item }) => <PostCard post={item} onLikes={setLikesOf} compact />}
-        ListEmptyComponent={loading ? <ListSkeleton n={3} kind="post" /> : <Empty title={t('ما في إشي هون لهلأ')} body={t('كون أول واحد بينشر بهالقسم.')} />}
+        ListEmptyComponent={loading ? <ListSkeleton n={3} kind="post" /> : <Empty title={t('لا يوجد شيء هنا حتى الآن')} body={t('كن أول من ينشر في هذا القسم.')} />}
       />
       </OnScreenProvider>
       <Tap onPress={() => router.push({ pathname: '/post/new', params: { category } })} accessibilityLabel={t('أضف')}

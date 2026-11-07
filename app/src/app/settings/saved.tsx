@@ -43,7 +43,7 @@ export default function Saved() {
 
   return (
     <Screen>
-      <Header title={t('المحفوظات')} subtitle={t('إنت بس بتشوفها')} />
+      <Header title={t('المحفوظات')} subtitle={t('أنت فقط من يراها')} />
       <OnScreenProvider value={visible}>
       <FlatList
         onViewableItemsChanged={onViewableItemsChanged}
@@ -53,7 +53,7 @@ export default function Saved() {
         refreshControl={<PullRefresh onRefresh={load} />}
         contentContainerStyle={{ padding: 18, paddingTop: 4, gap: 14, paddingBottom: 60 }}
         renderItem={({ item }) => <PostCard post={item} onLikes={setLikesOf} compact />}
-        ListEmptyComponent={loading ? <ListSkeleton n={3} kind="post" /> : <Empty icon={<Bookmark size={28} color={C.primary} />} title={t('ما حفظت إشي')} body={t('اضغط علامة الحفظ على أي ملخص أو منشور وبيطلع هون.')} />}
+        ListEmptyComponent={loading ? <ListSkeleton n={3} kind="post" /> : <Empty icon={<Bookmark size={28} color={C.primary} />} title={t('لم تحفظ شيئًا')} body={t('اضغط علامة الحفظ على أي ملخص أو منشور ليظهر هنا.')} />}
       />
       </OnScreenProvider>
       <LikesSheet post={likesOf} onClose={() => setLikesOf(null)} />

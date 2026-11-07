@@ -41,7 +41,7 @@ export default function Requests() {
         first: (msgs ?? []).find((m) => m.conversation_id === c.id)?.body ?? null,
         from: ((from ?? []) as unknown as Req['from'][]).find((p) => p?.id === c.created_by) ?? null,
       })));
-    } catch (e) { reportError(e); toast.error(t('تأكد من الإنترنت وجرّب كمان مرة.')); }
+    } catch (e) { reportError(e); toast.error(t('تحقق من اتصالك بالإنترنت وحاول مرة أخرى.')); }
     finally { setLoading(false); }
   }, [profile]);
 
@@ -67,7 +67,7 @@ export default function Requests() {
         ListHeaderComponent={
           <Row gap={10} center={false} style={{ backgroundColor: C.card, borderRadius: 20, padding: 14, marginBottom: 4 }}>
             <View style={{ width: 38, height: 38, borderRadius: 13, backgroundColor: C.green, alignItems: 'center', justifyContent: 'center' }}><ShieldCheck size={20} color={C.white} /></View>
-            <T v="small" color={C.ink2} style={{ flex: 1 }}>{t('المرسل ما بيعرف إذا شفت رسالته. إذا تجاهلتها، بتختفي بهدوء وما حدا بيعرف.')}</T>
+            <T v="small" color={C.ink2} style={{ flex: 1 }}>{t('لن يعرف المرسل إن كنت قد رأيت رسالته. إذا تجاهلتها، ستختفي بهدوء دون أن يعلم أحد.')}</T>
           </Row>
         }
         renderItem={({ item }) => (
@@ -91,7 +91,7 @@ export default function Requests() {
           </Animated.View>
         )}
         refreshControl={<RefreshControl refreshing={loading && rows.length > 0} onRefresh={load} />}
-        ListEmptyComponent={loading ? <ListSkeleton n={3} /> : <Empty icon={<MessageCircle size={28} color={C.primary} />} title={t('ما في طلبات جديدة')} body={t('لما حدا جديد يراسلك، بيوصل هون أول.')} />}
+        ListEmptyComponent={loading ? <ListSkeleton n={3} /> : <Empty icon={<MessageCircle size={28} color={C.primary} />} title={t('لا توجد طلبات جديدة')} body={t('عندما يراسلك شخص جديد، تصل رسالته إلى هنا أولًا.')} />}
       />
     </Screen>
   );

@@ -42,30 +42,30 @@ export default function NotifyIntro() {
           <Image source={BELL} style={{ width: 132, height: 132 }} contentFit="contain" accessibilityIgnoresInvertColors />
         </Animated.View>
         <Animated.View entering={FadeInDown.delay(80).duration(260)} style={{ gap: 8 }}>
-          <T style={{ fontFamily: F.display, fontSize: 28, lineHeight: 40, textAlign: 'center' }}>{t('ما يفوتك إشي')}</T>
+          <T style={{ fontFamily: F.display, fontSize: 28, lineHeight: 40, textAlign: 'center' }}>{t('لا يفوتك شيء')}</T>
           <T v="body" color={C.muted} style={{ textAlign: 'center' }}>
             {install
-              ? t('عشان توصلك الإشعارات على الآيفون، ضيف يونيميت للشاشة الرئيسية وافتحه من الأيقونة.')
-              : t('فعّل الإشعارات عشان ما يفوتك موعد محاضرة أو امتحان أو تحديث بجدولك.')}
+              ? t('لتصلك الإشعارات على الآيفون، أضف يونيميت إلى الشاشة الرئيسية وافتحه من الأيقونة.')
+              : t('فعّل الإشعارات كي لا يفوتك موعد محاضرة أو امتحان أو تحديث في جدولك.')}
           </T>
         </Animated.View>
         <Animated.View entering={FadeInDown.delay(140).duration(260)} style={{ gap: 12, backgroundColor: C.card, borderRadius: 22, padding: 16 }}>
           {install ? (
-            <Line icon={<Share size={20} color={C.primary} />} text={t('من سفاري اكبس زر المشاركة، بعدين «إضافة إلى الشاشة الرئيسية».')} />
+            <Line icon={<Share size={20} color={C.primary} />} text={t('من سفاري اضغط زر المشاركة، ثم «إضافة إلى الشاشة الرئيسية».')} />
           ) : (
             <>
               <Line icon={<AlarmClock size={20} color={C.orange} />} text={t('تذكير قبل كل محاضرة')} />
-              <Line icon={<CalendarDays size={20} color={C.violet} />} text={t('مواعيد الامتحانات وأي تغيير بجدولك')} />
+              <Line icon={<CalendarDays size={20} color={C.violet} />} text={t('مواعيد الامتحانات وأي تغيير في جدولك')} />
               <Line icon={<MessageCircle size={20} color={C.green} />} text={t('الرسائل والإعلانات الرسمية من كليتك')} />
             </>
           )}
         </Animated.View>
         <View style={{ gap: 10 }}>
           {install
-            ? <Button title={t('تمام')} onPress={later} />
+            ? <Button title={t('حسناً')} onPress={later} />
             : <Button title={t('تفعيل الإشعارات')} loading={busy} onPress={on} disabled={st === null} />}
-          {!install && <Button kind="ghost" title={t('مش هلأ')} onPress={later} disabled={busy} />}
-          <T v="tiny" color={C.faint} style={{ textAlign: 'center' }}>{t('بتقدر تغيّر كل نوع لحاله من الإعدادات بأي وقت.')}</T>
+          {!install && <Button kind="ghost" title={t('ليس الآن')} onPress={later} disabled={busy} />}
+          <T v="tiny" color={C.faint} style={{ textAlign: 'center' }}>{t('يمكنك تغيير كل نوع على حدة من الإعدادات في أي وقت.')}</T>
         </View>
       </View>
     </Screen>

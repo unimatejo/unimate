@@ -38,7 +38,7 @@ export default function FacultyTitle() {
   async function send() {
     if (!title || busy) return;
     setBusy(true);
-    const r = await run(supabase.rpc('request_title', { p_title: title, p_department: dept, p_note: note, p_position: position.trim() || null }), { msg: t('ما زبط إرسال الطلب. الطلب بس لإيميل الموظفين بالجامعة.') });
+    const r = await run(supabase.rpc('request_title', { p_title: title, p_department: dept, p_note: note, p_position: position.trim() || null }), { msg: t('تعذّر إرسال الطلب. الطلب متاح فقط لبريد الموظفين الإلكتروني في الجامعة.') });
     setBusy(false);
     if (!r.ok) return;
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
@@ -51,7 +51,7 @@ export default function FacultyTitle() {
 
   return (
     <Screen>
-      <Header title={t('حساب هيئة التدريس')} subtitle={t('اللقب بيظهر جنب اسمك بعد ما نتأكد منه')} />
+      <Header title={t('حساب هيئة التدريس')} subtitle={t('سيظهر اللقب بجانب اسمك بعد التحقق منه')} />
       {req === undefined ? <Loading /> : (
         <ScrollView contentContainerStyle={{ padding: 18, paddingTop: 4, gap: 16, paddingBottom: 60 }} keyboardShouldPersistTaps="handled">
           {verified && (
@@ -63,14 +63,14 @@ export default function FacultyTitle() {
               <T v="h3">{titledName(profile?.full_name, profile?.academic_title, true)}</T>
               <TitleBadge title={profile?.academic_title} verified size="md" label={profile?.position_title} />
               {profile?.department ? <T v="small" color={C.muted}>{profile.department}</T> : null}
-              <T v="tiny" color={C.muted}>{t('إذا تغيّر منصبك، ابعت طلب جديد تحت.')}</T>
+              <T v="tiny" color={C.muted}>{t('إذا تغيّر منصبك، أرسل طلباً جديداً أدناه.')}</T>
             </View>
           )}
 
           {!staff && !verified ? (
             <View style={card}>
-              <T v="bodyMd">{t('التوثيق بس لحسابات الموظفين')}</T>
-              <T v="small" color={C.muted}>{t('ادخل بإيميلك الوظيفي بالجامعة (مش إيميل الطالب)، وإذا بتدخل بمايكروسوفت لقبك بينحط لحاله.')}</T>
+              <T v="bodyMd">{t('التوثيق لحسابات الموظفين فقط')}</T>
+              <T v="small" color={C.muted}>{t('سجّل الدخول ببريدك الإلكتروني الوظيفي في الجامعة (ليس بريد الطالب)، وإذا سجّلت الدخول بمايكروسوفت فسيُضاف لقبك تلقائياً.')}</T>
             </View>
           ) : pending ? (
             <View style={card}>
@@ -79,25 +79,25 @@ export default function FacultyTitle() {
                 <T v="bodyMd">{t('طلبك قيد المراجعة')}</T>
               </View>
               <T v="small" color={C.ink2}>{titleLabel(req?.title)}{req?.department ? ` · ${req.department}` : ''}</T>
-              <T v="tiny" color={C.muted}>{t('بنتأكد من إيميلك الجامعي أو بنتواصل معك، وبيوصلك إشعار لما يتوثّق.')}</T>
+              <T v="tiny" color={C.muted}>{t('سنتحقق من بريدك الجامعي أو نتواصل معك، وسيصلك إشعار عند توثيق حسابك.')}</T>
             </View>
           ) : (
             <View style={{ gap: 14 }}>
               {req?.status === 'rejected' && (
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: C.redSoft, borderRadius: R.md, padding: 12 }}>
                   <XCircle size={18} color={C.red} />
-                  <T v="small" color={C.ink} style={{ flex: 1 }}>{t('ما قدرنا نوثّق طلبك الأخير. ابعت طلب جديد مع ملاحظة بتساعدنا نتأكد.')}</T>
+                  <T v="small" color={C.ink} style={{ flex: 1 }}>{t('تعذّر توثيق طلبك الأخير. أرسل طلبًا جديدًا مع ملاحظة تساعدنا على التحقق.')}</T>
                 </View>
               )}
-              <T v="bold">{t('شو لقبك أو منصبك؟')}</T>
+              <T v="bold">{t('ما لقبك أو منصبك؟')}</T>
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
                 {TITLE_ORDER.filter((k) => !TOP.includes(k)).map((k) => <Chip key={k} label={titleLabel(k)} active={title === k} onPress={() => setTitle(k)} />)}
               </View>
-              <Field label={t('منصبك بالكامل (اختياري)')} value={position} onChangeText={setPosition} maxLength={80} placeholder={t('مثلاً: عميد شؤون الطلبة، مدير مركز الحاسوب')} />
+              <Field label={t('منصبك كاملًا (اختياري)')} value={position} onChangeText={setPosition} maxLength={80} placeholder={t('مثلاً: عميد شؤون الطلبة، مدير مركز الحاسوب')} />
               <Field label={t('القسم أو الكلية')} value={dept} onChangeText={setDept} maxLength={80} placeholder={t('مثلاً قسم الهندسة المدنية')} />
-              <Field label={t('ملاحظة (اختياري)')} value={note} onChangeText={setNote} maxLength={300} multiline placeholder={t('رقم مكتبك، رابط صفحتك بالجامعة، أو أي إشي بيساعدنا نتأكد')} style={{ minHeight: 90, textAlignVertical: 'top', paddingTop: 14 }} />
-              <Button title={t('ابعت الطلب')} onPress={send} loading={busy} disabled={!title} />
-              <T v="tiny" color={C.muted} style={{ textAlign: 'center' }}>{t('ما حدا بيقدر يحط لقب لحاله، الإدارة بتراجع كل طلب.')}</T>
+              <Field label={t('ملاحظة (اختياري)')} value={note} onChangeText={setNote} maxLength={300} multiline placeholder={t('رقم مكتبك، أو رابط صفحتك في الجامعة، أو أي شيء يساعدنا على التحقق')} style={{ minHeight: 90, textAlignVertical: 'top', paddingTop: 14 }} />
+              <Button title={t('أرسل الطلب')} onPress={send} loading={busy} disabled={!title} />
+              <T v="tiny" color={C.muted} style={{ textAlign: 'center' }}>{t('لا يمكن لأحد إضافة لقب بنفسه، تراجع الإدارة كل طلب.')}</T>
             </View>
           )}
         </ScrollView>

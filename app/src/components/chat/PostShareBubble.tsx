@@ -43,7 +43,7 @@ export function PostShareBubble({ m, mine }: { m: Message; mine: boolean }) {
     <View style={{ gap: 4, alignItems: mine ? 'flex-end' : 'flex-start' }}>
       {post === null ? (
         <View style={[{ paddingHorizontal: 14, paddingVertical: 12, maxWidth: 240 }, bubble(mine, C.soft)]}>
-          <T v="small" color={C.muted}>{t('المنشور مش متوفر، يمكن انحذف أو صاحبه خلّاه خاص.')}</T>
+          <T v="small" color={C.muted}>{t('المنشور غير متاح، ربما حُذف أو جعله صاحبه خاصاً.')}</T>
         </View>
       ) : (
         <Tap onPress={() => post && router.push({ pathname: '/post/[id]', params: { id: post.id } })} scale={0.98}

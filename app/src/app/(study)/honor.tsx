@@ -85,7 +85,7 @@ export default function Honor() {
 
   return (
     <Screen>
-      <Header title={t('المتفوقين')}
+      <Header title={t('المتفوقون')}
         subtitle={status?.term ? [status.term, status.updated_at ? t('آخر تحديث {0}', [timeAgo(status.updated_at)]) : null].filter(Boolean).join(' · ') : t('الترتيب من سجل الجامعة الرسمي')} />
       <ScrollView contentContainerStyle={{ padding: 18, paddingTop: 4, gap: 14, paddingBottom: me ? 130 + insets.bottom : 40 }} refreshControl={<PullRefresh onRefresh={load} />}>
         <Segmented items={[t('تخصصي'), t('كليتي'), t('جامعتي')]} value={scope} onChange={setScope} />
@@ -104,15 +104,15 @@ export default function Honor() {
           <Animated.View entering={FadeIn.duration(220)}>
             <Card style={{ alignItems: 'center', gap: 10, paddingVertical: 30 }}>
               <Image source={HONOR_EMOJI.trophy} style={{ width: 96, height: 96 }} contentFit="contain" />
-              <T v="h3" style={{ textAlign: 'center' }}>{t('لوحة المتفوقين بتشتغل أول ما توصل علامات الجامعة')}</T>
-              <T v="small" color={C.muted} style={{ textAlign: 'center' }}>{t('الترتيب بيجي من سجل الجامعة الرسمي، مش من حاسبة المعدل.')}</T>
+              <T v="h3" style={{ textAlign: 'center' }}>{t('تعمل لوحة المتفوقين فور وصول علامات الجامعة')}</T>
+              <T v="small" color={C.muted} style={{ textAlign: 'center' }}>{t('يستند الترتيب إلى سجل الجامعة الرسمي، وليس إلى حاسبة المعدل.')}</T>
             </Card>
           </Animated.View>
         ) : (
           <>
             {!status.has_record && !hide && (
               <Row gap={8} style={{ backgroundColor: C.soft, borderRadius: 16, padding: 12 }}>
-                <Info size={16} color={C.muted} /><T v="small" color={C.ink2} style={{ flex: 1 }}>{t('ما لقينا علاماتك بسجل الجامعة لهلأ')}</T>
+                <Info size={16} color={C.muted} /><T v="small" color={C.ink2} style={{ flex: 1 }}>{t('لم نعثر على علاماتك في سجل الجامعة حتى الآن')}</T>
               </Row>
             )}
             {top.length ? (
@@ -122,20 +122,20 @@ export default function Honor() {
             ) : (
               <Card style={{ alignItems: 'center', gap: 8, paddingVertical: 24 }}>
                 <Image source={HONOR_EMOJI.trophy} style={{ width: 72, height: 72 }} contentFit="contain" />
-                <T v="bodyMd" style={{ textAlign: 'center' }}>{t('ما في ترتيب هون لهلأ')}</T>
+                <T v="bodyMd" style={{ textAlign: 'center' }}>{t('لا يوجد ترتيب هنا حتى الآن')}</T>
                 <T v="small" color={C.muted} style={{ textAlign: 'center' }}>{t('جرّب «الجامعة» أو «التراكمي».')}</T>
               </Card>
             )}
             <HonorList rows={meOutside ? [...rest, meOutside] : rest} />
             <View style={[{ backgroundColor: C.card, borderRadius: 22, padding: 14, gap: 10 }, shadow]}>
-              <Toggle value={!hide} onChange={(v) => { if (!busy) saveOptions({ show: v }); }} label={t('شارك بلوحة المتفوقين')}
-                hint={t('بالأساس ما حدا بيظهر. اللوحة بتعرض أول 10 بس، ومعدلك ما بيشوفه غيرك أبداً. إذا كنت من العشرة الأوائل بيطلع حوالين صورتك إطار تكريم.')} />
+              <Toggle value={!hide} onChange={(v) => { if (!busy) saveOptions({ show: v }); }} label={t('شارك في لوحة المتفوقين')}
+                hint={t('افتراضياً لا يظهر أحد. تعرض اللوحة أول 10 فقط، ولا يرى معدلك أحد غيرك أبداً. إذا كنت من العشرة الأوائل يظهر حول صورتك إطار تكريم.')} />
               {!hide && (
                 <Field label={t('اسم مستعار (اختياري)')} value={alias} maxLength={24} onChangeText={setAlias} onBlur={() => saveOptions({})}
-                  placeholder={t('بيطلع بدل اسمك وصورتك، وبدون إطار')} />
+                  placeholder={t('يظهر بدلاً من اسمك وصورتك، وبدون إطار')} />
               )}
             </View>
-            <T v="tiny" color={C.faint} style={{ textAlign: 'center', fontFamily: F.body }}>{t('الترتيب بيتحدّث كل 24 ساعة من سجل الجامعة الرسمي.')}</T>
+            <T v="tiny" color={C.faint} style={{ textAlign: 'center', fontFamily: F.body }}>{t('يتم تحديث الترتيب كل 24 ساعة من سجل الجامعة الرسمي.')}</T>
           </>
         )}
       </ScrollView>

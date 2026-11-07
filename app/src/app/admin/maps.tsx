@@ -33,13 +33,13 @@ function Suggestions({ u, onChanged }: { u: U; onChanged: () => void }) {
             {p.description ? <T v="small" color={C.ink2}>{p.description}</T> : null}
             <Muted>{[p.by?.full_name, fmtDate(p.created_at)].filter(Boolean).join(' · ')}</Muted>
             <Actions>
-              <Act label={t('شوف عالخريطة')} onPress={() => go(`/map?uni=${u.id}&lat=${p.lat}&lng=${p.lng}&name=${encodeURIComponent(p.name_ar)}`)} />
+              <Act label={t('عرض على الخريطة')} onPress={() => go(`/map?uni=${u.id}&lat=${p.lat}&lng=${p.lng}&name=${encodeURIComponent(p.name_ar)}`)} />
               {owner && <Act label={t('اقبل')} kind="green" onPress={() => decide(p.id, 'approved')} />}
               {owner && <Act label={t('ارفض')} onPress={() => decide(p.id, 'rejected')} />}
             </Actions>
           </Panel>
         ))}
-        {!owner && <Muted>{t('القبول والرفض للمالك بس.')}</Muted>}
+        {!owner && <Muted>{t('القبول والرفض للمالك فقط.')}</Muted>}
       </View>
     </State>
   );
@@ -54,7 +54,7 @@ function level(u: U): Level {
   return 'mid';
 }
 const LEVEL: Record<Level, { label: string; tone: string }> = {
-  ready: { label: t('جاهزة'), tone: 'green' }, mid: { label: t('متوسطة'), tone: 'orange' }, thin: { label: t('ناقصة'), tone: 'red' }, none: { label: t('ما إلها خريطة'), tone: '' },
+  ready: { label: t('جاهزة'), tone: 'green' }, mid: { label: t('متوسطة'), tone: 'orange' }, thin: { label: t('ناقصة'), tone: 'red' }, none: { label: t('لا توجد لها خريطة'), tone: '' },
 };
 
 /** One number of a campus: red when it's far from enough, orange on the way, green when it's there. */
@@ -82,7 +82,7 @@ export default function AdminMaps() {
     .sort((a, b) => (order === 'name' ? 0 : a.buildings + a.places - (b.buildings + b.places)));
 
   async function rebuild(u: U) {
-    if (!(await confirm(t('تبني خريطة «{0}» من جديد؟', [nm(u)]), t('بتاخد دقيقة تقريباً. الطلاب بيشوفوا الخريطة الجديدة أول ما تخلص.'), t('ابنيها')))) return;
+    if (!(await confirm(t('إعادة بناء خريطة «{0}»؟', [nm(u)]), t('يستغرق ذلك دقيقة تقريباً. سيرى الطلاب الخريطة الجديدة فور الانتهاء.'), t('إعادة البناء')))) return;
     setBusy(u.id);
     const { error: e } = await supabase.rpc('admin_campus_rebuild', { p_university: u.id });
     setBusy(null);
@@ -90,10 +90,10 @@ export default function AdminMaps() {
   }
 
   return (
-    <AdminScreen title={t('خرائط الجامعات')} subtitle={t('اكبس على أي جامعة وشوف خريطتها زي ما بيشوفها طلابها')}>
+    <AdminScreen title={t('خرائط الجامعات')} subtitle={t('اضغط على أي جامعة واطّلع على خريطتها كما يراها طلابها')}>
       <Filters items={[['all', t('الكل · {0}', [fmtNum(rows.length)])], ['ready', t('جاهزة · {0}', [fmtNum(count('ready'))])], ['mid', t('متوسطة · {0}', [fmtNum(count('mid'))])],
         ['thin', t('ناقصة · {0}', [fmtNum(count('thin'))])], ['none', t('بدون خريطة · {0}', [fmtNum(count('none'))])]]} value={f} onChange={setF} />
-      <Filters items={[['missing', t('الأنقص أولاً')], ['name', t('بالاسم')]]} value={order} onChange={setOrder} />
+      <Filters items={[['missing', t('الأكثر نقصاً أولاً')], ['name', t('بالاسم')]]} value={order} onChange={setOrder} />
       <State loading={loading} error={error} empty={!shown.length}>
         <View style={{ gap: 10 }}>
           {shown.map((u) => {
@@ -108,16 +108,16 @@ export default function AdminMaps() {
                 <Row gap={8}>
                   <Gauge n={u.buildings} label={t('مبنى')} good={15} ok={5} />
                   <Gauge n={u.places} label={t('مكان وخدمة')} good={20} ok={8} />
-                  <Gauge n={u.pending} label={t('اقتراح بيستنى')} good={1} ok={1} invert />
+                  <Gauge n={u.pending} label={t('اقتراح قيد الانتظار')} good={1} ok={1} invert />
                 </Row>
                 {u.lv === 'none' ? (
-                  <Muted>{u.has_center ? t('لسا ما انبنت خريطتها.') : t('ما إلها مركز حرم. ضيفه من «الجامعات والخرائط» وبعدين ابني الخريطة.')}</Muted>
+                  <Muted>{u.has_center ? t('لم تُبنَ خريطتها بعد.') : t('لا يوجد لها مركز حرم. أضفه من «الجامعات والخرائط» ثم ابنِ الخريطة.')}</Muted>
                 ) : (
                   <T v="small" color={C.ink2}>{t('{0} مبنى ثلاثي الأبعاد · {1} تقريبي', [fmtNum(real), fmtNum(s.approx ?? 0)])}</T>
                 )}
                 {u.lv !== 'none' && (
                   <Muted>
-                    {[t('{0} ممر وطريق', [fmtNum(s.paths ?? 0)]), s.trees ? t('{0} شجرة', [fmtNum(s.trees)]) : null, s.outline ? ((s.outlines ?? 1) > 1 ? t('{0} حدود حرم معروفة', [fmtNum(s.outlines ?? 1)]) : t('حدود الحرم معروفة')) : t('حدود الحرم مش معروفة'),
+                    {[t('{0} ممر وطريق', [fmtNum(s.paths ?? 0)]), s.trees ? t('{0} شجرة', [fmtNum(s.trees)]) : null, s.outline ? ((s.outlines ?? 1) > 1 ? t('{0} حدود حرم معروفة', [fmtNum(s.outlines ?? 1)]) : t('حدود الحرم معروفة')) : t('حدود الحرم غير معروفة'),
                       t('آخر بناء {0}', [fmtDate(u.fetched_at)])].filter(Boolean).join(' · ')}
                   </Muted>
                 )}
@@ -125,7 +125,7 @@ export default function AdminMaps() {
                 <Row gap={8} style={{ flexWrap: 'wrap' }}>
                   {u.lv !== 'none' && <Act label={t('افتح الخريطة')} kind="primary" onPress={() => go(`/map?uni=${u.id}`)} />}
                   {u.pending > 0 && <Act label={t('اقتراحات الطلاب · {0}', [fmtNum(u.pending)])} kind="green" onPress={() => setReview(u)} />}
-                  {u.has_center && <Act label={busy === u.id ? t('بيبني…') : t('ابنيها من جديد')} loading={busy === u.id} onPress={() => rebuild(u)} />}
+                  {u.has_center && <Act label={busy === u.id ? t('جارٍ البناء…') : t('أعد بناءها')} loading={busy === u.id} onPress={() => rebuild(u)} />}
                 </Row>
               </Panel>
             );

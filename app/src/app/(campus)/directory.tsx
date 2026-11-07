@@ -30,7 +30,7 @@ const TIER_OF = (p: P): Tier => {
 const TIERS: Tier[] = ['leaders', 'deans', 'heads', 'faculty', 'staff', 'pending', 'students'];
 const tierName = (k: Tier) => ({
   leaders: t('رئاسة الجامعة'), deans: t('العمداء'), heads: t('رؤساء الأقسام'), faculty: t('أعضاء هيئة التدريس'),
-  staff: t('الموظفين'), pending: t('كادر بانتظار التوثيق'), students: t('الطلاب'),
+  staff: t('الموظفون'), pending: t('كادر بانتظار التوثيق'), students: t('الطلاب'),
 })[k];
 const GOLD = '#F5B700';
 
@@ -82,15 +82,15 @@ export default function Directory() {
       {/* no staff yet: say how they get here */}
       {rows && staffCount === 0 && (
         <View style={{ marginHorizontal: 18, borderRadius: 20, padding: 14, gap: 6, backgroundColor: isDark ? '#2A2210' : '#FFF6D6', borderWidth: 1, borderColor: isDark ? '#5A4614' : '#F2DD8C' }}>
-          <Row gap={8}><ShieldCheck size={18} color={isDark ? GOLD : '#7A5A00'} /><T v="bodyMd" color={isDark ? '#FFE28A' : '#5A4200'}>{t('الرتب بتنحط تلقائي')}</T></Row>
-          <T v="small" color={isDark ? '#E9D8A6' : '#6B5410'}>{t('أول ما يسجّل الدكتور أو العميد بإيميله الجامعي، بيطلع هون بمكانه حسب رتبته الرسمية. ما حدا بيقدر يكتب رتبته بإيده.')}</T>
+          <Row gap={8}><ShieldCheck size={18} color={isDark ? GOLD : '#7A5A00'} /><T v="bodyMd" color={isDark ? '#FFE28A' : '#5A4200'}>{t('يتم تعيين الرتب تلقائياً')}</T></Row>
+          <T v="small" color={isDark ? '#E9D8A6' : '#6B5410'}>{t('بمجرد أن يسجّل الدكتور أو العميد ببريده الإلكتروني الجامعي، سيظهر هنا في مكانه حسب رتبته الرسمية. لا يمكن لأحد كتابة رتبته يدوياً.')}</T>
         </View>
       )}
 
       <View style={{ paddingHorizontal: 18, gap: 10 }}>
         <Row gap={8} style={{ minHeight: 44, borderRadius: 14, backgroundColor: C.card, paddingHorizontal: 12 }}>
           <Search size={18} color={C.muted} />
-          <TextInput keyboardAppearance={isDark ? 'dark' : 'light'} value={q} onChangeText={setQ} placeholder={t('دوّر باسم، قسم أو تخصص')} placeholderTextColor={C.faint}
+          <TextInput keyboardAppearance={isDark ? 'dark' : 'light'} value={q} onChangeText={setQ} placeholder={t('ابحث باسم أو قسم أو تخصص')} placeholderTextColor={C.faint}
             style={{ flex: 1, fontFamily: F.body, fontSize: 14, color: C.ink, textAlign: ta }} />
         </Row>
         <Row gap={8}>
@@ -120,7 +120,7 @@ export default function Directory() {
           </Row>
         )}
         renderItem={({ item, section }) => <Person p={item} big={section.key !== 'students'} />}
-        ListEmptyComponent={rows === null ? <ListSkeleton n={8} /> : <Empty title={q ? t('ما لقينا حدا بهالاسم') : t('ما في حدا لهلأ')} />}
+        ListEmptyComponent={rows === null ? <ListSkeleton n={8} /> : <Empty title={q ? t('لم يتم العثور على أحد بهذا الاسم') : t('لا يوجد أحد حتى الآن')} />}
       />
     </Screen>
   );
@@ -142,7 +142,7 @@ function Stat({ icon, tint, n, label }: { icon: React.ReactNode; tint: string; n
 
 function Person({ p, big }: { p: P; big: boolean }) {
   const sub = p.rank < 100
-    ? [p.title_verified ? p.position_title : t('إيميل كادر جامعي'), p.department].filter(Boolean).join(' · ')
+    ? [p.title_verified ? p.position_title : t('بريد إلكتروني لكادر جامعي'), p.department].filter(Boolean).join(' · ')
     : [p.major, p.college].filter(Boolean).join(' · ') || (p.username ? `@${p.username}` : '');
   return (
     <Tap haptic={false} scale={0.98} onPress={() => open(p.id)}

@@ -12,7 +12,7 @@ import { toast } from './toast';
  */
 export async function shareLink(url: string, message?: string) {
   if (Platform.OS === 'web' && typeof navigator !== 'undefined' && !(navigator as Navigator & { share?: unknown }).share) {
-    try { await navigator.clipboard.writeText(url); toast(t('انتسخ الرابط')); } catch { toast(url); }
+    try { await navigator.clipboard.writeText(url); toast(t('تم نسخ الرابط')); } catch { toast(url); }
     return;
   }
   Share.share(Platform.OS === 'web' ? { url, message: message ?? url } : { message: message ? `${message}\n${url}` : url }).catch(() => {});
@@ -27,17 +27,17 @@ export async function saveToDevice(url: string, kind: 'image' | 'video') {
       const href = URL.createObjectURL(blob);
       const a = document.createElement('a'); a.href = href; a.download = name; document.body.appendChild(a); a.click(); a.remove();
       setTimeout(() => URL.revokeObjectURL(href), 10000);
-      toast(t('انحفظت'));
+      toast(t('تم الحفظ'));
       return;
     }
     const m = mediaLibrary();
-    if (!m || (await galleryPermission(true)) !== 'granted') { toast.error(t('اسمح ليونيميت يحفظ بالصور من الإعدادات.')); return; }
+    if (!m || (await galleryPermission(true)) !== 'granted') { toast.error(t('اسمح ليونيميت بالحفظ في الصور من الإعدادات.')); return; }
     const file = await File.downloadFileAsync(url, new File(new Directory(Paths.cache), name));
     await m.saveToLibraryAsync(file.uri);
     file.delete();
-    toast(t('انحفظت بالصور ✓'));
+    toast(t('تم الحفظ في الصور ✓'));
   } catch (e) {
     reportError(e);
-    toast.error(t('ما زبط الحفظ، جرّب كمان مرة.'));
+    toast.error(t('تعذّر الحفظ، حاول مرة أخرى.'));
   }
 }

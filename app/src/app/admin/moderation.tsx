@@ -16,7 +16,7 @@ type Q = {
 type F = 'pending' | 'approved' | 'removed';
 
 const TYPE: Record<string, string> = {
-  post: t('منشور'), comment: t('تعليق'), story: t('ستوري'), message: t('رسالة بجروب'), bio: t('نبذة'), avatar: t('صورة بروفايل'), post_media: t('صورة منشور'),
+  post: t('منشور'), comment: t('تعليق'), story: t('قصة'), message: t('رسالة في مجموعة'), bio: t('نبذة'), avatar: t('صورة ملف شخصي'), post_media: t('صورة منشور'),
 };
 const BUCKET: Record<string, string> = { post_media: 'posts', story: 'stories', avatar: 'avatars' };
 
@@ -46,7 +46,7 @@ export default function Moderation() {
   );
 
   async function review(q: Q, approve: boolean, warn = false) {
-    if (!approve && !(await confirm(t('تخلّيه مخفي؟'), warn ? t('بيضل مخفي، وبيوصل صاحبه تنبيه.') : t('بيضل مخفي عن الكل.'), t('أكيد')))) return;
+    if (!approve && !(await confirm(t('إبقاؤه مخفياً؟'), warn ? t('سيبقى مخفياً، وسيصل تنبيه إلى صاحبه.') : t('سيبقى مخفياً عن الجميع.'), t('بالتأكيد')))) return;
     setBusy(q.id);
     const { error: e } = await supabase.rpc('admin_moderation_review', { p_id: q.id, p_approve: approve, p_warn: warn });
     setBusy(null);
@@ -54,8 +54,8 @@ export default function Moderation() {
   }
 
   return (
-    <AdminScreen title={t('فحص المحتوى')} subtitle={t('اللي وقّفه الفلتر التلقائي، بانتظار قرارك')}>
-      <Filters items={[['pending', t('بانتظار')], ['approved', t('انقبل')], ['removed', t('انشال')]]} value={f} onChange={setF} />
+    <AdminScreen title={t('فحص المحتوى')} subtitle={t('ما أوقفه الفلتر التلقائي، بانتظار قرارك')}>
+      <Filters items={[['pending', t('بانتظار')], ['approved', t('تم القبول')], ['removed', t('تمت الإزالة')]]} value={f} onChange={setF} />
       <State loading={loading} error={error} empty={!data?.length}>
         {(data ?? []).map((q) => (
           <Panel key={q.id}>
@@ -74,9 +74,9 @@ export default function Moderation() {
             {q.matched ? <T v="tiny" color={C.red}>{q.reason === 'image' ? q.matched : t('الكلمات: {0}', [q.matched])}</T> : null}
             {q.status === 'pending' && (
               <Actions>
-                <Act label={t('مقبول، رجّعه')} kind="green" loading={busy === q.id} onPress={() => review(q, true)} />
-                <Act label={t('خليه مخفي')} kind="danger" onPress={() => review(q, false)} />
-                <Act label={t('مخفي + نبّه صاحبه')} onPress={() => review(q, false, true)} />
+                <Act label={t('مقبول، أعِده')} kind="green" loading={busy === q.id} onPress={() => review(q, true)} />
+                <Act label={t('أبقِه مخفيًا')} kind="danger" onPress={() => review(q, false)} />
+                <Act label={t('مخفي + تنبيه صاحبه')} onPress={() => review(q, false, true)} />
               </Actions>
             )}
           </Panel>

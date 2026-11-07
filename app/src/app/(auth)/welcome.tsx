@@ -100,18 +100,18 @@ export default function Welcome() {
   async function next() {
     if (step === 1) {
       if (name.trim().length < 2) { Alert.alert(t('اكتب اسمك الكامل')); return; }
-      if (!locked && uState !== 'ok') { Alert.alert(t('اسم المستخدم'), uState === 'taken' ? t('هاد اليوزر مأخوذ، جرّب غيره.') : t('اختار يوزر من 3 لـ 24 حرف إنجليزي صغير أو أرقام أو . و _')); return; }
+      if (!locked && uState !== 'ok') { Alert.alert(t('اسم المستخدم'), uState === 'taken' ? t('اسم المستخدم هذا محجوز، جرّب اسمًا آخر.') : t('اختر اسم مستخدم من 3 إلى 24 حرفاً من الأحرف الإنجليزية الصغيرة أو الأرقام أو . و _')); return; }
     }
     if (step === 2 && !maj && !staff) {
       // universities without colleges yet, or a college without majors, must not block sign-up
       const { count: cols } = await supabase.from('colleges').select('id', { count: 'exact', head: true }).eq('university_id', university?.id ?? '');
       if (cols) {
-        if (!col) { Alert.alert(t('اختار كليتك وتخصصك')); return; }
+        if (!col) { Alert.alert(t('اختر كليتك وتخصصك')); return; }
         const { count: majs } = await supabase.from('majors').select('id', { count: 'exact', head: true }).eq('college_id', col);
-        if (majs) { Alert.alert(t('اختار كليتك وتخصصك')); return; }
+        if (majs) { Alert.alert(t('اختر كليتك وتخصصك')); return; }
       }
     }
-    if (step === 3 && !entry && !staff) { Alert.alert(t('اختار سنة دخولك للجامعة')); return; }
+    if (step === 3 && !entry && !staff) { Alert.alert(t('اختر سنة التحاقك بالجامعة')); return; }
     if (step === 4) { finish(); return; }
     setStep(step + 1);
   }
@@ -119,8 +119,8 @@ export default function Welcome() {
   async function finish() {
     if (!profile) return;
     const igH = handleFrom(ig, 'instagram'); const snH = handleFrom(snap, 'snapchat');
-    if (igH && !/^[A-Za-z0-9._]{1,30}$/.test(igH)) { Alert.alert(t('إنستغرام'), t('اكتب اليوزر أو الصق رابط حسابك.')); return; }
-    if (snH && !/^[A-Za-z0-9._-]{1,30}$/.test(snH)) { Alert.alert(t('سناب شات'), t('اكتب اليوزر أو الصق رابط حسابك.')); return; }
+    if (igH && !/^[A-Za-z0-9._]{1,30}$/.test(igH)) { Alert.alert(t('إنستغرام'), t('اكتب اسم المستخدم أو الصق رابط حسابك.')); return; }
+    if (snH && !/^[A-Za-z0-9._-]{1,30}$/.test(snH)) { Alert.alert(t('سناب شات'), t('اكتب اسم المستخدم أو الصق رابط حسابك.')); return; }
     setSaving(true);
     try {
     const patch: Record<string, unknown> = {
@@ -134,24 +134,24 @@ export default function Welcome() {
     if (!error && birth) await supabase.rpc('set_birth_date', { d: birth.toISOString().slice(0, 10) });
     setSaving(false);
     if (error) {
-      Alert.alert(t('ما انحفظ'), error.code === '23505' ? t('اليوزر انأخذ هلأ، اختار غيره.') : t('تأكد من الإنترنت وجرّب كمان مرة.'));
+      Alert.alert(t('لم يُحفظ'), error.code === '23505' ? t('اسم المستخدم محجوز الآن، اختر اسماً آخر.') : t('تحقق من اتصالك بالإنترنت وحاول مرة أخرى.'));
       if (error.code === '23505') setStep(1);
       return;
     }
     await refreshProfile();
     router.replace('/(tabs)');
     } catch (e) {
-      reportError(e); Alert.alert(t('ما انحفظ'), t('تأكد من الإنترنت وجرّب كمان مرة.'));
+      reportError(e); Alert.alert(t('لم يُحفظ'), t('تحقق من اتصالك بالإنترنت وحاول مرة أخرى.'));
     } finally { setSaving(false); }
   }
 
   const autoRows: [string, string | null | undefined][] = [
     [t('الجامعة'), nm(university)],
-    [t('الإيميل الجامعي'), priv?.email],
+    [t('البريد الإلكتروني الجامعي'), priv?.email],
     staff
       ? [t('نوع الحساب'), profile?.title_verified && profile.academic_title ? titleLabel(profile.academic_title) : t('كادر الجامعة')]
       : [t('الرقم الجامعي'), priv?.student_number ?? '—'],
-    [t('التوثيق'), profile?.ms_verified ? t('موثّق بمايكروسوفت') : t('بالإيميل')],
+    [t('التوثيق'), profile?.ms_verified ? t('موثّق عبر Microsoft') : t('بالبريد الإلكتروني')],
   ];
 
   return (
@@ -176,10 +176,10 @@ export default function Welcome() {
                 <View style={{ alignItems: 'center', gap: 12 }}>
                   <Avatar id={profile?.id} name={profile?.full_name} url={profile?.avatar_url} size={92} ring />
                   <Row gap={6}>
-                    <T v="h1" style={{ textAlign: 'center' }}>{t('أهلاً فيك')}</T>
+                    <T v="h1" style={{ textAlign: 'center' }}>{t('أهلاً بك')}</T>
                     {profile?.ms_verified && <Animated.View entering={ZoomIn.delay(600)}><BadgeCheck size={26} color={C.white} fill={C.green} /></Animated.View>}
                   </Row>
-                  <T v="body" color={C.muted} style={{ textAlign: 'center' }}>{t('هاي معلوماتك من حسابك الجامعي، انعبّت لحالها.')}</T>
+                  <T v="body" color={C.muted} style={{ textAlign: 'center' }}>{t('هذه معلوماتك من حسابك الجامعي، وقد عُبّئت تلقائيًا.')}</T>
                 </View>
                 <Card pad={6} style={{ paddingHorizontal: 16 }}>
                   {autoRows.map(([k, v], i) => (
@@ -190,28 +190,28 @@ export default function Welcome() {
                         </Animated.View>
                       ) : <ActivityIndicator color={C.primary} style={{ width: 28 }} />}
                       <T v="small" color={C.muted} style={{ flex: 1 }}>{k}</T>
-                      {i < auto && <Animated.View entering={FadeIn} style={{ flexShrink: 1 }}><T v="bold" numberOfLines={1} style={{ writingDirection: k === t('الإيميل الجامعي') ? 'ltr' : 'rtl' }}>{v ?? '...'}</T></Animated.View>}
+                      {i < auto && <Animated.View entering={FadeIn} style={{ flexShrink: 1 }}><T v="bold" numberOfLines={1} style={{ writingDirection: k === t('البريد الإلكتروني الجامعي') ? 'ltr' : 'rtl' }}>{v ?? '...'}</T></Animated.View>}
                     </Row>
                   ))}
                 </Card>
-                <T v="small" color={C.muted} style={{ textAlign: 'center' }}>{t('ضل كم سؤال بسيط، بتعبيهم مرة وحدة بس.')}</T>
+                <T v="small" color={C.muted} style={{ textAlign: 'center' }}>{t('بقيت بعض الأسئلة البسيطة، تملؤها مرة واحدة فقط.')}</T>
               </>
             )}
 
             {step === 1 && (
               <>
-                <T v="h1">{t('شو اسمك؟')}</T>
+                <T v="h1">{t('ما اسمك؟')}</T>
                 <Field label={t('اسمك الكامل')} value={name} onChangeText={setName} placeholder={t('مثلاً سارة أحمد')} maxLength={60} />
                 <View style={{ gap: 6 }}>
-                  <Field label={t('اسم المستخدم (اليوزر)')} value={username} editable={!locked} onChangeText={(t) => setUsername(t.replace(/\s/g, '').toLowerCase())}
+                  <Field label={t('اسم المستخدم')} value={username} editable={!locked} onChangeText={(t) => setUsername(t.replace(/\s/g, '').toLowerCase())}
                     autoCapitalize="none" autoCorrect={false} placeholder="sara.cs" style={{ textAlign: 'left', writingDirection: 'ltr' }} />
                   <Row gap={6}>
-                    {locked ? <><Lock size={14} color={C.muted} /><T v="tiny" color={C.muted}>{t('بتقدر تغيّره بعدين من تعديل البروفايل.')}</T></>
-                      : uState === 'checking' ? <><ActivityIndicator size="small" color={C.primary} /><T v="tiny" color={C.muted}>{t('عم نتأكد...')}</T></>
+                    {locked ? <><Lock size={14} color={C.muted} /><T v="tiny" color={C.muted}>{t('يمكنك تغييره لاحقاً من تعديل الملف الشخصي.')}</T></>
+                      : uState === 'checking' ? <><ActivityIndicator size="small" color={C.primary} /><T v="tiny" color={C.muted}>{t('جارٍ التحقق...')}</T></>
                       : uState === 'ok' ? <><Check size={14} color={C.greenInk} /><T v="tiny" color={C.greenInk}>{t('متاح ✓')}</T></>
                       : uState === 'taken' ? <><X size={14} color={C.danger} /><T v="tiny" color={C.danger}>{t('مأخوذ، جرّب غيره')}</T></>
-                      : uState === 'bad' ? <T v="tiny" color={C.danger}>{t('من 3 لـ 24: حروف إنجليزي صغيرة، أرقام، . و _')}</T>
-                      : <T v="tiny" color={C.muted}>{t('زملاؤك بيلاقوك فيه بالبحث.')}</T>}
+                      : uState === 'bad' ? <T v="tiny" color={C.danger}>{t('من 3 إلى 24: حروف إنجليزية صغيرة، أرقام، . و _')}</T>
+                      : <T v="tiny" color={C.muted}>{t('يجدك زملاؤك من خلاله في البحث.')}</T>}
                   </Row>
                 </View>
               </>
@@ -219,10 +219,10 @@ export default function Welcome() {
 
             {step === 2 && staff && (
               <>
-                <T v="h1">{t('وين بتشتغل؟')}</T>
+                <T v="h1">{t('أين تعمل؟')}</T>
                 {profile?.title_verified && profile.academic_title
                   ? <Row gap={8}><TitleBadge title={profile.academic_title} verified size="md" label={profile.position_title} /><T v="small" color={C.muted}>{t('رتبتك من قائمة الجامعة الرسمية')}</T></Row>
-                  : <T v="small" color={C.muted}>{t('رتبتك (دكتور، عميد…) بتنحط من قائمة الجامعة الرسمية أو بعد التوثيق، ما بتنكتب باليد.')}</T>}
+                  : <T v="small" color={C.muted}>{t('تُحدَّد رتبتك (دكتور، عميد…) من قائمة الجامعة الرسمية أو بعد التوثيق، ولا تُكتب يدويًا.')}</T>}
                 <MajorPicker universityId={university?.id} collegeId={col} majorId={maj} onChange={(c, m) => { setCol(c); setMaj(m); }} />
                 {!profile?.title_verified && <Field label={t('القسم أو الدائرة (اختياري)')} value={dept} onChangeText={setDept} placeholder={t('مثلاً قسم علم الحاسوب')} maxLength={80} />}
               </>
@@ -230,11 +230,11 @@ export default function Welcome() {
 
             {step === 2 && !staff && (
               <>
-                <T v="h1">{t('شو بتدرس؟')}</T>
-                <T v="small" color={C.muted}>{found.major ? t('اخترناه من سجلات جامعتك. إذا مش صح غيّره.') : t('بنضيفك تلقائياً لجروب كليتك وتخصصك ودفعتك.')}</T>
+                <T v="h1">{t('ماذا تدرس؟')}</T>
+                <T v="small" color={C.muted}>{found.major ? t('اخترناه من سجلات جامعتك. إذا لم يكن صحيحاً فغيّره.') : t('سنضيفك تلقائياً إلى مجموعة كليتك وتخصصك ودفعتك.')}</T>
                 <MajorPicker universityId={university?.id} collegeId={col} majorId={maj} onChange={(c, m) => { setCol(c); setMaj(m); }} />
-                <Button kind="soft" title={teams === null ? t('جيب موادي هالفصل من Teams') : teams > 0 ? t('انضافت {0} مواد ✓', [teams]) : t('ما لقينا مواد، بتضيفها بعدين')} loading={teamsBusy}
-                  onPress={async () => { setTeamsBusy(true); const r = await importTeamsCourses(); setTeamsBusy(false); if ('count' in r) setTeams(r.count); else if (r.error !== 'cancelled' && r.error !== 'redirecting') { setTeams(0); Alert.alert(t('ما زبط'), t('بتقدر تضيف موادك من صفحة الجدول.')); } }} />
+                <Button kind="soft" title={teams === null ? t('استيراد مواد هذا الفصل من Teams') : teams > 0 ? t('تمت إضافة {0} مواد ✓', [teams]) : t('لم يتم العثور على مواد، يمكنك إضافتها لاحقًا')} loading={teamsBusy}
+                  onPress={async () => { setTeamsBusy(true); const r = await importTeamsCourses(); setTeamsBusy(false); if ('count' in r) setTeams(r.count); else if (r.error !== 'cancelled' && r.error !== 'redirecting') { setTeams(0); Alert.alert(t('تعذّر ذلك'), t('يمكنك إضافة موادك من صفحة الجدول.')); } }} />
               </>
             )}
 
@@ -242,16 +242,16 @@ export default function Welcome() {
               <>
                 <T v="h1">{t('عنك')}</T>
                 {!staff && <View style={{ gap: 8 }}>
-                  <T v="bold">{t('أي سنة دخلت الجامعة؟')}</T>
+                  <T v="bold">{t('في أي سنة التحقت بالجامعة؟')}</T>
                   {found.year && <T v="small" color={C.muted}>{t('عرفناها من رقمك الجامعي.')}</T>}
                   <Row gap={8} style={{ flexWrap: 'wrap' }}>
                     {years.map((y) => <Chip key={y} label={String(y)} active={entry === y} onPress={() => setEntry(y)} />)}
                   </Row>
-                  {entry && <Animated.View entering={FadeIn}><T v="small" color={C.primaryDark}>{t('يعني إنت سنة')} {studyYearFrom(entry)}{t('، وبتتحدث لحالها كل سنة.')}</T></Animated.View>}
+                  {entry && <Animated.View entering={FadeIn}><T v="small" color={C.primaryDark}>{t('أي أنك في السنة')} {studyYearFrom(entry)}{t('، وتُحدَّث تلقائياً كل سنة.')}</T></Animated.View>}
                 </View>}
                 <View style={{ gap: 8 }}>
-                  <T v="bold">{t('تاريخ ميلادك (بيضل مخفي، بس إلك)')}</T>
-                  {Platform.OS !== 'ios' && <Button kind="soft" title={birth ? birth.toLocaleDateString(LOCALE) : t('اختار التاريخ')} onPress={() => setShowDate(true)} />}
+                  <T v="bold">{t('تاريخ ميلادك (يبقى مخفياً، لك فقط)')}</T>
+                  {Platform.OS !== 'ios' && <Button kind="soft" title={birth ? birth.toLocaleDateString(LOCALE) : t('اختر التاريخ')} onPress={() => setShowDate(true)} />}
                   {showDate && (
                     <DateTimePicker value={birth ?? new Date(2004, 0, 1)} mode="date" display={Platform.OS === 'ios' ? 'spinner' : 'default'} locale="ar"
                       maximumDate={new Date(new Date().getFullYear() - 15, 11, 31)} minimumDate={new Date(1960, 0, 1)}
@@ -263,15 +263,15 @@ export default function Welcome() {
 
             {step === 4 && (
               <>
-                <T v="h1">{t('حساباتك الثانية')}</T>
-                <T v="small" color={C.muted}>{t('اختياري. بتطلع أيقونة على بروفايلك بتفتح حسابك بكبسة، وانت بتختار مين بيشوفها من الخصوصية.')}</T>
+                <T v="h1">{t('حساباتك الأخرى')}</T>
+                <T v="small" color={C.muted}>{t('اختياري. ستظهر أيقونة في ملفك الشخصي تفتح حسابك بضغطة، وأنت تختار من يراها من إعدادات الخصوصية.')}</T>
                 <Row gap={10}>
                   <InstagramGlyph size={44} />
-                  <View style={{ flex: 1 }}><Field label={t('إنستغرام')} value={ig} onChangeText={setIg} autoCapitalize="none" autoCorrect={false} placeholder={t('اليوزر أو الرابط')} style={{ textAlign: 'left', writingDirection: 'ltr' }} /></View>
+                  <View style={{ flex: 1 }}><Field label={t('إنستغرام')} value={ig} onChangeText={setIg} autoCapitalize="none" autoCorrect={false} placeholder={t('اسم المستخدم أو الرابط')} style={{ textAlign: 'left', writingDirection: 'ltr' }} /></View>
                 </Row>
                 <Row gap={10}>
                   <SnapGlyph size={44} />
-                  <View style={{ flex: 1 }}><Field label={t('سناب شات')} value={snap} onChangeText={setSnap} autoCapitalize="none" autoCorrect={false} placeholder={t('اليوزر أو الرابط')} style={{ textAlign: 'left', writingDirection: 'ltr' }} /></View>
+                  <View style={{ flex: 1 }}><Field label={t('سناب شات')} value={snap} onChangeText={setSnap} autoCapitalize="none" autoCorrect={false} placeholder={t('اسم المستخدم أو الرابط')} style={{ textAlign: 'left', writingDirection: 'ltr' }} /></View>
                 </Row>
                 {handleFrom(ig, 'instagram') ? <Row gap={6}><AtSign size={13} color={C.muted} /><T v="tiny" color={C.muted} style={{ writingDirection: 'ltr' }}>instagram.com/{handleFrom(ig, 'instagram')}</T></Row> : null}
               </>
@@ -279,9 +279,9 @@ export default function Welcome() {
           </Animated.View>
 
           <View style={{ marginTop: 'auto', gap: 8 }}>
-            <Button title={step === 4 ? t('خلصنا، يلا نبلش') : t('التالي')} loading={saving} disabled={step === 0 && auto < 4}
+            <Button title={step === 4 ? t('انتهينا، لنبدأ') : t('التالي')} loading={saving} disabled={step === 0 && auto < 4}
               iconEnd icon={step < 4 ? <ChevronLeft size={18} color={C.white} style={flip} /> : <Check size={18} color={C.white} />} onPress={next} />
-            {step === 4 && <T v="tiny" color={C.muted} style={{ textAlign: 'center', fontFamily: F.body }}>{t('بتقدر تعدّل كل إشي بعدين، إلا اليوزر.')}</T>}
+            {step === 4 && <T v="tiny" color={C.muted} style={{ textAlign: 'center', fontFamily: F.body }}>{t('يمكنك تعديل كل شيء لاحقاً، باستثناء اسم المستخدم.')}</T>}
           </View>
         </ScrollView>
       </KeyboardAvoidingView>

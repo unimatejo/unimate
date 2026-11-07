@@ -74,7 +74,7 @@ export function ChatViewer({ conversationId, members, presetReason, rightId }: {
     setError(null); setBusy(true);
     const { data, error: e } = await supabase.rpc('admin_conversation_messages', { conv: conversationId, reason: presetReason?.trim() || 'browse' });
     setBusy(false);
-    if (e) { setError(/private_chat/.test(e.message) ? t('🔒 محادثة خاصة. للحفاظ على خصوصية المستخدمين، ما بتنفتح إلا الرسائل اللي انعمل عليها بلاغ.') : e.message); return; }
+    if (e) { setError(/private_chat/.test(e.message) ? t('🔒 محادثة خاصة. للحفاظ على خصوصية المستخدمين، لا تُفتح إلا الرسائل المبلّغ عنها.') : e.message); return; }
     const list = (data ?? []) as Message[];
     setMsgs(list);
     sign(list); loadReacts(list);
@@ -98,8 +98,8 @@ export function ChatViewer({ conversationId, members, presetReason, rightId }: {
   async function del(m: Message) {
     if (m.deleted_at) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
-    if (!(await confirm(t('تحذف هالرسالة؟'), t('بتنحذف عند الكل، وبينسجل الحذف باسمك.'), t('احذف')))) return;
-    const r = await promptText(t('ليش بدك تحذف هالرسالة؟'));
+    if (!(await confirm(t('حذف هذه الرسالة؟'), t('ستُحذف لدى الجميع، وسيُسجَّل الحذف باسمك.'), t('احذف')))) return;
+    const r = await promptText(t('لماذا تريد حذف هذه الرسالة؟'));
     if (r === null) return;
     await supabase.rpc('admin_delete_message', { msg: m.id, reason: r });
     setMsgs((x) => x?.map((y) => (y.id === m.id ? { ...y, deleted_at: new Date().toISOString() } : y)) ?? null);
@@ -110,15 +110,15 @@ export function ChatViewer({ conversationId, members, presetReason, rightId }: {
 
   if (!msgs) return (
     <Panel>
-      {error ? <T v="small" color={error.startsWith('🔒') ? C.ink2 : C.red}>{error}</T> : <Muted>{t('عم نفتح المحادثة…')}</Muted>}
-      {error && !error.startsWith('🔒') && <Act label={t('جرّب كمان مرة')} kind="primary" loading={busy} onPress={open} />}
+      {error ? <T v="small" color={error.startsWith('🔒') ? C.ink2 : C.red}>{error}</T> : <Muted>{t('جارٍ فتح المحادثة…')}</Muted>}
+      {error && !error.startsWith('🔒') && <Act label={t('حاول مرة أخرى')} kind="primary" loading={busy} onPress={open} />}
     </Panel>
   );
 
   return (
     <View style={{ gap: 4, backgroundColor: C.bg, borderRadius: 22, paddingVertical: 10, paddingHorizontal: 8 }}>
-      {msgs.length === 0 && <Muted>{t('ما في رسائل.')}</Muted>}
-      {msgs.length > 0 && <T v="tiny" color={C.faint} style={{ textAlign: 'center', marginBottom: 4 }}>{t('اضغط مطوّل على أي رسالة لحذفها')}</T>}
+      {msgs.length === 0 && <Muted>{t('لا توجد رسائل.')}</Muted>}
+      {msgs.length > 0 && <T v="tiny" color={C.faint} style={{ textAlign: 'center', marginBottom: 4 }}>{t('اضغط مطوّلاً على أي رسالة لحذفها')}</T>}
       {msgs.map((m, i) => {
         const mine = m.sender_id === right;
         const prev = msgs[i - 1];
@@ -146,9 +146,9 @@ export function ChatViewer({ conversationId, members, presetReason, rightId }: {
                   <T v="tiny" color={C.muted}>{who.name}</T>
                 </Row>
               )}
-              <Pressable onLongPress={() => del(m)} delayLongPress={320} accessibilityHint={t('اضغط مطوّل للحذف')}>
+              <Pressable onLongPress={() => del(m)} delayLongPress={320} accessibilityHint={t('اضغط مطوّلاً للحذف')}>
                 {m.kind === 'image' && m.media_url ? <Pic src={src} mine={mine} /> :
-                 m.kind === 'view_once' && m.media_url ? <Pic src={src} mine={mine} label={m.viewed_once_at ? t('لمرة وحدة · انشافت') : t('لمرة وحدة')} /> :
+                 m.kind === 'view_once' && m.media_url ? <Pic src={src} mine={mine} label={m.viewed_once_at ? t('لمرة واحدة · شوهدت') : t('لمرة واحدة')} /> :
                  m.kind === 'voice' && m.media_url ? <VoiceBubble path={m.media_url} seconds={Number(m.body) || 0} mine={mine} /> :
                  m.kind === 'sticker' ? <StickerBubble m={m} /> :
                  m.kind === 'file' && m.media_url ? <FileBubble m={m} mine={mine} /> :
@@ -158,7 +158,7 @@ export function ChatViewer({ conversationId, members, presetReason, rightId }: {
                  m.kind === 'post_share' ? <PostShareBubble m={m} mine={mine} /> :
                  plain ? (
                   <View style={[{ paddingHorizontal: 14, paddingVertical: 10 }, bubble(mine)]}>
-                    {m.kind === 'story_reply' && <T v="tiny" color={inkOn(mine)} style={{ opacity: 0.7 }}>{t('ردّ على ستوري')}</T>}
+                    {m.kind === 'story_reply' && <T v="tiny" color={inkOn(mine)} style={{ opacity: 0.7 }}>{t('ردّ على قصة')}</T>}
                     <T v="body" color={inkOn(mine)} style={{ fontSize: 15, lineHeight: 22, fontFamily: mine ? F.bodyMd : F.body }}>{m.body ?? ''}</T>
                   </View>
                  ) : null}
@@ -166,7 +166,7 @@ export function ChatViewer({ conversationId, members, presetReason, rightId }: {
               <ReactionChips list={reacts[m.id] ?? []} mine={mine} onPress={() => {}} />
               {(endOfRun || m.deleted_at || vanished || m.is_saved) && (
                 <T v="tiny" color={m.deleted_at ? C.red : C.faint} style={{ fontSize: 11, alignSelf: mine ? 'flex-end' : 'flex-start', paddingHorizontal: 4 }}>
-                  {[timeAgo(m.created_at), m.deleted_at ? t('محذوفة') : vanished ? t('اختفت عند المستخدمين') : null, m.is_saved ? t('محفوظة') : null].filter(Boolean).join(' · ')}
+                  {[timeAgo(m.created_at), m.deleted_at ? t('محذوفة') : vanished ? t('اختفت لدى المستخدمين') : null, m.is_saved ? t('محفوظة') : null].filter(Boolean).join(' · ')}
                 </T>
               )}
             </View>

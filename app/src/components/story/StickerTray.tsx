@@ -71,15 +71,15 @@ export function StickerTray({ open, start, onClose, onPick }: { open: boolean; s
   const time = new Date().toLocaleTimeString(LOCALE, { hour: 'numeric', minute: '2-digit' });
   const chips: { key: string; label: string; color: string; icon: ReactNode; go: () => void }[] = [
     { key: 'place', label: t('الموقع'), color: '#7C3AED', icon: <MapPin size={17} color="#7C3AED" />, go: () => setForm('place') },
-    { key: 'mention', label: t('منشن'), color: '#FF6B2C', icon: <AtSign size={17} color="#FF6B2C" />, go: () => setForm('mention') },
+    { key: 'mention', label: t('إشارة'), color: '#FF6B2C', icon: <AtSign size={17} color="#FF6B2C" />, go: () => setForm('mention') },
     { key: 'question', label: t('سؤال'), color: '#E0306B', icon: <MessageCircleQuestion size={17} color="#E0306B" />, go: () => setForm('question') },
     { key: 'poll', label: t('استطلاع'), color: '#2E5BFF', icon: <BarChart3 size={17} color="#2E5BFF" />, go: () => setForm('poll') },
-    { key: 'slider', label: t('سلايدر إيموجي'), color: '#FF3B5C', icon: <SlidersHorizontal size={17} color="#FF3B5C" />, go: () => setForm('slider') },
+    { key: 'slider', label: t('شريط تمرير الرموز التعبيرية'), color: '#FF3B5C', icon: <SlidersHorizontal size={17} color="#FF3B5C" />, go: () => setForm('slider') },
     { key: 'countdown', label: t('عدّاد تنازلي'), color: '#7C3AED', icon: <Timer size={17} color="#7C3AED" />, go: () => setForm('countdown') },
-    { key: 'hashtag', label: t('هاشتاغ'), color: '#FF8A00', icon: <Hash size={17} color="#FF8A00" />, go: () => setForm('hashtag') },
+    { key: 'hashtag', label: t('وسم'), color: '#FF8A00', icon: <Hash size={17} color="#FF8A00" />, go: () => setForm('hashtag') },
     { key: 'link', label: t('رابط'), color: '#2E5BFF', icon: <Link2 size={17} color="#2E5BFF" />, go: () => setForm('link') },
     { key: 'addyours', label: t('دورك'), color: '#FF6B4A', icon: <Camera size={17} color="#FF6B4A" />, go: () => setForm('addyours') },
-    { key: 'photo', label: uploading ? t('عم ترفع…') : t('صورة'), color: '#34A853', icon: uploading ? <ActivityIndicator size="small" color="#34A853" /> : <ImagePlus size={17} color="#34A853" />, go: addPhoto },
+    { key: 'photo', label: uploading ? t('جارٍ الرفع…') : t('صورة'), color: '#34A853', icon: uploading ? <ActivityIndicator size="small" color="#34A853" /> : <ImagePlus size={17} color="#34A853" />, go: addPhoto },
     { key: 'time', label: time, color: '#0E1430', icon: <Clock size={17} color="#FF3B5C" />, go: () => onPick({ kind: 'time', text: time, extra: { data: { clock: 'pill' } } }) },
   ];
   const ql = q.trim().toLowerCase();
@@ -87,7 +87,7 @@ export function StickerTray({ open, start, onClose, onPick }: { open: boolean; s
   const packShown = ql ? pack.filter((p) => (p.tags ?? []).some((g) => g.toLowerCase().includes(ql))) : pack;
   const moving = packShown.filter((p) => p.animated), still = packShown.filter((p) => !p.animated);
   const sticker = (s: PackSticker) => (
-    <Pressable key={s.id} onPress={() => onPick({ kind: 'sticker', text: '', extra: { size: 0.06, data: { img: s.url } } })} accessibilityLabel={t('ستيكر')}
+    <Pressable key={s.id} onPress={() => onPick({ kind: 'sticker', text: '', extra: { size: 0.06, data: { img: s.url } } })} accessibilityLabel={t('ملصق')}
       style={({ pressed }) => ({ width: 76, height: 76, alignItems: 'center', justifyContent: 'center', transform: [{ scale: pressed ? 0.92 : 1 }] })}>
       <Image source={{ uri: s.url }} style={{ width: 68, height: 68 }} contentFit="contain" autoplay />
     </Pressable>
@@ -113,11 +113,11 @@ export function StickerTray({ open, start, onClose, onPick }: { open: boolean; s
                 {shown.map((c) => <Chip key={c.key} icon={c.icon} label={c.label} color={c.color} onPress={c.go} />)}
               </View>
               {moving.length > 0 && (<>
-                {head(t('ستيكرات متحركة'))}
+                {head(t('ملصقات متحركة'))}
                 <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 6 }}>{moving.map(sticker)}</View>
               </>)}
               {still.length > 0 && (<>
-                {head(t('ستيكرات يونيميت'))}
+                {head(t('ملصقات يونيميت'))}
                 <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 6 }}>{still.map(sticker)}</View>
               </>)}
               {!ql && head(t('إيموجي'))}
@@ -144,7 +144,7 @@ type Place = { id: string; title: string; subtitle: string | null; lat: number |
 /** The little form behind each interactive sticker chip. */
 function StickerForm({ form, onBack, onPick, uniName, meId }: { form: NonNullable<Form>; onBack: () => void; onPick: (s: NewSticker) => void; uniName: string; meId?: string }) {
   const [a, setA] = useState('');
-  const [opts, setOpts] = useState<string[]>([t('آه'), t('لا')]);
+  const [opts, setOpts] = useState<string[]>([t('نعم'), t('لا')]);
   const [emoji, setEmoji] = useState('😍');
   const [when, setWhen] = useState<number>(1);
   const [custom, setCustom] = useState<Date>(() => { const d = new Date(Date.now() + 86400000); d.setMinutes(0, 0, 0); return d; });
@@ -177,7 +177,7 @@ function StickerForm({ form, onBack, onPick, uniName, meId }: { form: NonNullabl
     return () => clearTimeout(h);
   }, [form, a]);
 
-  const title = { addyours: t('دورك'), place: t('الموقع'), mention: t('منشن'), question: t('سؤال'), poll: t('استطلاع'), slider: t('سلايدر إيموجي'), countdown: t('عدّاد تنازلي'), hashtag: t('هاشتاغ'), link: t('رابط') }[form];
+  const title = { addyours: t('دورك'), place: t('الموقع'), mention: t('إشارة'), question: t('سؤال'), poll: t('استطلاع'), slider: t('شريط تمرير الرموز التعبيرية'), countdown: t('عدّاد تنازلي'), hashtag: t('وسم'), link: t('رابط') }[form];
   const ends = (k: number) => {
     const d = new Date();
     if (k === 0) d.setHours(d.getHours() + 1);
@@ -199,65 +199,65 @@ function StickerForm({ form, onBack, onPick, uniName, meId }: { form: NonNullabl
       </View>
 
       {form === 'question' && (<>
-        <TextInput autoFocus value={a} onChangeText={setA} placeholder={t('اسألني سؤال')} placeholderTextColor="rgba(255,255,255,0.5)" style={input} />
-        <Primary label={t('ضيف')} onPress={() => onPick({ kind: 'question', text: a.trim() || t('اسألني سؤال'), extra: { size: 0.05 } })} />
+        <TextInput autoFocus value={a} onChangeText={setA} placeholder={t('اسألني سؤالاً')} placeholderTextColor="rgba(255,255,255,0.5)" style={input} />
+        <Primary label={t('أضف')} onPress={() => onPick({ kind: 'question', text: a.trim() || t('اسألني سؤالاً'), extra: { size: 0.05 } })} />
       </>)}
 
       {form === 'addyours' && (<>
-        <TextInput autoFocus value={a} onChangeText={(v) => setA(v.slice(0, 80))} placeholder={t('مثلاً: صورة لمكانك المفضل بالجامعة')} placeholderTextColor="rgba(255,255,255,0.5)" style={input} />
-        <Text style={{ fontFamily: F.body, fontSize: 13, color: 'rgba(255,255,255,0.6)' }}>{t('اللي بيشوف قصتك بيقدر يكبس عليه ويضيف صورته على نفس الموضوع.')}</Text>
-        <Primary label={t('ضيف')} disabled={!a.trim()} onPress={() => onPick({ kind: 'addyours', text: a.trim(), extra: { size: 0.05 } })} />
+        <TextInput autoFocus value={a} onChangeText={(v) => setA(v.slice(0, 80))} placeholder={t('مثلاً: صورة لمكانك المفضل في الجامعة')} placeholderTextColor="rgba(255,255,255,0.5)" style={input} />
+        <Text style={{ fontFamily: F.body, fontSize: 13, color: 'rgba(255,255,255,0.6)' }}>{t('يمكن لمن يشاهد قصتك الضغط عليه وإضافة صورته على الموضوع نفسه.')}</Text>
+        <Primary label={t('أضف')} disabled={!a.trim()} onPress={() => onPick({ kind: 'addyours', text: a.trim(), extra: { size: 0.05 } })} />
       </>)}
 
       {form === 'poll' && (<>
-        <TextInput autoFocus value={a} onChangeText={setA} placeholder={t('اسأل سؤال…')} placeholderTextColor="rgba(255,255,255,0.5)" style={input} />
+        <TextInput autoFocus value={a} onChangeText={setA} placeholder={t('اسأل سؤالاً…')} placeholderTextColor="rgba(255,255,255,0.5)" style={input} />
         {opts.map((o, i) => (
           <View key={i} style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
             <TextInput value={o} onChangeText={(v) => setOpts((l) => l.map((x, k) => (k === i ? v.slice(0, 40) : x)))} placeholder={t('خيار {0}', [String(i + 1)])} placeholderTextColor="rgba(255,255,255,0.5)" style={[input, { flex: 1 }]} />
             {opts.length > 2 && (
-              <Pressable onPress={() => setOpts((l) => l.filter((_, k) => k !== i))} accessibilityLabel={t('شيل الخيار')} hitSlop={6}
+              <Pressable onPress={() => setOpts((l) => l.filter((_, k) => k !== i))} accessibilityLabel={t('إزالة الخيار')} hitSlop={6}
                 style={{ width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center', backgroundColor: FIELD }}><X size={16} color="#fff" /></Pressable>
             )}
           </View>
         ))}
-        {opts.length < 4 && <Pressable onPress={() => setOpts((l) => [...l, ''])} style={{ minHeight: 40, justifyContent: 'center' }}><Text style={{ fontFamily: F.bodyBold, color: '#FF8A6B' }}>+ {t('ضيف خيار')}</Text></Pressable>}
-        <Primary label={t('ضيف')} disabled={opts.filter((o) => o.trim()).length < 2}
+        {opts.length < 4 && <Pressable onPress={() => setOpts((l) => [...l, ''])} style={{ minHeight: 40, justifyContent: 'center' }}><Text style={{ fontFamily: F.bodyBold, color: '#FF8A6B' }}>+ {t('أضف خيارًا')}</Text></Pressable>}
+        <Primary label={t('أضف')} disabled={opts.filter((o) => o.trim()).length < 2}
           onPress={() => onPick({ kind: 'poll', text: a.trim(), extra: { size: 0.05, data: { options: opts.map((o) => o.trim()).filter(Boolean) } } })} />
       </>)}
 
       {form === 'slider' && (<>
-        <TextInput autoFocus value={a} onChangeText={setA} placeholder={t('شو رأيك…؟')} placeholderTextColor="rgba(255,255,255,0.5)" style={input} />
+        <TextInput autoFocus value={a} onChangeText={setA} placeholder={t('ما رأيك…؟')} placeholderTextColor="rgba(255,255,255,0.5)" style={input} />
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, justifyContent: 'center' }}>
           {SLIDER_EMOJIS.map((e) => (
             <Pressable key={e} onPress={() => setEmoji(e)} style={{ width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center', backgroundColor: emoji === e ? 'rgba(255,255,255,0.2)' : 'transparent' }}><Text style={{ fontSize: 28 }}>{e}</Text></Pressable>
           ))}
         </View>
-        <Primary label={t('ضيف')} onPress={() => onPick({ kind: 'slider', text: a.trim(), extra: { size: 0.05, data: { emoji } } })} />
+        <Primary label={t('أضف')} onPress={() => onPick({ kind: 'slider', text: a.trim(), extra: { size: 0.05, data: { emoji } } })} />
       </>)}
 
       {form === 'countdown' && (<>
         <TextInput autoFocus value={a} onChangeText={setA} placeholder={t('اسم العدّاد (مثلاً: الامتحان النهائي)')} placeholderTextColor="rgba(255,255,255,0.5)" style={input} />
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-          {[t('بعد ساعة'), t('الليلة ٩م'), t('بكرة الصبح'), t('بعد أسبوع'), t('تاريخ ووقت…')].map((l, k) => (
+          {[t('بعد ساعة'), t('الليلة 9 م'), t('صباح الغد'), t('بعد أسبوع'), t('تاريخ ووقت…')].map((l, k) => (
             <Pressable key={l} onPress={() => setWhen(k)} style={{ minHeight: 38, paddingHorizontal: 14, borderRadius: 19, justifyContent: 'center', backgroundColor: when === k ? '#FFFFFF' : FIELD }}>
               <Text style={{ fontFamily: F.bodyBold, fontSize: 13, color: when === k ? '#000' : '#fff' }}>{l}</Text>
             </Pressable>
           ))}
         </View>
         {when === 4 && <WhenField value={custom} onChange={setCustom} />}
-        {when === 4 && custom.getTime() <= Date.now() ? <Text style={{ fontFamily: F.body, fontSize: 12, color: '#FF8A6B' }}>{t('اختار وقت بالمستقبل')}</Text> : null}
-        <Primary label={t('ضيف')} disabled={!a.trim() || (when === 4 && custom.getTime() <= Date.now())} onPress={() => onPick({ kind: 'countdown', text: a.trim(), extra: { size: 0.05, data: { endsAt: when === 4 ? custom.toISOString() : ends(when) } } })} />
+        {when === 4 && custom.getTime() <= Date.now() ? <Text style={{ fontFamily: F.body, fontSize: 12, color: '#FF8A6B' }}>{t('اختر وقتاً في المستقبل')}</Text> : null}
+        <Primary label={t('أضف')} disabled={!a.trim() || (when === 4 && custom.getTime() <= Date.now())} onPress={() => onPick({ kind: 'countdown', text: a.trim(), extra: { size: 0.05, data: { endsAt: when === 4 ? custom.toISOString() : ends(when) } } })} />
       </>)}
 
       {form === 'hashtag' && (<>
         <TextInput autoFocus value={a} onChangeText={(v) => setA(v.replace(/\s+/g, '_').replace(/^#/, ''))} placeholder="#" placeholderTextColor="rgba(255,255,255,0.5)" style={input} autoCapitalize="none" />
-        <Primary label={t('ضيف')} disabled={!a.trim()} onPress={() => onPick({ kind: 'hashtag', text: a.trim(), extra: { size: 0.06 } })} />
+        <Primary label={t('أضف')} disabled={!a.trim()} onPress={() => onPick({ kind: 'hashtag', text: a.trim(), extra: { size: 0.06 } })} />
       </>)}
 
       {form === 'link' && (<>
         <TextInput autoFocus value={a} onChangeText={setA} placeholder="https://" placeholderTextColor="rgba(255,255,255,0.5)" style={[input, { textAlign: 'left', writingDirection: 'ltr' }]} autoCapitalize="none" autoCorrect={false} keyboardType="url" />
         <TextInput value={label} onChangeText={(v) => setLabel(v.slice(0, 40))} placeholder={t('اسم الرابط (اختياري)')} placeholderTextColor="rgba(255,255,255,0.5)" style={input} />
-        <Primary label={t('ضيف')} disabled={!validUrl} onPress={() => onPick({ kind: 'link', text: url.replace(/^https?:\/\/(www\.)?/i, '').split('/')[0], extra: { size: 0.05, data: { url, ...(label.trim() ? { label: label.trim() } : {}) } } })} />
+        <Primary label={t('أضف')} disabled={!validUrl} onPress={() => onPick({ kind: 'link', text: url.replace(/^https?:\/\/(www\.)?/i, '').split('/')[0], extra: { size: 0.05, data: { url, ...(label.trim() ? { label: label.trim() } : {}) } } })} />
       </>)}
 
       {form === 'mention' && (<>
@@ -277,7 +277,7 @@ function StickerForm({ form, onBack, onPick, uniName, meId }: { form: NonNullabl
       </>)}
 
       {form === 'place' && (<>
-        <TextInput autoFocus value={a} onChangeText={setA} placeholder={t('ابحث عن مكان بالحرم')} placeholderTextColor="rgba(255,255,255,0.5)" style={input} />
+        <TextInput autoFocus value={a} onChangeText={setA} placeholder={t('ابحث عن مكان في الحرم الجامعي')} placeholderTextColor="rgba(255,255,255,0.5)" style={input} />
         <ScrollView style={{ maxHeight: 320 }} keyboardShouldPersistTaps="handled">
           <Pressable onPress={() => onPick({ kind: 'place', text: uniName, extra: { size: 0.055 } })} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 52 }}>
             <MapPin size={20} color="#B794F6" /><Text style={{ fontFamily: F.bodyBold, fontSize: 15, color: '#fff' }}>{uniName}</Text>

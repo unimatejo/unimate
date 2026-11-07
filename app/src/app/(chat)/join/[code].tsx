@@ -21,7 +21,7 @@ export default function Join() {
   return (
     <Screen>
       {bad
-        ? <Empty title={t('الرابط مش شغّال')} body={t('ممكن يكون انتهى أو المشرف غيّره.')} action={<Button kind="soft" title={t('ارجع للرسائل')} onPress={() => router.replace('/messages')} style={{ marginTop: 10, paddingHorizontal: 20 }} />} />
+        ? <Empty title={t('الرابط لا يعمل')} body={t('ربما انتهت صلاحيته أو غيّره المشرف.')} action={<Button kind="soft" title={t('العودة إلى الرسائل')} onPress={() => router.replace('/messages')} style={{ marginTop: 10, paddingHorizontal: 20 }} />} />
         : <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}><ActivityIndicator color={C.muted} /></View>}
     </Screen>
   );

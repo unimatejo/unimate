@@ -65,21 +65,21 @@ export default function Grades() {
 
   async function importNow() {
     if (!ready) return;
-    const ok = await confirm(t('نرفع العلامات؟'),
-      t('{0} طالب لـ «{1}». الطلاب المسجلين بيطلعوا بلوحة المتفوقين حسب معدلهم.', [fmtNum(good.length), term.trim()]), t('ارفع'));
+    const ok = await confirm(t('هل نرفع العلامات؟'),
+      t('{0} طالب لـ «{1}». يظهر الطلاب المسجلون في لوحة المتفوقين حسب معدلاتهم.', [fmtNum(good.length), term.trim()]), t('ارفع'));
     if (!ok) return;
     setBusy(true); setRes(null);
     const r = await run(supabase.rpc('admin_import_grades', { p_university: uni, p_term: term.trim(), p_rows: good, p_make_current: current }));
     setBusy(false);
     if (!r.ok) return;
     const d = r.data as { saved: number; matched: number; bad: number; frames: number };
-    done(); refreshFrames(); setRes(t('انحفظ {0} · طابق {1} طالب مسجّل · {2} إطار · {3} سطر غلط', [fmtNum(d.saved), fmtNum(d.matched), fmtNum(d.frames ?? 0), fmtNum(d.bad + bad)]));
+    done(); refreshFrames(); setRes(t('تم حفظ {0} · تطابق {1} طالب مسجّل · {2} إطار · {3} سطر خاطئ', [fmtNum(d.saved), fmtNum(d.matched), fmtNum(d.frames ?? 0), fmtNum(d.bad + bad)]));
   }
 
   return (
     <AdminScreen ownerOnly title={t('علامات الجامعة')} subtitle={t('معدلات الطلاب الرسمية للوحة المتفوقين')}>
       <Panel>
-        <Muted>{t('الملف من دائرة القبول والتسجيل. كل سطر طالب: رقم الطالب، المعدل الفصلي، المعدل التراكمي، الساعات، التخصص (الأخيرين اختياريين). بيقبل فاصلة أو Tab، والسطر الأول إذا كان عناوين بيتجاهله. أو الصق JSON.')}</Muted>
+        <Muted>{t('الملف من دائرة القبول والتسجيل. كل سطر يمثل طالباً: رقم الطالب، المعدل الفصلي، المعدل التراكمي، الساعات، التخصص (الأخيران اختياريان). يقبل الفاصلة أو Tab، ويتجاهل السطر الأول إذا كان يحتوي على عناوين. أو الصق JSON.')}</Muted>
       </Panel>
       <UniPicker value={uni} onChange={setUni} allowAll={false} />
       <Field label={t('اسم الفصل')} value={term} onChangeText={setTerm} placeholder={t('الفصل الأول 2026/2027')} maxLength={40} />
@@ -88,9 +88,9 @@ export default function Grades() {
         style={{ minHeight: 200, backgroundColor: C.soft, borderRadius: 14, padding: 12, fontFamily: F.body, fontSize: 13, color: C.ink, textAlignVertical: 'top', textAlign: 'left', writingDirection: 'ltr' }} />
       <View style={{ flexDirection: 'row', gap: 12 }}>
         <T v="small" color={C.greenInk}>{t('{0} سطر صحيح', [fmtNum(good.length)])}</T>
-        {bad > 0 && <T v="small" color={C.red}>{t('{0} سطر غلط (بيتجاهلهم)', [fmtNum(bad)])}</T>}
+        {bad > 0 && <T v="small" color={C.red}>{t('{0} سطر خاطئ (سيتم تجاهلها)', [fmtNum(bad)])}</T>}
       </View>
-      <Toggle value={current} onChange={setCurrent} label={t('اعتبره الفصل الحالي')} hint={t('لوحة المتفوقين بتعرض «هالفصل» من هالملف.')} />
+      <Toggle value={current} onChange={setCurrent} label={t('اعتبره الفصل الحالي')} hint={t('تعرض لوحة المتفوقين «هذا الفصل» من هذا الملف.')} />
       {res && <T v="bodyMd" color={C.greenInk}>{res}</T>}
       <Actions><Act label={t('ارفع العلامات')} kind="primary" onPress={importNow} loading={busy} disabled={!ready || busy} /></Actions>
     </AdminScreen>

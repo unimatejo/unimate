@@ -105,7 +105,7 @@ export function AvatarCropper({ src, onDone, onCancel }: { src: Src | null; onDo
           </View>
           <View style={{ alignItems: 'center', gap: 14, paddingBottom: 30 }}>
             <T v="small" color="#AEB8D8">{t('اسحب الصورة وكبّرها بإصبعين')}</T>
-            <Tap onPress={rotate} disabled={busy} accessibilityLabel={t('دوّر')} style={{ width: 52, height: 52, borderRadius: 26, backgroundColor: 'rgba(255,255,255,0.14)', alignItems: 'center', justifyContent: 'center' }}>
+            <Tap onPress={rotate} disabled={busy} accessibilityLabel={t('ابحث')} style={{ width: 52, height: 52, borderRadius: 26, backgroundColor: 'rgba(255,255,255,0.14)', alignItems: 'center', justifyContent: 'center' }}>
               <RotateCw size={22} color="#fff" />
             </Tap>
           </View>

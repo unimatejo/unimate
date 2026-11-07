@@ -26,7 +26,7 @@ function nextSlot() {
 }
 
 /**
- * Offer a ride, or ask for one ("بدي توصيلة"): the areas it passes through, where on campus, when, seats, price,
+ * Offer a ride, or ask for one ("أريد توصيلة"): the areas it passes through, where on campus, when, seats, price,
  * and optionally a phone that only the accepted side ever sees. Same limits as the server (0100).
  */
 export default function NewRide() {
@@ -52,12 +52,12 @@ export default function NewRide() {
   const price = free ? 0 : quarters * LIMITS.priceStep;
 
   const problem = (() => {
-    if (area.length < LIMITS.areaMin) return t('اختار المنطقة');
-    if (sharePhone && !joMobile(phone)) return t('رقم الموبايل مش صحيح، اكتبه مثل 0791234567.');
-    if (depart.getTime() < Date.now() + 5 * 60000) return t('اختار وقت من بعد 5 دقايق على الأقل');
-    if (depart.getTime() > Date.now() + LIMITS.daysAhead * 86400000) return t('بتقدر تعرض توصيلة لحد أسبوعين لقدام');
-    if (seats < 1 || seats > (need ? LIMITS.askMax : LIMITS.seatsMax)) return need ? t('عددكم من 1 لـ 3') : t('عدد المقاعد من 1 لـ 6');
-    if (price < 0 || price > LIMITS.priceMax) return t('السعر من 0 لـ 10 دنانير');
+    if (area.length < LIMITS.areaMin) return t('اختر المنطقة');
+    if (sharePhone && !joMobile(phone)) return t('رقم الجوال غير صحيح، اكتبه بهذا الشكل 0791234567.');
+    if (depart.getTime() < Date.now() + 5 * 60000) return t('اختر وقتاً بعد 5 دقائق على الأقل');
+    if (depart.getTime() > Date.now() + LIMITS.daysAhead * 86400000) return t('يمكنك عرض توصيلة حتى أسبوعين مقدماً');
+    if (seats < 1 || seats > (need ? LIMITS.askMax : LIMITS.seatsMax)) return need ? t('عددكم من 1 إلى 3') : t('عدد المقاعد من 1 إلى 6');
+    if (price < 0 || price > LIMITS.priceMax) return t('السعر من 0 إلى 10 دنانير');
     return null;
   })();
 
@@ -72,49 +72,49 @@ export default function NewRide() {
     setBusy(false);
     if (!r.ok) { toast.error(rideError(r.error)); return; }
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
-    toast(need ? t('نزل طلبك ✓ بيوصلك إشعار أول ما حدا يعرض يوصلك') : t('انعرضت توصيلتك ✓'));
+    toast(need ? t('نُشر طلبك ✓ سيصلك إشعار فور أن يعرض أحد توصيلك') : t('تم عرض توصيلتك ✓'));
     router.replace({ pathname: '/rides/[id]', params: { id: r.data as unknown as string } });
   }
 
   return (
     <Screen>
-      <Header title={need ? t('بدي توصيلة') : t('اعرض توصيلة')} />
+      <Header title={need ? t('أريد توصيلة') : t('اعرض توصيلة')} />
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
         <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingHorizontal: 18, paddingBottom: 60, gap: 18 }}>
-          <Segmented items={[t('عندي سيارة'), t('بدي توصيلة')]} value={need ? 1 : 0} onChange={(i) => { setKind(i ? 'need' : 'offer'); setSeats(i ? 1 : 3); }} />
-          <Segmented items={[t('للجامعة'), t('من الجامعة')]} value={dir === 'to_campus' ? 0 : 1} onChange={(i) => setDir(i === 0 ? 'to_campus' : 'from_campus')} />
+          <Segmented items={[t('لدي سيارة'), t('أريد توصيلة')]} value={need ? 1 : 0} onChange={(i) => { setKind(i ? 'need' : 'offer'); setSeats(i ? 1 : 3); }} />
+          <Segmented items={[t('إلى الجامعة'), t('من الجامعة')]} value={dir === 'to_campus' ? 0 : 1} onChange={(i) => setDir(i === 0 ? 'to_campus' : 'from_campus')} />
 
           <View style={{ gap: 10 }}>
-            <T v="bold">{dir === 'to_campus' ? t('من وين طالع؟') : t('لوين رايح؟')}</T>
-            <T v="tiny" color={C.muted}>{need ? t('اختار منطقتك، أو اكتبها.') : t('بتقدر تختار لحد {0} مناطق بتمرق فيهم، أو تكتب أي منطقة.', [String(LIMITS.areasMax)])}</T>
+            <T v="bold">{dir === 'to_campus' ? t('من أين تنطلق؟') : t('إلى أين تذهب؟')}</T>
+            <T v="tiny" color={C.muted}>{need ? t('اختر منطقتك، أو اكتبها.') : t('يمكنك اختيار ما يصل إلى {0} مناطق تمرّ بها، أو كتابة أي منطقة.', [String(LIMITS.areasMax)])}</T>
             <MultiChoiceField value={areas} onChange={setAreas} max={need ? 1 : LIMITS.areasMax} maxLength={LIMITS.areaMax}
-              options={AREAS.map((g) => ({ title: g.city, options: g.areas }))} placeholder={t('اكتب منطقة ثانية')}
+              options={AREAS.map((g) => ({ title: g.city, options: g.areas }))} placeholder={t('اكتب منطقة أخرى')}
               validate={(v) => (v.length < LIMITS.areaMin ? t('الاسم قصير') : null)} />
           </View>
 
           <View style={{ gap: 8 }}>
-            <T v="bold">{dir === 'to_campus' ? t('وين بتنزل بالجامعة؟ (اختياري)') : t('من وين بتطلع بالجامعة؟ (اختياري)')}</T>
+            <T v="bold">{dir === 'to_campus' ? t('أين تنزل في الجامعة؟ (اختياري)') : t('من أين تنطلق في الجامعة؟ (اختياري)')}</T>
             <ChoiceField value={spot} onChange={setSpot} options={CAMPUS_SPOTS} placeholder={t('مثلاً: كلية الهندسة')} maxLength={LIMITS.spotMax} />
           </View>
 
           <Field label={t('نقطة التجمّع (اختياري)')} value={meet} onChangeText={(v) => setMeet(v.slice(0, LIMITS.meetMax))} maxLength={LIMITS.meetMax}
-            placeholder={dir === 'to_campus' ? t('مثلاً: دوار طبربور جنب الصيدلية') : t('مثلاً: البوابة الشمالية')} />
+            placeholder={dir === 'to_campus' ? t('مثلاً: دوار طبربور بجانب الصيدلية') : t('مثلاً: البوابة الشمالية')} />
 
           <View style={{ gap: 8 }}>
-            <T v="bold">{t('إيمتى؟')}</T>
+            <T v="bold">{t('متى؟')}</T>
             <DepartPicker value={depart} onChange={setDepart} min={min} max={max} />
           </View>
 
-          <Stepper label={need ? t('كم واحد إنتو؟') : t('كم مقعد فاضي؟')} value={seats} min={1} max={need ? LIMITS.askMax : LIMITS.seatsMax} onChange={setSeats} />
+          <Stepper label={need ? t('كم عددكم؟') : t('كم مقعدًا شاغرًا؟')} value={seats} min={1} max={need ? LIMITS.askMax : LIMITS.seatsMax} onChange={setSeats} />
 
           <View style={{ gap: 10 }}>
-            <Toggle value={free} onChange={setFree} label={need ? t('بدون مبلغ') : t('ببلاش')} hint={need ? t('أو حط قديش بتدفع للسائق') : t('أو حط مبلغ رمزي يغطي البنزين')} />
-            {!free && <Stepper label={need ? t('بدفع لكل واحد') : t('المبلغ لكل راكب')} value={quarters} min={1} max={LIMITS.priceMax / LIMITS.priceStep} onChange={setQuarters} format={(q) => String(q * LIMITS.priceStep)} />}
+            <Toggle value={free} onChange={setFree} label={need ? t('بدون مبلغ') : t('مجاناً')} hint={need ? t('أو حدد المبلغ الذي ستدفعه للسائق') : t('أو حدد مبلغاً رمزياً يغطي تكلفة الوقود')} />
+            {!free && <Stepper label={need ? t('سأدفع عن كل شخص') : t('المبلغ لكل راكب')} value={quarters} min={1} max={LIMITS.priceMax / LIMITS.priceStep} onChange={setQuarters} format={(q) => String(q * LIMITS.priceStep)} />}
           </View>
 
           <View style={{ gap: 4 }}>
             <Field label={t('ملاحظات (اختياري)')} value={notes} onChangeText={(v) => setNotes(v.slice(0, LIMITS.notesMax))} maxLength={LIMITS.notesMax} multiline
-              placeholder={t('مثلاً: بستنى 5 دقايق بس، ممنوع التدخين')} style={{ minHeight: 90, paddingTop: 14, textAlignVertical: 'top' }} />
+              placeholder={t('مثلاً: أنتظر 5 دقائق فقط، يُمنع التدخين')} style={{ minHeight: 90, paddingTop: 14, textAlignVertical: 'top' }} />
             <T v="tiny" color={C.faint} style={{ alignSelf: 'flex-end' }}>{`${notes.length}/${LIMITS.notesMax}`}</T>
           </View>
 
@@ -137,7 +137,7 @@ export default function NewRide() {
 
           <View style={{ gap: 10 }}>
             <Toggle value={sharePhone} onChange={setSharePhone} icon={<Phone size={20} color={C.primary} />} label={t('شارك رقمي')}
-              hint={need ? t('بيبيّن بس للي بتقبله يوصلك') : t('بيبيّن بس للي بتقبلهم بالتوصيلة')} />
+              hint={need ? t('يظهر فقط لمن تقبل أن يوصلك') : t('يظهر فقط لمن تقبلهم في التوصيلة')} />
             {sharePhone && (
               <Field value={phone} onChangeText={(v) => setPhone(v.slice(0, 16))} keyboardType="phone-pad" placeholder="07XXXXXXXX" maxLength={16}
                 style={{ textAlign: 'left', writingDirection: 'ltr' }} />
@@ -146,10 +146,10 @@ export default function NewRide() {
 
           <Row gap={8} style={{ backgroundColor: C.primarySoft, borderRadius: 16, padding: 12 }}>
             <ShieldCheck size={18} color={C.primary} />
-            <T v="small" color={C.ink2} style={{ flex: 1 }}>{t('رقمك ما بيبيّن بالقائمة لحدا. بتقدر كمان تحكوا من داخل يونيميت.')}</T>
+            <T v="small" color={C.ink2} style={{ flex: 1 }}>{t('لا يظهر رقمك لأحد في القائمة. يمكنكم أيضًا التواصل من داخل يونيميت.')}</T>
           </Row>
 
-          <Button title={need ? t('نزّل الطلب') : t('اعرض التوصيلة')} onPress={submit} loading={busy} disabled={busy || !!problem} />
+          <Button title={need ? t('انشر الطلب') : t('اعرض التوصيلة')} onPress={submit} loading={busy} disabled={busy || !!problem} />
           {problem && area.length >= LIMITS.areaMin ? <T v="tiny" color={C.red} style={{ textAlign: 'center' }}>{problem}</T> : null}
         </ScrollView>
       </KeyboardAvoidingView>

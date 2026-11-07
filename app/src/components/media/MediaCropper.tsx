@@ -29,7 +29,7 @@ const PRESETS: Preset[] = [
   { key: 'original', label: t('أصلي'), ratio: 'original' },
   { key: 'square', label: t('مربع 1:1'), ratio: 1 },
   { key: 'portrait', label: t('عمودي 4:5'), ratio: 4 / 5 },
-  { key: 'landscape', label: t('عرضي 16:9'), ratio: 16 / 9 },
+  { key: 'landscape', label: t('أفقي 16:9'), ratio: 16 / 9 },
   { key: 'free', label: t('حر'), ratio: 'free' },
 ];
 
@@ -110,7 +110,7 @@ function TrimBar({ duration, maxSec, start, end, onChange, onSeek, onScrub, thum
   return (
     <View style={{ gap: 8, paddingHorizontal: 24 }}>
       <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-        <T v="tiny" color={MUTED}>{duration > maxSec + 0.5 ? t('حرّك الإطار واختار أحلى {0} ثانية', [maxSec]) : t('اسحب الأطراف لتقص الفيديو')}</T>
+        <T v="tiny" color={MUTED}>{duration > maxSec + 0.5 ? t('حرّك الإطار واختر أفضل {0} ثانية', [maxSec]) : t('اسحب الأطراف لقص الفيديو')}</T>
         <T v="tiny" color={INK} style={{ fontFamily: F.bodyBold }}>{t('{0} ث', [secs.toFixed(1)])}</T>
       </View>
       <View onLayout={(e) => setW(e.nativeEvent.layout.width)} style={{ height: 52, justifyContent: 'center', direction: 'ltr' }}>
@@ -381,8 +381,8 @@ export function MediaCropper({ src, opts, onDone, onCancel }: { src: Picked; opt
   }
 
   const presets = useMemo(() => (locked ? [] : PRESETS), [locked]);
-  const title = isVideo ? t('عدّل الفيديو') : story ? t('عدّل الستوري') : t('قص الصورة');
-  const doneLabel = mode === 'chat' ? t('ابعت') : t('تم');
+  const title = isVideo ? t('عدّل الفيديو') : story ? t('عدّل القصة') : t('قص الصورة');
+  const doneLabel = mode === 'chat' ? t('أرسل') : t('تم');
   const free = preset === 'free';
   const d = duration || (cur.duration ? cur.duration / 1000 : 0);
 
@@ -435,8 +435,8 @@ export function MediaCropper({ src, opts, onDone, onCancel }: { src: Picked; opt
             <TrimBar duration={d} maxSec={maxSec} start={trim.start} end={Math.min(trim.end || d, d)}
               onChange={(s, e) => setTrim({ start: s, end: e })} onSeek={(s) => { scrubbing.current = false; player.currentTime = s; player.play(); }} onScrub={scrub} thumbs={thumbs} />
           )}
-          {story && <T v="tiny" color={MUTED} style={{ textAlign: 'center' }}>{t('حرّك وكبّر بإصبعين. صغّرها لتبيّن كاملة فوق خلفية مموّهة.')}</T>}
-          {!story && !isVideo && locked && mode === 'post' && <T v="tiny" color={MUTED} style={{ textAlign: 'center' }}>{t('كل صور المنشور بنفس الشكل. حرّك الصورة لتختار شو يبيّن.')}</T>}
+          {story && <T v="tiny" color={MUTED} style={{ textAlign: 'center' }}>{t('حرّك وكبّر بإصبعين. صغّرها لتظهر كاملة فوق خلفية مموّهة.')}</T>}
+          {!story && !isVideo && locked && mode === 'post' && <T v="tiny" color={MUTED} style={{ textAlign: 'center' }}>{t('كل صور المنشور بالشكل نفسه. حرّك الصورة لتختار ما يظهر.')}</T>}
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 12 }}>
             {presets.length > 0 && (
               <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flex: 1 }} contentContainerStyle={{ gap: 8, paddingHorizontal: 4 }}>
@@ -455,7 +455,7 @@ export function MediaCropper({ src, opts, onDone, onCancel }: { src: Picked; opt
             {!isVideo && (
               <>
                 <Tap onPress={() => transform('rotate')} disabled={busy} accessibilityLabel={t('تدوير')} style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: 'rgba(255,255,255,0.1)', alignItems: 'center', justifyContent: 'center' }}><RotateCw size={19} color={INK} /></Tap>
-                <Tap onPress={() => transform('flip')} disabled={busy} accessibilityLabel={t('اقلب')} style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: 'rgba(255,255,255,0.1)', alignItems: 'center', justifyContent: 'center' }}><FlipHorizontal2 size={19} color={INK} /></Tap>
+                <Tap onPress={() => transform('flip')} disabled={busy} accessibilityLabel={t('قلب')} style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: 'rgba(255,255,255,0.1)', alignItems: 'center', justifyContent: 'center' }}><FlipHorizontal2 size={19} color={INK} /></Tap>
               </>
             )}
           </View>

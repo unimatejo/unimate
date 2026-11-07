@@ -8,8 +8,9 @@ import { Avatar, Button, Empty, Header, Row, Screen, Segmented, T, Tap } from '@
 import { useAuth } from '@/lib/auth';
 import { supabase } from '@/lib/supabase';
 import { C, F, isDark } from '@/lib/theme';
-import { LOCALE, nm, t, ta } from '@/lib/i18n';
+import { nm, t, ta } from '@/lib/i18n';
 import { ListSkeleton } from '@/components/ui/Skeleton';
+import { fmtCount } from '@/lib/util';
 
 type P = { id: string; full_name: string; avatar_url: string | null; username: string | null; academic_title?: string | null; title_verified?: boolean; major: { name_ar: string } | null };
 
@@ -61,10 +62,10 @@ export default function Follows() {
     <Screen>
       <Header title={params.name || t('المتابعات')} />
       <View style={{ paddingHorizontal: 18, gap: 10 }}>
-        <Segmented items={counts ? [t('{0} متابِع', [counts[0].toLocaleString(LOCALE)]), t('{0} بيتابع', [counts[1].toLocaleString(LOCALE)])] : [t('المتابِعين'), t('يتابع')]} value={tab} onChange={setTab} />
+        <Segmented items={counts ? [t('{0} متابِع', [fmtCount(counts[0])]), t('{0} يتابع', [fmtCount(counts[1])])] : [t('المتابِعون'), t('يتابع')]} value={tab} onChange={setTab} />
         <Row gap={8} style={{ minHeight: 44, borderRadius: 14, backgroundColor: C.card, paddingHorizontal: 12 }}>
           <Search size={18} color={C.muted} />
-          <TextInput keyboardAppearance={isDark ? 'dark' : 'light'} value={q} onChangeText={setQ} placeholder={t('دوّر')} placeholderTextColor={C.faint} style={{ flex: 1, fontFamily: F.body, fontSize: 14, color: C.ink, textAlign: ta }} />
+          <TextInput keyboardAppearance={isDark ? 'dark' : 'light'} value={q} onChangeText={setQ} placeholder={t('ابحث')} placeholderTextColor={C.faint} style={{ flex: 1, fontFamily: F.body, fontSize: 14, color: C.ink, textAlign: ta }} />
         </Row>
       </View>
       <FlatList
@@ -88,7 +89,7 @@ export default function Follows() {
             )}
           </Row>
         )}
-        ListEmptyComponent={loading ? <ListSkeleton n={6} /> : <Empty title={tab === 0 ? t('ما في متابعين لهلأ') : t('ما بيتابع حدا لهلأ')} />}
+        ListEmptyComponent={loading ? <ListSkeleton n={6} /> : <Empty title={tab === 0 ? t('لا يوجد متابعون حتى الآن') : t('لا يتابع أحدًا حتى الآن')} />}
       />
     </Screen>
   );

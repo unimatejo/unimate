@@ -62,20 +62,20 @@ export default function RideDetail() {
 
   const mine = !!ride && ride.driver_id === profile?.id;
   const need = ride?.kind === 'need';
-  const call = (n: string) => Linking.openURL(`tel:${n}`).catch(() => toast.error(t('ما قدرنا نفتح الاتصال')));
+  const call = (n: string) => Linking.openURL(`tel:${n}`).catch(() => toast.error(t('تعذّر بدء الاتصال')));
 
   async function message(target: string) {
     if (busy) return;
     setBusy(`m-${target}`);
     const { data, error } = await supabase.rpc('start_direct', { target, context: t('توصيلة') });
     setBusy(null);
-    if (error || !data) { Alert.alert(t('ما بتقدر تراسله'), error?.message.includes('not accepting') ? t('هاد الطالب مسكّر الرسائل من ناس خارج دفعته.') : t('جرّب بعدين.')); return; }
+    if (error || !data) { Alert.alert(t('لا يمكنك مراسلته'), error?.message.includes('not accepting') ? t('أغلق هذا الطالب استقبال الرسائل من أشخاص خارج دفعته.') : t('حاول لاحقًا.')); return; }
     router.push({ pathname: '/messages/[id]', params: { id: data as string } });
   }
 
   function answer(q: RideRequest, accept: boolean) {
-    Alert.alert(accept ? t('تقبل {0}؟', [q.name]) : t('تعتذر من {0}؟', [q.name]),
-      accept ? (need ? t('هو اللي رح يوصلك، والباقي بيوصلهم إنك لقيت حدا.') : t('بيتحجزله {0} مقعد وبيوصله إشعار.', [String(q.seats)])) : t('بيوصله إشعار إنك اعتذرت.'), [
+    Alert.alert(accept ? t('قبول {0}؟', [q.name]) : t('الاعتذار من {0}؟', [q.name]),
+      accept ? (need ? t('هو من سيوصلك، وسيصل الباقين إشعار بأنك وجدت من يوصلك.') : t('سيُحجز له {0} مقعد وسيصله إشعار.', [String(q.seats)])) : t('سيصله إشعار بأنك اعتذرت.'), [
         { text: t('لا'), style: 'cancel' },
         { text: accept ? t('اقبل') : t('اعتذر'), style: accept ? 'default' : 'destructive', onPress: async () => {
           setBusy(q.id);
@@ -89,28 +89,28 @@ export default function RideDetail() {
   }
 
   function cancelRide() {
-    Alert.alert(t('تلغي التوصيلة؟'), t('بيوصل إشعار لكل اللي طلبوا مقعد.'), [
+    Alert.alert(t('إلغاء التوصيلة؟'), t('سيصل إشعار إلى كل من طلب مقعداً.'), [
       { text: t('لا'), style: 'cancel' },
-      { text: t('الغيها'), style: 'destructive', onPress: async () => {
+      { text: t('ألغِها'), style: 'destructive', onPress: async () => {
         setBusy('cancel');
         const r = await run(supabase.rpc('cancel_ride', { p_ride: id }), { quiet: true });
         setBusy(null);
         if (!r.ok) { toast.error(rideError(r.error)); return; }
-        toast(t('انلغت التوصيلة'));
+        toast(t('تم إلغاء التوصيلة'));
         router.back();
       } },
     ]);
   }
 
   function leave() {
-    Alert.alert(t('تلغي طلبك؟'), t('بنبلّغ السائق إنك مش جاي.'), [
+    Alert.alert(t('إلغاء طلبك؟'), t('سنُبلغ السائق بأنك لن تأتي.'), [
       { text: t('لا'), style: 'cancel' },
-      { text: t('الغي'), style: 'destructive', onPress: async () => {
+      { text: t('إلغاء'), style: 'destructive', onPress: async () => {
         setBusy('leave');
         const r = await run(supabase.rpc('leave_ride', { p_ride: id }), { quiet: true });
         setBusy(null);
         if (!r.ok) { toast.error(rideError(r.error)); return; }
-        toast(t('انلغى طلبك'));
+        toast(t('تم إلغاء طلبك'));
         load();
       } },
     ]);
@@ -118,8 +118,8 @@ export default function RideDetail() {
 
   if (missing) return (
     <Screen><Header title={t('توصيلة')} />
-      <Empty icon={<Image source={EMOJI.oncoming} style={{ width: 72, height: 72 }} contentFit="contain" />} title={t('هالتوصيلة ما عادت متاحة')} body={t('يمكن انلغت أو صار وقتها.')}
-        action={<Button kind="soft" title={t('شوف التوصيلات')} onPress={() => router.replace('/rides')} />} />
+      <Empty icon={<Image source={EMOJI.oncoming} style={{ width: 72, height: 72 }} contentFit="contain" />} title={t('لم تعد هذه التوصيلة متاحة')} body={t('ربما أُلغيت أو انقضى وقتها.')}
+        action={<Button kind="soft" title={t('عرض التوصيلات')} onPress={() => router.replace('/rides')} />} />
     </Screen>
   );
   if (!ride) return <Screen><Header title={t('توصيلة')} /><ListSkeleton n={3} /></Screen>;
@@ -148,16 +148,16 @@ export default function RideDetail() {
             <Image source={EMOJI.pin} style={{ width: 28, height: 28 }} contentFit="contain" />
             <View style={{ flex: 1 }}>
               <T v="bold">{routeLabel(ride)}</T>
-              {ride.campus_spot ? <T v="small" color={C.ink2}>{t('بالجامعة: {0}', [ride.campus_spot])}</T> : null}
+              {ride.campus_spot ? <T v="small" color={C.ink2}>{t('في الجامعة: {0}', [ride.campus_spot])}</T> : null}
               {ride.meet_point ? <T v="small" color={C.ink2}>{t('نقطة التجمّع: {0}', [ride.meet_point])}</T> : null}
             </View>
           </Row>
           {need ? (
-            <T v="small" color={free ? C.orangeInk : C.greenInk}>{free ? t('{0} أشخاص بدهم توصيلة', [String(ride.seats_total)]) : t('لقى حدا يوصله ✓')}</T>
+            <T v="small" color={free ? C.orangeInk : C.greenInk}>{free ? t('{0} أشخاص يريدون توصيلة', [String(ride.seats_total)]) : t('وجد من يوصله ✓')}</T>
           ) : (
             <Row gap={10} style={{ justifyContent: 'space-between' }}>
               <SeatIcons total={ride.seats_total} taken={ride.seats_taken} size={20} />
-              <T v="small" color={free ? C.greenInk : C.muted}>{free ? t('{0} مقاعد فاضية', [String(free)]) : t('مليانة')}</T>
+              <T v="small" color={free ? C.greenInk : C.muted}>{free ? t('{0} مقاعد شاغرة', [String(free)]) : t('ممتلئة')}</T>
             </Row>
           )}
           {ride.notes ? <T v="body" color={C.ink2}>{ride.notes}</T> : null}
@@ -173,25 +173,25 @@ export default function RideDetail() {
                   {ride.driver_verified && <BadgeCheck size={15} color={C.white} fill={C.verified} />}
                   <TitleBadge title={ride.driver_title} verified={ride.driver_title_verified} />
                 </Row>
-                <T v="tiny" color={C.muted}>{need ? t('بده توصيلة') : t('السائق')}{ride.driver_username ? ` · ⁦@${ride.driver_username}⁩` : ''}</T>
+                <T v="tiny" color={C.muted}>{need ? t('يريد توصيلة') : t('السائق')}{ride.driver_username ? ` · ⁦@${ride.driver_username}⁩` : ''}</T>
               </View>
             </Tap>
             <View style={{ gap: 10, marginTop: 14 }}>
               {ride.my_status === 'accepted' || ride.my_status === 'pending' ? (
                 <View style={{ backgroundColor: ride.my_status === 'accepted' ? C.greenSoft : C.orangeSoft, borderRadius: 16, padding: 12 }}>
                   <T v="bold" color={ride.my_status === 'accepted' ? C.greenInk : C.orangeInk}>
-                    {ride.my_status === 'accepted' ? (need ? t('انقبل عرضك، رح توصله ✓') : t('انقبلت بهالتوصيلة ✓')) : need ? t('عرضك بانتظار رده') : t('طلبك بانتظار رد السائق')}
+                    {ride.my_status === 'accepted' ? (need ? t('تم قبول عرضك، ستوصله ✓') : t('تم قبولك في هذه التوصيلة ✓')) : need ? t('عرضك بانتظار رده') : t('طلبك بانتظار رد السائق')}
                   </T>
                 </View>
               ) : ride.my_status === 'declined' ? (
-                <T v="small" color={C.muted}>{need ? t('لقى حدا ثاني يوصله.') : t('السائق اعتذر عن هالتوصيلة.')}</T>
+                <T v="small" color={C.muted}>{need ? t('وجد شخصًا آخر يوصله.') : t('اعتذر السائق عن هذه التوصيلة.')}</T>
               ) : null}
               {phones[ride.driver_id] ? <Button kind="soft" title={phones[ride.driver_id]} icon={<Phone size={17} color={C.primary} />} onPress={() => call(phones[ride.driver_id])} /> : null}
               <Row gap={8}>
                 <Button kind="soft" title={need ? t('راسله') : t('راسل السائق')} icon={<MessageCircle size={17} color={C.primary} />} onPress={() => message(ride.driver_id)} loading={busy === `m-${ride.driver_id}`} style={{ flex: 1 }} />
                 {ride.my_status === 'accepted' || ride.my_status === 'pending'
-                  ? <Button kind="soft" title={need ? t('الغي عرضي') : t('الغي طلبي')} onPress={leave} loading={busy === 'leave'} style={{ flex: 1 }} />
-                  : ride.my_status !== 'declined' && free > 0 ? <Button title={need ? t('بوصلك') : t('اطلب مقعد')} onPress={() => setAsk(true)} style={{ flex: 1 }} /> : null}
+                  ? <Button kind="soft" title={need ? t('إلغاء عرضي') : t('إلغاء طلبي')} onPress={leave} loading={busy === 'leave'} style={{ flex: 1 }} />
+                  : ride.my_status !== 'declined' && free > 0 ? <Button title={need ? t('سأوصلك') : t('اطلب مقعد')} onPress={() => setAsk(true)} style={{ flex: 1 }} /> : null}
               </Row>
             </View>
           </Card>
@@ -199,9 +199,9 @@ export default function RideDetail() {
 
         {mine && (
           <>
-            <T v="h3">{need ? t('مين عرض يوصلك') : t('الطلبات')}</T>
+            <T v="h3">{need ? t('من عرض توصيلك') : t('الطلبات')}</T>
             {!pending.length && !accepted.length ? (
-              <Card><T v="small" color={C.muted}>{need ? t('لسا ما حدا عرض. بيوصلك إشعار أول ما حدا يعرض يوصلك.') : t('لسا ما حدا طلب مقعد. بيوصلك إشعار أول ما حدا يطلب.')}</T></Card>
+              <Card><T v="small" color={C.muted}>{need ? t('لم يعرض أحد بعد. سيصلك إشعار فور عرض أحدهم توصيلك.') : t('لم يطلب أحد مقعدًا بعد. سيصلك إشعار فور طلب أحدهم.')}</T></Card>
             ) : null}
             {[...pending, ...accepted].map((q) => (
               <View key={q.id} style={[{ backgroundColor: C.card, borderRadius: 22, padding: 12, gap: 10 }, shadow]}>
@@ -211,7 +211,7 @@ export default function RideDetail() {
                   </Tap>
                   <View style={{ flex: 1 }}>
                     <T v="bold" numberOfLines={1}>{q.name}</T>
-                    <T v="tiny" color={C.muted}>{need ? t('عنده سيارة') : t('{0} مقعد', [String(q.seats)])}{q.status === 'accepted' ? ` · ${t('مقبول')}` : ''}</T>
+                    <T v="tiny" color={C.muted}>{need ? t('لديه سيارة') : t('{0} مقعد', [String(q.seats)])}{q.status === 'accepted' ? ` · ${t('مقبول')}` : ''}</T>
                   </View>
                   {phones[q.rider_id] ? <IconButton label={t('اتصل {0}', [phones[q.rider_id]])} onPress={() => call(phones[q.rider_id])}><Phone size={19} color={C.ink} /></IconButton> : null}
                   <IconButton label={t('راسل')} onPress={() => message(q.rider_id)}><MessageCircle size={19} color={C.ink} /></IconButton>
@@ -223,13 +223,13 @@ export default function RideDetail() {
                     <Button kind="soft" title={t('اعتذر')} icon={<X size={16} color={C.primary} />} onPress={() => answer(q, false)} disabled={!!busy} style={{ flex: 1, minHeight: 42 }} />
                   </Row>
                 )}
-                {q.status === 'pending' && q.seats > free ? <T v="tiny" color={C.red}>{t('ما في مقاعد كفاية لهالطلب.')}</T> : null}
+                {q.status === 'pending' && q.seats > free ? <T v="tiny" color={C.red}>{t('لا توجد مقاعد كافية لهذا الطلب.')}</T> : null}
               </View>
             ))}
-            <Button kind="soft" title={need ? t('الغي الطلب') : t('الغي التوصيلة')} onPress={cancelRide} loading={busy === 'cancel'} style={{ marginTop: 6 }} />
+            <Button kind="soft" title={need ? t('إلغاء الطلب') : t('إلغاء التوصيلة')} onPress={cancelRide} loading={busy === 'cancel'} style={{ marginTop: 6 }} />
           </>
         )}
-        <T v="tiny" color={C.faint} style={{ textAlign: 'center' }}>{t('الرقم بيبيّن بس بين السائق والراكب بعد القبول.')}</T>
+        <T v="tiny" color={C.faint} style={{ textAlign: 'center' }}>{t('لا يظهر الرقم إلا للسائق والراكب بعد القبول.')}</T>
       </ScrollView>
       <AskSeatSheet ride={ask ? ride : null} onClose={() => setAsk(false)} onDone={() => { setAsk(false); load(); }} />
     </Screen>

@@ -32,8 +32,8 @@ async function doSchedule(events: ExamLike[]) {
     const name = e.course_name || e.title;
     const when = new Date(at).toLocaleString(LOCALE, { weekday: 'long', hour: 'numeric', minute: '2-digit' });
     const slots: [string, number, string, string][] = [
-      ['d', at - 24 * 3600_000, t('بكرة: {0}', [name]), t('{0}{1}. بالتوفيق!', [when, e.location ? ` · ${e.location}` : ''])],
-      ['h', at - 3600_000, t('بعد ساعة: {0}', [name]), t('جهّز حالك{0}', [e.location ? ` · ${e.location}` : ''])],
+      ['d', at - 24 * 3600_000, t('غداً: {0}', [name]), t('{0}{1}. بالتوفيق!', [when, e.location ? ` · ${e.location}` : ''])],
+      ['h', at - 3600_000, t('بعد ساعة: {0}', [name]), t('استعد{0}', [e.location ? ` · ${e.location}` : ''])],
     ];
     for (const [k, time, title, body] of slots) {
       if (time <= now + 60_000) continue;

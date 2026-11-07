@@ -45,15 +45,15 @@ export default function CloseFriends() {
 
   return (
     <Screen>
-      <Header title={t('الأصدقاء المقربين')} subtitle={t('{0} شخص', [picked.size])} />
+      <Header title={t('الأصدقاء المقرّبون')} subtitle={t('{0} شخص', [picked.size])} />
       <View style={{ paddingHorizontal: 18, gap: 10 }}>
         <Row gap={10} style={{ backgroundColor: C.greenSoft, borderRadius: 18, padding: 12 }}>
           <Star size={18} color={C.green} fill={C.green} />
-          <T v="small" color={C.ink2} style={{ flex: 1 }}>{t('بس هدول بيشوفوا الستوري اللي بتحطها «للمقربين»، وما حدا بيعرف إنه بالقائمة.')}</T>
+          <T v="small" color={C.ink2} style={{ flex: 1 }}>{t('هؤلاء فقط يرون القصص التي تنشرها «للأصدقاء المقرّبين»، ولا يعلم أحد أنه في القائمة.')}</T>
         </Row>
         <Row gap={8} style={{ minHeight: 46, borderRadius: 14, backgroundColor: C.card, paddingHorizontal: 12 }}>
           <Search size={18} color={C.muted} />
-          <TextInput keyboardAppearance={isDark ? 'dark' : 'light'} value={q} onChangeText={setQ} placeholder={t('دوّر بين متابعينك')} placeholderTextColor={C.faint} style={{ flex: 1, fontFamily: F.body, fontSize: 14, color: C.ink, textAlign: ta }} />
+          <TextInput keyboardAppearance={isDark ? 'dark' : 'light'} value={q} onChangeText={setQ} placeholder={t('ابحث بين متابعيك')} placeholderTextColor={C.faint} style={{ flex: 1, fontFamily: F.body, fontSize: 14, color: C.ink, textAlign: ta }} />
         </Row>
       </View>
       <FlatList
@@ -72,7 +72,7 @@ export default function CloseFriends() {
             </Tap>
           );
         }}
-        ListEmptyComponent={<Empty title={t('ما في متابعين لهلأ')} body={t('لما حدا يتابعك بتقدر تضيفه للمقربين.')} />}
+        ListEmptyComponent={<Empty title={t('لا يوجد متابعون حتى الآن')} body={t('عندما يتابعك أحد يمكنك إضافته إلى الأصدقاء المقرّبين.')} />}
       />
     </Screen>
   );

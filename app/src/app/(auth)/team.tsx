@@ -44,10 +44,10 @@ export default function TeamSignIn() {
   async function goOn() {
     const { data } = await supabase.rpc('my_team_status');
     const s = data as { team: boolean; admin: boolean } | null;
-    if (!s?.team && !s?.admin) { await signOut(); setStep('password'); setError(t('هاد الدخول لفريق يونيميت بس. الطلاب بيدخلوا بإيميل الجامعة.')); return; }
+    if (!s?.team && !s?.admin) { await signOut(); setStep('password'); setError(t('هذا الدخول مخصص لفريق يونيميت فقط. يسجّل الطلاب الدخول ببريد الجامعة الإلكتروني.')); return; }
     const n = await nextStep();
     if (n === 'done') { router.replace('/admin'); return; }
-    if (n === 'enroll') { try { setEnroll(await startEnroll()); } catch { setError(t('ما زبط تجهيز تطبيق المصادقة. جرّب كمان مرة.')); return; } }
+    if (n === 'enroll') { try { setEnroll(await startEnroll()); } catch { setError(t('تعذّر تجهيز تطبيق المصادقة. حاول مرة أخرى.')); return; } }
     setCode(''); setStep(n);
   }
 
@@ -56,9 +56,9 @@ export default function TeamSignIn() {
     setBusy(true); setError(null); setNote(null);
     try {
       const { error: e } = await teamSignIn(email, password);
-      if (e) { setError(/rate|limit|many/i.test(e.message) ? t('محاولات كثيرة. استنى شوي وجرّب.') : t('الإيميل أو كلمة السر غلط.')); return; }
+      if (e) { setError(/rate|limit|many/i.test(e.message) ? t('محاولات كثيرة. انتظر قليلًا ثم حاول مجددًا.') : t('البريد الإلكتروني أو كلمة المرور غير صحيحة.')); return; }
       await goOn();
-    } catch { setError(t('تأكد من الإنترنت وجرّب كمان مرة.')); }
+    } catch { setError(t('تحقق من اتصالك بالإنترنت وحاول مرة أخرى.')); }
     finally { setBusy(false); }
   }
 
@@ -70,18 +70,18 @@ export default function TeamSignIn() {
       await supabase.auth.refreshSession();
       router.replace('/admin');
     } catch {
-      setError(t('الرمز غلط أو انتهى وقته. افتح تطبيق المصادقة واكتب الرمز الجديد.'));
+      setError(t('الرمز غير صحيح أو انتهت صلاحيته. افتح تطبيق المصادقة وأدخل الرمز الجديد.'));
       setCode(''); boxes.current?.shake();
     } finally { setBusy(false); }
   }
 
   async function sendLink() {
-    if (!email.includes('@')) { setError(t('اكتب إيميلك أول.')); return; }
+    if (!email.includes('@')) { setError(t('أدخل بريدك الإلكتروني أولاً.')); return; }
     setError(null);
     const { error: e } = await teamResetLink(email);
-    if (e && /rate|limit/i.test(e.message)) { setError(t('وصلنا الحد المسموح من الإيميلات هلأ. جرّب بعد شوي.')); return; }
+    if (e && /rate|limit/i.test(e.message)) { setError(t('وصلنا إلى الحد المسموح من رسائل البريد الإلكتروني حاليًا. حاول بعد قليل.')); return; }
     // same answer whether or not the email has an account
-    setNote(t('إذا الإيميل لحساب بالفريق، وصلك رابط لتعيين كلمة السر. افتحه من نفس الجهاز.'));
+    setNote(t('إذا كان البريد الإلكتروني لحساب في الفريق، فقد وصلك رابط لتعيين كلمة السر. افتحه من الجهاز نفسه.'));
   }
 
   return (
@@ -95,15 +95,15 @@ export default function TeamSignIn() {
             </View>
             <T v="h1">{step === 'password' ? t('دخول فريق يونيميت') : step === 'code' ? t('رمز تطبيق المصادقة') : t('جهّز تطبيق المصادقة')}</T>
             <T v="body" color={C.muted}>
-              {step === 'password' ? t('هاد الدخول لفريق إدارة يونيميت بإيميلك الشخصي وكلمة السر.')
-                : step === 'code' ? t('افتح تطبيق المصادقة (Google Authenticator أو Microsoft Authenticator) واكتب الرمز تبع يونيميت.')
-                  : t('مرة وحدة بس: امسح الكود بتطبيق المصادقة (Google Authenticator أو Microsoft Authenticator)، بعدين اكتب الرمز اللي بيطلع.')}
+              {step === 'password' ? t('هذا الدخول مخصص لفريق إدارة يونيميت باستخدام بريدك الإلكتروني الشخصي وكلمة المرور.')
+                : step === 'code' ? t('افتح تطبيق المصادقة (Google Authenticator أو Microsoft Authenticator) وأدخل رمز يونيميت.')
+                  : t('لمرة واحدة فقط: امسح الرمز باستخدام تطبيق المصادقة (Google Authenticator أو Microsoft Authenticator)، ثم أدخل الرمز الذي يظهر.')}
             </T>
           </Animated.View>
 
           {step === 'password' && (
             <>
-              <Input value={email} onChange={setEmail} placeholder={t('الإيميل')} kind="email" />
+              <Input value={email} onChange={setEmail} placeholder={t('البريد الإلكتروني')} kind="email" />
               <Input value={password} onChange={setPassword} placeholder={t('كلمة السر')} kind="password" onSubmit={signIn} />
               {error && <T v="small" color={C.danger}>{error}</T>}
               {note && <T v="small" color={C.green}>{note}</T>}
@@ -117,9 +117,9 @@ export default function TeamSignIn() {
               <View style={{ padding: 14, borderRadius: 24, backgroundColor: '#FFFFFF' }}>
                 <Image source={{ uri: enroll.qr }} style={{ width: 200, height: 200 }} contentFit="contain" accessibilityLabel={t('كود تطبيق المصادقة')} />
               </View>
-              <T v="small" color={C.muted} style={{ textAlign: 'center' }}>{t('أو اكتب هالمفتاح بالتطبيق:')}</T>
+              <T v="small" color={C.muted} style={{ textAlign: 'center' }}>{t('أو اكتب هذا المفتاح في التطبيق:')}</T>
               <T v="bold" selectable style={{ fontFamily: F.bodyBold, letterSpacing: 1.5, textAlign: 'center' }}>{enroll.secret}</T>
-              {Platform.OS !== 'web' && <Button kind="soft" title={t('افتح تطبيق المصادقة على هالتلفون')} onPress={() => Linking.openURL(enroll.uri).catch(() => {})} />}
+              {Platform.OS !== 'web' && <Button kind="soft" title={t('افتح تطبيق المصادقة على هذا الهاتف')} onPress={() => Linking.openURL(enroll.uri).catch(() => {})} />}
             </View>
           )}
 

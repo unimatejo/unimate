@@ -23,26 +23,26 @@ export default function TeamPassword() {
 
   useEffect(() => {
     (async () => {
-      if (p.error_description) { setError(t('الرابط انتهى أو انستخدم قبل. اطلب رابط جديد.')); return; }
+      if (p.error_description) { setError(t('انتهت صلاحية الرابط أو استُخدم من قبل. اطلب رابطاً جديداً.')); return; }
       if (p.code) {
         const { error: e } = await supabase.auth.exchangeCodeForSession(p.code);
-        if (e && !(await supabase.auth.getSession()).data.session) { setError(t('الرابط انتهى أو انستخدم قبل. اطلب رابط جديد.')); return; }
+        if (e && !(await supabase.auth.getSession()).data.session) { setError(t('انتهت صلاحية الرابط أو استُخدم من قبل. اطلب رابطاً جديداً.')); return; }
       }
-      if (!(await supabase.auth.getSession()).data.session) { setError(t('افتح الرابط اللي بالإيميل من نفس الجهاز.')); return; }
+      if (!(await supabase.auth.getSession()).data.session) { setError(t('افتح الرابط الموجود في البريد الإلكتروني من الجهاز نفسه.')); return; }
       setReady(true);
     })();
   }, [p.code, p.error_description]);
 
   async function save() {
     if (busy) return;
-    if (!strong(pw)) { setError(t('كلمة السر لازم تكون {0} حرف أو أكثر، ومش حرف واحد مكرر.', [MIN])); return; }
-    if (pw !== again) { setError(t('كلمتين السر مش متطابقات.')); return; }
+    if (!strong(pw)) { setError(t('يجب أن تتكون كلمة السر من {0} أحرف أو أكثر، وألا تكون حرفًا واحدًا مكررًا.', [MIN])); return; }
+    if (pw !== again) { setError(t('كلمتا السر غير متطابقتين.')); return; }
     setBusy(true); setError(null);
     const { data: s } = await supabase.auth.getSession();
     const email = s.session?.user.email ?? '';
     const { error: e } = await supabase.auth.updateUser({ password: pw });
     setBusy(false);
-    if (e) { setError(/same|different/i.test(e.message) ? t('اختار كلمة سر جديدة غير القديمة.') : t('ما زبط الحفظ. جرّب كمان مرة.')); return; }
+    if (e) { setError(/same|different/i.test(e.message) ? t('اختر كلمة سر جديدة مختلفة عن القديمة.') : t('تعذّر الحفظ. حاول مرة أخرى.')); return; }
     // sign in again with the new password, then the authenticator code
     await supabase.auth.signOut({ scope: 'local' }).catch(() => {});
     router.replace({ pathname: '/(auth)/team', params: { email } });
@@ -59,7 +59,7 @@ export default function TeamPassword() {
         {!ready && !error && <ActivityIndicator color={C.primary} />}
         {ready && (
           <>
-            <T v="body" color={C.muted}>{t('اختار كلمة سر قوية ({0} حرف أو أكثر). ما حدا غيرك بيعرفها، ولا حتى إحنا.', [MIN])}</T>
+            <T v="body" color={C.muted}>{t('اختر كلمة سر قوية ({0} حرف أو أكثر). لا يعرفها أحد غيرك، ولا حتى نحن.', [MIN])}</T>
             {[[pw, setPw, t('كلمة السر الجديدة')], [again, setAgain, t('أعد كتابتها')]].map(([v, set, ph], i) => (
               <TextInput key={i} keyboardAppearance={isDark ? 'dark' : 'light'} value={v as string} onChangeText={set as (x: string) => void}
                 placeholder={ph as string} placeholderTextColor={C.muted} secureTextEntry autoCapitalize="none" autoCorrect={false}
@@ -72,7 +72,7 @@ export default function TeamPassword() {
         {error && (
           <>
             <T v="small" color={C.danger}>{error}</T>
-            <Button kind="ghost" title={t('رجوع لتسجيل الدخول')} onPress={() => router.replace('/(auth)/team')} />
+            <Button kind="ghost" title={t('العودة إلى تسجيل الدخول')} onPress={() => router.replace('/(auth)/team')} />
           </>
         )}
       </KeyboardAvoidingView>

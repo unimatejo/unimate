@@ -30,16 +30,16 @@ import { dropOutbox, retryOutbox, sendLater, useOutbox, type OutJob } from '@/li
 import { ImageViewer } from '@/components/media/ImageViewer';
 import { aspectCache } from '@/components/media/ZoomPhoto';
 import { timeAgo } from '@/lib/util';
-import { flip, isAR, nm, t, ta } from '@/lib/i18n';
+import { flip, isAR, LOCALE, nm, t, ta } from '@/lib/i18n';
 import { friendly, isRateLimited, optimistic, run, userMessage } from '@/lib/run';
 import { useScreenTimer } from '@/lib/perf';
 import { goBack } from '@/lib/nav';
 
 const VANISH: { key: VanishMode; label: string; hint: string }[] = [
-  { key: 'after_view', label: t('بعد المشاهدة'), hint: t('زي السناب') },
+  { key: 'after_view', label: t('بعد المشاهدة'), hint: t('مثل سناب شات') },
   { key: 'h24', label: t('بعد 24 ساعة'), hint: t('الافتراضي') },
   { key: 'd7', label: t('بعد أسبوع'), hint: '' },
-  { key: 'never', label: t('ما تختفي'), hint: t('بتنحفظ') },
+  { key: 'never', label: t('لا تختفي'), hint: t('تُحفظ') },
 ];
 
 /** A reply to a story, like Instagram: the story's photo (while it still exists) above the text. */
@@ -55,9 +55,9 @@ function StoryReplyBubble({ m, mine }: { m: Message; mine: boolean }) {
   }, [m.ref_id]);
   return (
     <View style={{ gap: 4, alignItems: mine ? 'flex-end' : 'flex-start' }}>
-      <T v="tiny" color={C.muted}>{mine ? t('ردّيت على قصته') : t('ردّ على قصتك')}</T>
+      <T v="tiny" color={C.muted}>{mine ? t('رددت على قصته') : t('ردّ على قصتك')}</T>
       {thumb ? <Image source={{ uri: thumb }} style={{ width: 110, height: 150, borderRadius: 16 }} contentFit="cover" />
-        : <View style={{ width: 110, height: 150, borderRadius: 16, backgroundColor: C.card, borderWidth: 1, borderColor: C.line, alignItems: 'center', justifyContent: 'center', padding: 8 }}><T v="tiny" color={C.muted} style={{ textAlign: 'center' }}>{gone ? t('القصة خلصت') : '…'}</T></View>}
+        : <View style={{ width: 110, height: 150, borderRadius: 16, backgroundColor: C.card, borderWidth: 1, borderColor: C.line, alignItems: 'center', justifyContent: 'center', padding: 8 }}><T v="tiny" color={C.muted} style={{ textAlign: 'center' }}>{gone ? t('انتهت القصة') : '…'}</T></View>}
       <View style={[{ paddingHorizontal: 14, paddingVertical: 10 }, bubble(mine)]}>
         <T v="body" color={inkOn(mine)} style={{ lineHeight: 22 }}>{m.body}</T>
       </View>
@@ -81,7 +81,7 @@ function ChatImage({ path, mine }: { path: string; mine: boolean }) {
     {uri && <Image source={{ uri, cacheKey: `chat/${path}@s` }} style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }} contentFit="cover" transition={180}
       onLoad={(e) => { const r = e.source.width / Math.max(1, e.source.height); aspectCache.set(`chat/${path}`, r); setA(r); }} onError={() => setFailed(true)} />}
     {!uri && !failed && <ActivityIndicator color={C.muted} />}
-    {failed && <T v="tiny" color={C.muted}>{t('ما قدرنا نحمّل الصورة')}</T>}
+    {failed && <T v="tiny" color={C.muted}>{t('تعذّر تحميل الصورة')}</T>}
   </View>;
 }
 
@@ -94,16 +94,16 @@ function PendingPhoto({ p, onRetry, onDrop }: { p: OutJob & { file: NonNullable<
       <View style={[{ ...photoBox(a), overflow: 'hidden', alignItems: 'center', justifyContent: 'center' }, bubble(true, C.soft)]}>
         <Image source={{ uri: p.file.uri }} style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, opacity: failed ? 0.5 : 0.75 }} contentFit="cover" blurRadius={viewOnce ? 18 : 0} />
         {failed ? (
-          <Tap onPress={onRetry} accessibilityLabel={t('جرّب كمان مرة')} style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 14, height: 40, borderRadius: 20, backgroundColor: 'rgba(0,0,0,0.6)' }}>
-            <RotateCw size={16} color="#fff" /><T v="bold" color="#fff" style={{ fontSize: 13 }}>{t('جرّب كمان مرة')}</T>
+          <Tap onPress={onRetry} accessibilityLabel={t('حاول مرة أخرى')} style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 14, height: 40, borderRadius: 20, backgroundColor: 'rgba(0,0,0,0.6)' }}>
+            <RotateCw size={16} color="#fff" /><T v="bold" color="#fff" style={{ fontSize: 13 }}>{t('حاول مرة أخرى')}</T>
           </Tap>
         ) : (
           <View style={{ width: 46, height: 46, borderRadius: 23, backgroundColor: 'rgba(0,0,0,0.45)', alignItems: 'center', justifyContent: 'center' }}><ActivityIndicator color="#fff" /></View>
         )}
       </View>
       {failed
-        ? <Tap onPress={onDrop} accessibilityLabel={t('احذفها')}><T v="tiny" color={C.danger}>{t('ما انبعتت · احذفها')}</T></Tap>
-        : <T v="tiny" color={C.faint}>{p.tries ? t('🕓 بتنبعت أول ما يرجع النت') : t('عم تنبعت…')}</T>}
+        ? <Tap onPress={onDrop} accessibilityLabel={t('احذفها')}><T v="tiny" color={C.danger}>{t('لم تُرسل · احذفها')}</T></Tap>
+        : <T v="tiny" color={C.faint}>{p.tries ? t('🕓 ستُرسل فور عودة الاتصال بالإنترنت') : t('جارٍ الإرسال…')}</T>}
     </View>
   );
 }
@@ -285,9 +285,9 @@ export default function Chat() {
   function menuActions(m: Message) {
     const mineMsg = m.sender_id === profile?.id;
     return [
-      ...(m.kind === 'sticker' && m.media_url && profile ? [{ label: t('احفظ بستيكراتي'), onPress: async () => { if (await saveSticker(profile.id, m.media_url!)) Alert.alert(t('انحفظ الستيكر ✓'), t('بتلاقيه بستيكراتك بأي محادثة.')); } }] : []),
-      ...(canPin && m.kind !== 'system' && !waiting.some((j) => j.id === m.id) ? [{ label: m.pinned_at ? t('إلغاء التثبيت') : t('ثبّت بالمحادثة'), onPress: () => togglePin(m) }] : []),
-      { label: m.is_saved ? t('إلغاء الحفظ') : t('احفظ بالمحادثة'), onPress: () => toggleSave(m) },
+      ...(m.kind === 'sticker' && m.media_url && profile ? [{ label: t('احفظ في ملصقاتي'), onPress: async () => { if (await saveSticker(profile.id, m.media_url!)) Alert.alert(t('تم حفظ الملصق ✓'), t('ستجده ضمن ملصقاتك في أي محادثة.')); } }] : []),
+      ...(canPin && m.kind !== 'system' && !waiting.some((j) => j.id === m.id) ? [{ label: m.pinned_at ? t('إلغاء التثبيت') : t('ثبّت في المحادثة'), onPress: () => togglePin(m) }] : []),
+      { label: m.is_saved ? t('إلغاء الحفظ') : t('احفظ في المحادثة'), onPress: () => toggleSave(m) },
       mineMsg
         ? { label: t('إلغاء الإرسال'), danger: true, onPress: async () => { setMsgs((cur) => cur.filter((x) => x.id !== m.id)); await supabase.rpc('unsend_message', { msg: m.id }); } }
         : { label: t('إبلاغ'), danger: true, onPress: () => router.push({ pathname: '/report', params: { type: 'conversation', id, user: m.sender_id ?? '' } }) },
@@ -375,7 +375,7 @@ export default function Chat() {
     if (!row.deleted_at || !isGroup) return false;
     setMsgs((cur) => cur.filter((x) => x.id !== row.id));
     supabase.rpc('my_chat_mute').then(({ data }) => setMutedUntil(data ? new Date(data as string).getTime() : null), () => {});
-    Alert.alert(t('ما انبعتت رسالتك'), t('فيها كلام مخالف لقواعد الجروبات، فانكتمت شوي. كل مرة بتتكرر المدة بتزيد.'));
+    Alert.alert(t('لم تُرسل رسالتك'), t('تحتوي على كلام مخالف لقواعد المجموعات، لذا كُتمت لفترة قصيرة. تزداد المدة في كل مرة يتكرر فيها ذلك.'));
     return true;
   }
   /** stickers, files, location, contacts and polls from the "+" sheet: through the outbox like everything else */
@@ -404,7 +404,7 @@ export default function Chat() {
   };
   const onRefused = (_j: OutJob, error: { message?: string; code?: string }) => {
     if (mutedError(error)) return;
-    Alert.alert(t('ما انبعتت'), myState === 'request' ? t('لازم تقبل الطلب أول.') : isRateLimited(error) ? friendly(error) : t('ما قدرنا نبعتها. اكبس عليها عشان تجرّب كمان مرة أو تحذفها.'));
+    Alert.alert(t('لم تُرسل'), myState === 'request' ? t('يجب أن تقبل الطلب أولًا.') : isRateLimited(error) ? friendly(error) : t('تعذّر إرسالها. اضغط عليها لتحاول مرة أخرى أو لحذفها.'));
   };
   const waiting = useOutbox(id, { sent: onSent, refused: onRefused });
   const waitingPhotos = waiting.filter((j): j is OutJob & { file: NonNullable<OutJob['file']> } => !!j.file && (j.kind === 'image' || j.kind === 'view_once'));
@@ -415,7 +415,7 @@ export default function Chat() {
     if (uploading || !profile) return;
     setUploading(true);
     let f: Awaited<ReturnType<typeof pickMedia>> = null;
-    try { f = await pickMedia({ camera, crop: 'chat' }); } catch (e) { Alert.alert(t('ما انبعتت الصورة'), userMessage(e)); }
+    try { f = await pickMedia({ camera, crop: 'chat' }); } catch (e) { Alert.alert(t('لم تُرسل الصورة'), userMessage(e)); }
     setUploading(false);
     if (!f) return;
     await sendLater({ conversation_id: id, sender_id: profile.id, kind: viewOnce ? 'view_once' : 'image', file: { uri: f.uri, mime: f.mime, width: f.width, height: f.height } });
@@ -482,7 +482,7 @@ export default function Chat() {
     const on = !m.pinned_at;
     const { error } = await supabase.rpc('pin_message', { p_message: m.id, p_pin: on });
     if (error) {
-      Alert.alert(t('ما زبط'), /pin_limit/.test(error.message) ? t('بتقدر تثبّت 3 رسائل بالكثير. شيل وحدة منهم أول.') : t('جرّب كمان مرة.'));
+      Alert.alert(t('تعذّر ذلك'), /pin_limit/.test(error.message) ? t('يمكنك تثبيت 3 رسائل كحد أقصى. أزل إحداها أولاً.') : t('حاول مرة أخرى.'));
       return;
     }
     Haptics.selectionAsync().catch(() => {});
@@ -493,7 +493,7 @@ export default function Chat() {
   function openPin(m: Message) {
     const i = visible.findIndex((x) => x.id === m.id);
     if (i >= 0) list.current?.scrollToIndex({ index: i, viewPosition: 0.5, animated: true });
-    else toast(t('الرسالة أقدم من اللي ظاهر، اسحب لفوق لتوصلها'));
+    else toast(t('الرسالة أقدم مما هو ظاهر، اسحب للأعلى للوصول إليها'));
   }
 
   async function toggleSave(m: Message) {
@@ -551,7 +551,7 @@ export default function Chat() {
                 {conv?.kind === 'direct' && <TitleBadge title={other?.academic_title} verified={other?.title_verified} />}
                 {(conv?.streak_days ?? 0) > 1 && <Row gap={2}><Flame size={14} color="#E8590C" fill="#FF8A00" /><T v="tiny" color="#FF9A1F">{conv?.streak_days}</T></Row>}
               </Row>
-              {typing !== null ? <T v="tiny" color={C.primaryDark} numberOfLines={1}>{conv?.kind === 'direct' ? t('عم يكتب…') : t('{0} عم يكتب…', [typing])}</T>
+              {typing !== null ? <T v="tiny" color={C.primaryDark} numberOfLines={1}>{conv?.kind === 'direct' ? t('يكتب…') : t('{0} يكتب…', [typing])}</T>
                 : conv?.kind === 'direct' ? <T v="tiny" color={activity === t('نشط الآن') ? C.green : C.muted} numberOfLines={1}>{activity ?? (other?.major ? nm(other.major) : other?.username ? `@${other.username}` : '')}</T>
                 : <T v="tiny" color={C.muted} numberOfLines={1}>{conv?.context_label || t('{0} أعضاء', [String(Object.keys(people).length)])}</T>}
             </View>
@@ -579,7 +579,7 @@ export default function Chat() {
             <View style={{ gap: 6 }}>
               {waitingPhotos.map((p) => <PendingPhoto key={p.id} p={p} onRetry={() => retryOutbox(p.id)} onDrop={() => dropOutbox(p.id)} />)}
               {typing !== null && (
-                <Animated.View entering={FadeIn} accessibilityLabel={conv?.kind === 'direct' ? t('عم يكتب…') : t('{0} عم يكتب…', [typing])} style={{ alignSelf: 'flex-start', backgroundColor: C.soft, borderRadius: 20, paddingHorizontal: 16, paddingVertical: 13, marginTop: 6 }}>
+                <Animated.View entering={FadeIn} accessibilityLabel={conv?.kind === 'direct' ? t('يكتب…') : t('{0} يكتب…', [typing])} style={{ alignSelf: 'flex-start', backgroundColor: C.soft, borderRadius: 20, paddingHorizontal: 16, paddingVertical: 13, marginTop: 6 }}>
                   <TypingDots />
                 </Animated.View>
               )}
@@ -607,12 +607,12 @@ export default function Chat() {
                   {other.username ? <T v="small" color={C.muted} style={{ writingDirection: 'ltr' }}>@{other.username}</T> : null}
                   {other.major ? <T v="tiny" color={C.muted}>{nm(other.major)}</T> : null}
                   <Tap onPress={() => router.push({ pathname: '/user/[id]', params: { id: other.id } })} style={{ marginTop: 10, minHeight: 44, paddingHorizontal: 20, borderRadius: 22, alignItems: 'center', justifyContent: 'center', backgroundColor: C.soft }}>
-                    <T v="bold" style={{ fontSize: 14 }}>{t('شوف البروفايل')}</T>
+                    <T v="bold" style={{ fontSize: 14 }}>{t('عرض الملف الشخصي')}</T>
                   </Tap>
                 </Animated.View>
               )}
               <Tap onPress={() => setSheet(true)} style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: C.card, borderWidth: 1, borderColor: C.line, paddingHorizontal: 12, minHeight: 34, borderRadius: 999 }}>
-                <Timer size={14} color={C.ink2} /><T v="tiny" color={C.ink2}>{conv?.vanish === 'never' ? t('الرسائل ما بتختفي') : t('الرسائل بتختفي {0}', [isAR ? vanishLabel : vanishLabel.toLowerCase()])} {t('· بدون أرقام')}</T>
+                <Timer size={14} color={C.ink2} /><T v="tiny" color={C.ink2}>{conv?.vanish === 'never' ? t('الرسائل لا تختفي') : t('تختفي الرسائل {0}', [isAR ? vanishLabel : vanishLabel.toLowerCase()])} {t('· بدون أرقام')}</T>
               </Tap>
               {shield && <Row gap={6} style={{ backgroundColor: C.greenSoft, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 999 }}><ShieldCheck size={14} color={C.greenInk} /><T v="tiny" color={C.greenInk}>{t('محادثة محمية من التصوير')}</T></Row>}
             </View>
@@ -643,7 +643,7 @@ export default function Chat() {
                   )}
                   <Pressable onPress={() => tapMessage(m, () => { if (m.kind === 'image' && m.media_url) openGallery(m.id); })}
                     onLongPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {}); messageMenu(m); }} delayLongPress={320}
-                    accessibilityHint={t('اكبس مرتين للايك، ومطوّل للتفاعلات')}>
+                    accessibilityHint={t('اضغط مرتين للإعجاب، ومطولاً للتفاعلات')}>
                     {m.kind === 'image' && m.media_url ? <ChatImage path={m.media_url} mine={mine} /> :
                      m.kind === 'voice' && m.media_url ? <VoiceBubble path={m.media_url} seconds={Number(m.body) || 0} mine={mine} /> :
                      m.kind === 'story_reply' ? <StoryReplyBubble m={m} mine={mine} /> :
@@ -656,7 +656,7 @@ export default function Chat() {
                      m.kind === 'view_once' ? (
                       <Tap onPress={() => !mine && !m.viewed_once_at && openOnce(m)} style={{ flexDirection: 'row', alignItems: 'center', gap: 10, minHeight: 48, paddingHorizontal: 16, borderRadius: 22, borderWidth: 1.5, borderColor: m.viewed_once_at ? C.line : C.pink, backgroundColor: C.card }}>
                         <Camera size={20} color={m.viewed_once_at ? C.faint : C.pink} />
-                        <T v="bold" color={m.viewed_once_at ? C.faint : C.pinkInk} style={{ fontSize: 14 }}>{m.viewed_once_at ? t('تمت المشاهدة') : mine ? t('صورة بتنشاف مرة') : t('صورة، اكبس لتشوفها مرة')}</T>
+                        <T v="bold" color={m.viewed_once_at ? C.faint : C.pinkInk} style={{ fontSize: 14 }}>{m.viewed_once_at ? t('تمت المشاهدة') : mine ? t('صورة تُعرض مرة واحدة') : t('صورة، اضغط لعرضها مرة واحدة')}</T>
                       </Tap>
                     ) : plain ? (
                       <View style={[{ paddingHorizontal: 14, paddingVertical: 10 }, bubble(mine)]}>
@@ -669,23 +669,23 @@ export default function Chat() {
                   {waitingIds.has(m.id) ? (() => {
                     const j = waiting.find((x) => x.id === m.id)!;
                     return j.refused ? (
-                      <Tap onPress={() => Alert.alert(t('ما انبعتت'), undefined, [{ text: t('جرّب كمان مرة'), onPress: () => retryOutbox(j.id) }, { text: t('احذفها'), style: 'destructive', onPress: () => dropOutbox(j.id) }, { text: t('إلغاء'), style: 'cancel' }])}
-                        style={{ alignSelf: 'flex-end', paddingHorizontal: 4 }}><T v="tiny" color={C.danger} style={{ fontSize: 11 }}>{t('ما انبعتت · اكبس')}</T></Tap>
+                      <Tap onPress={() => Alert.alert(t('لم تُرسل'), undefined, [{ text: t('حاول مرة أخرى'), onPress: () => retryOutbox(j.id) }, { text: t('احذفها'), style: 'destructive', onPress: () => dropOutbox(j.id) }, { text: t('إلغاء'), style: 'cancel' }])}
+                        style={{ alignSelf: 'flex-end', paddingHorizontal: 4 }}><T v="tiny" color={C.danger} style={{ fontSize: 11 }}>{t('لم تُرسل · اضغط')}</T></Tap>
                     ) : (
                       <Row gap={4} style={{ alignSelf: 'flex-end', paddingHorizontal: 4 }}>
-                        <Clock size={11} color={C.faint} /><T v="tiny" color={C.faint} style={{ fontSize: 11 }}>{j.tries ? t('بتنبعت أول ما يرجع النت') : t('عم تنبعت…')}</T>
+                        <Clock size={11} color={C.faint} /><T v="tiny" color={C.faint} style={{ fontSize: 11 }}>{j.tries ? t('ستُرسل فور عودة الاتصال بالإنترنت') : t('جارٍ الإرسال…')}</T>
                       </Row>
                     );
                   })() : (endOfRun || lastMine || m.is_saved) && (
                     <Row gap={4} style={{ alignSelf: mine ? 'flex-end' : 'flex-start', paddingHorizontal: 4 }}>
                       {m.is_saved && <Bookmark size={11} color={C.primary} fill={C.primary} />}
                       {lastMine && conv?.kind === 'direct'
-                        ? <T v="tiny" color={C.muted} style={{ fontSize: 11 }}>{seenDirect ? t('شوهدت') : `${t('انبعتت')} · ${timeAgo(m.created_at)}`}</T>
+                        ? <T v="tiny" color={C.muted} style={{ fontSize: 11 }}>{seenDirect ? t('شوهدت') : `${t('أُرسلت')} · ${timeAgo(m.created_at)}`}</T>
                         : endOfRun ? <T v="tiny" color={C.faint} style={{ fontSize: 11 }}>{timeAgo(m.created_at)}</T> : null}
                       {lastMine && conv?.kind !== 'direct' && (() => {
                         const others = Object.keys(reads);
                         const seen = others.filter((u) => (reads[u] ?? '') >= m.created_at);
-                        return <SeenBy readers={seen} total={others.length} people={people} onPress={() => Alert.alert(t('شافها'), seen.map((u) => people[u]?.full_name ?? '').join('\n'))} />;
+                        return <SeenBy readers={seen} total={others.length} people={people} onPress={() => Alert.alert(t('شاهدها'), seen.map((u) => people[u]?.full_name ?? '').join('\n'))} />;
                       })()}
                     </Row>
                   )}
@@ -697,7 +697,7 @@ export default function Chat() {
 
         {myState === 'request' ? (
           <View style={{ backgroundColor: C.card, borderTopWidth: 1, borderTopColor: C.line, padding: 14, paddingBottom: insets.bottom + 10, gap: 10 }}>
-            <T v="small" color={C.muted} style={{ textAlign: 'center' }}>{t('هاد طلب مراسلة. اقبله عشان تقدر ترد.')}</T>
+            <T v="small" color={C.muted} style={{ textAlign: 'center' }}>{t('هذا طلب مراسلة. اقبله لتتمكن من الرد.')}</T>
             <Row gap={8}>
               <Tap onPress={() => answerHere(true)} disabled={answering} style={{ flex: 1, minHeight: 46, borderRadius: 23, backgroundColor: C.primary, alignItems: 'center', justifyContent: 'center' }}><T v="bold" color={C.onPrimary}>{t('قبول')}</T></Tap>
               <Tap onPress={() => answerHere(false)} disabled={answering} style={{ flex: 1, minHeight: 46, borderRadius: 23, backgroundColor: C.soft, alignItems: 'center', justifyContent: 'center' }}><T v="bold">{t('تجاهل')}</T></Tap>
@@ -705,10 +705,10 @@ export default function Chat() {
           </View>
         ) : iBlocked ? (
           <View style={{ backgroundColor: C.card, borderTopWidth: 1, borderTopColor: C.line, padding: 14, paddingBottom: insets.bottom + 10, gap: 10, alignItems: 'center' }}>
-            <T v="small" color={C.muted} style={{ textAlign: 'center' }}>{t('حظرت هالحساب. ما بتوصلك رسائله وما بيقدر يشوف حسابك.')}</T>
+            <T v="small" color={C.muted} style={{ textAlign: 'center' }}>{t('لقد حظرت هذا الحساب. لن تصلك رسائله ولن يتمكن من رؤية حسابك.')}</T>
             <Tap onPress={async () => {
               const r = await run(supabase.from('blocks').delete().eq('blocker_id', profile?.id ?? '').eq('blocked_id', iBlocked));
-              if (r.ok) { setIBlocked(null); toast(t('انلغى الحظر')); }
+              if (r.ok) { setIBlocked(null); toast(t('تم إلغاء الحظر')); }
             }} style={{ minHeight: 42, paddingHorizontal: 22, borderRadius: 21, backgroundColor: C.soft, alignItems: 'center', justifyContent: 'center' }}><T v="bold">{t('إلغاء الحظر')}</T></Tap>
           </View>
         ) : mutedUntil && mutedUntil > clock ? (
@@ -716,8 +716,8 @@ export default function Chat() {
             <View style={{ minHeight: 50, borderRadius: 25, backgroundColor: C.redSoft, paddingHorizontal: 16, paddingVertical: 10, flexDirection: 'row', alignItems: 'center', gap: 10 }}>
               <Clock size={18} color={C.danger} />
               <View style={{ flex: 1 }}>
-                <T v="small" color={C.danger}>{t('مكتوم لحد {0} بسبب كلام مخالف', [new Date(mutedUntil).toLocaleString(isAR ? 'ar-JO' : 'en-GB', { weekday: 'short', hour: 'numeric', minute: '2-digit' })])}</T>
-                <T v="tiny" color={C.muted}>{t('ضايل {0}', [left(mutedUntil - clock)])}</T>
+                <T v="small" color={C.danger}>{t('مكتوم حتى {0} بسبب محتوى مخالف', [new Date(mutedUntil).toLocaleString(LOCALE, { weekday: 'short', hour: 'numeric', minute: '2-digit' })])}</T>
+                <T v="tiny" color={C.muted}>{t('متبقٍ {0}', [left(mutedUntil - clock)])}</T>
               </View>
             </View>
           </View>
@@ -726,7 +726,7 @@ export default function Chat() {
             {!recording && <Tap onPress={() => setAttach(true)} accessibilityLabel={t('إرفاق')} style={{ width: 40, height: 50, alignItems: 'center', justifyContent: 'center' }}><Plus size={25} color={C.ink} /></Tap>}
             {/* one stable tree so the voice recorder keeps recording while the rest of the pill hides */}
             <Row gap={2} style={recording ? { flex: 1, minHeight: 50 } : { flex: 1, minHeight: 50, borderRadius: 25, backgroundColor: C.card, borderWidth: 1, borderColor: C.line, paddingStart: 5, paddingEnd: 4 }}>
-              {!recording && <Tap onPress={() => sendPhoto(true, true)} disabled={uploading} accessibilityLabel={t('الكاميرا · صورة بتنشاف مرة')} style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: C.primary, alignItems: 'center', justifyContent: 'center', opacity: uploading ? 0.6 : 1 }}>{uploading ? <ActivityIndicator color={C.onPrimary} /> : <Camera size={19} color={C.onPrimary} strokeWidth={2} />}</Tap>}
+              {!recording && <Tap onPress={() => sendPhoto(true, true)} disabled={uploading} accessibilityLabel={t('الكاميرا · صورة تُعرض مرة واحدة')} style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: C.primary, alignItems: 'center', justifyContent: 'center', opacity: uploading ? 0.6 : 1 }}>{uploading ? <ActivityIndicator color={C.onPrimary} /> : <Camera size={19} color={C.onPrimary} strokeWidth={2} />}</Tap>}
               {!recording && <TextInput keyboardAppearance={isDark ? 'dark' : 'light'} value={draft} onChangeText={onDraft} placeholder={t('رسالة…')} placeholderTextColor={C.muted} multiline
                 style={{ flex: 1, fontFamily: F.body, fontSize: 15, color: C.ink, textAlign: ta, paddingHorizontal: 8, maxHeight: 110, paddingVertical: 10 }} accessibilityLabel={t('اكتب رسالة')} />}
               {!recording && draft.trim() ? (
@@ -738,7 +738,7 @@ export default function Chat() {
               ) : null}
               {(recording || !draft.trim()) && <VoiceRecorder onRecorded={sendVoice} onRecording={setRecording} disabled={uploading} />}
               {!recording && !draft.trim() && <Tap onPress={() => sendPhoto(false)} disabled={uploading} accessibilityLabel={t('صورة')} style={{ width: 38, height: 44, alignItems: 'center', justifyContent: 'center' }}><ImageIcon size={21} color={C.ink} strokeWidth={1.8} /></Tap>}
-              {!recording && !draft.trim() && <Tap onPress={() => setStickers(true)} accessibilityLabel={t('ستيكرات')} style={{ width: 38, height: 44, alignItems: 'center', justifyContent: 'center' }}><Sticker size={21} color={C.ink} strokeWidth={1.8} /></Tap>}
+              {!recording && !draft.trim() && <Tap onPress={() => setStickers(true)} accessibilityLabel={t('ملصقات')} style={{ width: 38, height: 44, alignItems: 'center', justifyContent: 'center' }}><Sticker size={21} color={C.ink} strokeWidth={1.8} /></Tap>}
             </Row>
           </Row>
         )}
@@ -759,10 +759,10 @@ export default function Chat() {
           })}
         </View>
         <View style={{ backgroundColor: C.soft, borderRadius: 20, paddingHorizontal: 14 }}>
-          <Toggle value={shield} onChange={setShield} label={t('منع تصوير هاي المحادثة')} hint={t('أندرويد: الشاشة بتطلع سودا. آيفون: بنخفيها وبنبلغ الطرف الثاني')}
+          <Toggle value={shield} onChange={setShield} label={t('منع تصوير هذه المحادثة')} hint={t('أندرويد: تظهر الشاشة سوداء. آيفون: نخفيها ونُبلغ الطرف الآخر')}
             icon={<View style={{ width: 38, height: 38, borderRadius: 19, backgroundColor: C.green, alignItems: 'center', justifyContent: 'center' }}><EyeOff size={19} color={C.white} /></View>} />
         </View>
-        <T v="tiny" color={C.muted}>{t('اضغط مطوّل على أي رسالة عشان تحفظها بالمحادثة.')}</T>
+        <T v="tiny" color={C.muted}>{t('اضغط مطوّلاً على أي رسالة لحفظها في المحادثة.')}</T>
         <Tap onPress={() => { setSheet(false); router.push({ pathname: '/report', params: { type: 'conversation', id, user: other?.id ?? '' } }); }} style={{ minHeight: 48, borderRadius: 24, backgroundColor: C.redSoft, alignItems: 'center', justifyContent: 'center' }}>
           <T v="bold" color={C.danger}>{t('إبلاغ أو حظر')}</T>
         </Tap>
@@ -780,7 +780,7 @@ export default function Chat() {
       <Modal visible={!!viewer} transparent animationType="fade" onRequestClose={() => setViewer(null)}>
         <Pressable onPress={() => setViewer(null)} style={{ flex: 1, backgroundColor: '#000', justifyContent: 'center' }}>
           {viewer && <Image source={{ uri: viewer }} style={{ width: '100%', height: '80%' }} contentFit="contain" />}
-          <T v="small" color="#AEB8D8" style={{ textAlign: 'center', marginTop: 12 }}>{t('بتنشاف مرة وحدة. اكبس عشان تسكّر.')}</T>
+          <T v="small" color="#AEB8D8" style={{ textAlign: 'center', marginTop: 12 }}>{t('تظهر مرة واحدة. اضغط للإغلاق.')}</T>
         </Pressable>
       </Modal>
     </View>

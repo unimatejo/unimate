@@ -99,17 +99,17 @@ export function StoriesRow() {
       {/* like Instagram: your photo with a "+"; tap it to see your story, or to add one when you have none */}
       <View style={{ alignItems: 'center', gap: 6, width: 68 }}>
         <Tap onPress={() => (up?.failed ? resumeStoryQueue() : mineCount > 0 ? router.push({ pathname: '/story/[id]', params: { id: profile?.id ?? '' } }) : addStory())}
-          accessibilityLabel={up?.failed ? t('جرّب ترفع قصتك كمان مرة') : sending ? t('عم نرفع قصتك') : mineCount > 0 ? t('شوف قصتك') : t('ضيف قصة')}>
+          accessibilityLabel={up?.failed ? t('حاول رفع قصتك مرة أخرى') : sending ? t('جارٍ رفع قصتك') : mineCount > 0 ? t('عرض قصتك') : t('أضف قصة')}>
           {mineCount > 0
             ? <Ring seen={false}><Avatar id={profile?.id} name={profile?.full_name} url={profile?.avatar_url} size={56} radius={19} /></Ring>
             : <View style={{ width: 66, height: 66, alignItems: 'center', justifyContent: 'center' }}><Avatar id={profile?.id} name={profile?.full_name} url={profile?.avatar_url} size={sending ? 56 : 60} radius={sending ? 33 : 21} /></View>}
           {up && <Uploading progress={up.progress} failed={up.failed} />}
         </Tap>
-        <Tap onPress={addStory} accessibilityLabel={t('ضيف قصة')} hitSlop={10}
+        <Tap onPress={addStory} accessibilityLabel={t('أضف قصة')} hitSlop={10}
           style={{ position: 'absolute', top: 44, left: 0, width: 26, height: 26, borderRadius: 13, backgroundColor: C.primary, borderWidth: 2.5, borderColor: C.bg, alignItems: 'center', justifyContent: 'center' }}>
           <Plus size={15} color={C.onPrimary} strokeWidth={3} />
         </Tap>
-        <T v="tiny" color={up?.failed ? C.red : undefined}>{up?.failed ? t('ما ارتفعت') : sending ? t('عم ترتفع…') : t('قصتك')}</T>
+        <T v="tiny" color={up?.failed ? C.red : undefined}>{up?.failed ? t('تعذّر الرفع') : sending ? t('جارٍ الرفع…') : t('قصتك')}</T>
       </View>
       {groups.map((g) => (
         <Tap key={g.author_id} onPress={() => router.push({ pathname: '/story/[id]', params: { id: g.author_id } })} style={{ alignItems: 'center', gap: 6, width: 68 }}>

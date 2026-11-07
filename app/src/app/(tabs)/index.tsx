@@ -116,7 +116,7 @@ export default function Home() {
             <Glow color={C.pink} size={280} style={{ bottom: -140, left: 0 }} dur={10000} />
             {nxt ? (
               <>
-                <Row gap={8}><Pulse /><T v="small" color="#C9D1F0">{t('محاضرتك الجاية بعد')}</T></Row>
+                <Row gap={8}><Pulse /><T v="small" color="#C9D1F0">{t('محاضرتك القادمة بعد')}</T></Row>
                 <Row gap={8} style={{ alignItems: 'baseline' }}>
                   <T style={{ fontFamily: F.display, fontSize: 60, lineHeight: 72 }} color={C.white}>{countdown}</T>
                   <T v="h3" color={C.white}>{unit}</T>
@@ -128,7 +128,7 @@ export default function Home() {
                 <Row gap={8}>
                   <Tap onPress={() => router.push(roomRoute(nxt))}
                     style={{ flex: 1, minHeight: 48, borderRadius: 16, backgroundColor: '#FFFFFF', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-                    <Navigation size={18} color="#0E1430" /><T v="bold" color="#0E1430">{t('وديني عالقاعة')}</T>
+                    <Navigation size={18} color="#0E1430" /><T v="bold" color="#0E1430">{t('خذني إلى القاعة')}</T>
                   </Tap>
                   <Tap onPress={() => router.push('/(tabs)/schedule')} accessibilityLabel={t('جدول اليوم')}
                     style={{ width: 48, minHeight: 48, borderRadius: 16, backgroundColor: 'rgba(255,255,255,0.14)', alignItems: 'center', justifyContent: 'center' }}>
@@ -138,8 +138,8 @@ export default function Home() {
               </>
             ) : (
               <View style={{ gap: 8 }}>
-                <T v="h2" color={C.white}>{t('جدولك بيطلع هون')}</T>
-                <T v="small" color="#C9D1F0">{t('أول ما تنضاف موادك من حسابك الجامعي، بتشوف محاضرتك الجاية مع العد التنازلي والقاعة.')}</T>
+                <T v="h2" color={C.white}>{t('سيظهر جدولك هنا')}</T>
+                <T v="small" color="#C9D1F0">{t('بمجرد إضافة موادك من حسابك الجامعي، سترى محاضرتك القادمة مع العد التنازلي والقاعة.')}</T>
                 <Tap onPress={() => router.push('/(tabs)/schedule')} style={{ alignSelf: 'flex-start', marginTop: 6, minHeight: 44, paddingHorizontal: 16, borderRadius: 14, backgroundColor: '#FFFFFF', justifyContent: 'center' }}>
                   <T v="bold" color="#0E1430">{t('افتح الجدول')}</T>
                 </Tap>
@@ -171,9 +171,9 @@ export default function Home() {
           <Card>
             <Row style={{ justifyContent: 'space-between', marginBottom: 6 }}>
               <T v="h3">{t('اليوم')}</T>
-              <Tap onPress={() => router.push('/(tabs)/schedule')}><T v="small" color={C.blue}>{t('الجدول كامل')}</T></Tap>
+              <Tap onPress={() => router.push('/(tabs)/schedule')}><T v="small" color={C.blue}>{t('الجدول كاملاً')}</T></Tap>
             </Row>
-            {todays.length === 0 ? <T v="small" color={C.muted}>{t('ما عندك محاضرات اليوم.')}</T> : todays.map((m) => (
+            {todays.length === 0 ? <T v="small" color={C.muted}>{t('ليست لديك محاضرات اليوم.')}</T> : todays.map((m) => (
               <Row key={m.id} gap={12} style={{ minHeight: 54 }}>
                 <View style={{ width: 4, height: 34, borderRadius: 2, backgroundColor: m.kind === 'lab' ? C.green : m.kind === 'online' ? C.violet : m.kind === 'blended' ? C.sky : C.blue }} />
                 <View style={{ flex: 1 }}>
@@ -191,7 +191,7 @@ export default function Home() {
             <GlyphTile icon={Users} colors={['rgba(255,255,255,0.35)', 'rgba(255,255,255,0.15)']} size={48} live />
             <View style={{ flex: 1 }}>
               <T v="bold" color={C.white}>{t('مجتمع')} {nm(university)?.replace(t('الجامعة '), '').replace(t('جامعة '), '') ?? t('جامعتك')}</T>
-              <T v="small" color="#FBE7FF">{t('منشورات، قصص وجروبات كليتك ودفعتك')}</T>
+              <T v="small" color="#FBE7FF">{t('منشورات وقصص ومجموعات كليتك ودفعتك')}</T>
             </View>
           </LinearGradient>
         </Tap>

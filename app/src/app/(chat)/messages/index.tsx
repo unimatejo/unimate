@@ -205,26 +205,26 @@ export function Inbox({ inTab }: { inTab?: boolean }) {
                 );
               })}
             </ScrollView>
-            {tab === 3 && shown.length > 0 && <T v="tiny" color={C.muted}>{t('المرسل ما بيعرف إذا شفت رسالته. لما تتابعوا بعض، الطلب بينقل للرئيسية لحاله.')}</T>}
-            {tab === 2 && <Button kind="soft" title={t('جروب جديد')} icon={<UsersRound size={18} color={C.primaryDark} />} onPress={() => router.push({ pathname: '/messages/new', params: { group: '1' } })} style={{ minHeight: 44 }} />}
+            {tab === 3 && shown.length > 0 && <T v="tiny" color={C.muted}>{t('لن يعرف المرسل إن كنت قد رأيت رسالته. عندما تتابعان بعضكما، ينتقل الطلب إلى الرئيسية تلقائياً.')}</T>}
+            {tab === 2 && <Button kind="soft" title={t('مجموعة جديدة')} icon={<UsersRound size={18} color={C.primaryDark} />} onPress={() => router.push({ pathname: '/messages/new', params: { group: '1' } })} style={{ minHeight: 44 }} />}
           </View>
         }
         renderItem={({ item }) => <ChatRow item={item} typing={isTyping(item.id)} onAnswer={onAnswer} />}
         ListEmptyComponent={loading ? <ListSkeleton n={6} /> : failed ? <StateView error onRetry={load} /> : tab === 3
-          ? <Empty icon={<InboxIcon size={28} color={C.primary} />} title={t('ما في طلبات')} body={t('لما حدا ما بتتابعه يراسلك، بيوصل هون أول.')} />
-          : tab === 1 ? <Empty icon={<BookOpen size={28} color={C.primary} />} title={t('ما في جروبات مواد')} body={t('بتنضاف لجروب كل شعبة لما تضيف موادك بالجدول.')} />
-          : tab === 2 ? <Empty icon={<Users size={28} color={C.primary} />} title={t('ما في جروبات لهلأ')} body={t('بتنضاف لحالك لجروب كليتك وتخصصك ودفعتك لما تكمّل معلوماتك.')} />
-          : <Empty icon={<MessageCircle size={28} color={C.primary} />} title={t('ما في محادثات لهلأ')} body={t('اكبس على القلم فوق وابدأ مع زميل.')}
-              action={<Button kind="soft" title={t('ادعي زملاءك')} onPress={() => inviteFriends()} style={{ marginTop: 10, paddingHorizontal: 20 }} />} />}
+          ? <Empty icon={<InboxIcon size={28} color={C.primary} />} title={t('لا توجد طلبات')} body={t('عندما يراسلك شخص لا تتابعه، تصل رسالته إلى هنا أولًا.')} />
+          : tab === 1 ? <Empty icon={<BookOpen size={28} color={C.primary} />} title={t('لا توجد مجموعات مواد')} body={t('ستُضاف إلى مجموعة كل شعبة عند إضافة موادك إلى الجدول.')} />
+          : tab === 2 ? <Empty icon={<Users size={28} color={C.primary} />} title={t('لا توجد مجموعات حتى الآن')} body={t('ستُضاف تلقائياً إلى مجموعة كليتك وتخصصك ودفعتك عند إكمال معلوماتك.')} />
+          : <Empty icon={<MessageCircle size={28} color={C.primary} />} title={t('لا توجد محادثات حتى الآن')} body={t('اضغط على القلم في الأعلى وابدأ مع زميل.')}
+              action={<Button kind="soft" title={t('ادعُ زملاءك')} onPress={() => inviteFriends()} style={{ marginTop: 10, paddingHorizontal: 20 }} />} />}
       />
       <Modal visible={noteOpen} transparent animationType="fade" onRequestClose={() => setNoteOpen(false)}>
         <Pressable onPress={() => setNoteOpen(false)} style={{ flex: 1, backgroundColor: C.overlay }} accessibilityLabel={t('إغلاق')} />
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ position: 'absolute', left: 0, right: 0, bottom: 0 }}>
           <View style={{ backgroundColor: C.card, borderTopLeftRadius: R.xl, borderTopRightRadius: R.xl, padding: 18, paddingBottom: 34, gap: 14 }}>
             <View style={{ alignSelf: 'center', width: 40, height: 5, borderRadius: 3, backgroundColor: C.line }} />
-            <T v="h3" style={{ textAlign: 'center' }}>{t('ملاحظة لأصحابك')}</T>
-            <T v="tiny" color={C.muted} style={{ textAlign: 'center' }}>{t('بتطلع فوق صورتك بالرسائل، وبتختفي بعد ٢٤ ساعة.')}</T>
-            <TextInput autoFocus value={noteText} onChangeText={(v) => setNoteText(v.slice(0, 60))} maxLength={60} placeholder={t('شو بالك؟')} placeholderTextColor={C.muted}
+            <T v="h3" style={{ textAlign: 'center' }}>{t('ملاحظة لأصدقائك')}</T>
+            <T v="tiny" color={C.muted} style={{ textAlign: 'center' }}>{t('تظهر فوق صورتك في الرسائل، وتختفي بعد 24 ساعة.')}</T>
+            <TextInput autoFocus value={noteText} onChangeText={(v) => setNoteText(v.slice(0, 60))} maxLength={60} placeholder={t('بماذا تفكر؟')} placeholderTextColor={C.muted}
               keyboardAppearance={isDark ? 'dark' : 'light'} accessibilityLabel={t('الملاحظة')}
               style={{ minHeight: 52, borderRadius: R.sm, backgroundColor: C.soft, paddingHorizontal: 16, fontFamily: F.body, fontSize: 16, color: C.ink, textAlign: ta }} />
             <T v="tiny" color={C.muted} style={{ textAlign: 'left' }}>{noteText.length}/60</T>
@@ -252,8 +252,8 @@ const ChatRow = memo(function ChatRow({ item, typing, onAnswer }: { item: Item; 
           {item.streak > 1 && <T v="tiny" color="#E8590C">🔥{item.streak}</T>}
         </Row>
         <Row gap={4}>
-          {typing ? <T v="small" numberOfLines={1} color={C.primaryDark}>{t('عم يكتب…')}</T>
-            : <T v="small" numberOfLines={1} style={{ flexShrink: 1 }} color={item.unread ? C.ink : C.muted}>{item.last ?? (item.kind === 'community' ? t('جروب تلقائي') : '')}</T>}
+          {typing ? <T v="small" numberOfLines={1} color={C.primaryDark}>{t('يكتب…')}</T>
+            : <T v="small" numberOfLines={1} style={{ flexShrink: 1 }} color={item.unread ? C.ink : C.muted}>{item.last ?? (item.kind === 'community' ? t('مجموعة تلقائية') : '')}</T>}
           {item.last_at ? <T v="small" color={C.faint}>{(item.last ?? (item.kind === 'community' ? 'x' : '')) ? '· ' : ''}{timeAgo(item.last_at)}</T> : null}
         </Row>
         {item.state === 'request' && (

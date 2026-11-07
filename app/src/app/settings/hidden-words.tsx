@@ -39,7 +39,7 @@ export default function HiddenWords() {
       <ScrollView contentContainerStyle={{ padding: 18, paddingTop: 4, gap: 14 }} keyboardShouldPersistTaps="handled">
         <Row gap={10} style={{ backgroundColor: C.primarySoft, borderRadius: 18, padding: 12 }}>
           <EyeOff size={18} color={C.primary} />
-          <T v="small" color={C.ink2} style={{ flex: 1 }}>{t('أي تعليق أو طلب رسالة فيه هاي الكلمات بيتخبّى عنك تلقائياً.')}</T>
+          <T v="small" color={C.ink2} style={{ flex: 1 }}>{t('سيُخفى عنك تلقائياً أي تعليق أو طلب مراسلة يحتوي على هذه الكلمات.')}</T>
         </Row>
         <Row gap={8}>
           <TextInput keyboardAppearance={isDark ? 'dark' : 'light'} value={w} onChangeText={setW} onSubmitEditing={add} placeholder={t('أضف كلمة أو جملة')} placeholderTextColor={C.faint} returnKeyType="done" maxLength={40}

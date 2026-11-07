@@ -18,7 +18,7 @@ type Course = { name: string; code: string | null; section: string | null; instr
 async function pick(camera: boolean): Promise<string | null> {
   const perm = camera ? await ImagePicker.requestCameraPermissionsAsync() : await ImagePicker.requestMediaLibraryPermissionsAsync();
   if (!perm.granted) {
-    Alert.alert(camera ? t('الكاميرا مسكّرة') : t('الصور مسكّرة'), t('افتح الإعدادات واسمح ليونيميت يوصل للصور والكاميرا.'), [
+    Alert.alert(camera ? t('الوصول إلى الكاميرا غير مسموح') : t('الوصول إلى الصور غير مسموح'), t('افتح الإعدادات واسمح ليونيميت بالوصول إلى الصور والكاميرا.'), [
       { text: t('لاحقاً'), style: 'cancel' }, { text: t('افتح الإعدادات'), onPress: () => Linking.openSettings() },
     ]);
     return null;
@@ -49,20 +49,20 @@ export function ScheduleScan({ onDone, autoOpen }: { onDone: () => void; autoOpe
       const timeout = new Promise<{ data: null; error: Error }>((r) => setTimeout(() => r({ data: null, error: new Error('timeout') }), 70000));
       const { data, error } = await Promise.race([supabase.functions.invoke('schedule-import', { body: { image: b64, mime: 'image/jpeg' } }), timeout]);
       const status = (error as { context?: { status?: number } } | null)?.context?.status;
-      if (status === 429) { Alert.alert(t('وصلت الحد اليومي'), t('بتقدر تقرأ جدول بالصورة 15 مرة باليوم. جرّب بكرا، أو ضيف موادك بإيدك.')); return; }
-      if (error?.message === 'timeout' || status === 502) { Alert.alert(t('خدمة القراءة مشغولة هلأ'), t('جرّب كمان دقيقة، أو ضيف موادك بإيدك.')); return; }
+      if (status === 429) { Alert.alert(t('وصلت إلى الحد اليومي'), t('يمكنك قراءة جدول من صورة 15 مرة يومياً. حاول غداً، أو أضف موادك يدوياً.')); return; }
+      if (error?.message === 'timeout' || status === 502) { Alert.alert(t('خدمة القراءة مشغولة الآن'), t('حاول بعد دقيقة، أو أضف موادك يدويًا.')); return; }
       if (error || !data) throw new Error(data?.error ?? 'failed');
-      if (data.error === 'not_configured') { Alert.alert(t('قراءة الجدول من الصورة لسا مش مفعّلة'), t('جرّب كمان شوي، أو ضيف موادك بإيدك.')); return; }
-      if (!data.courses?.length) { Alert.alert(t('ما قدرنا نقرأ جدول بالصورة'), t('جرّب سكرين شوت أوضح لصفحة الجدول من بوابة الجامعة.')); return; }
+      if (data.error === 'not_configured') { Alert.alert(t('قراءة الجدول من الصورة غير مفعّلة بعد'), t('حاول بعد قليل، أو أضف موادك يدويًا.')); return; }
+      if (!data.courses?.length) { Alert.alert(t('تعذّرت قراءة جدول من الصورة'), t('جرّب لقطة شاشة أوضح لصفحة الجدول من بوابة الجامعة.')); return; }
       setSkip(new Set()); setFound(data.courses as Course[]);
-    } catch { Alert.alert(t('ما زبطت القراءة'), t('تأكد من الإنترنت وجرّب كمان مرة.')); }
+    } catch { Alert.alert(t('تعذّرت القراءة'), t('تحقق من اتصالك بالإنترنت وحاول مرة أخرى.')); }
     finally { setReading(false); }
   }
 
   function choose() {
-    Alert.alert(t('صوّر جدولك'), t('سكرين شوت من صفحة التسجيل، أو صورة للجدول المطبوع.'), [
+    Alert.alert(t('صوّر جدولك'), t('لقطة شاشة من صفحة التسجيل، أو صورة للجدول المطبوع.'), [
       { text: t('من الصور'), onPress: () => start(false) },
-      { text: t('صوّر هلأ'), onPress: () => start(true) },
+      { text: t('صوّر الآن'), onPress: () => start(true) },
       { text: t('إلغاء'), style: 'cancel' },
     ]);
   }
@@ -81,21 +81,21 @@ export function ScheduleScan({ onDone, autoOpen }: { onDone: () => void; autoOpe
         await Promise.all(c.meetings.flatMap((m) => m.days.map((d) => supabase.rpc('report_meeting', { sec, wd: d, st: m.start, en: m.end, k: m.kind, room: m.room ?? '' }))));
       }
       setFound(null); onDone();
-      Alert.alert(t('انضافت {0} مواد ✓', [n]), t('وانضميت لجروب كل مادة. إذا في وقت غلط، اكبس عليه وعدّله.'));
-    } catch { Alert.alert(t('ما انحفظ كله'), t('جرّب كمان مرة.')); }
+      Alert.alert(t('تمت إضافة {0} مواد ✓', [n]), t('وانضممت إلى مجموعة كل مادة. إذا كان هناك وقت خاطئ، فاضغط عليه وعدّله.'));
+    } catch { Alert.alert(t('لم يُحفظ كله'), t('حاول مرة أخرى.')); }
     finally { setSaving(false); }
   }
 
   useEffect(() => { if (autoOpen) choose(); }, [autoOpen]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const kindL: Record<string, string> = { lecture: t('محاضرة'), lab: t('مختبر'), online: t('أونلاين'), blended: t('مدمج'), tutorial: t('مناقشة') };
+  const kindL: Record<string, string> = { lecture: t('محاضرة'), lab: t('مختبر'), online: t('عبر الإنترنت'), blended: t('مدمج'), tutorial: t('مناقشة') };
   return (
     <>
       <Tap onPress={choose} disabled={reading} scale={0.98} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: C.card, borderRadius: 22, padding: 14 }}>
         <GlyphTile icon={ScanLine} colors={GRAD.pink} size={48} live />
         <View style={{ flex: 1 }}>
-          <T v="bold">{t('صوّر جدولك وخلّي التطبيق يعبّيه')}</T>
-          <T v="tiny" color={C.muted}>{t('سكرين شوت من بوابة الجامعة، وبنقرأ المواد والأيام والأوقات والقاعات.')}</T>
+          <T v="bold">{t('صوّر جدولك ودع التطبيق يملؤه')}</T>
+          <T v="tiny" color={C.muted}>{t('لقطة شاشة من بوابة الجامعة، ونقرأ منها المواد والأيام والأوقات والقاعات.')}</T>
         </View>
         {reading && <ActivityIndicator color={C.primary} />}
       </Tap>
@@ -104,8 +104,8 @@ export function ScheduleScan({ onDone, autoOpen }: { onDone: () => void; autoOpe
         <View style={{ flex: 1, backgroundColor: 'rgba(14,20,48,0.55)', alignItems: 'center', justifyContent: 'center', padding: 30 }}>
           <View style={{ backgroundColor: C.card, borderRadius: 24, padding: 24, gap: 12, alignItems: 'center', maxWidth: 320 }}>
             <ActivityIndicator size="large" color={C.primary} />
-            <T v="h3" style={{ textAlign: 'center' }}>{t('عم نقرأ جدولك…')}</T>
-            <T v="small" color={C.muted} style={{ textAlign: 'center' }}>{t('عادة بياخد ثواني، وأحياناً لحد دقيقة. خليك على هالصفحة.')}</T>
+            <T v="h3" style={{ textAlign: 'center' }}>{t('جارٍ قراءة جدولك…')}</T>
+            <T v="small" color={C.muted} style={{ textAlign: 'center' }}>{t('يستغرق ذلك عادةً بضع ثوانٍ، وأحيانًا حتى دقيقة. ابقَ على هذه الصفحة.')}</T>
           </View>
         </View>
       </Modal>
@@ -113,8 +113,8 @@ export function ScheduleScan({ onDone, autoOpen }: { onDone: () => void; autoOpe
       <Modal visible={!!found} transparent animationType="fade" onRequestClose={() => setFound(null)}>
         <Pressable style={{ flex: 1, backgroundColor: 'rgba(14,20,48,0.45)' }} onPress={() => setFound(null)} />
         <Animated.View entering={SlideInDown.duration(240)} style={{ backgroundColor: C.bg, borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: 18, gap: 12, paddingBottom: 40, maxHeight: '88%' }}>
-          <T v="h3">{t('هاد اللي قرأناه')}</T>
-          <T v="tiny" color={C.muted}>{t('شيل العلامة عن أي مادة غلط. بعد الحفظ بتقدر تعدّل أي وقت.')}</T>
+          <T v="h3">{t('هذا ما قرأناه')}</T>
+          <T v="tiny" color={C.muted}>{t('أزل العلامة عن أي مادة خاطئة. بعد الحفظ يمكنك التعديل في أي وقت.')}</T>
           <ScrollView contentContainerStyle={{ gap: 10 }}>
             {(found ?? []).map((c, i) => {
               const on = !skip.has(i);
@@ -133,13 +133,13 @@ export function ScheduleScan({ onDone, autoOpen }: { onDone: () => void; autoOpe
                         <T v="tiny" color={C.muted}>{[kindL[m.kind], m.room].filter(Boolean).join(' · ')}</T>
                       </Row>
                     ))}
-                    {!c.meetings.length && <T v="tiny" color={C.orange}>{t('ما لقينا وقت، ضيفه بعدين')}</T>}
+                    {!c.meetings.length && <T v="tiny" color={C.orange}>{t('لم يتم العثور على موعد، أضفه لاحقًا')}</T>}
                   </View>
                 </Tap>
               );
             })}
           </ScrollView>
-          <Button title={t('ضيف المواد ({0})', [String((found?.length ?? 0) - skip.size)])} loading={saving} disabled={saving || (found?.length ?? 0) === skip.size} onPress={save} />
+          <Button title={t('أضف المواد ({0})', [String((found?.length ?? 0) - skip.size)])} loading={saving} disabled={saving || (found?.length ?? 0) === skip.size} onPress={save} />
         </Animated.View>
       </Modal>
     </>

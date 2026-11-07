@@ -15,7 +15,7 @@ export default function UsersPage() {
   useEffect(() => { const x = setTimeout(() => setTerm(q.trim()), 300); return () => clearTimeout(x); }, [q]);
 
   return (
-    <AdminScreen title={t('المستخدمين')} subtitle={t('دوّر بالاسم أو اليوزر أو الإيميل أو الرقم الجامعي')}>
+    <AdminScreen title={t('المستخدمون')} subtitle={t('ابحث بالاسم أو اسم المستخدم أو البريد الإلكتروني أو الرقم الجامعي')}>
       <SearchBox value={q} onChange={setQ} placeholder={t('بحث…')} />
       <State loading={loading} error={error} empty={data?.length === 0}>
         <View style={{ gap: 8 }}>

@@ -43,7 +43,7 @@ const theme = mapTheme();
  * The campus map, all inside the app: a real 3D campus (MapLibre: buildings with height, light and shadow, trees,
  * green areas, paths) built from OpenStreetMap, Microsoft footprints and our own buildings. The web draws it in the
  * page and phones in a web view (Campus3D); a phone whose web view doesn't come up falls back to the platform map with
- * the campus drawn flat. "وديني" walks you there on the campus paths with turn-by-turn directions.
+ * the campus drawn flat. "الاتجاهات" walks you there on the campus paths with turn-by-turn directions.
  * Opened with ?building=…&go=1 (&room, &floor) from a lecture, it starts the route by itself.
  */
 export default function CampusMap() {
@@ -168,7 +168,7 @@ export default function CampusMap() {
       let { status } = await Location.getForegroundPermissionsAsync();
       if (status !== 'granted' && ask) ({ status } = await Location.requestForegroundPermissionsAsync());
       if (status !== 'granted') {
-        if (ask) Alert.alert(t('الموقع مسكّر'), t('افتح الإعدادات واسمح ليونيميت يوصل لموقعك عشان نوريك الطريق.'), [
+        if (ask) Alert.alert(t('الموقع مغلق'), t('افتح الإعدادات واسمح ليونيميت بالوصول إلى موقعك لنعرض لك الطريق.'), [
           { text: t('لاحقاً'), style: 'cancel' }, { text: t('افتح الإعدادات'), onPress: () => Linking.openSettings() },
         ]);
         return false;
@@ -278,7 +278,7 @@ export default function CampusMap() {
 
   const startTour = useCallback(() => {
     const pool = near.filter((p) => TOUR_KINDS.includes(p.kind));
-    if (pool.length < 2) { Alert.alert(t('ما في أماكن كفاية'), t('لسا ما عنا أماكن كفاية بهاي الجامعة لجولة.')); return; }
+    if (pool.length < 2) { Alert.alert(t('لا توجد أماكن كافية'), t('لا تتوفر لدينا أماكن كافية في هذه الجامعة لجولة بعد.')); return; }
     // start at a gate (or the southern-most place) and always go to the closest place not seen yet
     const left = [...pool];
     let cur: Pin | undefined = left.find((p) => p.kind === 'gate') ?? left.reduce((m, p) => (p.lat < m.lat ? p : m));
@@ -450,8 +450,8 @@ export default function CampusMap() {
           ) : (
             <Row gap={8} style={[{ flex: 1, minHeight: 52, borderRadius: 18, backgroundColor: C.card, paddingHorizontal: 16 }, shadow]}>
               <Search size={20} color={C.muted} />
-              <TextInput keyboardAppearance={isDark ? 'dark' : 'light'} value={q} onChangeText={setQ} placeholder={t('ابحث: كلية، مبنى، قاعة، مطعم، كشك، باص…')} placeholderTextColor={C.faint}
-                style={{ flex: 1, fontFamily: F.body, fontSize: 15, color: C.ink, textAlign: ta, minHeight: 48 }} accessibilityLabel={t('ابحث بالخريطة')} />
+              <TextInput keyboardAppearance={isDark ? 'dark' : 'light'} value={q} onChangeText={setQ} placeholder={t('ابحث: كلية، مبنى، قاعة، مطعم، كشك، حافلة…')} placeholderTextColor={C.faint}
+                style={{ flex: 1, fontFamily: F.body, fontSize: 15, color: C.ink, textAlign: ta, minHeight: 48 }} accessibilityLabel={t('ابحث في الخريطة')} />
               {q ? <Tap onPress={() => setQ('')} accessibilityLabel={t('مسح')}><X size={18} color={C.muted} /></Tap> : null}
             </Row>
           )}
@@ -491,7 +491,7 @@ export default function CampusMap() {
           <Tap onPress={() => setSwitching(true)} accessibilityLabel={t('غيّر الجامعة')}
             style={[{ alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 36, backgroundColor: C.primary, borderRadius: 999, paddingHorizontal: 12 }, shadow]}>
             <School size={15} color={C.onPrimary} />
-            <T v="tiny" color={C.onPrimary}>{t('بتتصفّح خريطة {0}', [nm(preview)])}</T>
+            <T v="tiny" color={C.onPrimary}>{t('تتصفّح خريطة {0}', [nm(preview)])}</T>
           </Tap>
         )}
       </SafeAreaView>
@@ -509,10 +509,10 @@ export default function CampusMap() {
 
       {!sel && !busy && pinsState === 'ok' && near.filter((p) => TOUR_KINDS.includes(p.kind)).length > 1 && (
         <View pointerEvents="box-none" style={{ position: 'absolute', right: 16, bottom: 40 }}>
-          <Tap onPress={startTour} accessibilityLabel={t('تمشّى بالجامعة')}
+          <Tap onPress={startTour} accessibilityLabel={t('تجوّل في الجامعة')}
             style={[{ flexDirection: 'row', alignItems: 'center', gap: 8, height: 52, paddingHorizontal: 18, borderRadius: 26, backgroundColor: C.primary }, shadow]}>
             <Footprints size={20} color={C.onPrimary} />
-            <T v="bold" color={C.onPrimary}>{t('تمشّى بالجامعة')}</T>
+            <T v="bold" color={C.onPrimary}>{t('تجوّل في الجامعة')}</T>
           </Tap>
         </View>
       )}
@@ -524,7 +524,7 @@ export default function CampusMap() {
             <Layers size={21} color={sat ? C.onInverse : C.ink} />
           </Tap>
           {!preview && (
-            <Tap onPress={() => setSuggest(true)} accessibilityLabel={t('اقترح مكان ناقص')}
+            <Tap onPress={() => setSuggest(true)} accessibilityLabel={t('اقترح مكاناً غير موجود')}
               style={[{ width: 48, height: 48, borderRadius: 16, backgroundColor: C.card, alignItems: 'center', justifyContent: 'center' }, shadow]}>
               <MapPinPlus size={21} color={C.ink} />
             </Tap>
@@ -533,7 +533,7 @@ export default function CampusMap() {
             style={[{ width: 48, height: 48, borderRadius: 16, backgroundColor: preview ? C.primary : C.card, alignItems: 'center', justifyContent: 'center' }, shadow]}>
             <School size={21} color={preview ? C.onPrimary : C.ink} />
           </Tap>
-          <Tap onPress={fitAll} accessibilityLabel={t('شوف الجامعة كاملة')}
+          <Tap onPress={fitAll} accessibilityLabel={t('عرض الجامعة كاملة')}
             style={[{ width: 48, height: 48, borderRadius: 16, backgroundColor: C.card, alignItems: 'center', justifyContent: 'center' }, shadow]}>
             <Maximize2 size={20} color={C.ink} />
           </Tap>
@@ -551,9 +551,9 @@ export default function CampusMap() {
           <View style={[{ backgroundColor: C.card, borderRadius: 18, paddingHorizontal: 16, paddingVertical: 12, flexDirection: 'row', alignItems: 'center', gap: 10, maxWidth: 340 }, shadow]}>
             {pinsState === 'loading' ? <ActivityIndicator color={C.primary} /> : null}
             <T v="small" style={{ flexShrink: 1 }} color={pinsState === 'error' ? C.red : C.ink2}>
-              {pinsState === 'loading' ? t('عم نحمّل أماكن الجامعة…') : pinsState === 'error' ? t('ما قدرنا نحمّل الأماكن، تأكد من الإنترنت.') : t('أماكن جامعتك بتنضاف قريباً.')}
+              {pinsState === 'loading' ? t('جارٍ تحميل أماكن الجامعة…') : pinsState === 'error' ? t('تعذّر تحميل الأماكن، تحقّق من اتصالك بالإنترنت.') : t('ستُضاف أماكن جامعتك قريباً.')}
             </T>
-            {pinsState === 'error' && <Tap onPress={loadPins} style={{ paddingHorizontal: 8 }}><T v="small" color={C.primary} style={{ fontFamily: F.bodyBold }}>{t('جرّب كمان مرة')}</T></Tap>}
+            {pinsState === 'error' && <Tap onPress={loadPins} style={{ paddingHorizontal: 8 }}><T v="small" color={C.primary} style={{ fontFamily: F.bodyBold }}>{t('حاول مرة أخرى')}</T></Tap>}
           </View>
         </View>
       )}
@@ -577,17 +577,17 @@ export default function CampusMap() {
               <Tap onPress={endTour} accessibilityLabel={t('إنهاء الجولة')}><X size={22} color={C.muted} /></Tap>
             </Row>
             <Row gap={10} style={{ justifyContent: 'center' }}>
-              <Tap onPress={() => { setAuto(false); go(tour.i - 1); }} disabled={tour.i === 0} accessibilityLabel={t('اللي قبل')} style={[btn, { backgroundColor: C.soft, opacity: tour.i === 0 ? 0.4 : 1 }]}>
+              <Tap onPress={() => { setAuto(false); go(tour.i - 1); }} disabled={tour.i === 0} accessibilityLabel={t('السابق')} style={[btn, { backgroundColor: C.soft, opacity: tour.i === 0 ? 0.4 : 1 }]}>
                 <SkipBack size={20} color={C.ink} style={flip} />
               </Tap>
-              <Tap onPress={() => { if (!auto && tour.i >= tour.stops.length - 1) { setAuto(true); go(0); } else setAuto((x) => !x); }} accessibilityLabel={auto ? t('وقّف') : t('كمّل')} style={[btn, { width: 62, height: 62, borderRadius: 31, backgroundColor: C.primary }]}>
+              <Tap onPress={() => { if (!auto && tour.i >= tour.stops.length - 1) { setAuto(true); go(0); } else setAuto((x) => !x); }} accessibilityLabel={auto ? t('إيقاف مؤقت') : t('استئناف')} style={[btn, { width: 62, height: 62, borderRadius: 31, backgroundColor: C.primary }]}>
                 {auto ? <Pause size={24} color={C.onPrimary} fill={C.white} /> : <Play size={24} color={C.onPrimary} fill={C.white} />}
               </Tap>
-              <Tap onPress={() => { setAuto(false); go(tour.i + 1); }} disabled={tour.i >= tour.stops.length - 1} accessibilityLabel={t('اللي بعد')} style={[btn, { backgroundColor: C.soft, opacity: tour.i >= tour.stops.length - 1 ? 0.4 : 1 }]}>
+              <Tap onPress={() => { setAuto(false); go(tour.i + 1); }} disabled={tour.i >= tour.stops.length - 1} accessibilityLabel={t('التالي')} style={[btn, { backgroundColor: C.soft, opacity: tour.i >= tour.stops.length - 1 ? 0.4 : 1 }]}>
                 <SkipForward size={20} color={C.ink} style={flip} />
               </Tap>
-              <Tap onPress={() => { endTour(); startNav(s); }} accessibilityLabel={t('وديني لهون')} style={[btn, { width: undefined, paddingHorizontal: 14, flexDirection: 'row', gap: 6, backgroundColor: C.primarySoft }]}>
-                <Navigation size={18} color={C.primary} /><T v="small" color={C.primary}>{t('وديني')}</T>
+              <Tap onPress={() => { endTour(); startNav(s); }} accessibilityLabel={t('خذني إلى هنا')} style={[btn, { width: undefined, paddingHorizontal: 14, flexDirection: 'row', gap: 6, backgroundColor: C.primarySoft }]}>
+                <Navigation size={18} color={C.primary} /><T v="small" color={C.primary}>{t('الاتجاهات')}</T>
               </Tap>
             </Row>
           </Animated.View>
@@ -616,7 +616,7 @@ export default function CampusMap() {
           {walkMin != null && (
             <Row gap={10}>
               <View style={{ flex: 1, alignItems: 'center', backgroundColor: C.primarySoft, borderRadius: 16, padding: 10 }}>
-                <T style={{ fontFamily: F.display, fontSize: 20 }} color={C.primary}>{walkMin}</T><T v="tiny" color={C.ink2}>{t('دقايق مشي (تقريباً)')}</T>
+                <T style={{ fontFamily: F.display, fontSize: 20 }} color={C.primary}>{walkMin}</T><T v="tiny" color={C.ink2}>{t('دقائق سيرًا (تقريباً)')}</T>
               </View>
               <View style={{ flex: 1, alignItems: 'center', backgroundColor: C.bg, borderRadius: 16, padding: 10 }}>
                 <T style={{ fontFamily: F.display, fontSize: 20 }}>{meters}</T><T v="tiny" color={C.ink2}>{t('متر')}</T>
@@ -624,19 +624,19 @@ export default function CampusMap() {
             </Row>
           )}
           <Row gap={8}>
-            <Tap onPress={() => setShareFor(sel)} accessibilityLabel={t('شارك بالمحادثة')}
+            <Tap onPress={() => setShareFor(sel)} accessibilityLabel={t('شارك في المحادثة')}
               style={{ flex: 1, flexDirection: 'row', gap: 8, minHeight: 46, borderRadius: 16, backgroundColor: C.soft, alignItems: 'center', justifyContent: 'center' }}>
               <Send size={17} color={C.ink} style={flip ? undefined : { transform: [{ scaleX: -1 }] }} />
-              <T v="bodyMd">{t('شارك بالمحادثة')}</T>
+              <T v="bodyMd">{t('شارك في المحادثة')}</T>
             </Tap>
             {sel.advertiser_id && (
               <Tap onPress={() => router.push({ pathname: '/advertiser/[id]', params: { id: sel.advertiser_id! } })}
                 style={{ flex: 1, minHeight: 46, borderRadius: 16, backgroundColor: C.soft, alignItems: 'center', justifyContent: 'center' }}>
-                <T v="bodyMd">{t('صفحة المحل')}</T>
+                <T v="bodyMd">{t('صفحة المتجر')}</T>
               </Tap>
             )}
           </Row>
-          <Button title={t('وديني')} icon={<Navigation size={19} color={C.onPrimary} />}
+          <Button title={t('الاتجاهات')} icon={<Navigation size={19} color={C.onPrimary} />}
             onPress={async () => { if (!me) await startLocation(true); startNav(sel); }} />
         </Animated.View>
       )}

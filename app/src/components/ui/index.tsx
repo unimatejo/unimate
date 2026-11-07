@@ -306,8 +306,8 @@ export function StateView({ loading, error, empty, onRetry, skeleton, emptyView,
 }) {
   if (loading) return <>{skeleton ?? <Loading />}</>;
   if (error) return (
-    <Empty icon={<CircleAlert size={28} color={C.red} />} title={t('ما قدرنا نحمّل')} body={t('تأكد من الإنترنت وجرّب كمان مرة.')}
-      action={onRetry ? <Button kind="soft" title={t('جرّب كمان مرة')} onPress={onRetry} style={{ marginTop: 10, paddingHorizontal: 20 }} /> : undefined} />
+    <Empty icon={<CircleAlert size={28} color={C.red} />} title={t('تعذّر التحميل')} body={t('تحقق من اتصالك بالإنترنت وحاول مرة أخرى.')}
+      action={onRetry ? <Button kind="soft" title={t('حاول مرة أخرى')} onPress={onRetry} style={{ marginTop: 10, paddingHorizontal: 20 }} /> : undefined} />
   );
   if (empty) return <>{emptyView ?? null}</>;
   return <>{children}</>;

@@ -20,7 +20,7 @@ export default function Callback() {
       if (p.error_description && retryMicrosoftWithoutTeams()) return;
       if (p.error_description) {
         // Microsoft sign-in that took too long, or was finished in another browser: just start again
-        setError(/state/i.test(p.error_description) ? t('تسجيل الدخول أخد وقت طويل أو انفتح بمتصفح ثاني. اكبس «جرّب كمان مرة».') : t('الرابط انتهى أو انستخدم قبل. اطلب رابط جديد.'));
+        setError(/state/i.test(p.error_description) ? t('استغرق تسجيل الدخول وقتاً طويلاً أو فُتح في متصفح آخر. اضغط «حاول مرة أخرى».') : t('انتهت صلاحية الرابط أو استُخدم من قبل. اطلب رابطاً جديداً.'));
         return;
       }
       // the phone app already finished this sign-in itself (the same link also opens this screen): don't use the code twice
@@ -36,7 +36,7 @@ export default function Callback() {
       } catch (e) { r = { error: e }; }
       // the code was already used, but we're signed in anyway: carry on
       if (r.error && (await supabase.auth.getSession()).data.session) { router.replace('/'); return; }
-      if (r.error) { setError(t('ما زبط الدخول بهالرابط. افتح الرابط على نفس التلفون اللي طلبت منه، أو اطلب رابط جديد.')); return; }
+      if (r.error) { setError(t('تعذّر الدخول بهذا الرابط. افتح الرابط على الهاتف نفسه الذي طلبته منه، أو اطلب رابطًا جديدًا.')); return; }
       // web: coming back from "bring my courses from Teams"
       const fromLogin = getPref('ms_teams_login'); setPref('ms_teams_login', '');
       importMsPhoto(r.data?.session?.provider_token); importMsRole(r.data?.session?.provider_token);
@@ -57,12 +57,12 @@ export default function Callback() {
         {error ? (
           <>
             <T v="h2" style={{ textAlign: 'center' }}>{error}</T>
-            <Button title={t('جرّب كمان مرة')} onPress={() => router.replace('/(auth)/login')} />
+            <Button title={t('حاول مرة أخرى')} onPress={() => router.replace('/(auth)/login')} />
           </>
         ) : (
           <>
             <ActivityIndicator size="large" color={C.primary} />
-            <T v="body" color={C.muted}>{t('بندخّلك…')}</T>
+            <T v="body" color={C.muted}>{t('جارٍ تسجيل دخولك…')}</T>
           </>
         )}
       </View>

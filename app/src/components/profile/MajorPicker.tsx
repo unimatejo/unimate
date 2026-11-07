@@ -26,11 +26,11 @@ export function MajorPicker({ universityId, collegeId, majorId, onChange }: {
   async function addMajor() {
     if (!collegeId || saving) return;
     const name = newMajor.trim();
-    if (name.length < 3) { Alert.alert(t('اكتب اسم التخصص كامل')); return; }
+    if (name.length < 3) { Alert.alert(t('اكتب اسم التخصص كاملاً')); return; }
     setSaving(true);
     const { data, error } = await supabase.rpc('add_my_major', { col: collegeId, major_name: name });
     setSaving(false);
-    if (error || !data) { Alert.alert(t('ما انضاف التخصص'), String(error?.message).includes('too_many') ? t('ضفت تخصصات كثير اليوم، جرّب بكرة.') : t('جرّب كمان مرة.')); return; }
+    if (error || !data) { Alert.alert(t('لم يُضف التخصص'), String(error?.message).includes('too_many') ? t('أضفت تخصصات كثيرة اليوم، حاول غدًا.') : t('حاول مرة أخرى.')); return; }
     setCols((cur) => cur.map((c) => (c.id === collegeId && !c.majors.some((m) => m.id === data) ? { ...c, majors: [...c.majors, { id: data as string, name_ar: name, degree: 'bachelor' }] } : c)));
     onChange(collegeId, data as string);
     setAdding(false); setNewMajor(''); setOpen(null);
@@ -58,17 +58,17 @@ export function MajorPicker({ universityId, collegeId, majorId, onChange }: {
   if (state === 'loading' && cols.length === 0) return <ActivityIndicator color={C.primary} style={{ marginVertical: 12 }} />;
   if (state === 'error' && cols.length === 0) return (
     <Tap onPress={load} style={{ minHeight: 48, justifyContent: 'center' }} accessibilityRole="button">
-      <T v="small" color={C.red}>{t('ما قدرنا نحمّل الكليات. اكبس لتجرب كمان مرة.')}</T>
+      <T v="small" color={C.red}>{t('تعذّر تحميل الكليات. اضغط للمحاولة مرة أخرى.')}</T>
     </Tap>
   );
-  if (cols.length === 0) return <T v="small" color={C.muted}>{t('كليات جامعتك بتنضاف قريباً.')}</T>;
+  if (cols.length === 0) return <T v="small" color={C.muted}>{t('ستُضاف كليات جامعتك قريبًا.')}</T>;
 
   const box = (label: string, value: string | undefined, which: 'college' | 'major', disabled = false) => (
     <Tap haptic={false} scale={0.99} disabled={disabled} onPress={() => { setQ(''); setOpen(open === which ? null : which); }}
       style={{ flexDirection: 'row', alignItems: 'center', gap: 10, minHeight: 54, borderRadius: 16, backgroundColor: C.field, paddingHorizontal: 14, opacity: disabled ? 0.5 : 1 }}>
       <View style={{ flex: 1 }}>
         <T v="tiny" color={C.muted}>{label}</T>
-        <T v="bodyMd" color={value ? C.ink : C.faint}>{value ?? t('اختار')}</T>
+        <T v="bodyMd" color={value ? C.ink : C.faint}>{value ?? t('اختر')}</T>
       </View>
       <ChevronDown size={18} color={C.muted} style={{ transform: [{ rotate: open === which ? '180deg' : '0deg' }] }} />
     </Tap>
@@ -90,11 +90,11 @@ export function MajorPicker({ universityId, collegeId, majorId, onChange }: {
         {all > 8 && (
           <Row gap={8} style={{ paddingHorizontal: 12, minHeight: 44, borderBottomWidth: 1, borderBottomColor: C.line }}>
             <Search size={16} color={C.muted} />
-            <TextInput keyboardAppearance={isDark ? 'dark' : 'light'} value={q} onChangeText={setQ} placeholder={t('دوّر')} placeholderTextColor={C.faint} style={{ flex: 1, fontFamily: F.body, fontSize: 14, color: C.ink, textAlign: ta }} />
+            <TextInput keyboardAppearance={isDark ? 'dark' : 'light'} value={q} onChangeText={setQ} placeholder={t('ابحث')} placeholderTextColor={C.faint} style={{ flex: 1, fontFamily: F.body, fontSize: 14, color: C.ink, textAlign: ta }} />
           </Row>
         )}
         <ScrollView style={{ maxHeight: 300 }} nestedScrollEnabled keyboardShouldPersistTaps="handled">
-          {list.length === 0 && <T v="small" color={C.muted} style={{ padding: 14 }}>{open === 'major' && all === 0 ? t('ما في تخصصات مضافة لهالكلية لهلأ.') : t('ما لقينا إشي بهالاسم')}</T>}
+          {list.length === 0 && <T v="small" color={C.muted} style={{ padding: 14 }}>{open === 'major' && all === 0 ? t('لا توجد تخصصات مضافة لهذه الكلية حتى الآن.') : t('لا توجد نتائج بهذا الاسم')}</T>}
           {list.slice(0, 60).map((x) => {
             const on = open === 'college' ? x.id === collegeId : x.id === majorId;
             return (
@@ -114,12 +114,12 @@ export function MajorPicker({ universityId, collegeId, majorId, onChange }: {
             <TextInput keyboardAppearance={isDark ? 'dark' : 'light'} value={newMajor} onChangeText={setNewMajor} autoFocus placeholder={t('اسم تخصصك')} placeholderTextColor={C.faint} maxLength={90}
               style={{ flex: 1, minHeight: 42, borderRadius: 12, backgroundColor: C.field, paddingHorizontal: 12, fontFamily: F.body, fontSize: 14, color: C.ink, textAlign: ta }} />
             <Tap onPress={addMajor} disabled={saving} style={{ minHeight: 42, paddingHorizontal: 14, borderRadius: 12, backgroundColor: C.primary, alignItems: 'center', justifyContent: 'center' }}>
-              {saving ? <ActivityIndicator color={C.onPrimary} /> : <T v="bold" color={C.onPrimary} style={{ fontSize: 14 }}>{t('ضيف')}</T>}
+              {saving ? <ActivityIndicator color={C.onPrimary} /> : <T v="bold" color={C.onPrimary} style={{ fontSize: 14 }}>{t('أضف')}</T>}
             </Tap>
           </Row>
         ) : (
           <Tap haptic={false} onPress={() => { setAdding(true); setNewMajor(q); }} style={{ minHeight: 46, paddingHorizontal: 14, justifyContent: 'center', borderTopWidth: 1, borderTopColor: C.line }}>
-            <T v="small" color={C.primary}>{t('مش لاقي تخصصك؟ ضيفه')}</T>
+            <T v="small" color={C.primary}>{t('لم تجد تخصصك؟ أضفه')}</T>
           </Tap>
         ))}
       </View>

@@ -16,7 +16,8 @@ function deviceLang(): 'ar' | 'en' {
 /** Active language for this run of the app (changing it reloads the app so layout direction flips too). */
 const lang: 'ar' | 'en' = (() => { const p = langPref(); return p === 'system' ? deviceLang() : p; })();
 export const isAR = lang === 'ar';
-export const LOCALE = isAR ? 'ar-JO' : 'en-GB';
+/** Dates and numbers: Arabic month and day names, but always Western digits (1, 2, 3), like the app's numbers. */
+export const LOCALE = isAR ? 'ar-JO-u-nu-latn' : 'en-GB';
 /** Text alignment at the reading start (right in Arabic, left in English). */
 export const ta: 'right' | 'left' = isAR ? 'right' : 'left';
 /** Mirror a directional icon (arrows, send) when the layout is left-to-right. */

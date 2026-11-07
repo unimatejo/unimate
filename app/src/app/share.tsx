@@ -51,14 +51,14 @@ export default function Share() {
         } catch { /* try the next person */ }
       }
     } finally { setBusy(false); }
-    if (!ok) { Alert.alert(t('ما زبط'), t('جرّب كمان مرة.')); return; }
+    if (!ok) { Alert.alert(t('تعذّر ذلك'), t('حاول مرة أخرى.')); return; }
     if (ok < picked.size) {
       // keep only the ones that failed selected, so a second tap retries them
       setPicked((s) => { const n = new Set(s); sent.forEach((x) => n.delete(x)); return n; });
-      Alert.alert(t('انبعت لـ {0} من {1}. الباقي ما زبط.', [ok, ok + picked.size - sent.length]));
+      Alert.alert(t('تم الإرسال إلى {0} من {1}. تعذّر إرسال الباقي.', [ok, ok + picked.size - sent.length]));
       return;
     }
-    toast(t('انبعت'));
+    toast(t('تم الإرسال'));
     router.back();
   }
 
@@ -68,7 +68,7 @@ export default function Share() {
       <View style={{ paddingHorizontal: 18 }}>
         <Row gap={8} style={{ minHeight: 46, borderRadius: 14, backgroundColor: C.card, paddingHorizontal: 12 }}>
           <Search size={18} color={C.muted} />
-          <TextInput keyboardAppearance={isDark ? 'dark' : 'light'} value={q} onChangeText={setQ} placeholder={t('دوّر')} placeholderTextColor={C.faint} style={{ flex: 1, fontFamily: F.body, fontSize: 14, color: C.ink, textAlign: ta }} />
+          <TextInput keyboardAppearance={isDark ? 'dark' : 'light'} value={q} onChangeText={setQ} placeholder={t('ابحث')} placeholderTextColor={C.faint} style={{ flex: 1, fontFamily: F.body, fontSize: 14, color: C.ink, textAlign: ta }} />
         </Row>
       </View>
       <FlatList
@@ -89,7 +89,7 @@ export default function Share() {
             </Tap>
           );
         }}
-        ListEmptyComponent={<T v="small" color={C.muted} style={{ textAlign: 'center' }}>{t('تابع ناس عشان تبعتلهم.')}</T>}
+        ListEmptyComponent={<T v="small" color={C.muted} style={{ textAlign: 'center' }}>{t('تابع أشخاصاً لتتمكن من مراسلتهم.')}</T>}
       />
       {picked.size > 0 && (
         <View style={{ padding: 18, gap: 10, borderTopWidth: 0.5, borderTopColor: C.line, backgroundColor: C.bg }}>

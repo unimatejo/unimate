@@ -25,7 +25,7 @@ type Sec = { id: string; section_no: string; instructor: string | null; course: 
 /** one lecture on one date: the doctor moved it or cancelled it */
 type Once = { sec: Sec; meeting: Mt };
 
-const KINDS = [['lecture', t('محاضرة')], ['lab', t('مختبر')], ['online', t('أونلاين')], ['blended', t('مدمج')], ['tutorial', t('مناقشة')]] as const;
+const KINDS = [['lecture', t('محاضرة')], ['lab', t('مختبر')], ['online', t('عبر الإنترنت')], ['blended', t('مدمج')], ['tutorial', t('مناقشة')]] as const;
 const hhmm = (d: Date) => `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
 const at = (h: number, m = 0) => { const d = new Date(); d.setHours(h, m, 0, 0); return d; };
 const dayLabel = (d: string) => new Date(`${d}T12:00:00`).toLocaleDateString(LOCALE, { weekday: 'long', day: 'numeric', month: 'numeric' });
@@ -64,8 +64,8 @@ export default function Courses() {
   useEffect(() => {
     if (!teams) return;
     const n = Number(teams);
-    if (Number.isFinite(n)) Alert.alert(n ? t('انضافت {0} مواد ✓', [n]) : t('ما لقينا مواد بحسابك على Teams'), n ? t('وانضميت لجروب كل مادة.') : t('ضيف موادك بإيدك.'));
-    else Alert.alert(t('ما قدرنا نجيب موادك من Teams'), teams === 'consent' ? t('جامعتك ممكن تكون مانعة هالصلاحية. ضيف موادك بإيدك مرة وحدة، وزملاؤك بشعبتك بتنضافلهم لحالها.') : t('تأكد من الإنترنت وجرّب كمان مرة.'));
+    if (Number.isFinite(n)) Alert.alert(n ? t('تمت إضافة {0} مواد ✓', [n]) : t('لا توجد مواد في حسابك على Teams'), n ? t('وانضممت إلى مجموعة كل مادة.') : t('أضف موادك يدويًا.'));
+    else Alert.alert(t('تعذّر جلب موادك من Teams'), teams === 'consent' ? t('ربما تمنع جامعتك هذه الصلاحية. أضف موادك يدوياً مرة واحدة، وستُضاف تلقائياً لزملائك في شعبتك.') : t('تحقق من اتصالك بالإنترنت وحاول مرة أخرى.'));
     router.setParams({ teams: undefined });
   }, [teams]);
 
@@ -103,10 +103,10 @@ export default function Courses() {
     const r = await importTeamsCourses();
     setImporting(false);
     if ('error' in r) {
-      if (r.error !== 'cancelled' && r.error !== 'redirecting') Alert.alert(t('ما قدرنا نجيب موادك من Teams'), r.error === 'consent' ? t('جامعتك ممكن تكون مانعة هالصلاحية. ضيف موادك بإيدك مرة وحدة، وزملاؤك بشعبتك بتنضافلهم لحالها.') : t('تأكد من الإنترنت وجرّب كمان مرة.'));
+      if (r.error !== 'cancelled' && r.error !== 'redirecting') Alert.alert(t('تعذّر جلب موادك من Teams'), r.error === 'consent' ? t('ربما تمنع جامعتك هذه الصلاحية. أضف موادك يدوياً مرة واحدة، وستُضاف تلقائياً لزملائك في شعبتك.') : t('تحقق من اتصالك بالإنترنت وحاول مرة أخرى.'));
       return;
     }
-    Alert.alert(r.count ? t('انضافت {0} مواد ✓', [r.count]) : t('ما لقينا مواد بحسابك على Teams'), r.count ? t('وانضميت لجروب كل مادة.') : t('ضيف موادك بإيدك.'));
+    Alert.alert(r.count ? t('تمت إضافة {0} مواد ✓', [r.count]) : t('لا توجد مواد في حسابك على Teams'), r.count ? t('وانضممت إلى مجموعة كل مادة.') : t('أضف موادك يدويًا.'));
     load();
   }
 
@@ -116,7 +116,7 @@ export default function Courses() {
     setBusy(true);
     const { error } = await supabase.rpc('add_course', { course_name: name.trim(), section_no: secNo.trim() || null }).then((r) => r, () => ({ error: true }));
     setBusy(false);
-    if (error) { Alert.alert(t('ما انضافت'), t('جرّب كمان مرة.')); return; }
+    if (error) { Alert.alert(t('لم تُضف'), t('حاول مرة أخرى.')); return; }
     setAdding(false); setName(''); setSecNo(''); load();
   }
 
@@ -131,8 +131,8 @@ export default function Courses() {
 
   async function saveTime() {
     if (!edit || busy) return;
-    if (days.length === 0) { Alert.alert(t('اختار يوم أو أكثر')); return; }
-    if (hhmm(en) <= hhmm(st)) { Alert.alert(t('وقت النهاية لازم يكون بعد البداية')); return; }
+    if (days.length === 0) { Alert.alert(t('اختر يوماً أو أكثر')); return; }
+    if (hhmm(en) <= hhmm(st)) { Alert.alert(t('يجب أن يكون وقت النهاية بعد وقت البداية')); return; }
     setBusy(true);
     try {
       const { sec, mode, meeting } = edit;
@@ -159,7 +159,7 @@ export default function Courses() {
       }
       setEdit(null); setDays([]); setRoom(''); await load();
       scheduleRefresh();
-    } catch { Alert.alert(t('ما انحفظ الوقت'), t('جرّب كمان مرة.')); }
+    } catch { Alert.alert(t('لم يُحفظ الوقت'), t('حاول مرة أخرى.')); }
     finally { setBusy(false); }
   }
 
@@ -173,7 +173,7 @@ export default function Courses() {
 
   async function saveOnce() {
     if (!once || busy) return;
-    if (!onceCancel && hhmm(en) <= hhmm(st)) { Alert.alert(t('وقت النهاية لازم يكون بعد البداية')); return; }
+    if (!onceCancel && hhmm(en) <= hhmm(st)) { Alert.alert(t('يجب أن يكون وقت النهاية بعد وقت البداية')); return; }
     setBusy(true);
     try {
       const { error } = await supabase.from('meeting_changes').insert({
@@ -183,19 +183,19 @@ export default function Courses() {
       });
       if (error) throw error;
       setOnce(null); await load();
-      Alert.alert(onceCancel ? t('انحفظ إنها ملغية ✓') : t('انحفظ الموعد الجديد ✓'), onceAll ? t('بيطلع لكل زملائك بالشعبة، لهاي المحاضرة بس.') : t('بجدولك إنت بس، لهاي المحاضرة بس.'));
-    } catch { Alert.alert(t('ما انحفظ'), t('جرّب كمان مرة.')); }
+      Alert.alert(onceCancel ? t('تم تسجيلها ملغاة ✓') : t('تم حفظ الموعد الجديد ✓'), onceAll ? t('يظهر لجميع زملائك في الشعبة، لهذه المحاضرة فقط.') : t('في جدولك أنت فقط، ولهذه المحاضرة فقط.'));
+    } catch { Alert.alert(t('لم يُحفظ'), t('حاول مرة أخرى.')); }
     finally { setBusy(false); }
   }
 
   function changeMenu(c: MeetingChange) {
-    const what = c.cancelled ? t('ألغيت محاضرة {0}', [dayLabel(c.on_date)]) : t('محاضرة {0} انتقلت لـ {1} {2}', [dayLabel(c.on_date), dayLabel(c.new_date!), `${clock(c.starts_at!)}`]);
-    Alert.alert(what, c.note ?? (c.user_id ? t('إلك إنت بس.') : t('لكل الشعبة.')), [
-      { text: t('رجّعها زي ما كانت'), style: 'destructive', onPress: async () => {
+    const what = c.cancelled ? t('تم إلغاء محاضرة {0}', [dayLabel(c.on_date)]) : t('نُقلت محاضرة {0} إلى {1} {2}', [dayLabel(c.on_date), dayLabel(c.new_date!), `${clock(c.starts_at!)}`]);
+    Alert.alert(what, c.note ?? (c.user_id ? t('لك أنت فقط.') : t('لكل الشعبة.')), [
+      { text: t('أعدها كما كانت'), style: 'destructive', onPress: async () => {
         const { error } = await supabase.from('meeting_changes').delete().eq('id', c.id);
-        if (error) Alert.alert(t('ما بتقدر تشيلها'), t('اللي ضافها هو اللي بيقدر يشيلها.')); else load();
+        if (error) Alert.alert(t('لا يمكنك إزالتها'), t('لا يمكن إزالتها إلا لمن أضافها.')); else load();
       } },
-      { text: t('تمام'), style: 'cancel' },
+      { text: t('حسناً'), style: 'cancel' },
     ]);
   }
 
@@ -214,28 +214,28 @@ export default function Courses() {
   function meetingMenu(m: Mt, s: Sec) {
     const opts: { text: string; style?: 'destructive' | 'cancel'; onPress?: () => void }[] = [];
     // the doctor moved or cancelled just one lecture (said in class, posted on Teams)
-    opts.push({ text: t('الدكتور غيّر موعد محاضرة وحدة'), onPress: () => openOnce({ sec: s, meeting: m }, false) });
-    opts.push({ text: t('الدكتور لغى محاضرة وحدة'), onPress: () => openOnce({ sec: s, meeting: m }, true) });
+    opts.push({ text: t('غيّر الدكتور موعد محاضرة واحدة'), onPress: () => openOnce({ sec: s, meeting: m }, false) });
+    opts.push({ text: t('ألغى الدكتور محاضرة واحدة'), onPress: () => openOnce({ sec: s, meeting: m }, true) });
     if (m.mine) {
       opts.push({ text: t('عدّل وقتي'), onPress: () => openTime({ sec: s, mode: 'me', meeting: m }) });
-      opts.push({ text: m.replaces ? t('رجّع وقت الشعبة') : t('احذف وقتي'), style: 'destructive', onPress: async () => {
+      opts.push({ text: m.replaces ? t('استعادة وقت الشعبة') : t('احذف وقتي'), style: 'destructive', onPress: async () => {
         const { error } = await supabase.from('personal_meetings').delete().eq('id', m.id);
-        if (error) Alert.alert(t('ما زبط'), t('جرّب كمان مرة.')); else { await load(); scheduleRefresh(); }
+        if (error) Alert.alert(t('تعذّر ذلك'), t('حاول مرة أخرى.')); else { await load(); scheduleRefresh(); }
       } });
     } else {
-      opts.push({ text: t('تغيّر دايماً لكل الشعبة'), onPress: () => openTime({ sec: s, mode: 'all', meeting: m }) });
-      opts.push({ text: t('غيّره دايماً إلي بس'), onPress: () => openTime({ sec: s, mode: 'me', meeting: m }) });
-      opts.push({ text: t('خبّيه من جدولي'), onPress: async () => {
+      opts.push({ text: t('تغيير دائم للشعبة كلها'), onPress: () => openTime({ sec: s, mode: 'all', meeting: m }) });
+      opts.push({ text: t('غيّره دائمًا لي فقط'), onPress: () => openTime({ sec: s, mode: 'me', meeting: m }) });
+      opts.push({ text: t('إخفاء من جدولي'), onPress: async () => {
         const { error } = await supabase.from('personal_meetings').insert({ user_id: profile?.id, section_id: s.id, replaces: m.id, hidden: true });
-        if (error) Alert.alert(t('ما زبط'), t('جرّب كمان مرة.')); else { await load(); scheduleRefresh(); }
+        if (error) Alert.alert(t('تعذّر ذلك'), t('حاول مرة أخرى.')); else { await load(); scheduleRefresh(); }
       } });
       if (m.source === 'crowd' && m.confirmations <= 1) opts.push({ text: t('احذف الوقت'), style: 'destructive', onPress: async () => {
         const { error } = await supabase.rpc('remove_meeting', { m: m.id });
-        if (error) Alert.alert(t('ما بتقدر تحذفه'), t('بتقدر تحذف بس الوقت اللي إنت ضفته وما حدا أكّده. جرّب «غيّره إلي بس».')); else { await load(); scheduleRefresh(); }
+        if (error) Alert.alert(t('لا يمكنك حذفه'), t('يمكنك حذف الوقت الذي أضفته أنت ولم يؤكده أحد فقط. جرّب «غيّره لي فقط».')); else { await load(); scheduleRefresh(); }
       } });
     }
     opts.push({ text: t('إلغاء'), style: 'cancel' });
-    Alert.alert(`${WEEKDAYS_SHORT[m.weekday]} ${clock(m.starts_at)} - ${clock(m.ends_at)}`, m.mine ? t('هاد الوقت إلك إنت بس.') : t('هاد وقت الشعبة، بيطلع لكل زملائك.'), opts);
+    Alert.alert(`${WEEKDAYS_SHORT[m.weekday]} ${clock(m.starts_at)} - ${clock(m.ends_at)}`, m.mine ? t('هذا الوقت لك وحدك.') : t('هذا وقت الشعبة، ويظهر لجميع زملائك.'), opts);
   }
 
   async function moveSection() {
@@ -247,8 +247,8 @@ export default function Courses() {
       const { error } = await supabase.rpc('change_section', { sec: moveFor.id, new_no: no });
       if (error) throw error;
       setMoveFor(null); setNewSec(''); await load(); scheduleRefresh();
-      Alert.alert(t('انتقلت للشعبة {0} ✓', [no]), t('أوقاتها وجروبها صاروا عندك. إذا ما في أوقات لهلأ، ضيفها مرة وحدة.'));
-    } catch { Alert.alert(t('ما زبط النقل'), t('جرّب كمان مرة.')); }
+      Alert.alert(t('انتقلت إلى الشعبة {0} ✓', [no]), t('أصبحت أوقاتها ومجموعتها لديك. إذا لم تكن هناك أوقات بعد، أضفها مرة واحدة.'));
+    } catch { Alert.alert(t('تعذّر النقل'), t('حاول مرة أخرى.')); }
     finally { setBusy(false); }
   }
 
@@ -256,8 +256,8 @@ export default function Courses() {
   const scheduleRefresh = () => { /* the schedule screen reloads and re-schedules reminders when you open it */ };
 
   function leave(s: Sec) {
-    Alert.alert(t('شيل المادة'), t('{0}\nبتطلع من جروبها كمان.', [nm(s.course)]), [{ text: t('لا'), style: 'cancel' }, {
-      text: t('شيلها'), style: 'destructive', onPress: async () => { await supabase.from('enrollments').delete().eq('user_id', profile?.id ?? '').eq('section_id', s.id); load(); },
+    Alert.alert(t('إزالة المادة'), t('{0}\nستغادر مجموعتها أيضاً.', [nm(s.course)]), [{ text: t('لا'), style: 'cancel' }, {
+      text: t('إزالة'), style: 'destructive', onPress: async () => { await supabase.from('enrollments').delete().eq('user_id', profile?.id ?? '').eq('section_id', s.id); load(); },
     }]);
   }
 
@@ -268,13 +268,13 @@ export default function Courses() {
 
   return (
     <Screen>
-      <Header title={t('موادي')} right={<Tap onPress={() => setAdding(true)} accessibilityLabel={t('ضيف مادة')} style={{ width: 42, height: 42, borderRadius: 14, backgroundColor: C.primary, alignItems: 'center', justifyContent: 'center' }}><Plus size={22} color={C.onPrimary} /></Tap>} />
+      <Header title={t('موادي')} right={<Tap onPress={() => setAdding(true)} accessibilityLabel={t('أضف مادة')} style={{ width: 42, height: 42, borderRadius: 14, backgroundColor: C.primary, alignItems: 'center', justifyContent: 'center' }}><Plus size={22} color={C.onPrimary} /></Tap>} />
       <ScrollView contentContainerStyle={{ padding: 18, gap: 14, paddingBottom: 80 }}>
         <Tap onPress={fromTeams} disabled={importing} scale={0.98} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: C.card, borderRadius: 22, padding: 14 }}>
           <GlyphTile icon={Sparkles} colors={GRAD.indigo} size={48} live />
           <View style={{ flex: 1 }}>
-            <T v="bold">{t('جيب موادي من Microsoft Teams')}</T>
-            <T v="tiny" color={C.muted}>{t('كل مادة إلها فريق على Teams، بنضيفها لحالها مع جروبها.')}</T>
+            <T v="bold">{t('استيراد موادي من Microsoft Teams')}</T>
+            <T v="tiny" color={C.muted}>{t('لكل مادة فريق على Teams، نضيفها تلقائيًا مع مجموعتها.')}</T>
           </View>
           {importing && <ActivityIndicator color={C.primary} />}
         </Tap>
@@ -282,7 +282,7 @@ export default function Courses() {
         <ScheduleScan onDone={load} autoOpen={scan === '1'} />
 
         {rows === null ? <View style={{ marginTop: 10 }}><ListSkeleton n={3} /></View> : rows.length === 0 ? (
-          <Empty icon={<BookOpen size={30} color={C.primary} />} title={t('ما في مواد لهلأ')} body={t('جيبهم من Teams، أو ضيف كل مادة مرة وحدة. زملاؤك بنفس الشعبة بياخذوا المادة ووقتها جاهزة.')} />
+          <Empty icon={<BookOpen size={30} color={C.primary} />} title={t('لا توجد مواد حتى الآن')} body={t('استوردها من Teams، أو أضف كل مادة مرة واحدة. يحصل زملاؤك في الشعبة نفسها على المادة وموعدها جاهزين.')} />
         ) : rows.map((s, i) => (
           <Animated.View key={s.id} entering={FadeIn.delay(i * 50).duration(220)} style={{ backgroundColor: C.card, borderRadius: 24, padding: 14, gap: 10 }}>
             <Row gap={12}>
@@ -291,13 +291,13 @@ export default function Courses() {
                 <T v="bold" numberOfLines={2}>{nm(s.course)}</T>
                 <Row gap={6}><T v="tiny" color={sectionKnown(s.section_no) ? C.muted : C.orangeInk}>{sectionLabel(s.section_no)}</T><Users size={12} color={C.muted} /><T v="tiny" color={C.muted}>{s.mates}</T></Row>
               </View>
-              <Tap onPress={() => leave(s)} accessibilityLabel={t('شيل المادة')} style={{ width: 38, height: 38, alignItems: 'center', justifyContent: 'center' }}><Trash2 size={18} color={C.faint} /></Tap>
+              <Tap onPress={() => leave(s)} accessibilityLabel={t('إزالة المادة')} style={{ width: 38, height: 38, alignItems: 'center', justifyContent: 'center' }}><Trash2 size={18} color={C.faint} /></Tap>
             </Row>
             {/* the number wasn't in the Team's name (or wasn't typed): until it's set, nothing section-wide reaches you */}
             {!sectionKnown(s.section_no) && (
               <Tap onPress={() => { setMoveFor(s); setNewSec(''); }} style={{ flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: C.orangeSoft, borderRadius: 14, padding: 10 }}>
                 <CircleAlert size={16} color={C.orangeInk} />
-                <T v="small" color={C.orangeInk} style={{ flex: 1 }}>{t('شو رقم شعبتك؟ حدّده عشان توصلك امتحانات ومواعيد شعبتك بس.')}</T>
+                <T v="small" color={C.orangeInk} style={{ flex: 1 }}>{t('ما رقم شعبتك؟ حدّده لتصلك امتحانات شعبتك ومواعيدها فقط.')}</T>
                 <T v="tiny" color={C.orangeInk} style={{ fontFamily: F.bodyBold }}>{t('حدّد')}</T>
               </Tap>
             )}
@@ -306,48 +306,48 @@ export default function Courses() {
                 style={{ flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: m.mine ? C.violetSoft : C.soft, borderRadius: 14, padding: 10 }}>
                 {m.mine ? <User size={15} color={C.violet} /> : <Clock size={15} color={C.primary} />}
                 <T v="small" style={{ flex: 1 }}>{WEEKDAYS_SHORT[m.weekday]} {clock(m.starts_at)} - {clock(m.ends_at)}{m.room_text ? ` · ${m.room_text}` : ''}</T>
-                {m.mine ? <T v="tiny" color={C.violet}>{t('إلك بس')}</T>
+                {m.mine ? <T v="tiny" color={C.violet}>{t('لك فقط')}</T>
                   : m.confirmations >= 3 ? <Row gap={3}><CheckCircle2 size={14} color={C.greenInk} /><T v="tiny" color={C.greenInk}>{t('مؤكد')}</T></Row>
-                  : <Tap onPress={() => confirm(m, s)} style={{ paddingHorizontal: 8, minHeight: 30, justifyContent: 'center' }}><T v="tiny" color={C.primary}>{t('صح؟ أكّد')}</T></Tap>}
+                  : <Tap onPress={() => confirm(m, s)} style={{ paddingHorizontal: 8, minHeight: 30, justifyContent: 'center' }}><T v="tiny" color={C.primary}>{t('صحيح؟ أكّد')}</T></Tap>}
               </Tap>
             ))}
             {(s.changes ?? []).map((c) => (
               <Tap key={c.id} haptic={false} onPress={() => changeMenu(c)} style={{ flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: c.cancelled ? C.redSoft : C.orangeSoft, borderRadius: 14, padding: 10 }}>
                 <CalendarClock size={15} color={c.cancelled ? C.red : C.orange} />
                 <T v="small" style={{ flex: 1 }} color={c.cancelled ? C.red : C.orange}>
-                  {c.cancelled ? t('ألغيت: {0}', [dayLabel(c.on_date)]) : t('{0} ← {1} {2}', [dayLabel(c.on_date), dayLabel(c.new_date!), `${clock(c.starts_at!)}-${clock(c.ends_at!)}`])}
+                  {c.cancelled ? t('ملغاة: {0}', [dayLabel(c.on_date)]) : t('{0} ← {1} {2}', [dayLabel(c.on_date), dayLabel(c.new_date!), `${clock(c.starts_at!)}-${clock(c.ends_at!)}`])}
                   {c.room_text ? ` · ${c.room_text}` : ''}
                 </T>
-                <T v="tiny" color={C.muted}>{c.user_id ? t('إلك بس') : t('للشعبة')}</T>
+                <T v="tiny" color={C.muted}>{c.user_id ? t('لك فقط') : t('للشعبة')}</T>
               </Tap>
             ))}
-            {(s as Sec & { hiddenCount?: number }).hiddenCount ? <T v="tiny" color={C.muted}>{t('مخبّي {0} من أوقات الشعبة من جدولك.', [(s as Sec & { hiddenCount?: number }).hiddenCount])}</T> : null}
+            {(s as Sec & { hiddenCount?: number }).hiddenCount ? <T v="tiny" color={C.muted}>{t('تم إخفاء {0} من أوقات الشعبة من جدولك.', [(s as Sec & { hiddenCount?: number }).hiddenCount])}</T> : null}
             <Row gap={8}>
-              <Button kind="soft" title={s.meetings.length ? t('ضيف وقت ثاني') : t('ضيف وقت المحاضرة')} icon={<Clock size={16} color={C.primary} />} onPress={() => openTime({ sec: s, mode: 'add' })} style={{ minHeight: 42, flex: 1 }} />
+              <Button kind="soft" title={s.meetings.length ? t('أضف وقتًا آخر') : t('أضف وقت المحاضرة')} icon={<Clock size={16} color={C.primary} />} onPress={() => openTime({ sec: s, mode: 'add' })} style={{ minHeight: 42, flex: 1 }} />
               <Button kind="white" title={t('نقل شعبة')} icon={<ArrowLeftRight size={16} color={C.ink} />} onPress={() => { setMoveFor(s); setNewSec(''); }} style={{ minHeight: 42 }} />
             </Row>
           </Animated.View>
         ))}
-        {rows && rows.length > 0 && <Button kind="ghost" title={t('شوف الجدول')} onPress={() => router.push('/(tabs)/schedule')} />}
+        {rows && rows.length > 0 && <Button kind="ghost" title={t('عرض الجدول')} onPress={() => router.push('/(tabs)/schedule')} />}
       </ScrollView>
 
       <Modal visible={adding} transparent animationType="fade" onRequestClose={() => setAdding(false)}>
         <Pressable style={{ flex: 1, backgroundColor: 'rgba(14,20,48,0.45)' }} onPress={() => setAdding(false)} />
         <Animated.View entering={SlideInDown.duration(240)} style={{ backgroundColor: C.bg, borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: 18, gap: 12, paddingBottom: 40 }}>
-          <T v="h3">{t('ضيف مادة')}</T>
+          <T v="h3">{t('أضف مادة')}</T>
           <Field label={t('اسم المادة')} value={name} onChangeText={setName} placeholder={t('مثلاً تفاضل وتكامل 1')} maxLength={120} />
-          <Field label={t('رقم الشعبة')} value={secNo} onChangeText={setSecNo} keyboardType="number-pad" placeholder={t('إذا بتعرفه')} maxLength={4} />
-          <Button title={t('ضيفها')} loading={busy} onPress={addCourse} />
+          <Field label={t('رقم الشعبة')} value={secNo} onChangeText={setSecNo} keyboardType="number-pad" placeholder={t('إن كنت تعرفه')} maxLength={4} />
+          <Button title={t('أضفها')} loading={busy} onPress={addCourse} />
         </Animated.View>
       </Modal>
 
       <Modal visible={!!moveFor} transparent animationType="fade" onRequestClose={() => setMoveFor(null)}>
         <Pressable style={{ flex: 1, backgroundColor: 'rgba(14,20,48,0.45)' }} onPress={() => setMoveFor(null)} />
         <Animated.View entering={SlideInDown.duration(240)} style={{ backgroundColor: C.bg, borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: 18, gap: 12, paddingBottom: 40 }}>
-          <T v="h3">{sectionKnown(moveFor?.section_no) ? t('نقل لشعبة ثانية') : t('شو رقم شعبتك؟')}</T>
+          <T v="h3">{sectionKnown(moveFor?.section_no) ? t('نقل إلى شعبة أخرى') : t('ما رقم شعبتك؟')}</T>
           <T v="small" color={C.muted}>{sectionKnown(moveFor?.section_no)
-            ? t('{0} · إنت هلأ بشعبة {1}. لما تنتقل بتاخد أوقات الشعبة الجديدة وجروبها.', [nm(moveFor?.course), moveFor?.section_no ?? ''])
-            : t('{0} · اكتب رقم شعبتك من بوابة الطالب أو جدولك، وبتنضم لشعبتك وجروبها.', [nm(moveFor?.course)])}</T>
+            ? t('{0} · أنت الآن في الشعبة {1}. عند انتقالك ستحصل على أوقات الشعبة الجديدة ومجموعتها.', [nm(moveFor?.course), moveFor?.section_no ?? ''])
+            : t('{0} · اكتب رقم شعبتك من بوابة الطالب أو جدولك، لتنضم إلى شعبتك ومجموعتها.', [nm(moveFor?.course)])}</T>
           <Field label={t('رقم الشعبة الجديدة')} value={newSec} onChangeText={setNewSec} keyboardType="number-pad" placeholder="2" maxLength={6} autoFocus />
           <Button title={t('انقلني')} loading={busy} disabled={busy || !newSec.trim()} onPress={moveSection} />
         </Animated.View>
@@ -357,29 +357,29 @@ export default function Courses() {
         <Pressable style={{ flex: 1, backgroundColor: 'rgba(14,20,48,0.45)' }} onPress={() => setOnce(null)} />
         <Animated.View entering={SlideInDown.duration(240)} style={{ backgroundColor: C.bg, borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: 18, gap: 12, paddingBottom: 40, maxHeight: '90%' }}>
           <ScrollView contentContainerStyle={{ gap: 12 }}>
-            <T v="h3">{onceCancel ? t('محاضرة ألغيت') : t('محاضرة انتقل موعدها')} · {nm(once?.sec.course)}</T>
-            <T v="tiny" color={C.muted}>{t('لمرة وحدة بس. الجدول الأسبوعي بيضل زي ما هو.')}</T>
+            <T v="h3">{onceCancel ? t('محاضرة ألغيت') : t('محاضرة تغيّر موعدها')} · {nm(once?.sec.course)}</T>
+            <T v="tiny" color={C.muted}>{t('لمرة واحدة فقط. يبقى الجدول الأسبوعي كما هو.')}</T>
             <T v="small" color={C.ink2}>{t('أي محاضرة؟')}</T>
             <Row gap={6} style={{ flexWrap: 'wrap' }}>
               {once && nextDates(once.meeting.weekday, 4).map((d) => <Chip key={d} label={dayLabel(d)} active={onDate === d} onPress={() => { setOnDate(d); if (newDate < d) setNewDate(d); }} />)}
             </Row>
             {!onceCancel && <>
-              <T v="small" color={C.ink2}>{t('صارت يوم:')}</T>
+              <T v="small" color={C.ink2}>{t('نُقلت إلى:')}</T>
               <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 6 }}>
                 {comingDays(21).map((d) => <Chip key={d} label={dayLabel(d)} active={newDate === d} onPress={() => setNewDate(d)} />)}
               </ScrollView>
               <Row gap={10}>
                 <TimeField label={t('من')} value={st} onChange={setSt} />
-                <TimeField label={t('لـ')} value={en} onChange={setEn} />
+                <TimeField label={t('إلى')} value={en} onChange={setEn} />
               </Row>
               <Field label={t('القاعة (إذا تغيّرت)')} value={room} onChangeText={setRoom} placeholder={t('مثلاً قاعة 205')} maxLength={80} />
             </>}
-            <Field label={t('ملاحظة (اختياري)')} value={note} onChangeText={setNote} placeholder={onceCancel ? t('مثلاً الدكتور مسافر') : t('مثلاً تعويض، حكى عالتيمز')} maxLength={200} />
+            <Field label={t('ملاحظة (اختياري)')} value={note} onChangeText={setNote} placeholder={onceCancel ? t('مثلاً الدكتور مسافر') : t('مثلاً تعويض، أُعلن عنه على Teams')} maxLength={200} />
             <Row gap={6}>
               <Chip label={t('لكل الشعبة')} active={onceAll} onPress={() => setOnceAll(true)} />
-              <Chip label={t('إلي بس')} active={!onceAll} onPress={() => setOnceAll(false)} />
+              <Chip label={t('لي فقط')} active={!onceAll} onPress={() => setOnceAll(false)} />
             </Row>
-            <Button title={onceCancel ? t('احفظ إنها ملغية') : t('احفظ الموعد الجديد')} loading={busy} disabled={busy} onPress={saveOnce} />
+            <Button title={onceCancel ? t('احفظها كملغاة') : t('احفظ الموعد الجديد')} loading={busy} disabled={busy} onPress={saveOnce} />
           </ScrollView>
         </Animated.View>
       </Modal>
@@ -388,10 +388,10 @@ export default function Courses() {
         <Pressable style={{ flex: 1, backgroundColor: 'rgba(14,20,48,0.45)' }} onPress={() => setEdit(null)} />
         <Animated.View entering={SlideInDown.duration(240)} style={{ backgroundColor: C.bg, borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: 18, gap: 12, paddingBottom: 40, maxHeight: '88%' }}>
           <ScrollView contentContainerStyle={{ gap: 12 }}>
-            <T v="h3">{edit?.mode === 'me' ? t('وقتي أنا') : edit?.mode === 'all' ? t('تغيير وقت الشعبة') : t('وقت')} · {nm(edit?.sec.course)}</T>
-            <T v="tiny" color={edit?.mode === 'me' ? C.violet : C.muted}>{edit?.mode === 'me' ? t('بيتغيّر بجدولك إنت بس (مثلاً نقل داخلي لمحاضرة)، وزملاؤك ما بيتأثروا.')
-              : edit?.mode === 'all' ? t('استخدمها إذا الدكتور غيّر وقت المحاضرة للشعبة كلها. بيتغيّر عند كل زملائك.')
-              : t('بيطلع لكل زملائك بالشعبة. لما يأكده 3 منكم بيصير مؤكد.')}</T>
+            <T v="h3">{edit?.mode === 'me' ? t('وقتي الخاص') : edit?.mode === 'all' ? t('تغيير وقت الشعبة') : t('وقت')} · {nm(edit?.sec.course)}</T>
+            <T v="tiny" color={edit?.mode === 'me' ? C.violet : C.muted}>{edit?.mode === 'me' ? t('يتغيّر في جدولك أنت فقط (مثلاً نقل داخلي لمحاضرة)، ولا يتأثر زملاؤك.')
+              : edit?.mode === 'all' ? t('استخدمها إذا غيّر الدكتور وقت المحاضرة للشعبة كلها. سيتغيّر لدى جميع زملائك.')
+              : t('يظهر لجميع زملائك في الشعبة. عندما يؤكده 3 منكم يصبح مؤكداً.')}</T>
             <Row gap={6} style={{ flexWrap: 'wrap' }}>
               {[0, 1, 2, 3, 4, 5].map((d) => <Chip key={d} label={WEEKDAYS_SHORT[d]} active={days.includes(d)} onPress={() => setDays((x) => (x.includes(d) ? x.filter((y) => y !== d) : [...x, d]))} />)}
             </Row>
@@ -400,7 +400,7 @@ export default function Courses() {
             </Row>
             <Row gap={10}>
               <TimeField label={t('من')} value={st} onChange={setSt} />
-              <TimeField label={t('لـ')} value={en} onChange={setEn} />
+              <TimeField label={t('إلى')} value={en} onChange={setEn} />
             </Row>
             {kind !== 'online' && <Field label={t('القاعة والمبنى')} value={room} onChangeText={setRoom} placeholder={t('مثلاً قاعة 205، مبنى الآداب')} maxLength={80} />}
             <Button title={t('احفظ الوقت')} loading={busy} disabled={busy} onPress={saveTime} />

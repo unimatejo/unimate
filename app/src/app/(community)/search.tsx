@@ -95,7 +95,7 @@ export default function Search() {
          
         out.push(...((sums.data ?? []) as any[]).map((p) => ({ kind: 'summary', id: p.id, title: excerpt(p), subtitle: [t('ملخص'), p.author?.full_name].filter(Boolean).join(' · ') })));
          
-        out.push(...((posts.data ?? []) as any[]).map((p) => ({ kind: 'post', id: p.id, title: excerpt(p), subtitle: [p.author?.full_name, t('{0} لايك', [p.like_count ?? 0])].filter(Boolean).join(' · ') })));
+        out.push(...((posts.data ?? []) as any[]).map((p) => ({ kind: 'post', id: p.id, title: excerpt(p), subtitle: [p.author?.full_name, t('{0} إعجاب', [p.like_count ?? 0])].filter(Boolean).join(' · ') })));
         if (want('campus')) out.push(...((campus.data ?? []) as R[]).filter((r) => kind === 'campus' || r.kind !== 'course' || !out.some((o) => o.kind === 'course' && o.title === r.title)));
       } catch { /* keep the empty list; the message below explains */ }
       if (my !== seq.current) return; // a newer search already started
@@ -105,8 +105,8 @@ export default function Search() {
   }, [q, kind, profile, blocked]);
 
   function openLink(url: string) {
-    if (!isWebUrl(url)) { Alert.alert(t('الرابط مش صالح')); return; }
-    Linking.openURL(url).catch(() => Alert.alert(t('ما قدرنا نفتح الرابط')));
+    if (!isWebUrl(url)) { Alert.alert(t('الرابط غير صالح')); return; }
+    Linking.openURL(url).catch(() => Alert.alert(t('تعذّر فتح الرابط')));
   }
 
   function open(r: R) {
@@ -152,7 +152,7 @@ export default function Search() {
             </Tap>
           </Animated.View>
         )}
-        ListEmptyComponent={q.trim().length >= 2 ? searching ? <View style={{ gap: 6 }}><RowSkeleton /><RowSkeleton /><RowSkeleton /></View> : <Empty title={t('ما لقينا إشي')} body={t('جرّب كلمة ثانية، أو اسم المادة أو رمزها أو المبنى.')} /> : (
+        ListEmptyComponent={q.trim().length >= 2 ? searching ? <View style={{ gap: 6 }}><RowSkeleton /><RowSkeleton /><RowSkeleton /></View> : <Empty title={t('لا توجد نتائج')} body={t('جرّب كلمة أخرى، أو اسم المادة أو رمزها أو المبنى.')} /> : (
           <View style={{ gap: 10 }}>
             {recent.length > 0 && (
               <View style={{ gap: 4, marginBottom: 6 }}>
@@ -178,7 +178,7 @@ export default function Search() {
               </View>
             )}
             <T v="h3">{t('روابط جامعتك')}</T>
-            {links.length === 0 ? <T v="small" color={C.muted}>{t('بتنضاف قريباً.')}</T> : links.map((l) => (
+            {links.length === 0 ? <T v="small" color={C.muted}>{t('ستُضاف قريباً.')}</T> : links.map((l) => (
               <Tap key={l.id} onPress={() => openLink(l.url)} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 56, backgroundColor: C.card, borderRadius: 18, paddingHorizontal: 14 }}>
                 <LinkIcon size={19} color={C.violet} /><T v="bodyMd">{l.title}</T>
               </Tap>

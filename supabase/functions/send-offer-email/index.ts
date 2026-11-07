@@ -33,13 +33,13 @@ Deno.serve(async (req) => {
   let sent = 0; const failed: string[] = [];
   for (const p of (people ?? []) as { user_id: string; email: string; full_name: string | null }[]) {
     const unsub = `${FN_BASE}/unsubscribe?u=${p.user_id}&s=${await sign(p.user_id)}`;
-    const link = s.link && /^https:\/\//.test(s.link) ? `<p style="margin:18px 0"><a href="${esc(s.link)}" style="background:#2E5BFF;color:#fff;text-decoration:none;padding:12px 20px;border-radius:12px;display:inline-block">شوف العرض</a></p>` : '';
+    const link = s.link && /^https:\/\//.test(s.link) ? `<p style="margin:18px 0"><a href="${esc(s.link)}" style="background:#2E5BFF;color:#fff;text-decoration:none;padding:12px 20px;border-radius:12px;display:inline-block">اطّلع على العرض</a></p>` : '';
     const html = `<!doctype html><html lang="ar" dir="rtl"><body style="margin:0;background:#F5F6FA;font-family:Tahoma,Arial,sans-serif"><div style="max-width:480px;margin:0 auto;padding:24px 12px">
       <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center" style="margin:0 auto 16px"><tr><td style="padding-left:10px;vertical-align:middle"><img src="https://unimate.my/logo.png" width="40" height="40" alt="UniMate" style="display:block;border-radius:11px;border:0"></td><td style="vertical-align:middle;font-size:20px;font-weight:bold;color:#0E1430" dir="ltr">UniMate | يونيميت</td></tr></table>
       <div style="background:#fff;border-radius:22px;padding:24px;text-align:right;color:#0E1430"><div style="height:6px;border-radius:3px;background:#7C3AED;background-image:linear-gradient(90deg,#FFB547,#FF4F7B,#7C3AED);margin-bottom:18px"></div>
       <h2 style="font-size:19px;margin:0 0 8px">${esc(s.title)}</h2>
       <div style="font-size:15px;line-height:1.8;color:#3B4466;white-space:pre-line">${esc(s.body ?? '')}</div>${link}
-      <div style="font-size:12px;color:#9AA1B8;border-top:1px solid #E4E7F0;margin-top:18px;padding-top:12px">وصلك هالإيميل لأنك فعّلت «عروض على الإيميل» بيونيميت. <a href="${unsub}" style="color:#6B7391">إلغاء الاشتراك</a></div>
+      <div style="font-size:12px;color:#9AA1B8;border-top:1px solid #E4E7F0;margin-top:18px;padding-top:12px">وصلتك هذه الرسالة لأنك فعّلت «عروض على البريد الإلكتروني» في يونيميت. <a href="${unsub}" style="color:#6B7391">إلغاء الاشتراك</a></div>
     </div></div></body></html>`;
     try {
       await tx.sendMail({ from: `يونيميت <${from}>`, to: p.email, subject: s.title, html, text: `${s.title}\n\n${s.body ?? ''}\n\nإلغاء الاشتراك: ${unsub}`,

@@ -1,7 +1,10 @@
 import { primeMedia, supabase } from './supabase';
 import type { Post } from './types';
 
-export const POST_SELECT = 'id, author_id, university_id, community_id, category, audience, title, body, price_jod, lost_found, poll, is_pinned, hide_likes, like_count, comment_count, created_at, author:profiles!posts_author_id_fkey(id, full_name, username, is_verified, academic_title, title_verified, avatar_url, study_year, major:majors!profiles_major_id_fkey(name_ar, name_en)), media:post_media(id, kind, url, file_name, size_bytes, position, meta)';
+export const POST_SELECT = 'id, author_id, university_id, community_id, category, audience, title, body, price_jod, lost_found, poll, is_pinned, hide_likes, like_count, shown_likes, comment_count, created_at, author:profiles!posts_author_id_fkey(id, full_name, username, is_verified, academic_title, title_verified, avatar_url, study_year, major:majors!profiles_major_id_fkey(name_ar, name_en)), media:post_media(id, kind, url, file_name, size_bytes, position, meta)';
+
+/** The like number a post shows: the admin's one when set, else the real count. */
+export const likesShown = (p: Pick<Post, 'like_count' | 'shown_likes'>) => p.shown_likes ?? p.like_count;
 
 export async function withMine(posts: Post[], uid?: string): Promise<Post[]> {
   if (!uid || posts.length === 0) return posts;

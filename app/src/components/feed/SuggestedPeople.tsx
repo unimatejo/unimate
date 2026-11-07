@@ -38,13 +38,13 @@ export function SuggestedPeople() {
   return (
     <View style={{ gap: 10 }}>
       <Row style={{ paddingHorizontal: 18 }}>
-        <T v="h3" style={{ flex: 1 }}>{t('ناس ممكن تعرفهم')}</T>
+        <T v="h3" style={{ flex: 1 }}>{t('أشخاص قد تعرفهم')}</T>
       </Row>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10, paddingHorizontal: 18 }}>
         {shown.map((p) => (
           <Animated.View key={p.id} entering={FadeIn} exiting={FadeOut} layout={LinearTransition}
             style={[{ width: 150, backgroundColor: C.card, borderRadius: 22, padding: 12, alignItems: 'center', gap: 6 }, shadow]}>
-            <Tap onPress={() => setRows((r) => r.filter((x) => x.id !== p.id))} accessibilityLabel={t('شيل الاقتراح')} style={{ position: 'absolute', top: 6, right: 6, width: 26, height: 26, alignItems: 'center', justifyContent: 'center', zIndex: 2 }}>
+            <Tap onPress={() => setRows((r) => r.filter((x) => x.id !== p.id))} accessibilityLabel={t('إزالة الاقتراح')} style={{ position: 'absolute', top: 6, right: 6, width: 26, height: 26, alignItems: 'center', justifyContent: 'center', zIndex: 2 }}>
               <X size={14} color={C.faint} />
             </Tap>
             <Tap haptic={false} onPress={() => router.push({ pathname: '/user/[id]', params: { id: p.id } })} style={{ alignItems: 'center', gap: 6 }}>

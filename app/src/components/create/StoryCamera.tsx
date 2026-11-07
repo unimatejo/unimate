@@ -132,7 +132,7 @@ export function StoryCamera({ maxSec, onPicked, onClose, onSystemPicker, footer 
     <View style={{ position: 'absolute', top: 0, left: 0, right: 0, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 14, paddingTop: 6 }}>
       <Tap onPress={onClose} accessibilityLabel={t('إغلاق')} style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}><X size={28} color="#fff" /></Tap>
       {Cam && perm?.granted && (
-        <Tap onPress={() => setFlash((f) => !f)} accessibilityLabel={flash ? t('طفّي الفلاش') : t('شغّل الفلاش')} style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}>
+        <Tap onPress={() => setFlash((f) => !f)} accessibilityLabel={flash ? t('أطفئ الفلاش') : t('شغّل الفلاش')} style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}>
           {flash ? <Zap size={24} color="#fff" fill="#fff" /> : <ZapOff size={24} color="#fff" />}
         </Tap>
       )}
@@ -146,9 +146,9 @@ export function StoryCamera({ maxSec, onPicked, onClose, onSystemPicker, footer 
         <SafeAreaView style={{ flex: 1 }}>
           <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: 14, padding: 28 }}>
             <View style={{ width: 76, height: 76, borderRadius: 38, backgroundColor: 'rgba(255,255,255,0.1)', alignItems: 'center', justifyContent: 'center' }}><Camera size={32} color="#fff" /></View>
-            <T v="h3" color="#fff" style={{ textAlign: 'center' }}>{Cam ? t('اسمح بالكاميرا') : t('ستوري جديدة')}</T>
+            <T v="h3" color="#fff" style={{ textAlign: 'center' }}>{Cam ? t('اسمح بالكاميرا') : t('قصة جديدة')}</T>
             <T v="small" color="rgba(255,255,255,0.7)" style={{ textAlign: 'center', maxWidth: 290 }}>
-              {Cam ? t('عشان تصوّر ستوري من جوّا يونيميت. بتقدر كمان تختار من صورك.') : t('اختار صورة أو فيديو من جهازك.')}
+              {Cam ? t('لتتمكن من تصوير قصة من داخل يونيميت. يمكنك أيضًا الاختيار من صورك.') : t('اختر صورة أو فيديو من جهازك.')}
             </T>
             {Cam && perm && !perm.granted && (
               <Tap onPress={() => (perm.canAskAgain ? requestPerm() : Linking.openSettings())} style={{ flexDirection: 'row', alignItems: 'center', gap: 8, minHeight: 46, paddingHorizontal: 20, borderRadius: R.pill, backgroundColor: '#fff' }}>
@@ -182,7 +182,7 @@ export function StoryCamera({ maxSec, onPicked, onClose, onSystemPicker, footer 
           {/* recording: a red line across the top and a red pill with the time, like the phone's own camera */}
           {recording && <View pointerEvents="none" style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 4, backgroundColor: '#FF3B30' }} />}
           {recording && (
-            <View accessibilityLiveRegion="polite" accessibilityLabel={t('عم نسجّل')} style={{ position: 'absolute', top: 14, alignSelf: 'center', flexDirection: 'row', alignItems: 'center', gap: 7, paddingHorizontal: 12, height: 30, borderRadius: 15, backgroundColor: 'rgba(255,59,48,0.92)' }}>
+            <View accessibilityLiveRegion="polite" accessibilityLabel={t('جارٍ التسجيل')} style={{ position: 'absolute', top: 14, alignSelf: 'center', flexDirection: 'row', alignItems: 'center', gap: 7, paddingHorizontal: 12, height: 30, borderRadius: 15, backgroundColor: 'rgba(255,59,48,0.92)' }}>
               <View style={{ width: 9, height: 9, borderRadius: 5, backgroundColor: '#fff' }} />
               <T v="bold" color="#fff" style={{ fontSize: 13 }}>{`0:${String(Math.min(secs, maxSec)).padStart(2, '0')} / 0:${String(maxSec).padStart(2, '0')}`}</T>
             </View>
@@ -193,7 +193,7 @@ export function StoryCamera({ maxSec, onPicked, onClose, onSystemPicker, footer 
               {thumb ? <Image source={{ uri: thumb.uri }} style={{ width: 40, height: 40 }} contentFit="cover" /> : <Images size={20} color="#fff" />}
             </Tap>
             <GestureDetector gesture={shutter}>
-              <Animated.View accessible accessibilityRole="button" accessibilityLabel={canRecord ? t('صوّر، أو اضغط مطوّل لفيديو') : t('صوّر')}
+              <Animated.View accessible accessibilityRole="button" accessibilityLabel={canRecord ? t('صوّر، أو اضغط مطوّلًا لتسجيل فيديو') : t('صوّر')}
                 style={[{ width: SHUTTER + 14, height: SHUTTER + 14, alignItems: 'center', justifyContent: 'center' }, shutterStyle]}>
                 <Svg width={SHUTTER + 14} height={SHUTTER + 14} style={{ position: 'absolute' }} viewBox="0 0 92 92">
                   <Circle cx={46} cy={46} r={40} stroke="rgba(255,255,255,0.9)" strokeWidth={5} fill="none" />
@@ -203,14 +203,14 @@ export function StoryCamera({ maxSec, onPicked, onClose, onSystemPicker, footer 
                 {busy && <ActivityIndicator color="#0E1430" style={{ position: 'absolute' }} />}
               </Animated.View>
             </GestureDetector>
-            <Tap onPress={() => { Haptics.selectionAsync().catch(() => {}); setFacing((f) => (f === 'back' ? 'front' : 'back')); }} accessibilityLabel={t('اقلب الكاميرا')}
+            <Tap onPress={() => { Haptics.selectionAsync().catch(() => {}); setFacing((f) => (f === 'back' ? 'front' : 'back')); }} accessibilityLabel={t('بدّل الكاميرا')}
               style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: 'rgba(0,0,0,0.35)', alignItems: 'center', justifyContent: 'center' }}>
               <RefreshCcw size={22} color="#fff" />
             </Tap>
           </View>
           {!recording && (
             <T v="tiny" color="rgba(255,255,255,0.75)" style={{ position: 'absolute', bottom: 2, alignSelf: 'center' }}>
-              {canRecord ? t('اكبس للصورة، اضغط مطوّل للفيديو') : t('اكبس للصورة')}
+              {canRecord ? t('اضغط لالتقاط صورة، واضغط مطولاً للفيديو') : t('اضغط لالتقاط صورة')}
             </T>
           )}
         </View>
@@ -245,9 +245,9 @@ function GallerySheet({ open, onClose, onPick, busyId }: { open: boolean; onClos
         <Pressable onPress={onClose} style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.45)' }} accessibilityLabel={t('إغلاق')} />
         <Animated.View style={[{ backgroundColor: '#0B0F22', borderTopLeftRadius: 24, borderTopRightRadius: 24, overflow: 'hidden' }, panel]}>
           <GestureDetector gesture={drag}>
-            <View style={{ alignItems: 'center', paddingTop: 8, paddingBottom: 10, gap: 8 }} accessibilityHint={t('اسحب لفوق للشاشة كاملة')}>
+            <View style={{ alignItems: 'center', paddingTop: 8, paddingBottom: 10, gap: 8 }} accessibilityHint={t('اسحب لأعلى لملء الشاشة')}>
               <View style={{ width: 40, height: 5, borderRadius: 3, backgroundColor: 'rgba(255,255,255,0.3)' }} />
-              <T v="bold" color="#fff">{t('ضيف للقصة')}</T>
+              <T v="bold" color="#fff">{t('أضف إلى القصة')}</T>
             </View>
           </GestureDetector>
           {open && <GalleryGrid kind="all" album={null} selected={[]} multi={false} cols={3} activeId={null} busyId={busyId} onPick={onPick} contentBottom={40} />}

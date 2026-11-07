@@ -67,7 +67,7 @@ export function StoryStickersLayer({ story, mine, width, height, onPause, onResu
     const on = res.countdowns?.[o.id]?.mine;
     if (on) await supabase.from('story_countdown_subscribers').delete().eq('story_id', story!.id).eq('sticker_id', o.id).eq('user_id', (await supabase.auth.getUser()).data.user?.id ?? '');
     else await supabase.from('story_countdown_subscribers').insert({ story_id: story!.id, sticker_id: o.id });
-    if (!on) toast(t('رح نذكّرك لما يخلص العدّاد'));
+    if (!on) toast(t('سنذكّرك عند انتهاء العدّاد'));
     load();
   }
   async function sendAnswer() {
@@ -75,7 +75,7 @@ export function StoryStickersLayer({ story, mine, width, height, onPause, onResu
     if (!ask || !body) return;
     const { error } = await supabase.from('story_question_answers').insert({ story_id: story!.id, sticker_id: ask.id, body });
     setAsk(null); setAnswer(''); onResume();
-    if (error) toast(t('ما انبعت ردك، جرّب كمان مرة.')); else { tick(); toast(t('انبعت ردك')); load(); }
+    if (error) toast(t('لم يُرسل ردك، حاول مرة أخرى.')); else { tick(); toast(t('تم إرسال ردك')); load(); }
   }
 
   function open(o: Overlay) {
@@ -113,12 +113,12 @@ export function StoryStickersLayer({ story, mine, width, height, onPause, onResu
           <Pressable style={{ position: 'absolute', top: 0, bottom: 0, left: 0, right: 0 }} onPress={() => { setAsk(null); onResume(); }} accessibilityLabel={t('إغلاق')} />
           {ask && (
             <View style={{ backgroundColor: '#FFFFFF', borderRadius: 22, padding: 16, gap: 12 }}>
-              <Text style={{ fontFamily: F.display, fontSize: 18, color: '#0E1430', textAlign: 'center' }}>{ask.text || t('اسألني سؤال')}</Text>
+              <Text style={{ fontFamily: F.display, fontSize: 18, color: '#0E1430', textAlign: 'center' }}>{ask.text || t('اسألني سؤالاً')}</Text>
               <TextInput autoFocus value={answer} onChangeText={(v) => setAnswer(v.slice(0, 300))} placeholder={t('اكتب ردك…')} placeholderTextColor="#8A93AE" multiline
                 style={{ minHeight: 64, borderRadius: 14, backgroundColor: '#F2F3F7', padding: 12, fontFamily: F.body, fontSize: 16, color: '#0E1430', textAlign: 'right' }} />
               <Pressable onPress={sendAnswer} disabled={!answer.trim()} accessibilityRole="button"
                 style={{ minHeight: 46, borderRadius: 23, backgroundColor: answer.trim() ? '#FF6B4A' : '#E9ECF5', alignItems: 'center', justifyContent: 'center' }}>
-                <Text style={{ fontFamily: F.bodyBold, fontSize: 15, color: answer.trim() ? '#0E1430' : '#8A93AE' }}>{t('ابعت')}</Text>
+                <Text style={{ fontFamily: F.bodyBold, fontSize: 15, color: answer.trim() ? '#0E1430' : '#8A93AE' }}>{t('أرسل')}</Text>
               </Pressable>
             </View>
           )}
@@ -131,9 +131,9 @@ export function StoryStickersLayer({ story, mine, width, height, onPause, onResu
         {answers && (
           <View style={{ maxHeight: '70%', backgroundColor: '#17204A', borderTopLeftRadius: 24, borderTopRightRadius: 24, paddingTop: 10, paddingBottom: insets.bottom + 12 }}>
             <View style={{ alignSelf: 'center', width: 40, height: 5, borderRadius: 3, backgroundColor: 'rgba(255,255,255,0.3)' }} />
-            <Text style={{ fontFamily: F.display, fontSize: 17, color: '#FFFFFF', textAlign: 'center', marginVertical: 12 }}>{answers.text || t('اسألني سؤال')}</Text>
+            <Text style={{ fontFamily: F.display, fontSize: 17, color: '#FFFFFF', textAlign: 'center', marginVertical: 12 }}>{answers.text || t('اسألني سؤالاً')}</Text>
             <ScrollView contentContainerStyle={{ paddingHorizontal: 16, gap: 10 }}>
-              {(res.questions?.[answers.id]?.answers ?? []).length === 0 && <Text style={{ fontFamily: F.body, color: '#A5AECB', textAlign: 'center', padding: 20 }}>{t('لسا ما حدا رد')}</Text>}
+              {(res.questions?.[answers.id]?.answers ?? []).length === 0 && <Text style={{ fontFamily: F.body, color: '#A5AECB', textAlign: 'center', padding: 20 }}>{t('لم يرد أحد بعد')}</Text>}
               {(res.questions?.[answers.id]?.answers ?? []).map((a) => (
                 <View key={a.id} style={{ flexDirection: 'row', gap: 10, alignItems: 'flex-start', backgroundColor: 'rgba(255,255,255,0.06)', borderRadius: 16, padding: 12 }}>
                   <Avatar id={a.user_id} name={a.name} url={a.avatar_url} size={36} />

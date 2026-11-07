@@ -24,14 +24,14 @@ import { goBack } from '@/lib/nav';
 export type Member = { user_id: string; full_name: string; username: string | null; avatar_url: string | null; role: 'owner' | 'admin' | 'member'; state: string; academic_title: string | null; title_verified: boolean | null; is_verified: boolean | null };
 
 const VANISH: { key: VanishMode; label: string }[] = [
-  { key: 'never', label: t('أبداً') }, { key: 'after_view', label: t('بعد ما تنشاف') }, { key: 'h24', label: t('بعد 24 ساعة') }, { key: 'd7', label: t('بعد أسبوع') },
+  { key: 'never', label: t('أبداً') }, { key: 'after_view', label: t('بعد مشاهدتها') }, { key: 'h24', label: t('بعد 24 ساعة') }, { key: 'd7', label: t('بعد أسبوع') },
 ];
 
 export const inviteUrl = (code: string) => `https://app.unimate.my/join/${code}`;
 
 async function copyOrShare(text: string) {
   if (Platform.OS === 'web') {
-    try { await navigator.clipboard.writeText(text); toast(t('انتسخ الرابط')); return; } catch { /* fall through to share */ }
+    try { await navigator.clipboard.writeText(text); toast(t('تم نسخ الرابط')); return; } catch { /* fall through to share */ }
   }
   Share.share({ message: text }).catch(() => {});
 }
@@ -127,38 +127,38 @@ export default function ChatInfo() {
   async function toggleMute() {
     const v = !muted; setMuted(v);
     const { error } = await supabase.from('conversation_members').update({ muted: v }).eq('conversation_id', id).eq('user_id', profile?.id ?? '');
-    if (error) setMuted(!v); else toast(v ? t('كتمت المحادثة') : t('رجعت الإشعارات'));
+    if (error) setMuted(!v); else toast(v ? t('كتمت المحادثة') : t('أُعيد تفعيل الإشعارات'));
   }
   async function openInvite() {
     const { data, error } = await supabase.rpc('group_invite_link', { conv: id, p_reset: false });
-    if (error) { Alert.alert(t('ما زبط'), t('بس المشرفين بيقدروا يشوفوا رابط الدعوة.')); return; }
+    if (error) { Alert.alert(t('تعذّر ذلك'), t('يمكن للمشرفين فقط رؤية رابط الدعوة.')); return; }
     setInvite(data as string);
   }
   async function leave() {
-    Alert.alert(t('تطلع من الجروب؟'), t('ما رح توصلك رسائله، وبتقدر ترجع إذا حدا ضافك.'), [
+    Alert.alert(t('مغادرة المجموعة؟'), t('لن تصلك رسائلها، ويمكنك العودة إذا أضافك أحد.'), [
       { text: t('لا'), style: 'cancel' },
-      { text: t('اطلع'), style: 'destructive', onPress: async () => {
+      { text: t('خروج'), style: 'destructive', onPress: async () => {
         const { error } = await supabase.rpc('group_leave', { conv: id });
-        if (error) { Alert.alert(t('ما زبط'), t('جرّب كمان مرة.')); return; }
+        if (error) { Alert.alert(t('تعذّر ذلك'), t('حاول مرة أخرى.')); return; }
         router.replace('/messages');
       } },
     ]);
   }
   async function block() {
     if (!other || !profile) return;
-    Alert.alert(t('تحظر {0}؟', [other.full_name]), t('ما رح يقدر يبعتلك أو يشوف حسابك.'), [
+    Alert.alert(t('حظر {0}؟', [other.full_name]), t('لن يتمكن من مراسلتك أو رؤية حسابك.'), [
       { text: t('لا'), style: 'cancel' },
       { text: t('احظر'), style: 'destructive', onPress: async () => {
         const { error } = await supabase.from('blocks').insert({ blocker_id: profile.id, blocked_id: other.user_id });
-        if (error && error.code !== '23505') { Alert.alert(t('ما زبط'), t('جرّب كمان مرة.')); return; }
-        toast(t('انحظر')); router.replace('/messages');
+        if (error && error.code !== '23505') { Alert.alert(t('تعذّر ذلك'), t('حاول مرة أخرى.')); return; }
+        toast(t('تم الحظر')); router.replace('/messages');
       } },
     ]);
   }
 
   const names = useMemo(() => {
     const first = members.filter((m) => m.user_id !== profile?.id).map((m) => m.username || m.full_name.split(' ')[0]);
-    return first.length > 3 ? `${first.slice(0, 3).join('، ')} ${t('و{0} غيرهم', [String(first.length - 3)])}` : first.join('، ');
+    return first.length > 3 ? `${first.slice(0, 3).join('، ')} ${t('و{0} آخرون', [String(first.length - 3)])}` : first.join('، ');
   }, [members, profile?.id]);
 
   const cell = Math.floor(width / 3);
@@ -178,13 +178,13 @@ export default function ChatInfo() {
           {conv.kind === 'direct' && other?.username ? <T v="small" color={C.muted}>{`⁦@${other.username}⁩`}</T> : null}
           {group && conv.context_label ? <T v="small" color={C.muted}>{conv.context_label}</T> : null}
           {group && manager && <Tap onPress={() => setSheet('edit')} haptic={false} style={{ minHeight: 36, justifyContent: 'center' }}><T v="bodyMd" color={C.primaryDark}>{t('تغيير الاسم والصورة')}</T></Tap>}
-          {conv.kind === 'direct' && other && <Tap onPress={() => router.push({ pathname: '/user/[id]', params: { id: other.user_id } })} style={{ marginTop: 8, minHeight: 36, paddingHorizontal: 18, borderRadius: R.pill, backgroundColor: C.soft, justifyContent: 'center' }}><T v="bold" style={{ fontSize: 13 }}>{t('عرض البروفايل')}</T></Tap>}
+          {conv.kind === 'direct' && other && <Tap onPress={() => router.push({ pathname: '/user/[id]', params: { id: other.user_id } })} style={{ marginTop: 8, minHeight: 36, paddingHorizontal: 18, borderRadius: R.pill, backgroundColor: C.soft, justifyContent: 'center' }}><T v="bold" style={{ fontSize: 13 }}>{t('عرض الملف الشخصي')}</T></Tap>}
         </View>
       </View>
 
       <Row gap={4} style={{ justifyContent: 'space-evenly', paddingHorizontal: 12, paddingBottom: 14 }}>
         {conv.kind === 'direct'
-          ? <Action icon={<UserRound size={21} color={C.ink} />} label={t('البروفايل')} onPress={() => other && router.push({ pathname: '/user/[id]', params: { id: other.user_id } })} />
+          ? <Action icon={<UserRound size={21} color={C.ink} />} label={t('الملف الشخصي')} onPress={() => other && router.push({ pathname: '/user/[id]', params: { id: other.user_id } })} />
           : (conv.kind === 'group' && (manager || conv.members_can_add)) ? <Action icon={<UserPlus size={21} color={C.ink} />} label={t('إضافة')} onPress={() => setSheet('add')} />
           : null}
         <Action icon={<Search size={21} color={C.ink} />} label={t('بحث')} onPress={() => setSheet('search')} />
@@ -193,15 +193,15 @@ export default function ChatInfo() {
       </Row>
 
       <View style={{ borderTopWidth: 1, borderTopColor: C.line, paddingVertical: 6 }}>
-        {group && <InfoRow icon={<UsersRound size={23} color={C.ink} />} title={t('الأعضاء')} sub={names ? `${members.length} · ${names}` : t('{0} · إنت بس لحد هلأ', [String(members.length)])} onPress={() => router.push({ pathname: '/messages/members', params: { id } })} />}
-        {conv.kind === 'group' && manager && <InfoRow icon={<Link2 size={23} color={C.ink} />} title={t('رابط الدعوة')} sub={invite ? inviteUrl(invite) : t('اكبس عشان تشوف الرابط')} onPress={() => (invite ? copyOrShare(inviteUrl(invite)) : openInvite())} />}
-        {group && manager && <InfoRow icon={<MessageCircleMore size={23} color={C.ink} />} title={t('التحكم بالمحادثة')} sub={t('مين بيضيف، الموافقة على الدخول، الرسائل المختفية')} onPress={() => setSheet('controls')} />}
+        {group && <InfoRow icon={<UsersRound size={23} color={C.ink} />} title={t('الأعضاء')} sub={names ? `${members.length} · ${names}` : t('{0} · أنت فقط حتى الآن', [String(members.length)])} onPress={() => router.push({ pathname: '/messages/members', params: { id } })} />}
+        {conv.kind === 'group' && manager && <InfoRow icon={<Link2 size={23} color={C.ink} />} title={t('رابط الدعوة')} sub={invite ? inviteUrl(invite) : t('اضغط لعرض الرابط')} onPress={() => (invite ? copyOrShare(inviteUrl(invite)) : openInvite())} />}
+        {group && manager && <InfoRow icon={<MessageCircleMore size={23} color={C.ink} />} title={t('التحكم بالمحادثة')} sub={t('من يمكنه الإضافة، الموافقة على الانضمام، الرسائل المختفية')} onPress={() => setSheet('controls')} />}
         {conv.kind === 'direct' && <InfoRow icon={<Timer size={23} color={C.ink} />} title={t('الرسائل المختفية')} sub={VANISH.find((v) => v.key === conv.vanish)?.label} onPress={() => setSheet('vanish')} />}
-        <InfoRow icon={<ShieldCheck size={23} color={C.ink} />} title={t('الخصوصية والأمان')} sub={conv.block_screenshots ? t('منع التصوير شغّال') : undefined} onPress={() => setSheet('privacy')} />
-        <InfoRow icon={<Users size={23} color={C.ink} />} title={conv.kind === 'direct' && other ? t('اعمل جروب مع {0}', [other.full_name.split(' ')[0]]) : t('إنشاء جروب جديد')} onPress={() => router.push({ pathname: '/messages/new', params: { group: '1' } })} />
-        <InfoRow icon={<Flag size={23} color={C.ink} />} title={t('في مشكلة؟')} sub={t('إبلاغ عن المحادثة')} onPress={() => router.push({ pathname: '/report', params: { type: 'conversation', id, user: other?.user_id ?? '' } })} />
+        <InfoRow icon={<ShieldCheck size={23} color={C.ink} />} title={t('الخصوصية والأمان')} sub={conv.block_screenshots ? t('منع التصوير مفعّل') : undefined} onPress={() => setSheet('privacy')} />
+        <InfoRow icon={<Users size={23} color={C.ink} />} title={conv.kind === 'direct' && other ? t('أنشئ مجموعة مع {0}', [other.full_name.split(' ')[0]]) : t('إنشاء مجموعة جديدة')} onPress={() => router.push({ pathname: '/messages/new', params: { group: '1' } })} />
+        <InfoRow icon={<Flag size={23} color={C.ink} />} title={t('هل توجد مشكلة؟')} sub={t('إبلاغ عن المحادثة')} onPress={() => router.push({ pathname: '/report', params: { type: 'conversation', id, user: other?.user_id ?? '' } })} />
         {conv.kind === 'direct' && <InfoRow icon={<Ban size={23} color={C.danger} />} title={t('حظر')} danger onPress={block} />}
-        {group && <InfoRow icon={<LogOut size={23} color={C.danger} />} title={t('مغادرة الجروب')} danger onPress={leave} />}
+        {group && <InfoRow icon={<LogOut size={23} color={C.danger} />} title={t('مغادرة المجموعة')} danger onPress={leave} />}
       </View>
 
       <Row style={{ borderTopWidth: 1, borderTopColor: C.line }}>
@@ -229,7 +229,7 @@ export default function ChatInfo() {
           keyExtractor={(m) => m.id}
           numColumns={3}
           ListHeaderComponent={header}
-          ListEmptyComponent={media ? <T v="small" color={C.muted} style={{ textAlign: 'center', padding: 30 }}>{t('ما في صور بالمحادثة لسا.')}</T> : <ActivityIndicator color={C.muted} style={{ padding: 30 }} />}
+          ListEmptyComponent={media ? <T v="small" color={C.muted} style={{ textAlign: 'center', padding: 30 }}>{t('لا توجد صور في المحادثة بعد.')}</T> : <ActivityIndicator color={C.muted} style={{ padding: 30 }} />}
           renderItem={({ item, index }) => (
             <Tap onPress={() => setGallery(index)} haptic={false} accessibilityLabel={t('صورة')} style={{ width: cell, height: cell, padding: 1 }}>
               {item.url ? <Image source={{ uri: item.url }} style={{ flex: 1, backgroundColor: C.soft }} contentFit="cover" transition={150} /> : <View style={{ flex: 1, backgroundColor: C.soft }} />}
@@ -242,7 +242,7 @@ export default function ChatInfo() {
           data={files}
           keyExtractor={(m) => m.id}
           ListHeaderComponent={header}
-          ListEmptyComponent={<T v="small" color={C.muted} style={{ textAlign: 'center', padding: 30 }}>{t('ما في ملفات أو روابط لسا.')}</T>}
+          ListEmptyComponent={<T v="small" color={C.muted} style={{ textAlign: 'center', padding: 30 }}>{t('لا توجد ملفات أو روابط بعد.')}</T>}
           renderItem={({ item }) => {
             let name = '';
             if (item.kind === 'file') { try { name = JSON.parse(item.body ?? '{}').name ?? ''; } catch { /* */ } }
@@ -269,10 +269,10 @@ export default function ChatInfo() {
       <SearchSheet open={sheet === 'search'} conv={conv} onClose={() => setSheet(null)} />
       <SheetModal open={sheet === 'options'} onClose={() => setSheet(null)} style={{ gap: 4 }}>
         {conv.kind === 'group' && manager && <InfoRow icon={<Link2 size={22} color={C.ink} />} title={t('شارك رابط الدعوة')} onPress={async () => { setSheet(null); const { data } = await supabase.rpc('group_invite_link', { conv: id, p_reset: false }); if (data) copyOrShare(inviteUrl(data as string)); }} />}
-        {conv.kind === 'group' && manager && <InfoRow icon={<Link2 size={22} color={C.ink} />} title={t('غيّر رابط الدعوة')} sub={t('الرابط القديم بيوقف')} onPress={async () => { setSheet(null); const { data } = await supabase.rpc('group_invite_link', { conv: id, p_reset: true }); if (data) { setInvite(data as string); toast(t('انعمل رابط جديد')); } }} />}
-        <InfoRow icon={muted ? <Bell size={22} color={C.ink} /> : <BellOff size={22} color={C.ink} />} title={muted ? t('رجّع الإشعارات') : t('اكتم الإشعارات')} onPress={() => { setSheet(null); toggleMute(); }} />
+        {conv.kind === 'group' && manager && <InfoRow icon={<Link2 size={22} color={C.ink} />} title={t('غيّر رابط الدعوة')} sub={t('سيتوقف الرابط القديم')} onPress={async () => { setSheet(null); const { data } = await supabase.rpc('group_invite_link', { conv: id, p_reset: true }); if (data) { setInvite(data as string); toast(t('تم إنشاء رابط جديد')); } }} />}
+        <InfoRow icon={muted ? <Bell size={22} color={C.ink} /> : <BellOff size={22} color={C.ink} />} title={muted ? t('إعادة تفعيل الإشعارات') : t('اكتم الإشعارات')} onPress={() => { setSheet(null); toggleMute(); }} />
         <InfoRow icon={<Flag size={22} color={C.danger} />} title={t('إبلاغ')} danger onPress={() => { setSheet(null); router.push({ pathname: '/report', params: { type: 'conversation', id, user: other?.user_id ?? '' } }); }} />
-        {group && <InfoRow icon={<LogOut size={22} color={C.danger} />} title={t('مغادرة الجروب')} danger onPress={() => { setSheet(null); leave(); }} />}
+        {group && <InfoRow icon={<LogOut size={22} color={C.danger} />} title={t('مغادرة المجموعة')} danger onPress={() => { setSheet(null); leave(); }} />}
       </SheetModal>
     </SafeAreaView>
   );
@@ -293,15 +293,15 @@ function EditSheet({ open, conv, onClose, onSaved }: SheetProps) {
       const path = await uploadFile('avatars', me, f);
       const { error } = await supabase.rpc('group_update', { conv: conv.id, p_photo: publicUrl('avatars', path) });
       if (error) throw error;
-      onSaved(); toast(t('تغيّرت صورة الجروب'));
-    } catch { Alert.alert(t('ما زبط'), t('جرّب كمان مرة.')); } finally { setBusy(false); }
+      onSaved(); toast(t('تغيّرت صورة المجموعة'));
+    } catch { Alert.alert(t('تعذّر ذلك'), t('حاول مرة أخرى.')); } finally { setBusy(false); }
   }
   async function save() {
     if (name.trim().length < 2 || name.trim() === conv.title) { onClose(); return; }
     setBusy(true);
     const { error } = await supabase.rpc('group_update', { conv: conv.id, p_title: name.trim() });
     setBusy(false);
-    if (error) { Alert.alert(t('ما زبط'), t('بس المشرفين بيقدروا يغيّروا الاسم.')); return; }
+    if (error) { Alert.alert(t('تعذّر ذلك'), t('يمكن للمشرفين فقط تغيير الاسم.')); return; }
     onSaved(); onClose();
   }
   return (
@@ -311,9 +311,9 @@ function EditSheet({ open, conv, onClose, onSaved }: SheetProps) {
         <Tap onPress={photo} disabled={busy} accessibilityLabel={t('غيّر الصورة')} style={{ width: 64, height: 64, borderRadius: 32, overflow: 'hidden', backgroundColor: C.soft, alignItems: 'center', justifyContent: 'center' }}>
           {conv.photo_url ? <Image source={{ uri: conv.photo_url }} style={{ width: 64, height: 64 }} contentFit="cover" /> : <Images size={24} color={C.ink} />}
         </Tap>
-        <View style={{ flex: 1 }}><Field value={name} onChangeText={setName} placeholder={t('اسم الجروب')} maxLength={60} /></View>
+        <View style={{ flex: 1 }}><Field value={name} onChangeText={setName} placeholder={t('اسم المجموعة')} maxLength={60} /></View>
       </Row>
-      {conv.photo_url ? <Tap onPress={async () => { await supabase.rpc('group_update', { conv: conv.id, p_clear_photo: true }); onSaved(); }} haptic={false} style={{ minHeight: 40, justifyContent: 'center' }}><T v="small" color={C.danger}>{t('شيل الصورة')}</T></Tap> : null}
+      {conv.photo_url ? <Tap onPress={async () => { await supabase.rpc('group_update', { conv: conv.id, p_clear_photo: true }); onSaved(); }} haptic={false} style={{ minHeight: 40, justifyContent: 'center' }}><T v="small" color={C.danger}>{t('إزالة الصورة')}</T></Tap> : null}
       <Tap onPress={save} disabled={busy} style={{ minHeight: 50, borderRadius: 25, backgroundColor: C.primary, alignItems: 'center', justifyContent: 'center' }}>
         {busy ? <ActivityIndicator color={C.onPrimary} /> : <T v="bold" color={C.onPrimary}>{t('حفظ')}</T>}
       </Tap>
@@ -328,7 +328,7 @@ function VanishPick({ conv, onSaved }: { conv: Conversation; onSaved: () => void
         const on = conv.vanish === v.key;
         return (
           <Tap key={v.key} accessibilityRole="radio" accessibilityState={{ selected: on }}
-            onPress={async () => { const { error } = await supabase.rpc('set_conversation_vanish', { conv: conv.id, mode: v.key }); if (error) Alert.alert(t('ما زبط'), t('بس المشرفين بيقدروا يغيّروها.')); else onSaved(); }}
+            onPress={async () => { const { error } = await supabase.rpc('set_conversation_vanish', { conv: conv.id, mode: v.key }); if (error) Alert.alert(t('تعذّر ذلك'), t('يمكن للمشرفين فقط تغييرها.')); else onSaved(); }}
             style={{ width: '48.5%', minHeight: 54, borderRadius: R.md, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: on ? C.inverse : C.line, backgroundColor: on ? C.inverse : C.soft }}>
             <T v="bold" color={on ? C.onInverse : C.ink} style={{ fontSize: 14 }}>{v.label}</T>
           </Tap>
@@ -350,15 +350,15 @@ function VanishSheet({ open, conv, onClose, onSaved }: SheetProps) {
 function ControlsSheet({ open, conv, onClose, onSaved }: SheetProps) {
   async function set(k: 'p_members_can_add' | 'p_approve_joins', v: boolean) {
     const { error } = await supabase.rpc('group_settings', { conv: conv.id, [k]: v });
-    if (error) Alert.alert(t('ما زبط'), t('جرّب كمان مرة.')); else onSaved();
+    if (error) Alert.alert(t('تعذّر ذلك'), t('حاول مرة أخرى.')); else onSaved();
   }
   return (
     <SheetModal open={open} onClose={onClose} style={{ gap: 12 }}>
       <T v="h2">{t('التحكم بالمحادثة')}</T>
       {conv.kind === 'group' && (
         <View style={{ backgroundColor: C.soft, borderRadius: R.lg, paddingHorizontal: 14 }}>
-          <Toggle value={!!conv.members_can_add} onChange={(v) => set('p_members_can_add', v)} label={t('الكل بيقدر يضيف أعضاء')} hint={t('إذا مسكّرة، بس المشرفين بيضيفوا')} />
-          <Toggle value={!!conv.approve_joins} onChange={(v) => set('p_approve_joins', v)} label={t('الموافقة على الدخول من الرابط')} hint={t('اللي بيدخل من رابط الدعوة بيستنى موافقة')} />
+          <Toggle value={!!conv.members_can_add} onChange={(v) => set('p_members_can_add', v)} label={t('يمكن للجميع إضافة أعضاء')} hint={t('عند إيقافها، يضيف المشرفون فقط')} />
+          <Toggle value={!!conv.approve_joins} onChange={(v) => set('p_approve_joins', v)} label={t('الموافقة على الدخول من الرابط')} hint={t('من ينضم عبر رابط الدعوة ينتظر الموافقة')} />
         </View>
       )}
       <T v="bold">{t('الرسائل المختفية')}</T>
@@ -373,9 +373,9 @@ function PrivacySheet({ open, conv, canEdit, onClose, onSaved }: SheetProps & { 
       <T v="h2">{t('الخصوصية والأمان')}</T>
       <View style={{ backgroundColor: C.soft, borderRadius: R.lg, paddingHorizontal: 14, opacity: canEdit ? 1 : 0.6 }}>
         <Toggle value={conv.block_screenshots} onChange={async (v) => { if (!canEdit) return; await supabase.from('conversations').update({ block_screenshots: v }).eq('id', conv.id); onSaved(); }}
-          label={t('منع تصوير هاي المحادثة')} hint={canEdit ? t('أندرويد: الشاشة بتطلع سودا. آيفون: بنخفيها وبنبلغ الطرف الثاني') : t('بس المشرفين بيغيّروها')} />
+          label={t('منع تصوير هذه المحادثة')} hint={canEdit ? t('أندرويد: تظهر الشاشة سوداء. آيفون: نخفيها ونُبلغ الطرف الآخر') : t('المشرفون فقط يغيّرونها')} />
       </View>
-      <T v="tiny" color={C.muted}>{t('اضغط مطوّل على أي رسالة عشان تحفظها أو تبلّغ عنها.')}</T>
+      <T v="tiny" color={C.muted}>{t('اضغط مطوّلاً على أي رسالة لحفظها أو الإبلاغ عنها.')}</T>
     </SheetModal>
   );
 }
@@ -408,13 +408,13 @@ function AddSheet({ open, conv, members, onClose, onSaved }: SheetProps & { memb
     setBusy(true);
     const { data, error } = await supabase.rpc('group_add_members', { conv: conv.id, uids: picked });
     setBusy(false);
-    if (error) { Alert.alert(t('ما زبط'), t('بس المشرفين بيقدروا يضيفوا بهالجروب.')); return; }
-    toast(t('انضاف {0}', [String(data ?? picked.length)])); onSaved(); onClose();
+    if (error) { Alert.alert(t('تعذّر ذلك'), t('يمكن للمشرفين فقط الإضافة إلى هذه المجموعة.')); return; }
+    toast(t('تمت إضافة {0}', [String(data ?? picked.length)])); onSaved(); onClose();
   }
   return (
     <SheetModal open={open} onClose={onClose} style={{ gap: 10, maxHeight: '85%' }}>
       <T v="h2">{t('إضافة أعضاء')}</T>
-      <TextInput keyboardAppearance={isDark ? 'dark' : 'light'} value={q} onChangeText={setQ} placeholder={t('ابحث بالاسم أو اليوزر')} placeholderTextColor={C.muted}
+      <TextInput keyboardAppearance={isDark ? 'dark' : 'light'} value={q} onChangeText={setQ} placeholder={t('ابحث بالاسم أو اسم المستخدم')} placeholderTextColor={C.muted}
         style={{ minHeight: 46, borderRadius: R.md, backgroundColor: C.soft, paddingHorizontal: 14, fontFamily: F.body, fontSize: 15, color: C.ink, textAlign: ta }} />
       <ScrollView style={{ maxHeight: 380 }}>
         {list.filter((p) => !inside.has(p.id)).map((p) => {
@@ -430,7 +430,7 @@ function AddSheet({ open, conv, members, onClose, onSaved }: SheetProps & { memb
         })}
       </ScrollView>
       <Tap onPress={add} disabled={busy || !picked.length} style={{ minHeight: 50, borderRadius: 25, backgroundColor: picked.length ? C.primary : C.soft, alignItems: 'center', justifyContent: 'center' }}>
-        {busy ? <ActivityIndicator color={C.onPrimary} /> : <T v="bold" color={picked.length ? C.onPrimary : C.muted}>{picked.length ? t('ضيف {0}', [String(picked.length)]) : t('اختار ناس')}</T>}
+        {busy ? <ActivityIndicator color={C.onPrimary} /> : <T v="bold" color={picked.length ? C.onPrimary : C.muted}>{picked.length ? t('أضف {0}', [String(picked.length)]) : t('اختر أشخاصاً')}</T>}
       </Tap>
     </SheetModal>
   );
@@ -456,7 +456,7 @@ function SearchSheet({ open, conv, onClose }: { open: boolean; conv: Conversatio
       <TextInput keyboardAppearance={isDark ? 'dark' : 'light'} autoFocus value={q} onChangeText={setQ} placeholder={t('اكتب كلمة…')} placeholderTextColor={C.muted}
         style={{ minHeight: 46, borderRadius: R.md, backgroundColor: C.soft, paddingHorizontal: 14, fontFamily: F.body, fontSize: 15, color: C.ink, textAlign: ta }} />
       <ScrollView style={{ maxHeight: 420 }}>
-        {q.trim().length >= 2 && !hits.length ? <T v="small" color={C.muted} style={{ textAlign: 'center', padding: 20 }}>{t('ما لقينا إشي.')}</T> : null}
+        {q.trim().length >= 2 && !hits.length ? <T v="small" color={C.muted} style={{ textAlign: 'center', padding: 20 }}>{t('لا توجد نتائج.')}</T> : null}
         {hits.map((m) => (
           <View key={m.id} style={{ paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: C.line, gap: 2 }}>
             <T v="body" numberOfLines={3}>{m.body}</T>

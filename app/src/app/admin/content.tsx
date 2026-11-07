@@ -34,12 +34,12 @@ export default function Content() {
   const stories = useLoad<Story[]>(() => supabase.from('stories').select('id, caption, media_url, is_hidden, created_at, expires_at, author:profiles!stories_author_id_fkey(full_name)').order('created_at', { ascending: false }).limit(100) as never, [tab]);
 
   async function upd(table: string, id: string, patch: Record<string, unknown>, reload: () => void) {
-    if (patch.is_hidden === true && !(await confirm(t('تخبّيه عن الكل؟'), t('ما بيبيّن لحدا لحد ما ترجّعه.'), t('خبّيه')))) return;
+    if (patch.is_hidden === true && !(await confirm(t('إخفاؤه عن الجميع؟'), t('لن يظهر لأحد حتى تستعيده.'), t('إخفاء')))) return;
     await supabase.from(table).update(patch).eq('id', id);
     await audit(`update_${table}`, table, id, patch); done(); reload();
   }
   async function del(table: string, id: string, reload: () => void) {
-    if (!(await confirm(t('تحذفه نهائياً؟'), t('الحذف ما بيرجع.'), t('احذف')))) return;
+    if (!(await confirm(t('حذفه نهائياً؟'), t('لا يمكن التراجع عن الحذف.'), t('احذف')))) return;
     await supabase.from(table).delete().eq('id', id);
     await audit(`delete_${table}`, table, id); done(); reload();
   }
@@ -50,12 +50,12 @@ export default function Content() {
 
   return (
     <AdminScreen title={t('المحتوى')}>
-      <Filters items={[['posts', t('المنشورات')], ['comments', t('التعليقات')], ['stories', t('الستوري')]]} value={tab} onChange={setTab} />
+      <Filters items={[['posts', t('المنشورات')], ['comments', t('التعليقات')], ['stories', t('القصة')]]} value={tab} onChange={setTab} />
       {tab === 'posts' && (
         <>
           <UniPicker value={uni} onChange={setUni} />
           <OptionPicker label={t('القسم')} value={cat} options={CATS} onChange={setCat} />
-          <Toggle value={hiddenOnly} onChange={setHiddenOnly} label={t('المخفي بس')} />
+          <Toggle value={hiddenOnly} onChange={setHiddenOnly} label={t('المخفي فقط')} />
           <State loading={posts.loading} error={posts.error} empty={posts.data?.length === 0}>
             <View style={{ gap: 8 }}>
               {(posts.data ?? []).map((p) => (
@@ -66,8 +66,8 @@ export default function Content() {
                   <T v="body" numberOfLines={5}>{p.title ? `${p.title} · ` : ''}{p.body}</T>
                   <Muted>{[p.author?.full_name, p.university?.name_ar, `♥ ${p.like_count} · 💬 ${p.comment_count}`, fmtDate(p.created_at)].filter(Boolean).join(' · ')}</Muted>
                   <Actions>
-                    <Act label={p.is_pinned ? t('فك التثبيت') : t('ثبّت')} onPress={() => upd('posts', p.id, { is_pinned: !p.is_pinned }, posts.reload)} />
-                    <Act label={p.is_hidden ? t('رجّع') : t('خبّي')} onPress={() => upd('posts', p.id, { is_hidden: !p.is_hidden }, posts.reload)} />
+                    <Act label={p.is_pinned ? t('إلغاء التثبيت') : t('ثبّت')} onPress={() => upd('posts', p.id, { is_pinned: !p.is_pinned }, posts.reload)} />
+                    <Act label={p.is_hidden ? t('استعادة') : t('إخفاء')} onPress={() => upd('posts', p.id, { is_hidden: !p.is_hidden }, posts.reload)} />
                     <Act label={t('احذف')} kind="danger" onPress={() => del('posts', p.id, posts.reload)} />
                   </Actions>
                 </Panel>
@@ -84,7 +84,7 @@ export default function Content() {
                 <T v="body">{c.body}</T>
                 <Muted>{[c.author?.full_name, fmtDate(c.created_at)].filter(Boolean).join(' · ')}</Muted>
                 <Actions>
-                  <Act label={c.is_hidden ? t('رجّع') : t('خبّي')} onPress={() => upd('comments', c.id, { is_hidden: !c.is_hidden }, comments.reload)} />
+                  <Act label={c.is_hidden ? t('استعادة') : t('إخفاء')} onPress={() => upd('comments', c.id, { is_hidden: !c.is_hidden }, comments.reload)} />
                   <Act label={t('احذف')} kind="danger" onPress={() => del('comments', c.id, comments.reload)} />
                 </Actions>
               </Panel>
@@ -100,8 +100,8 @@ export default function Content() {
                 <T v="body">{s.caption ?? '—'}</T>
                 <Muted>{[s.author?.full_name, fmtDate(s.created_at), new Date(s.expires_at) < new Date() ? t('انتهت') : null].filter(Boolean).join(' · ')}</Muted>
                 <Actions>
-                  <Act label={t('شوف')} onPress={() => viewStory(s.media_url)} />
-                  <Act label={s.is_hidden ? t('رجّع') : t('خبّي')} onPress={() => upd('stories', s.id, { is_hidden: !s.is_hidden }, stories.reload)} />
+                  <Act label={t('عرض')} onPress={() => viewStory(s.media_url)} />
+                  <Act label={s.is_hidden ? t('استعادة') : t('إخفاء')} onPress={() => upd('stories', s.id, { is_hidden: !s.is_hidden }, stories.reload)} />
                   <Act label={t('احذف')} kind="danger" onPress={() => del('stories', s.id, stories.reload)} />
                 </Actions>
               </Panel>

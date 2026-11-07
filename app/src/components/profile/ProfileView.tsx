@@ -29,6 +29,7 @@ import { shareLink } from '@/lib/share';
 import { HighlightEditor, type HighlightRef } from '@/components/story/HighlightEditor';
 import { HonorChip } from '@/components/honor/HonorChip';
 import type { MediaMeta } from '@/lib/cropper';
+import { fmtCount } from '@/lib/util';
 
 type Rel = 'none' | 'pending' | 'accepted';
 
@@ -40,7 +41,7 @@ function openSocial(site: 'instagram' | 'snapchat', handle: string) {
   const h = encodeURIComponent(clean);
   const app = site === 'instagram' ? `instagram://user?username=${h}` : `snapchat://add/${h}`;
   const web = site === 'instagram' ? `https://www.instagram.com/${h}/` : `https://www.snapchat.com/add/${h}`;
-  Linking.openURL(app).catch(() => Linking.openURL(web).catch(() => Alert.alert(t('ما قدرنا نفتح الرابط'))));
+  Linking.openURL(app).catch(() => Linking.openURL(web).catch(() => Alert.alert(t('تعذّر فتح الرابط'))));
 }
 
 const TILE_G: [string, string][] = [['#2E5BFF', '#17204A'], ['#FF7A59', '#C0264A'], ['#0D9488', '#17204A'], ['#6A3BE0', '#17204A'], ['#B45309', '#3A2A44']];
@@ -52,7 +53,7 @@ function HighlightBubble({ h, owner, onEdit }: { h: HighlightRef; owner: string;
   return (
     <Tap onPress={() => router.push({ pathname: '/story/[id]', params: { id: owner, highlight: h.id } })}
       onLongPress={onEdit ? () => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {}); onEdit(h); } : undefined}
-      style={{ alignItems: 'center', gap: 6, width: 70 }} accessibilityLabel={h.title} accessibilityHint={onEdit ? t('اضغط مطوّل للتعديل') : undefined}>
+      style={{ alignItems: 'center', gap: 6, width: 70 }} accessibilityLabel={h.title} accessibilityHint={onEdit ? t('اضغط مطوّلاً للتعديل') : undefined}>
       <View style={{ width: 66, height: 66, borderRadius: 33, padding: 3, borderWidth: 1.5, borderColor: C.line }}>
         <View style={{ flex: 1, borderRadius: 30, overflow: 'hidden', backgroundColor: C.soft, alignItems: 'center', justifyContent: 'center' }}>
           {uri ? <Image source={{ uri }} style={{ position: 'absolute', top: 0, bottom: 0, left: 0, right: 0 }} contentFit="cover" transition={150} />
@@ -211,8 +212,8 @@ export function ProfileView({ userId, onTitle, back }: { userId: string; onTitle
 
   function follow() {
     if (rel === 'none') return doFollow();
-    const title = rel === 'pending' ? t('تلغي طلب المتابعة؟') : t('تلغي متابعة {0}؟', [p?.full_name ?? '']);
-    Alert.alert(title, p?.is_private && rel === 'accepted' ? t('حسابه خاص، رح تحتاج تبعث طلب جديد لتشوف منشوراته.') : undefined, [
+    const title = rel === 'pending' ? t('إلغاء طلب المتابعة؟') : t('إلغاء متابعة {0}؟', [p?.full_name ?? '']);
+    Alert.alert(title, p?.is_private && rel === 'accepted' ? t('حسابه خاص، وستحتاج إلى إرسال طلب جديد لرؤية منشوراته.') : undefined, [
       { text: t('إلغاء'), style: 'cancel' },
       { text: rel === 'pending' ? t('إلغاء الطلب') : t('إلغاء المتابعة'), style: 'destructive', onPress: doFollow },
     ]);
@@ -221,22 +222,22 @@ export function ProfileView({ userId, onTitle, back }: { userId: string; onTitle
   function shareProfile() {
     if (!p) return;
     const url = `https://app.unimate.my/user/${p.id}`;
-    shareLink(url, `${p.full_name}${p.username ? ` (@${p.username})` : ''} على يونيميت`);
+    shareLink(url, `${p.full_name}${p.username ? ` (@${p.username})` : ''} ${t('على يونيميت')}`);
   }
 
   /** Block / unblock, like Instagram: a blocked person can't find this account, message it or see its posts. */
   function toggleBlock(blocked: boolean) {
     if (!me) return;
     const name = p?.full_name ?? '';
-    Alert.alert(blocked ? t('تلغي حظر {0}؟', [name]) : t('تحظر {0}؟', [name]),
-      blocked ? t('رح يقدر يشوف حسابك ويراسلك مرة ثانية.') : t('ما رح يقدر يلاقي حسابك أو يراسلك أو يشوف منشوراتك، وما بيعرف إنك حظرته.'), [
+    Alert.alert(blocked ? t('إلغاء حظر {0}؟', [name]) : t('حظر {0}؟', [name]),
+      blocked ? t('سيتمكن من رؤية حسابك ومراسلتك مرة أخرى.') : t('لن يتمكن من العثور على حسابك أو مراسلتك أو رؤية منشوراتك، ولن يعرف أنك حظرته.'), [
       { text: t('إلغاء'), style: 'cancel' },
       { text: blocked ? t('إلغاء الحظر') : t('احظر'), style: 'destructive', onPress: async () => {
         const r = blocked
           ? await run(supabase.from('blocks').delete().eq('blocker_id', me.id).eq('blocked_id', userId))
           : await run(supabase.from('blocks').insert({ blocker_id: me.id, blocked_id: userId }));
         if (!r.ok) return;
-        toast(blocked ? t('انلغى الحظر') : t('انحظر'));
+        toast(blocked ? t('تم إلغاء الحظر') : t('تم الحظر'));
         if (!blocked) { goBack('/(tabs)'); } else load();
       } },
     ]);
@@ -245,7 +246,7 @@ export function ProfileView({ userId, onTitle, back }: { userId: string; onTitle
   async function moreMenu() {
     const blocked = (await supabase.rpc('i_blocked', { target: userId })).data === true;
     Alert.alert(p?.full_name ?? '', undefined, [
-      { text: t('شارك البروفايل'), onPress: shareProfile },
+      { text: t('شارك الملف الشخصي'), onPress: shareProfile },
       { text: blocked ? t('إلغاء الحظر') : t('حظر'), onPress: () => toggleBlock(blocked) },
       { text: t('إبلاغ'), style: 'destructive', onPress: () => router.push({ pathname: '/report', params: { type: 'user', id: userId, user: userId } }) },
       { text: t('إلغاء'), style: 'cancel' },
@@ -254,7 +255,7 @@ export function ProfileView({ userId, onTitle, back }: { userId: string; onTitle
 
   async function message() {
     const { data, error } = await supabase.rpc('start_direct', { target: userId, context: null });
-    if (error) { Alert.alert(t('ما بتقدر تراسله'), error.message.includes('not accepting') ? t('هاد الطالب مسكّر الرسائل من ناس خارج دفعته.') : t('جرّب بعدين.')); return; }
+    if (error) { Alert.alert(t('لا يمكنك مراسلته'), error.message.includes('not accepting') ? t('أغلق هذا الطالب استقبال الرسائل من أشخاص خارج دفعته.') : t('حاول لاحقًا.')); return; }
     router.push({ pathname: '/messages/[id]', params: { id: data as string } });
   }
 
@@ -267,9 +268,9 @@ export function ProfileView({ userId, onTitle, back }: { userId: string; onTitle
 
   if (!p && failed !== 'none') return (
     <View style={{ flex: 1, padding: 24, paddingTop: 60 }}>
-      <Empty icon={failed === 'missing' ? <UserX size={28} color={C.muted} /> : <WifiOff size={28} color={C.muted} />} title={failed === 'missing' ? t('هالحساب مش موجود') : t('ما قدرنا نفتح البروفايل')}
-        body={failed === 'missing' ? t('يمكن انحذف أو الرابط غلط.') : t('تأكد من الإنترنت وجرّب كمان مرة.')}
-        action={failed === 'error' ? <Button kind="soft" title={t('جرّب مرة ثانية')} onPress={load} style={{ paddingHorizontal: 28 }} /> : undefined} />
+      <Empty icon={failed === 'missing' ? <UserX size={28} color={C.muted} /> : <WifiOff size={28} color={C.muted} />} title={failed === 'missing' ? t('هذا الحساب غير موجود') : t('تعذّر فتح الملف الشخصي')}
+        body={failed === 'missing' ? t('ربما حُذف أو أن الرابط خاطئ.') : t('تحقق من اتصالك بالإنترنت وحاول مرة أخرى.')}
+        action={failed === 'error' ? <Button kind="soft" title={t('حاول مرة أخرى')} onPress={load} style={{ paddingHorizontal: 28 }} /> : undefined} />
     </View>
   );
   if (!p) return (
@@ -332,14 +333,14 @@ export function ProfileView({ userId, onTitle, back }: { userId: string; onTitle
             <View>
               <Tap haptic={false} scale={0.95} disabled={!hasStory && !mine}
                 onPress={() => (hasStory ? router.push({ pathname: '/story/[id]', params: { id: p.id } }) : router.push({ pathname: '/post/new', params: { mode: 'story' } }))}
-                accessibilityLabel={hasStory ? t('شوف قصته') : mine ? t('أضف للستوري') : p.full_name}>
+                accessibilityLabel={hasStory ? t('عرض قصته') : mine ? t('أضف إلى القصة') : p.full_name}>
                 <View style={{ width: 92, height: 92, borderRadius: 46, padding: 4, borderWidth: 2, borderColor: hasStory ? C.primary : 'transparent' }}>
                   <Avatar id={p.id} name={p.full_name} url={p.avatar_url} size={80} />
                 </View>
               </Tap>
               {/* your own avatar: the little + opens the story camera, like Instagram */}
               {mine && (
-                <Tap onPress={() => router.push({ pathname: '/post/new', params: { mode: 'story' } })} accessibilityLabel={t('أضف للستوري')} hitSlop={8}
+                <Tap onPress={() => router.push({ pathname: '/post/new', params: { mode: 'story' } })} accessibilityLabel={t('أضف إلى القصة')} hitSlop={8}
                   style={{ position: 'absolute', bottom: 2, ...(Platform.OS === 'web' ? { left: 2 } : { end: 2 }), width: 28, height: 28, borderRadius: 14, backgroundColor: C.primary, borderWidth: 3, borderColor: C.bg, alignItems: 'center', justifyContent: 'center' }}>
                   <Plus size={15} color={C.onPrimary} strokeWidth={3} />
                 </Tap>
@@ -351,12 +352,12 @@ export function ProfileView({ userId, onTitle, back }: { userId: string; onTitle
                 <Tap key={l} haptic={false} scale={0.98} disabled={!type}
                   onPress={() => {
                     if (!type) return;
-                    if (!canSee) { toast(t('الحساب خاص. تابعه عشان تشوف القائمة.')); return; }
-                    if (!open) { toast(type === 'followers' ? t('صاحب الحساب مخفي قائمة المتابعين.') : t('صاحب الحساب مخفي قائمة اللي بيتابعهم.')); return; }
+                    if (!canSee) { toast(t('الحساب خاص. تابعه لعرض القائمة.')); return; }
+                    if (!open) { toast(type === 'followers' ? t('أخفى صاحب الحساب قائمة المتابعين.') : t('أخفى صاحب الحساب قائمة من يتابعهم.')); return; }
                     router.push({ pathname: '/follows', params: { user: userId, type, name: p.full_name } });
                   }}
                   style={{ flex: 1, alignItems: 'center', minHeight: 48, justifyContent: 'center' }} accessibilityLabel={`${n} ${l}`}>
-                  <T style={{ fontFamily: F.title, fontSize: 18 }}>{(n ?? 0).toLocaleString(LOCALE)}</T>
+                  <T style={{ fontFamily: F.title, fontSize: 18 }}>{fmtCount(n)}</T>
                   <T v="tiny" color={C.muted}>{l}</T>
                 </Tap>
               ))}
@@ -399,7 +400,7 @@ export function ProfileView({ userId, onTitle, back }: { userId: string; onTitle
                 <Tap onPress={message} style={pill}><T v="bold" style={{ fontSize: 14 }}>{t('رسالة')}</T></Tap>
               </>
             )}
-            <Tap onPress={() => setSuggest((v) => !v)} accessibilityLabel={t('اقتراحات زملاء')} accessibilityState={{ expanded: suggest }}
+            <Tap onPress={() => setSuggest((v) => !v)} accessibilityLabel={t('اقتراحات الزملاء')} accessibilityState={{ expanded: suggest }}
               style={{ width: 44, minHeight: 40, borderRadius: R.pill, backgroundColor: suggest ? C.inverse : C.soft, alignItems: 'center', justifyContent: 'center' }}>
               <UserPlus size={18} color={suggest ? C.onInverse : C.ink} />
             </Tap>
@@ -414,9 +415,9 @@ export function ProfileView({ userId, onTitle, back }: { userId: string; onTitle
                 </Tap>
               )}
               {p.snapchat && (
-                <Tap onPress={() => openSocial('snapchat', p.snapchat!)} scale={0.9} accessibilityLabel={t('افتح سناب {0}', [p.snapchat])} style={{ alignItems: 'center', gap: 4 }}>
+                <Tap onPress={() => openSocial('snapchat', p.snapchat!)} scale={0.9} accessibilityLabel={t('افتح سناب شات {0}', [p.snapchat])} style={{ alignItems: 'center', gap: 4 }}>
                   <SnapGlyph size={44} />
-                  <T v="tiny" color={C.muted}>{t('سناب')}</T>
+                  <T v="tiny" color={C.muted}>{t('سناب شات')}</T>
                 </Tap>
               )}
             </Animated.View>
@@ -428,7 +429,7 @@ export function ProfileView({ userId, onTitle, back }: { userId: string; onTitle
         {canSee && (hls.length > 0 || mine) && (
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 12, paddingHorizontal: 18, paddingTop: 16, paddingBottom: 6 }}>
             {mine && (
-              <Tap onPress={() => setHlEdit('new')} style={{ alignItems: 'center', gap: 6, width: 70 }} accessibilityLabel={t('هايلايت جديد')}>
+              <Tap onPress={() => setHlEdit('new')} style={{ alignItems: 'center', gap: 6, width: 70 }} accessibilityLabel={t('قصة مميزة جديدة')}>
                 <View style={{ width: 66, height: 66, borderRadius: 33, borderWidth: 1, borderColor: C.line, alignItems: 'center', justifyContent: 'center' }}><Plus size={26} color={C.ink} /></View>
                 <T v="tiny">{t('جديد')}</T>
               </Tap>
@@ -451,9 +452,9 @@ export function ProfileView({ userId, onTitle, back }: { userId: string; onTitle
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', paddingTop: 1 }}>{[0, 1, 2].map((k) => <View key={k} style={{ width: '33.333%', aspectRatio: 1, padding: 1 }}><Bone h={200} r={0} style={{ flex: 1 }} /></View>)}</View>
             ) : shown.length === 0 ? (
               <Empty icon={tab === 1 ? <Clapperboard size={28} color={C.primary} /> : tab === 2 ? <UserSquare2 size={28} color={C.primary} /> : <Grid3x3 size={28} color={C.primary} />}
-                title={tab === 1 ? t('ما في فيديوهات لهلأ') : tab === 2 ? t('ما في إشارات لهلأ') : t('ما في منشورات لهلأ')}
-                body={tab === 2 ? t('المنشورات اللي بتذكر @{0} بتطلع هون.', [p.username ?? '']) : undefined}
-                action={mine && tab !== 2 ? <Button kind="soft" title={tab === 1 ? t('نزّل فيديو') : t('شارك أول منشور')} onPress={() => router.push('/post/new')} style={{ marginTop: 8, paddingHorizontal: 22 }} /> : undefined} />
+                title={tab === 1 ? t('لا توجد فيديوهات حتى الآن') : tab === 2 ? t('لا توجد إشارات حتى الآن') : t('لا توجد منشورات حتى الآن')}
+                body={tab === 2 ? t('تظهر هنا المنشورات التي تذكر @{0}.', [p.username ?? '']) : undefined}
+                action={mine && tab !== 2 ? <Button kind="soft" title={tab === 1 ? t('انشر فيديو') : t('شارك أول منشور')} onPress={() => router.push('/post/new')} style={{ marginTop: 8, paddingHorizontal: 22 }} /> : undefined} />
             ) : (
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', paddingTop: 1 }}>
                 {shown.map((x, i) => <GridTile key={x.id} post={x} i={i} />)}
@@ -463,8 +464,8 @@ export function ProfileView({ userId, onTitle, back }: { userId: string; onTitle
         ) : (
           <View style={{ margin: 18, backgroundColor: C.card, borderRadius: R.xl, borderWidth: 1, borderColor: C.line, padding: 28, alignItems: 'center', gap: 10 }}>
             <View style={{ width: 60, height: 60, borderRadius: 30, borderWidth: 2, borderColor: C.ink, alignItems: 'center', justifyContent: 'center' }}><Lock size={26} color={C.ink} /></View>
-            <T v="h3">{t('هاد الحساب خاص')}</T>
-            <T v="small" color={C.muted} style={{ textAlign: 'center' }}>{t('لما يتقبل طلب متابعتك، بتشوف منشوراته وقصصه وحساباته الثانية.')}</T>
+            <T v="h3">{t('هذا الحساب خاص')}</T>
+            <T v="small" color={C.muted} style={{ textAlign: 'center' }}>{t('عندما يُقبل طلب متابعتك، سترى منشوراته وقصصه وحساباته الأخرى.')}</T>
           </View>
         )}
       </ScrollView>

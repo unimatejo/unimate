@@ -11,7 +11,7 @@ import { useAuth } from '@/lib/auth';
 import { supabase } from '@/lib/supabase';
 import { useTeamStatus } from '@/lib/team';
 import { C, F, R, shadow } from '@/lib/theme';
-import { isAR, t } from '@/lib/i18n';
+import { LOCALE, t } from '@/lib/i18n';
 
 type Stats = AdminCounts & {
   users: number; users_7d: number; active_today: number; posts: number; posts_7d: number; messages_7d: number; ads_live: number;
@@ -44,7 +44,7 @@ export default function AdminHome() {
   const sections = ADMIN_SECTIONS.filter((x) => x.key && (!x.owner || role === 'owner'));
   const waiting = s ? sections.filter((x) => x.badge && x.badge(s) > 0) : [];
   const hour = new Date().getHours();
-  const hello = hour < 12 ? t('صباح الخير') : hour < 18 ? t('مسا الخير') : t('مسا النور');
+  const hello = hour < 12 ? t('صباح الخير') : hour < 18 ? t('مساء الخير') : t('مساء النور');
   const first = profile?.full_name?.split(' ')[0] ?? '';
   const today = days[days.length - 1];
 
@@ -56,9 +56,9 @@ export default function AdminHome() {
       <View style={{ borderRadius: 28, overflow: 'hidden' }}>
         <LinearGradient colors={['#101633', '#1E2A6B']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={{ padding: 20, gap: 14 }}>
           <View style={{ gap: 2 }}>
-            <T v="small" color="#C9D1F0">{new Date().toLocaleDateString(isAR ? 'ar-JO' : 'en-GB', { weekday: 'long', day: 'numeric', month: 'long' })}</T>
+            <T v="small" color="#C9D1F0">{new Date().toLocaleDateString(LOCALE, { weekday: 'long', day: 'numeric', month: 'long' })}</T>
             <T style={{ fontFamily: F.display, fontSize: 26, lineHeight: 38 }} color="#FFFFFF">{first ? `${hello}، ${first}` : hello}</T>
-            <T v="small" color="#C9D1F0">{!s ? t('بيحمّل الأرقام…') : waiting.length ? t('في {0} أشياء بستنوك.', [fmtNum(waiting.reduce((n, x) => n + x.badge!(s), 0))]) : t('كل إشي تمام، ما في إشي بستناك.')}</T>
+            <T v="small" color="#C9D1F0">{!s ? t('جارٍ تحميل الأرقام…') : waiting.length ? t('لديك {0} أشياء بانتظارك.', [fmtNum(waiting.reduce((n, x) => n + x.badge!(s), 0))]) : t('كل شيء على ما يرام، لا يوجد ما ينتظرك.')}</T>
           </View>
           {waiting.length > 0 && (
             <Row gap={8} style={{ flexWrap: 'wrap' }}>
@@ -79,10 +79,10 @@ export default function AdminHome() {
 
       {/* today's numbers */}
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
-        <Kpi icon={UserPlus} color={C.blue} n={s?.users} label={t('حساب')} sub={s ? t('+{0} هالأسبوع', [fmtNum(s.users_7d)]) : ''} onPress={() => go('/admin/users')} wide={wide} />
-        <Kpi icon={Activity} color={C.green} n={today?.active} label={t('نشطين اليوم')} sub={s ? t('{0} نشروا آخر 24 ساعة', [fmtNum(s.active_today)]) : ''} wide={wide} />
-        <Kpi icon={PenSquare} color={C.violet} n={s?.posts_7d} label={t('منشور هالأسبوع')} sub={s ? t('{0} بالمجمل', [fmtNum(s.posts)]) : ''} onPress={() => go('/admin/content')} wide={wide} />
-        <Kpi icon={MessageCircle} color={C.pink} n={s?.messages_7d} label={t('رسالة هالأسبوع')} sub={today ? t('{0} اليوم', [fmtNum(today.messages)]) : ''} wide={wide} />
+        <Kpi icon={UserPlus} color={C.blue} n={s?.users} label={t('حساب')} sub={s ? t('+{0} هذا الأسبوع', [fmtNum(s.users_7d)]) : ''} onPress={() => go('/admin/users')} wide={wide} />
+        <Kpi icon={Activity} color={C.green} n={today?.active} label={t('نشطون اليوم')} sub={s ? t('{0} نشروا خلال آخر 24 ساعة', [fmtNum(s.active_today)]) : ''} wide={wide} />
+        <Kpi icon={PenSquare} color={C.violet} n={s?.posts_7d} label={t('منشور هذا الأسبوع')} sub={s ? t('{0} إجمالاً', [fmtNum(s.posts)]) : ''} onPress={() => go('/admin/content')} wide={wide} />
+        <Kpi icon={MessageCircle} color={C.pink} n={s?.messages_7d} label={t('رسالة هذا الأسبوع')} sub={today ? t('{0} اليوم', [fmtNum(today.messages)]) : ''} wide={wide} />
       </View>
 
       {/* the last 14 days */}
@@ -90,7 +90,7 @@ export default function AdminHome() {
         <Panel style={{ gap: 14 }}>
           <Row style={{ justifyContent: 'space-between' }}>
             <T v="h3">{t('آخر أسبوعين')}</T>
-            <Row gap={12}><Legend color={C.blue} label={t('حسابات جديدة')} /><Legend color={C.green} label={t('نشطين')} /></Row>
+            <Row gap={12}><Legend color={C.blue} label={t('حسابات جديدة')} /><Legend color={C.green} label={t('نشطون')} /></Row>
           </Row>
           <Bars days={days} />
         </Panel>
@@ -131,13 +131,13 @@ export default function AdminHome() {
             {s.per_university.map((u) => (
               <Row key={u.id} gap={8} style={{ minHeight: 44, borderBottomWidth: 0.5, borderBottomColor: C.line }}>
                 <T v="small" style={{ flex: 1 }} numberOfLines={1}>{u.name_ar}</T>
-                <T v="tiny" color={C.muted}>{t('{0} طالب · {1} منشور هالأسبوع', [fmtNum(u.users), fmtNum(u.posts_7d)])}</T>
+                <T v="tiny" color={C.muted}>{t('{0} طالب · {1} منشور هذا الأسبوع', [fmtNum(u.users), fmtNum(u.posts_7d)])}</T>
               </Row>
             ))}
           </Panel>
         </>
       )}
-      {!s && <Muted>{t('بيحمّل…')}</Muted>}
+      {!s && <Muted>{t('جارٍ التحميل…')}</Muted>}
     </AdminScreen>
   );
 }
@@ -165,9 +165,9 @@ function Bars({ days }: { days: Day[] }) {
   return (
     <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 4, height: H + 22 }}>
       {days.map((d) => {
-        const label = new Date(`${d.day}T12:00:00`).toLocaleDateString(isAR ? 'ar-JO' : 'en-GB', { day: 'numeric', month: 'numeric' });
+        const label = new Date(`${d.day}T12:00:00`).toLocaleDateString(LOCALE, { day: 'numeric', month: 'numeric' });
         return (
-          <View key={d.day} style={{ flex: 1, alignItems: 'center', gap: 4 }} accessible accessibilityLabel={t('{0}: {1} حساب جديد، {2} نشطين', [label, String(d.signups), String(d.active)])}>
+          <View key={d.day} style={{ flex: 1, alignItems: 'center', gap: 4 }} accessible accessibilityLabel={t('{0}: {1} حساب جديد، {2} نشطون', [label, String(d.signups), String(d.active)])}>
             <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 2, height: H }}>
               <View style={{ width: 7, height: Math.max(2, (d.signups / max) * H), borderRadius: 4, backgroundColor: C.blue }} />
               <View style={{ width: 7, height: Math.max(2, (d.active / max) * H), borderRadius: 4, backgroundColor: C.green }} />

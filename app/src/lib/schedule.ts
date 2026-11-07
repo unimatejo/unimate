@@ -182,10 +182,10 @@ export function roomRoute(m: Pick<Meeting, 'building_id' | 'room_code' | 'room_f
 }
 
 export function placeLine(m: Pick<Meeting, 'kind' | 'building_name' | 'room_floor' | 'room_code'> & { room_text?: string | null }): string {
-  if (m.kind === 'online') return t('أونلاين على التيمز');
-  const blended = m.kind === 'blended' ? t('مدمج: وجاهي وأونلاين') : null;
+  if (m.kind === 'online') return t('عبر الإنترنت على Teams');
+  const blended = m.kind === 'blended' ? t('مدمج: وجاهي وعن بُعد') : null;
   if (!m.room_code && m.room_text) return blended ? `${m.room_text} · ${blended}` : m.room_text;
   if (blended && !m.room_code) return blended;
   const parts = [m.building_name, m.room_floor != null ? (m.room_floor === 0 ? t('الطابق الأرضي') : t('الطابق {0}', [m.room_floor])) : null, m.room_code ? t('قاعة {0}', [m.room_code]) : null];
-  return parts.filter(Boolean).join(t('، ')) || t('القاعة بتنضاف لما يأكدها زملاؤك');
+  return parts.filter(Boolean).join(t('، ')) || t('تُضاف القاعة عندما يؤكدها زملاؤك');
 }

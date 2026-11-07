@@ -10,7 +10,7 @@ import { supabase } from '@/lib/supabase';
 import { C } from '@/lib/theme';
 import { t } from '@/lib/i18n';
 
-const REASONS = [t('تحرش أو إزعاج'), t('تنمر أو إهانة'), t('نشر صور أو معلومات خاصة'), t('حساب مزيف أو انتحال'), t('احتيال أو نصب'), t('محتوى غير لائق'), t('بيع واجبات أو غش'), t('سبام'), t('إشي تاني')];
+const REASONS = [t('تحرش أو إزعاج'), t('تنمر أو إهانة'), t('نشر صور أو معلومات خاصة'), t('حساب مزيف أو انتحال'), t('احتيال أو نصب'), t('محتوى غير لائق'), t('بيع الواجبات أو الغش'), t('رسائل مزعجة'), t('شيء آخر')];
 
 /** Report a post, message, story or account to the admins. */
 export default function Report() {
@@ -29,14 +29,14 @@ export default function Report() {
         reporter_id: profile.id, target_type: type, target_id: id, target_user: user ?? null, reason, details: details.trim() || null, also_blocked: block,
       });
       // already reported this before → treat as sent
-      if (error && error.code !== '23505') { Alert.alert(t('ما زبط'), t('جرّب كمان مرة.')); return; }
+      if (error && error.code !== '23505') { Alert.alert(t('تعذّر ذلك'), t('حاول مرة أخرى.')); return; }
       let blockFailed = false;
       if (block && user && user !== profile.id) {
         const b = await supabase.from('blocks').insert({ blocker_id: profile.id, blocked_id: user });
         blockFailed = !!b.error && b.error.code !== '23505';
       }
-      Alert.alert(t('وصل بلاغك'), blockFailed ? t('البلاغ وصل، بس الحظر ما زبط. جرّب تحظره من بروفايله (⋯ ← حظر).') : t('فريق يونيميت رح يراجعه، وما حدا بيعرف إنك بلّغت.'), [{ text: t('تمام'), onPress: () => router.back() }]);
-    } catch { Alert.alert(t('ما زبط'), t('جرّب كمان مرة.')); }
+      Alert.alert(t('وصل بلاغك'), blockFailed ? t('وصل البلاغ، لكن تعذّر الحظر. حاول حظره من ملفه الشخصي (⋯ ← حظر).') : t('سيراجعه فريق يونيميت، ولن يعرف أحد أنك أبلغت.'), [{ text: t('حسناً'), onPress: () => router.back() }]);
+    } catch { Alert.alert(t('تعذّر ذلك'), t('حاول مرة أخرى.')); }
     finally { setBusy(false); }
   }
 
@@ -49,7 +49,7 @@ export default function Report() {
       </Row>
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView contentContainerStyle={{ padding: 18, paddingTop: 4, gap: 8, paddingBottom: 40 }} keyboardShouldPersistTaps="handled">
-          <T v="small" color={C.muted} style={{ marginBottom: 6 }}>{t('شو المشكلة؟ البلاغ سري.')}</T>
+          <T v="small" color={C.muted} style={{ marginBottom: 6 }}>{t('ما المشكلة؟ البلاغ سري.')}</T>
           {REASONS.map((r) => (
             <Tap key={r} scale={0.98} onPress={() => setReason(r)}
               style={{ flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 54, borderRadius: 16, paddingHorizontal: 14, backgroundColor: reason === r ? C.redSoft : C.card, borderWidth: reason === r ? 1.5 : 0, borderColor: C.red }}>
@@ -64,10 +64,10 @@ export default function Report() {
               <Field value={details} onChangeText={setDetails} multiline maxLength={1000} placeholder={t('تفاصيل تساعدنا (اختياري)')} style={{ minHeight: 90, textAlignVertical: 'top', paddingTop: 12 }} />
               {user && user !== profile?.id && (
                 <View style={{ backgroundColor: C.card, borderRadius: 18, padding: 12 }}>
-                  <Toggle label={t('احظر هالشخص كمان')} hint={t('ما بيقدر يشوفك ولا يراسلك')} value={block} onChange={setBlock} />
+                  <Toggle label={t('احظر هذا الشخص أيضاً')} hint={t('لا يمكنه رؤيتك ولا مراسلتك')} value={block} onChange={setBlock} />
                 </View>
               )}
-              <Button kind="danger" title={t('ابعت البلاغ')} onPress={send} loading={busy} />
+              <Button kind="danger" title={t('أرسل البلاغ')} onPress={send} loading={busy} />
             </View>
           )}
         </ScrollView>

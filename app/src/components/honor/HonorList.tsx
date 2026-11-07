@@ -13,7 +13,7 @@ function Move({ v, light }: { v: number | null; light?: boolean }) {
   const up = v > 0;
   const color = light ? C.onPrimary : up ? C.greenInk : C.red;
   return (
-    <View accessible accessibilityLabel={up ? t('طلع {0}', [Math.abs(v)]) : t('نزل {0}', [Math.abs(v)])} style={{ flexDirection: 'row', alignItems: 'center', gap: 2 }}>
+    <View accessible accessibilityLabel={up ? t('ارتفع {0}', [Math.abs(v)]) : t('تراجع {0}', [Math.abs(v)])} style={{ flexDirection: 'row', alignItems: 'center', gap: 2 }}>
       {up ? <ArrowUp size={14} color={color} strokeWidth={2.6} /> : <ArrowDown size={14} color={color} strokeWidth={2.6} />}
       <T v="tiny" color={color} style={{ fontFamily: F.bodyBold }}>{Math.abs(v)}</T>
     </View>
@@ -31,7 +31,7 @@ export function HonorList({ rows }: { rows: HonorRow[] }) {
           <T style={{ fontFamily: F.display, fontSize: 18, width: 30, textAlign: 'center' }} color={C.ink2}>{r.rank}</T>
           <Avatar id={r.user_id} name={r.full_name} url={r.avatar_url} size={46} frame={r.frame} />
           <View style={{ flex: 1 }}>
-            <T v="bodyMd" numberOfLines={1}>{r.full_name}{r.is_me ? ` · ${t('إنت')}` : ''}</T>
+            <T v="bodyMd" numberOfLines={1}>{r.full_name}{r.is_me ? ` · ${t('أنت')}` : ''}</T>
             {!!r.major && <T v="tiny" color={C.muted} numberOfLines={1}>{r.major}</T>}
           </View>
           <Move v={r.move} />
@@ -43,8 +43,8 @@ export function HonorList({ rows }: { rows: HonorRow[] }) {
 
 /** Sticky "your place" card: my rank, my own GPA (only I see it), and nothing about anybody else. */
 export function MyPlace({ me }: { me: HonorRow }) {
-  const line = me.rank === 1 ? t('إنت الأول! حافظ على مكانك 👑')
-    : me.rank <= 3 ? t('إنت من أول 3 🔥') : me.rank <= 10 ? t('إنت من العشرة الأوائل ✨') : t('كمّل، العشرة الأوائل بيطلعوا هون');
+  const line = me.rank === 1 ? t('أنت الأول! حافظ على مكانك 👑')
+    : me.rank <= 3 ? t('أنت من أول 3 🔥') : me.rank <= 10 ? t('أنت من العشرة الأوائل ✨') : t('تابع، العشرة الأوائل يظهرون هنا');
   return (
     <LinearGradient colors={[C.primary, '#FF9A80']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={[{ borderRadius: 24, padding: 14 }, shadow]}>
       <Row gap={12}>
@@ -53,7 +53,7 @@ export function MyPlace({ me }: { me: HonorRow }) {
           <Move v={me.move} light />
         </View>
         <View style={{ flex: 1 }}>
-          <T v="bodyMd" color={C.onPrimary} numberOfLines={1}>{t('مكانك من {0} طالب', [me.total])}{me.gpa != null ? ` · ${t('معدلك {0}', [me.gpa.toFixed(2)])}` : ''}</T>
+          <T v="bodyMd" color={C.onPrimary} numberOfLines={1}>{t('ترتيبك من بين {0} طالب', [me.total])}{me.gpa != null ? ` · ${t('معدلك {0}', [me.gpa.toFixed(2)])}` : ''}</T>
           <T v="tiny" color={C.onPrimary} style={{ opacity: 0.92 }} numberOfLines={1}>{line}</T>
         </View>
       </Row>

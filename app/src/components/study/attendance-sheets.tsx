@@ -57,26 +57,26 @@ export function AddAbsenceSheet({ course, onClose, onSaved }: { course: CourseRo
     const { error } = await supabase.from('attendance_marks').insert({ section_id: course.section_id, on_date: ymdOf(date), slot: '', status, note: note.trim().slice(0, 120) || null });
     setBusy(false);
     if (error) {
-      if (error.code === '23505') { Alert.alert(t('مسجّل غياب بهاليوم لهالمادة'), t('افتح التفاصيل إذا بدك تعدّله أو تحذفه.')); return; }
-      if (isRateLimited(error)) { toast.error(t('استنى شوي، سجّلت كثير بوقت قصير.')); return; }
-      await run(Promise.resolve({ data: null, error }), { msg: t('ما انحفظ الغياب، جرّب كمان مرة.') });
+      if (error.code === '23505') { Alert.alert(t('مسجّل غياب في هذا اليوم لهذه المادة'), t('افتح التفاصيل إذا أردت تعديله أو حذفه.')); return; }
+      if (isRateLimited(error)) { toast.error(t('انتظر قليلاً، لقد سجّلت كثيراً في وقت قصير.')); return; }
+      await run(Promise.resolve({ data: null, error }), { msg: t('لم يُحفظ الغياب، حاول مرة أخرى.') });
       return;
     }
     done();
-    toast(status === 'excused' ? t('انسجل غياب بعذر ✓') : t('انسجل الغياب ✓'));
+    toast(status === 'excused' ? t('تم تسجيل غياب بعذر ✓') : t('تم تسجيل الغياب ✓'));
     onSaved(course, status);
   }
 
   return (
-    <Sheet open={!!course} onClose={onClose} title={t('سجّل غياب')} sub={course?.course_name}>
+    <Sheet open={!!course} onClose={onClose} title={t('سجّل غيابًا')} sub={course?.course_name}>
       <View style={{ gap: 14 }}>
         <View style={{ gap: 6 }}>
-          <T v="bold" style={{ fontSize: 14 }}>{t('إيمتى غبت؟')}</T>
+          <T v="bold" style={{ fontSize: 14 }}>{t('متى تغيّبت؟')}</T>
           <AbsenceDate value={date} onChange={setDate} min={min} max={today} />
         </View>
         <Segmented items={[t('غياب'), t('بعذر')]} value={kind} onChange={setKind} />
-        {kind === 1 && <T v="tiny" color={C.muted}>{t('الغياب بعذر ما بينحسب من الحد عندنا. تأكد إنه العذر انقبل عند الدكتور.')}</T>}
-        <Field label={t('ملاحظة (اختياري)')} value={note} onChangeText={setNote} placeholder={t('مثلاً: كنت مريض')} maxLength={120} />
+        {kind === 1 && <T v="tiny" color={C.muted}>{t('الغياب بعذر لا يُحتسب من الحد لدينا. تأكد من قبول العذر لدى الدكتور.')}</T>}
+        <Field label={t('ملاحظة (اختياري)')} value={note} onChangeText={setNote} placeholder={t('مثلاً: كنت مريضًا')} maxLength={120} />
         <Button title={t('سجّل')} loading={busy} onPress={save} icon={<Check size={18} color={C.white} />} />
       </View>
     </Sheet>
@@ -92,7 +92,7 @@ export function MarksSheet({ course, onClose, onChanged }: { course: CourseRow |
     if (!course) return;
     setMarks(null);
     supabase.from('attendance_marks').select('id, section_id, on_date, slot, status, note').eq('section_id', course.section_id).order('on_date', { ascending: false }).limit(200)
-      .then(({ data, error }) => { if (error) { setMarks([]); toast.error(t('ما قدرنا نجيب الغيابات.')); } else setMarks((data ?? []) as Mark[]); }, () => setMarks([]));
+      .then(({ data, error }) => { if (error) { setMarks([]); toast.error(t('تعذّر جلب الغيابات.')); } else setMarks((data ?? []) as Mark[]); }, () => setMarks([]));
   }, [course]);
 
   async function flip(m: Mark) {
@@ -100,20 +100,20 @@ export function MarksSheet({ course, onClose, onChanged }: { course: CourseRow |
     const next: Mark['status'] = m.status === 'absent' ? 'excused' : 'absent';
     setBusy(m.id);
     setMarks((x) => x?.map((y) => (y.id === m.id ? { ...y, status: next } : y)) ?? null);
-    const r = await run(supabase.from('attendance_marks').update({ status: next }).eq('id', m.id), { msg: t('ما انحفظ التعديل، جرّب كمان مرة.') });
+    const r = await run(supabase.from('attendance_marks').update({ status: next }).eq('id', m.id), { msg: t('لم يُحفظ التعديل، حاول مرة أخرى.') });
     setBusy(null);
     if (!r.ok) { setMarks((x) => x?.map((y) => (y.id === m.id ? { ...y, status: m.status } : y)) ?? null); return; }
     done(); onChanged();
   }
 
   function remove(m: Mark) {
-    Alert.alert(t('تحذف هالغياب؟'), new Date(`${m.on_date}T12:00:00`).toLocaleDateString(LOCALE, { weekday: 'long', day: 'numeric', month: 'long' }), [
+    Alert.alert(t('حذف هذا الغياب؟'), new Date(`${m.on_date}T12:00:00`).toLocaleDateString(LOCALE, { weekday: 'long', day: 'numeric', month: 'long' }), [
       { text: t('لا'), style: 'cancel' },
       { text: t('احذف'), style: 'destructive', onPress: async () => {
         setBusy(m.id);
         const before = marks;
         setMarks((x) => x?.filter((y) => y.id !== m.id) ?? null);
-        const r = await run(supabase.from('attendance_marks').delete().eq('id', m.id), { msg: t('ما انحذف، جرّب كمان مرة.') });
+        const r = await run(supabase.from('attendance_marks').delete().eq('id', m.id), { msg: t('لم يُحذف، حاول مرة أخرى.') });
         setBusy(null);
         if (!r.ok) { setMarks(before); return; }
         done(); onChanged();
@@ -122,12 +122,12 @@ export function MarksSheet({ course, onClose, onChanged }: { course: CourseRow |
   }
 
   return (
-    <Sheet open={!!course} onClose={onClose} title={course?.course_name ?? ''} sub={course ? t('{0} محاضرات بالأسبوع · {1} محاضرة بالفصل', [course.per_week, course.total_sessions]) : undefined}>
+    <Sheet open={!!course} onClose={onClose} title={course?.course_name ?? ''} sub={course ? t('{0} محاضرات في الأسبوع · {1} محاضرة في الفصل', [course.per_week, course.total_sessions]) : undefined}>
       {marks === null ? <ActivityIndicator color={C.primary} style={{ marginVertical: 30 }} />
       : marks.length === 0 ? (
         <View style={{ alignItems: 'center', paddingVertical: 28, gap: 6 }}>
-          <T v="h3">{t('ما في غيابات 👏')}</T>
-          <T v="small" color={C.muted}>{t('ضلّك ملتزم هيك.')}</T>
+          <T v="h3">{t('لا توجد غيابات 👏')}</T>
+          <T v="small" color={C.muted}>{t('حافظ على التزامك هكذا.')}</T>
         </View>
       ) : (
         <ScrollView style={{ maxHeight: 440 }} contentContainerStyle={{ gap: 8, paddingBottom: 6 }}>
@@ -144,7 +144,7 @@ export function MarksSheet({ course, onClose, onChanged }: { course: CourseRow |
                     {m.note ? <T v="tiny" color={C.muted} numberOfLines={1} style={{ flexShrink: 1 }}>{m.note}</T> : null}
                   </Row>
                 </View>
-                <Tap onPress={() => flip(m)} disabled={!!busy} accessibilityLabel={ex ? t('خلّيه غياب') : t('خلّيه بعذر')}
+                <Tap onPress={() => flip(m)} disabled={!!busy} accessibilityLabel={ex ? t('اجعله غيابًا') : t('اجعله بعذر')}
                   style={{ height: 36, paddingHorizontal: 10, borderRadius: 12, backgroundColor: C.card, flexDirection: 'row', alignItems: 'center', gap: 5 }}>
                   <RefreshCw size={14} color={C.ink2} /><T v="tiny" color={C.ink2}>{ex ? t('غياب') : t('بعذر')}</T>
                 </Tap>

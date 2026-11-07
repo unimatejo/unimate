@@ -37,7 +37,7 @@ export function AttachSheet({ open, onClose, conv, send, onStickers }: { open: b
   async function run(key: string, fn: () => Promise<void>) {
     if (busy) return;
     setBusy(key);
-    try { await fn(); } catch (e) { Alert.alert(t('ما انبعت'), userMessage(e)); } finally { setBusy(null); }
+    try { await fn(); } catch (e) { Alert.alert(t('لم يُرسل'), userMessage(e)); } finally { setBusy(null); }
   }
   // like WhatsApp / Instagram: the sheet closes, you pick, crop freely in the editor, then "ابعت"
   const photo = (camera: boolean) => run(camera ? 'camera' : 'photos', async () => {
@@ -51,14 +51,14 @@ export function AttachSheet({ open, onClose, conv, send, onStickers }: { open: b
     const r = await DocumentPicker.getDocumentAsync({ copyToCacheDirectory: true, multiple: false });
     if (r.canceled || !r.assets?.[0]) return;
     const a = r.assets[0];
-    if ((a.size ?? 0) > 25 * 1048576) { Alert.alert(t('الملف كبير'), t('أكبر حجم 25 ميغا.')); return; }
+    if ((a.size ?? 0) > 25 * 1048576) { Alert.alert(t('الملف كبير'), t('الحد الأقصى للحجم 25 ميغابايت.')); return; }
     onClose();
     const path = await uploadFile('chat', conv, { uri: a.uri, mime: a.mimeType || 'application/octet-stream' });
     await send({ kind: 'file', media: path, body: JSON.stringify({ name: a.name, size: a.size ?? null }) });
   });
   const location = () => run('loc', async () => {
     const { status } = await Location.requestForegroundPermissionsAsync();
-    if (status !== 'granted') { Alert.alert(t('الموقع مسكّر'), t('اسمح ليونيميت يوصل لموقعك عشان تبعته.')); return; }
+    if (status !== 'granted') { Alert.alert(t('الموقع مغلق'), t('اسمح ليونيميت بالوصول إلى موقعك لإرساله.')); return; }
     const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
     onClose();
     await send({ kind: 'location', body: `${pos.coords.latitude.toFixed(6)},${pos.coords.longitude.toFixed(6)}` });
@@ -71,7 +71,7 @@ export function AttachSheet({ open, onClose, conv, send, onStickers }: { open: b
     { key: 'loc', label: t('الموقع'), color: '#18B47B', icon: <MapPin size={26} color="#fff" />, onPress: location },
     { key: 'contact', label: t('جهة اتصال'), color: '#6B7280', icon: <UserRound size={26} color="#fff" />, onPress: () => setContactOpen(true) },
     { key: 'poll', label: t('استطلاع رأي'), color: '#F5B400', icon: <BarChart3 size={26} color="#fff" />, onPress: () => setPollOpen(true) },
-    { key: 'stickers', label: t('ستيكرات'), color: '#F0386B', icon: <Sticker size={26} color="#fff" />, onPress: () => { onClose(); onStickers(); } },
+    { key: 'stickers', label: t('ملصقات'), color: '#F0386B', icon: <Sticker size={26} color="#fff" />, onPress: () => { onClose(); onStickers(); } },
   ];
 
   return (
@@ -106,16 +106,16 @@ function PollComposer({ open, onClose, onSend }: { open: boolean; onClose: () =>
       <Animated.View entering={SlideInDown.duration(240)} style={{ backgroundColor: C.bg, borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: 18, gap: 10, paddingBottom: 40, maxHeight: '85%' }}>
         <T v="h3">{t('استطلاع رأي')}</T>
         <ScrollView contentContainerStyle={{ gap: 10 }} keyboardShouldPersistTaps="handled">
-          <TextInput value={q} onChangeText={setQ} placeholder={t('السؤال، مثلاً متى نعمل الدراسة؟')} placeholderTextColor={C.faint} maxLength={140} keyboardAppearance={isDark ? 'dark' : 'light'} style={input} />
+          <TextInput value={q} onChangeText={setQ} placeholder={t('السؤال، مثلاً: متى نجتمع للدراسة؟')} placeholderTextColor={C.faint} maxLength={140} keyboardAppearance={isDark ? 'dark' : 'light'} style={input} />
           {opts.map((o, i) => (
             <Row key={i} gap={8}>
               <TextInput value={o} onChangeText={(v) => setOpts((x) => x.map((y, j) => (j === i ? v : y)))} placeholder={t('خيار {0}', [String(i + 1)])} placeholderTextColor={C.faint} maxLength={60} keyboardAppearance={isDark ? 'dark' : 'light'} style={[input, { flex: 1 }]} />
-              {opts.length > 2 && <Tap onPress={() => setOpts((x) => x.filter((_, j) => j !== i))} accessibilityLabel={t('شيل')}><X size={20} color={C.muted} /></Tap>}
+              {opts.length > 2 && <Tap onPress={() => setOpts((x) => x.filter((_, j) => j !== i))} accessibilityLabel={t('إزالة')}><X size={20} color={C.muted} /></Tap>}
             </Row>
           ))}
-          {opts.length < 8 && <Tap onPress={() => setOpts((x) => [...x, ''])} style={{ flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 40 }}><Plus size={18} color={C.primary} /><T v="small" color={C.primaryDark}>{t('ضيف خيار')}</T></Tap>}
+          {opts.length < 8 && <Tap onPress={() => setOpts((x) => [...x, ''])} style={{ flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 40 }}><Plus size={18} color={C.primary} /><T v="small" color={C.primaryDark}>{t('أضف خيارًا')}</T></Tap>}
         </ScrollView>
-        <Button title={t('ابعت الاستطلاع')} disabled={!ok} onPress={() => onSend(q.trim(), opts.map((o) => o.trim()).filter(Boolean))} />
+        <Button title={t('أرسل الاستطلاع')} disabled={!ok} onPress={() => onSend(q.trim(), opts.map((o) => o.trim()).filter(Boolean))} />
       </Animated.View>
     </Modal>
   );
@@ -142,8 +142,8 @@ function ContactPicker({ open, onClose, onPick }: { open: boolean; onClose: () =
     <Modal visible={open} transparent animationType="fade" onRequestClose={onClose}>
       <Pressable style={{ flex: 1, backgroundColor: 'rgba(14,20,48,0.45)' }} onPress={onClose} />
       <Animated.View entering={SlideInDown.duration(240)} style={{ backgroundColor: C.bg, borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: 18, gap: 10, height: '75%' }}>
-        <T v="h3">{t('ابعت حساب حدا')}</T>
-        <TextInput value={q} onChangeText={setQ} placeholder={t('دوّر بالاسم أو اليوزر')} placeholderTextColor={C.faint} keyboardAppearance={isDark ? 'dark' : 'light'}
+        <T v="h3">{t('أرسل حساب شخص')}</T>
+        <TextInput value={q} onChangeText={setQ} placeholder={t('ابحث بالاسم أو اسم المستخدم')} placeholderTextColor={C.faint} keyboardAppearance={isDark ? 'dark' : 'light'}
           style={{ minHeight: 46, borderRadius: 14, backgroundColor: C.field, paddingHorizontal: 14, fontFamily: F.body, fontSize: 15, color: C.ink, textAlign: ta }} />
         <FlatList data={list} keyExtractor={(p) => p.id} keyboardShouldPersistTaps="handled" renderItem={({ item }) => (
           <Tap onPress={() => onPick(item)} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 58 }}>
@@ -197,7 +197,7 @@ export function StickerPanel({ open, onClose, send }: { open: boolean; onClose: 
     if (canCutBackground()) {
       setMaking(true);
       try { const r = await cutBackground(f.uri); setLifted({ uri: r.uri, original }); }
-      catch { Alert.alert(t('ما لقينا شخص أو إشي واضح بالصورة'), t('بنقصها بإيدك بدالها.')); setCropSrc(original); }
+      catch { Alert.alert(t('لم يتم العثور على شخص أو عنصر واضح في الصورة'), t('قصّها يدوياً بدلاً من ذلك.')); setCropSrc(original); }
       finally { setMaking(false); }
     } else setCropSrc(original);
   }
@@ -210,7 +210,7 @@ export function StickerPanel({ open, onClose, send }: { open: boolean; onClose: 
       const url = publicUrl('stickers', path);
       await supabase.from('my_stickers').insert({ user_id: profile.id, url });
       load();
-    } catch { Alert.alert(t('ما انعمل الستيكر'), t('جرّب كمان مرة.')); }
+    } catch { Alert.alert(t('لم يُنشأ الملصق'), t('حاول مرة أخرى.')); }
     finally { setMaking(false); }
   }
   async function remove(id: string) {
@@ -228,13 +228,13 @@ export function StickerPanel({ open, onClose, send }: { open: boolean; onClose: 
   const TABS = [
     { k: 'recent' as const, icon: Clock3, label: t('الأخيرة') },
     { k: 'pack' as const, icon: Sparkles, label: t('يونيميت') },
-    { k: 'mine' as const, icon: Sticker, label: t('ستيكراتي') },
+    { k: 'mine' as const, icon: Sticker, label: t('ملصقاتي') },
     { k: 'emoji' as const, icon: Smile, label: t('إيموجي كبير') },
   ];
   const tile = { width: '25%' as const, aspectRatio: 1, padding: 5 };
   const soft = { flex: 1, borderRadius: 18, backgroundColor: C.soft, alignItems: 'center' as const, justifyContent: 'center' as const, overflow: 'hidden' as const };
   const Tile = ({ x, mineId, k }: { x: { url?: string; emoji?: string }; mineId?: string; k: string }) => (
-    <Tap key={k} onPress={() => pick(x)} onLongPress={() => setPeek({ ...x, mineId })} scale={0.98} haptic={false} accessibilityLabel={x.emoji ?? t('ستيكر')} style={tile}>
+    <Tap key={k} onPress={() => pick(x)} onLongPress={() => setPeek({ ...x, mineId })} scale={0.98} haptic={false} accessibilityLabel={x.emoji ?? t('ملصق')} style={tile}>
       <View style={soft}>
         {x.url ? <Image source={{ uri: x.url }} style={{ width: '86%', height: '86%' }} contentFit="contain" autoplay cachePolicy="memory-disk" /> : <T style={{ fontSize: 40, lineHeight: 50 }}>{x.emoji}</T>}
       </View>
@@ -260,7 +260,7 @@ export function StickerPanel({ open, onClose, send }: { open: boolean; onClose: 
       {tab === 'pack' && (
         <Row gap={8} style={{ marginHorizontal: 14, marginBottom: 8, minHeight: 42, borderRadius: 21, backgroundColor: C.soft, paddingHorizontal: 14 }}>
           <Search size={16} color={C.muted} />
-          <TextInput keyboardAppearance={isDark ? 'dark' : 'light'} value={q} onChangeText={setQ} placeholder={t('دوّر: ضحك، قهوة، امتحان…')} placeholderTextColor={C.muted}
+          <TextInput keyboardAppearance={isDark ? 'dark' : 'light'} value={q} onChangeText={setQ} placeholder={t('ابحث: ضحك، قهوة، امتحان…')} placeholderTextColor={C.muted}
             style={{ flex: 1, fontFamily: F.body, fontSize: 14, color: C.ink, textAlign: ta }} />
           {q ? <Tap onPress={() => setQ('')} accessibilityLabel={t('امسح')}><X size={16} color={C.muted} /></Tap> : null}
         </Row>
@@ -268,23 +268,23 @@ export function StickerPanel({ open, onClose, send }: { open: boolean; onClose: 
       <ScrollView contentContainerStyle={{ flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: 9, paddingBottom: 34 }} keyboardShouldPersistTaps="handled">
         {tab === 'recent' && (recent.length
           ? recent.map((x, i) => <Tile key={`r${i}`} k={`r${i}`} x={x} />)
-          : <T v="small" color={C.muted} style={{ padding: 18 }}>{t('الستيكرات اللي بتبعتها بتطلع هون.')}</T>)}
+          : <T v="small" color={C.muted} style={{ padding: 18 }}>{t('تظهر هنا الملصقات التي ترسلها.')}</T>)}
         {tab === 'pack' && <>
           {pack === null && Array.from({ length: 12 }, (_, i) => <View key={i} style={tile}><View style={soft} /></View>)}
           {packShown.map((p) => <Tile key={p.id} k={p.id} x={{ url: p.url }} />)}
-          {pack && s && !packShown.length ? <T v="small" color={C.muted} style={{ padding: 18 }}>{t('ما لقينا ستيكر بهالكلمة.')}</T> : null}
+          {pack && s && !packShown.length ? <T v="small" color={C.muted} style={{ padding: 18 }}>{t('لا توجد ملصقات بهذه الكلمة.')}</T> : null}
         </>}
         {tab === 'emoji' && BIG_EMOJI.map((e) => <Tile key={e} k={e} x={{ emoji: e }} />)}
         {tab === 'mine' && <>
-          <Tap onPress={make} disabled={making} accessibilityLabel={t('اعمل ستيكر')} style={tile}>
+          <Tap onPress={make} disabled={making} accessibilityLabel={t('أنشئ ملصقاً')} style={tile}>
             <View style={{ flex: 1, borderRadius: 18, borderWidth: 1.5, borderStyle: 'dashed', borderColor: C.primary, backgroundColor: C.primarySoft, alignItems: 'center', justifyContent: 'center', gap: 4, padding: 4 }}>
               {making ? <ActivityIndicator color={C.primaryDark} /> : <Plus size={24} color={C.primaryDark} />}
-              <T v="tiny" color={C.primaryDark} style={{ fontSize: 10, textAlign: 'center' }}>{making ? t('عم نشيل الخلفية…') : t('اعمل ستيكر')}</T>
+              <T v="tiny" color={C.primaryDark} style={{ fontSize: 10, textAlign: 'center' }}>{making ? t('جارٍ إزالة الخلفية…') : t('أنشئ ملصقاً')}</T>
             </View>
           </Tap>
           {mine === null && Array.from({ length: 3 }, (_, i) => <View key={i} style={tile}><View style={soft} /></View>)}
           {(mine ?? []).map((m) => <Tile key={m.id} k={m.id} x={{ url: m.url }} mineId={m.id} />)}
-          {mine && mine.length === 0 && <T v="small" color={C.muted} style={{ width: '70%', padding: 14 }}>{t('اعمل ستيكر من أي صورة (بنشيل الخلفية)، أو اكبس مطوّل على ستيكر بالمحادثة واحفظه. بيضلوا بحسابك.')}</T>}
+          {mine && mine.length === 0 && <T v="small" color={C.muted} style={{ width: '70%', padding: 14 }}>{t('أنشئ ملصقاً من أي صورة (سنزيل الخلفية)، أو اضغط مطولاً على ملصق في المحادثة واحفظه. ستبقى الملصقات في حسابك.')}</T>}
         </>}
       </ScrollView>
       {/* long press: see it big, then send / keep / delete */}
@@ -294,22 +294,22 @@ export function StickerPanel({ open, onClose, send }: { open: boolean; onClose: 
             {peek?.url ? <Image source={{ uri: peek.url }} style={{ width: 230, height: 230 }} contentFit="contain" autoplay /> : <T style={{ fontSize: 140, lineHeight: 168 }}>{peek?.emoji}</T>}
           </View>
           <Row gap={10}>
-            <Button title={t('ابعت')} onPress={() => { const x = peek; setPeek(null); if (x) pick(x); }} style={{ minWidth: 110 }} />
+            <Button title={t('أرسل')} onPress={() => { const x = peek; setPeek(null); if (x) pick(x); }} style={{ minWidth: 110 }} />
             {peek?.mineId
-              ? <Button kind="danger" title={t('شيله')} onPress={() => { const id = peek.mineId!; setPeek(null); remove(id); }} style={{ minWidth: 110 }} />
-              : peek?.url && profile ? <Button kind="white" title={t('احفظه عندي')} onPress={async () => { const u = peek.url!; setPeek(null); if (await saveSticker(profile.id, u)) { load(); } }} style={{ minWidth: 110 }} /> : null}
+              ? <Button kind="danger" title={t('إزالة')} onPress={() => { const id = peek.mineId!; setPeek(null); remove(id); }} style={{ minWidth: 110 }} />
+              : peek?.url && profile ? <Button kind="white" title={t('احفظه لديّ')} onPress={async () => { const u = peek.url!; setPeek(null); if (await saveSticker(profile.id, u)) { load(); } }} style={{ minWidth: 110 }} /> : null}
           </Row>
         </Pressable>
       </Modal>
       <AvatarCropper src={cropSrc} onCancel={() => setCropSrc(null)} onDone={cropped} />
       <Modal visible={!!lifted} transparent animationType="fade" onRequestClose={() => setLifted(null)}>
         <View style={{ flex: 1, backgroundColor: 'rgba(10,14,30,0.85)', alignItems: 'center', justifyContent: 'center', padding: 24, gap: 18 }}>
-          <T v="h3" color="#fff">{t('هاد الستيكر')}</T>
+          <T v="h3" color="#fff">{t('هذا الملصق')}</T>
           <View style={{ width: 260, height: 260, borderRadius: 24, backgroundColor: '#ECE5DD', alignItems: 'center', justifyContent: 'center' }}>
             {lifted && <Image source={{ uri: lifted.uri }} style={{ width: 230, height: 230 }} contentFit="contain" />}
           </View>
           <Row gap={10}>
-            <Button kind="white" title={t('بالخلفية')} onPress={() => { const o = lifted?.original; setLifted(null); if (o) setCropSrc(o); }} style={{ minWidth: 120 }} />
+            <Button kind="white" title={t('في الخلفية')} onPress={() => { const o = lifted?.original; setLifted(null); if (o) setCropSrc(o); }} style={{ minWidth: 120 }} />
             <Button title={t('احفظه')} onPress={() => lifted && cropped({ uri: lifted.uri, mime: 'image/png' })} style={{ minWidth: 120 }} />
           </Row>
           <Tap onPress={() => setLifted(null)}><T v="small" color="#AEB8D8">{t('إلغاء')}</T></Tap>
@@ -351,7 +351,7 @@ export function FileBubble({ m, mine }: { m: Message; mine: boolean }) {
       </View>
       <View style={{ flex: 1 }}>
         <T v="bodyMd" numberOfLines={2} color={mine ? C.onPrimary : C.ink}>{meta.name ?? t('ملف')}</T>
-        <T v="tiny" color={mine ? subOn(true) : C.muted}>{[fmtSize(meta.size), t('اكبس لتفتحه')].filter(Boolean).join(' · ')}</T>
+        <T v="tiny" color={mine ? subOn(true) : C.muted}>{[fmtSize(meta.size), t('اضغط لفتحه')].filter(Boolean).join(' · ')}</T>
       </View>
     </Tap>
   );
@@ -390,14 +390,14 @@ export function LocationBubble({ m, mine }: { m: Message; mine: boolean }) {
     Linking.openURL(url).catch(() => Linking.openURL(`https://www.google.com/maps/search/?api=1&query=${lat},${lng}`));
   };
   return (
-    <Tap onPress={open} onLongPress={external} haptic={false} accessibilityRole="button" accessibilityLabel={`${name ?? t('موقعي')} · ${t('افتح بالخريطة')}`}
+    <Tap onPress={open} onLongPress={external} haptic={false} accessibilityRole="button" accessibilityLabel={`${name ?? t('موقعي')} · ${t('افتح في الخريطة')}`}
       style={{ flexDirection: 'row', alignItems: 'center', gap: 10, width: 250, paddingHorizontal: 12, paddingVertical: 10, borderRadius: 18, backgroundColor: C.card, borderWidth: 1, borderColor: C.line }}>
       <View style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: C.primary, alignItems: 'center', justifyContent: 'center' }}>
         <MapPin size={20} color={C.onPrimary} strokeWidth={2.2} />
       </View>
       <View style={{ flex: 1 }}>
         <T v="bold" numberOfLines={1} style={{ fontSize: 14 }}>{name ?? (mine ? t('موقعي') : t('موقعه'))}</T>
-        <T v="tiny" color={C.muted} numberOfLines={1}>{mins != null ? t('{0} دقائق مشي · افتح بالخريطة', [String(mins)]) : t('افتح بالخريطة')}</T>
+        <T v="tiny" color={C.muted} numberOfLines={1}>{mins != null ? t('{0} دقائق سيراً · افتح في الخريطة', [String(mins)]) : t('افتح في الخريطة')}</T>
       </View>
     </Tap>
   );
@@ -416,7 +416,7 @@ export function ContactBubble({ m, mine }: { m: Message; mine: boolean }) {
         </View>
       </Row>
       <Tap onPress={() => m.ref_id && router.push({ pathname: '/user/[id]', params: { id: m.ref_id } })} style={{ minHeight: 36, borderRadius: 12, alignItems: 'center', justifyContent: 'center', backgroundColor: mine ? 'rgba(14,20,48,0.14)' : C.primarySoft }}>
-        <T v="small" color={mine ? C.onPrimary : C.primary}>{t('شوف الحساب')}</T>
+        <T v="small" color={mine ? C.onPrimary : C.primary}>{t('عرض الحساب')}</T>
       </Tap>
     </View>
   );
@@ -468,7 +468,7 @@ export function PollBubble({ m, mine, me }: { m: Message; mine: boolean; me?: st
           </Tap>
         );
       })}
-      <T v="tiny" color={mine ? subOn(true) : C.muted}>{total ? t('{0} صوّتوا', [String(total)]) : t('ما حدا صوّت لهلأ')}</T>
+      <T v="tiny" color={mine ? subOn(true) : C.muted}>{total ? t('{0} صوّتوا', [String(total)]) : t('لم يصوّت أحد حتى الآن')}</T>
     </View>
   );
 }

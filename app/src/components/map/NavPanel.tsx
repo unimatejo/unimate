@@ -29,7 +29,7 @@ export function DirectionBanner({ step, toNext, from }: { step: Step; toNext: nu
         <T style={{ fontFamily: F.display, fontSize: 20, lineHeight: 28 }} color={C.onPrimary} numberOfLines={2}>
           {now ? step.text : t('بعد {0}، {1}', [meters(toNext), step.text])}
         </T>
-        {from === 'gate' && <T v="tiny" color={C.onPrimary} style={{ opacity: 0.9 }}>{t('من البوابة الرئيسية · فعّل موقعك عشان يبلّش من مكانك')}</T>}
+        {from === 'gate' && <T v="tiny" color={C.onPrimary} style={{ opacity: 0.9 }}>{t('من البوابة الرئيسية · فعّل موقعك ليبدأ المسار من مكانك')}</T>}
       </View>
     </Animated.View>
   );
@@ -69,16 +69,16 @@ export function NavCard({ name, kind, building, floor, room, left, minutes, stra
       <Row gap={10}>
         <View style={{ flex: 1, alignItems: 'center', backgroundColor: C.primarySoft, borderRadius: 16, padding: 10 }}>
           <T style={{ fontFamily: F.display, fontSize: 22 }} color={C.primary}>{minutes}</T>
-          <T v="tiny" color={C.ink2}>{t('دقايق مشي')}</T>
+          <T v="tiny" color={C.ink2}>{t('دقائق سيرًا')}</T>
         </View>
         <View style={{ flex: 1, alignItems: 'center', backgroundColor: C.soft, borderRadius: 16, padding: 10 }}>
           <T style={{ fontFamily: F.display, fontSize: 22 }}>{meters(left)}</T>
           <T v="tiny" color={C.ink2}>{t('المسافة')}</T>
         </View>
       </Row>
-      {straight && <T v="tiny" color={C.muted}>{t('ما في ممرات مرسومة لهون، فهاد خط مباشر تقريبي.')}</T>}
-      <Tap onPress={onPreview} accessibilityLabel={t('شوف الطريق مشي')} style={[btn, { flex: undefined, backgroundColor: C.soft }]}>
-        <Footprints size={18} color={C.ink} /><T v="bodyMd">{t('شوف الطريق')}</T>
+      {straight && <T v="tiny" color={C.muted}>{t('لا توجد ممرات مرسومة إلى هنا، لذا هذا خط مباشر تقريبي.')}</T>}
+      <Tap onPress={onPreview} accessibilityLabel={t('عرض طريق المشي')} style={[btn, { flex: undefined, backgroundColor: C.soft }]}>
+        <Footprints size={18} color={C.ink} /><T v="bodyMd">{t('عرض الطريق')}</T>
       </Tap>
     </Animated.View>
   );

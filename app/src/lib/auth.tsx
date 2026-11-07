@@ -88,7 +88,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // signed back in within 30 days of asking to delete: keep the account
       if (data?.deletion_requested_at) {
         supabase.rpc('cancel_account_deletion').then(({ data: back }) => {
-          if (back) Alert.alert(t('رجع حسابك ✓'), t('كنت طالب حذف حسابك، وبما إنك رجعت سجلت دخول، لغينا الحذف وكل إشي إلك زي ما هو.'));
+          if (back) Alert.alert(t('استُعيد حسابك ✓'), t('كنت قد طلبت حذف حسابك، وبما أنك سجلت الدخول مجددًا، ألغينا الحذف وبقي كل شيء كما هو.'));
         });
         data.deletion_requested_at = null;
       }
@@ -253,7 +253,7 @@ export function importMsRole(token?: string | null) {
 /** Import Teams courses without making the student wait; tell them when it's done. */
 export function importTeamsInBackground(token: string) {
   importTeamsWithToken(token).then((res) => {
-    if ('count' in res && res.count > 0) toast(t('انضافت {0} مواد من Teams لجدولك ✓', [res.count]));
+    if ('count' in res && res.count > 0) toast(t('تمت إضافة {0} مواد من Teams إلى جدولك ✓', [res.count]));
   }).catch(() => {});
 }
 

@@ -24,14 +24,14 @@ function UniForm({ u, onSaved }: { u: Uni; onSaved: () => void }) {
     const { id, ...row } = f;
     const { error } = await supabase.from('universities').update({ ...row, email_domains: row.email_domains.map((d) => d.trim().toLowerCase()).filter(Boolean) }).eq('id', id);
     if (error) { setMsg(error.message); return; }
-    await audit('edit_university', 'university', id, { slug: f.slug }); clearUniCache(); done(); setMsg(t('انحفظ ✓')); onSaved();
+    await audit('edit_university', 'university', id, { slug: f.slug }); clearUniCache(); done(); setMsg(t('تم الحفظ ✓')); onSaved();
   }
   return (
     <Panel>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}><T v="h3" style={{ flex: 1 }}>{u.name_ar}</T><Status s={f.data_status} /></View>
-      <Field label={t('الاسم بالعربي')} value={f.name_ar} onChangeText={(v) => setF({ ...f, name_ar: v })} />
-      <Field label={t('الاسم بالإنجليزي')} value={f.name_en} onChangeText={(v) => setF({ ...f, name_en: v })} style={{ writingDirection: 'ltr', textAlign: 'left' }} />
-      <Field label={t('نطاقات الإيميل (افصل بفاصلة)')} value={f.email_domains.join(', ')} onChangeText={(v) => setF({ ...f, email_domains: v.split(',') })} autoCapitalize="none" style={{ writingDirection: 'ltr', textAlign: 'left' }} />
+      <Field label={t('الاسم بالعربية')} value={f.name_ar} onChangeText={(v) => setF({ ...f, name_ar: v })} />
+      <Field label={t('الاسم بالإنجليزية')} value={f.name_en} onChangeText={(v) => setF({ ...f, name_en: v })} style={{ writingDirection: 'ltr', textAlign: 'left' }} />
+      <Field label={t('نطاقات البريد الإلكتروني (افصل بينها بفاصلة)')} value={f.email_domains.join(', ')} onChangeText={(v) => setF({ ...f, email_domains: v.split(',') })} autoCapitalize="none" style={{ writingDirection: 'ltr', textAlign: 'left' }} />
       <Field label={t('لون الجامعة')} value={f.brand_color} onChangeText={(v) => setF({ ...f, brand_color: v })} autoCapitalize="none" style={{ writingDirection: 'ltr', textAlign: 'left' }} />
       <Field label={t('مركز الحرم (lat, lng)')} value={f.center_lat != null ? `${f.center_lat}, ${f.center_lng}` : ''}
         onChangeText={(v) => { const [a, b] = v.split(',').map(parseFloat); setF({ ...f, center_lat: Number.isFinite(a) ? a : null, center_lng: Number.isFinite(b) ? b : null }); }} />
@@ -55,7 +55,7 @@ function Academics({ uni }: { uni: string }) {
     done(); setNewCol(''); reload();
   }
   async function addMajor(c: College) {
-    const name = await promptText(t('اسم التخصص الجديد بـ {0}', [c.name_ar])); if (!name?.trim()) return;
+    const name = await promptText(t('اسم التخصص الجديد في {0}', [c.name_ar])); if (!name?.trim()) return;
     const { data: m, error: e } = await supabase.from('majors').insert({ university_id: uni, college_id: c.id, name_ar: name.trim() }).select('id').single();
     if (e) return;
     await supabase.from('communities').insert({ university_id: uni, kind: 'major', college_id: c.id, major_id: m.id, name: name.trim(), description: 'طلاب التخصص' });
@@ -69,7 +69,7 @@ function Academics({ uni }: { uni: string }) {
   }
   async function verify(table: 'colleges' | 'majors', id: string, v: boolean) { await supabase.from(table).update({ verified: v }).eq('id', id); reload(); }
   async function del(table: 'colleges' | 'majors', id: string, name: string) {
-    if (!(await confirm(t('تحذف «{0}»؟', [name]), t('الطلاب المربوطين فيه بيضلوا بس بدون تخصص.'), t('احذف')))) return;
+    if (!(await confirm(t('حذف «{0}»؟', [name]), t('سيبقى الطلاب المرتبطون به، ولكن دون تخصص.'), t('احذف')))) return;
     await supabase.from(table).delete().eq('id', id); reload();
   }
 
@@ -116,11 +116,11 @@ function Links({ uni }: { uni: string }) {
   const [msg, setMsg] = useState<string | null>(null);
   async function add() {
     const { error } = await supabase.from('university_links').insert({ ...n, university_id: uni, position: data?.length ?? 0 });
-    if (error) { setMsg(t('الرابط لازم يبلش بـ https:// أو http://')); return; }
+    if (error) { setMsg(t('يجب أن يبدأ الرابط بـ https:// أو http://')); return; }
     done(); setMsg(null); setN({ kind: 'portal', title: '', url: 'https://', position: 99 }); reload();
   }
   async function del(l: Link) {
-    if (!(await confirm(t('تحذف الرابط؟'), l.title, t('احذف')))) return;
+    if (!(await confirm(t('حذف الرابط؟'), l.title, t('احذف')))) return;
     await supabase.from('university_links').delete().eq('id', l.id!); reload();
   }
   return (
@@ -151,16 +151,16 @@ function Buildings({ uni }: { uni: string }) {
     done(); setMsg(null); setB({ name_ar: '', code: '', coords: '', floors: '' }); reload();
   }
   async function addAlias(id: string) {
-    const a = await promptText(t('اللقب اللي بيستخدمه الطلاب (مثلاً: «المدرج الكبير»)')); if (!a?.trim()) return;
+    const a = await promptText(t('اللقب الذي يستخدمه الطلاب (مثلاً: «المدرج الكبير»)')); if (!a?.trim()) return;
     await supabase.from('place_aliases').insert({ university_id: uni, building_id: id, alias: a.trim(), state: 'approved' }); done();
   }
   async function del(x: Building) {
-    if (!(await confirm(t('تحذف المبنى وقاعاته؟'), x.name_ar, t('احذف')))) return;
+    if (!(await confirm(t('حذف المبنى وقاعاته؟'), x.name_ar, t('احذف')))) return;
     await supabase.from('buildings').delete().eq('id', x.id!); reload();
   }
   return (
     <View style={{ gap: 8 }}>
-      <Muted>{t('انسخ الإحداثيات من Google Maps (كبسة مطوّلة على المبنى) وألصقها هون.')}</Muted>
+      <Muted>{t('انسخ الإحداثيات من Google Maps (بضغطة مطوّلة على المبنى) والصقها هنا.')}</Muted>
       {(data ?? []).map((x) => (
         <Panel key={x.id}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}><T v="bold" style={{ flex: 1 }}>{x.name_ar}</T>{x.code ? <Pill label={x.code} /> : null}</View>
@@ -203,7 +203,7 @@ function PendingQueue() {
           <T v="small">{t('مكان جديد: {0}', [p.name_ar ?? ''])} · {p.kind}</T>
           <Muted>{[p.by?.full_name, fmtDate(p.created_at)].filter(Boolean).join(' · ')}</Muted>
           <Actions>
-            <Act label={t('شوف عالخريطة')} onPress={() => Linking.openURL(`https://www.openstreetmap.org/?mlat=${p.lat}&mlon=${p.lng}#map=19/${p.lat}/${p.lng}`).catch(() => {})} />
+            <Act label={t('عرض على الخريطة')} onPress={() => Linking.openURL(`https://www.openstreetmap.org/?mlat=${p.lat}&mlon=${p.lng}#map=19/${p.lat}/${p.lng}`).catch(() => {})} />
             <Act label={t('اقبل')} kind="green" onPress={() => decide('places', p.id, 'approved', places.reload)} />
             <Act label={t('ارفض')} onPress={() => decide('places', p.id, 'rejected', places.reload)} />
           </Actions>
@@ -231,7 +231,7 @@ export default function Campus() {
       {uni && tab === 'academics' && <Academics uni={uni} />}
       {uni && tab === 'links' && <Links uni={uni} />}
       {uni && tab === 'buildings' && <Buildings uni={uni} />}
-      {!uni && <Section title={t('اختار جامعة')} />}
+      {!uni && <Section title={t('اختر جامعة')} />}
     </AdminScreen>
   );
 }

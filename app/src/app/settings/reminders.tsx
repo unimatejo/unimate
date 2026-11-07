@@ -51,7 +51,7 @@ export default function Reminders() {
   async function askNotif() {
     if (await ensurePermission()) return true;
     if (await notifStatus() === 'ask') { router.push({ pathname: '/notify', params: { back: '1' } }); return false; }
-    Alert.alert(t('التنبيهات مسكّرة'), t('فعّلها من إعدادات الجهاز عشان توصلك التذكيرات.'), [
+    Alert.alert(t('التنبيهات غير مفعّلة'), t('فعّلها من إعدادات الجهاز لتصلك التذكيرات.'), [
       { text: t('إلغاء'), style: 'cancel' },
       { text: t('افتح الإعدادات'), onPress: () => Linking.openSettings().catch(() => {}) },
     ]);
@@ -62,8 +62,8 @@ export default function Reminders() {
   async function tryReminder() {
     const r = await testLectureReminder(meetings, prefs.lecture_minutes);
     if (r === 'no_permission') { await askNotif(); return; }
-    if (r === 'no_lectures') { Alert.alert(t('جدولك فاضي'), t('ضيف موادك أول وبعدين جرّب.')); return; }
-    toast(t('بعد 5 ثواني بيوصلك التنبيه. اكبس عليه وبيوديك للقاعة.'));
+    if (r === 'no_lectures') { Alert.alert(t('جدولك فارغ'), t('أضف موادك أولًا ثم حاول.')); return; }
+    toast(t('سيصلك التنبيه بعد 5 ثوانٍ. اضغط عليه وسينقلك إلى القاعة.'));
   }
 
   async function setRem(meeting_id: string, p: Partial<Rem>) {
@@ -83,7 +83,7 @@ export default function Reminders() {
           <Toggle icon={ic(<BellRing size={18} color={C.primary} />)} label={t('نبّهني قبل المحاضرات')} value={prefs.lectures} onChange={async (v) => { if (v && !(await askNotif())) return; set({ lectures: v }); }} />
           {prefs.lectures && (
             <>
-              <T v="small" color={C.muted}>{t('قديش قبل؟')}</T>
+              <T v="small" color={C.muted}>{t('كم قبله؟')}</T>
               <Row gap={8} style={{ flexWrap: 'wrap' }}>
                 {MINUTES.map((m) => <Chip key={m} label={t('{0} د', [m])} active={prefs.lecture_minutes === m} onPress={() => set({ lecture_minutes: m })} />)}
               </Row>
@@ -94,20 +94,20 @@ export default function Reminders() {
         </View>
 
         <View style={{ gap: 12, backgroundColor: C.card, borderRadius: 22, padding: 14 }}>
-          <Toggle icon={ic(<Moon size={18} color={C.violet} />)} label={t('ملخص بكرة كل ليلة')} hint={t('محاضراتك وتسليماتك لبكرة الساعة 9 بالليل')} value={prefs.nightly_summary} onChange={async (v) => { if (v && !(await askNotif())) return; set({ nightly_summary: v }); }} />
+          <Toggle icon={ic(<Moon size={18} color={C.violet} />)} label={t('ملخص الغد كل ليلة')} hint={t('محاضراتك وتسليماتك للغد، الساعة 9 مساءً')} value={prefs.nightly_summary} onChange={async (v) => { if (v && !(await askNotif())) return; set({ nightly_summary: v }); }} />
           <Toggle icon={ic(<CalendarDays size={18} color={C.orange} />)} label={t('الامتحانات والتسليمات')} value={prefs.exams} onChange={(v) => set({ exams: v })} />
           <Toggle icon={ic(<MessageCircle size={18} color={C.pink} />)} label={t('الرسائل')} value={prefs.messages} onChange={(v) => set({ messages: v })} />
-          <Toggle icon={ic(<EyeOff size={18} color={C.violet} />)} label={t('اعرض نص الرسالة بالإشعار')} hint={t('إذا سكّرتها، الإشعار بيقول «رسالة جديدة» بس، بدون الكلام، عشان ما حدا يقرأه على شاشة القفل.')} value={prefs.preview} onChange={(v) => set({ preview: v })} />
-          <Toggle icon={ic(<Heart size={18} color={C.red} />)} label={t('لايكات وتعليقات ومتابعات')} value={prefs.social} onChange={(v) => set({ social: v })} />
+          <Toggle icon={ic(<EyeOff size={18} color={C.violet} />)} label={t('اعرض نص الرسالة في الإشعار')} hint={t('إذا أوقفتها، سيعرض الإشعار «رسالة جديدة» فقط، دون نص الرسالة، حتى لا يقرأه أحد على شاشة القفل.')} value={prefs.preview} onChange={(v) => set({ preview: v })} />
+          <Toggle icon={ic(<Heart size={18} color={C.red} />)} label={t('إعجابات وتعليقات ومتابعات')} value={prefs.social} onChange={(v) => set({ social: v })} />
           <Toggle icon={ic(<Users size={18} color={C.primary} />)} label={t('مجتمعات موادي وكليتي')} value={prefs.community} onChange={(v) => set({ community: v })} />
           <Toggle icon={ic(<Megaphone size={18} color={C.ink2} />)} label={t('عروض المطاعم والمحلات')} value={prefs.ads} onChange={(v) => set({ ads: v })} />
-          <Toggle icon={ic(<Mail size={18} color={C.green} />)} label={t('عروض على الإيميل')} hint={t('عروض وخصومات حوالين جامعتك على إيميلك الجامعي، وبتقدر توقفها من أي إيميل')} value={prefs.email_offers} onChange={(v) => set({ email_offers: v })} />
+          <Toggle icon={ic(<Mail size={18} color={C.green} />)} label={t('عروض عبر البريد الإلكتروني')} hint={t('عروض وخصومات حول جامعتك على بريدك الجامعي، ويمكنك إيقافها من أي رسالة')} value={prefs.email_offers} onChange={(v) => set({ email_offers: v })} />
         </View>
 
         <View style={{ gap: 8 }}>
           <T v="h3" style={{ paddingHorizontal: 4 }}>{t('منبّه لكل محاضرة')}</T>
-          <T v="tiny" color={C.muted} style={{ paddingHorizontal: 4 }}>{t('بتقدر تطفي محاضرة أو تحط لها وقت مختلف.')}</T>
-          {meetings.length === 0 && <T v="small" color={C.muted} style={{ padding: 14 }}>{t('جدولك لسا ما وصل.')}</T>}
+          <T v="tiny" color={C.muted} style={{ paddingHorizontal: 4 }}>{t('يمكنك إيقاف محاضرة أو تحديد وقت مختلف لها.')}</T>
+          {meetings.length === 0 && <T v="small" color={C.muted} style={{ padding: 14 }}>{t('لم يصل جدولك بعد.')}</T>}
           {meetings.map((m) => {
             const r = rems[m.id];
             const on = r?.enabled ?? true;
@@ -117,7 +117,7 @@ export default function Reminders() {
                   <AlarmClock size={20} color={on ? C.primary : C.faint} />
                   <Tap haptic={false} scale={1} onPress={() => setOpen(open === m.id ? null : m.id)} style={{ flex: 1 }}>
                     <T v="bodyMd">{m.course_name}</T>
-                    <T v="tiny" color={C.muted}>{WEEKDAYS[m.weekday]} · {clock(m.starts_at)} · {r?.minutes ? t('قبل {0} د', [r.minutes]) : t('قبل {0} د', [prefs.lecture_minutes])}</T>
+                    <T v="tiny" color={C.muted}>{WEEKDAYS[m.weekday]} · {clock(m.starts_at)} · {r?.minutes ? t('منذ {0} د', [r.minutes]) : t('منذ {0} د', [prefs.lecture_minutes])}</T>
                   </Tap>
                   <Toggle label="" a11yLabel={t('تنبيه {0}', [m.course_name])} value={on} onChange={(v) => setRem(m.id, { enabled: v })} />
                 </Row>
@@ -137,7 +137,7 @@ export default function Reminders() {
   );
 }
 
-/** "غير": any number of minutes the chips don't cover (up to `max`), saved when the box loses focus. */
+/** "أخرى": any number of minutes the chips don't cover (up to `max`), saved when the box loses focus. */
 function MinutesBox({ value, max, onChange }: { value: number | null; max: number; onChange: (m: number) => void }) {
   const [v, setV] = useState(value ? String(value) : '');
   useEffect(() => { setV(value ? String(value) : ''); }, [value]);
@@ -146,8 +146,8 @@ function MinutesBox({ value, max, onChange }: { value: number | null; max: numbe
   return (
     <Row gap={6}>
       <Field value={v} onChangeText={(x) => setV(x.replace(/[^0-9]/g, '').slice(0, 4))} onEndEditing={commit} onSubmitEditing={commit} keyboardType="number-pad" returnKeyType="done"
-        placeholder={t('غير (بالدقايق)')} style={{ minHeight: 38, width: 150, borderRadius: 999, fontSize: 13, borderColor: value ? C.ink : bad ? C.red : C.line }} />
-      {bad ? <T v="tiny" color={C.red}>{t('من 1 لـ {0}', [String(max)])}</T> : null}
+        placeholder={t('أخرى (بالدقائق)')} style={{ minHeight: 38, width: 150, borderRadius: 999, fontSize: 13, borderColor: value ? C.ink : bad ? C.red : C.line }} />
+      {bad ? <T v="tiny" color={C.red}>{t('من 1 إلى {0}', [String(max)])}</T> : null}
     </Row>
   );
 }

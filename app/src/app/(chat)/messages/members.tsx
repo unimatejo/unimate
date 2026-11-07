@@ -13,7 +13,7 @@ import { C, F, R, isDark } from '@/lib/theme';
 import { toast } from '@/lib/toast';
 import type { Member } from './info';
 
-const ROLE: Record<string, string> = { owner: t('صاحب الجروب'), admin: t('مشرف'), member: '' };
+const ROLE: Record<string, string> = { owner: t('مالك المجموعة'), admin: t('مشرف'), member: '' };
 
 /** Everyone in the group with photo, name, @username and title; managers can promote or remove. */
 export default function Members() {
@@ -48,15 +48,15 @@ export default function Members() {
     const { error } = await fn();
     if (error) {
       const m = error.message ?? '';
-      Alert.alert(t('ما زبط'), /owner_only/.test(m) ? t('بس صاحب الجروب بيقدر يعمل هاد.') : /cannot_remove_owner|cannot_change_owner/.test(m) ? t('ما بتقدر تغيّر صاحب الجروب.') : t('بس المشرفين بيقدروا يعملوا هاد.'));
+      Alert.alert(t('تعذّر ذلك'), /owner_only/.test(m) ? t('يمكن لمالك المجموعة فقط القيام بذلك.') : /cannot_remove_owner|cannot_change_owner/.test(m) ? t('لا يمكنك تغيير مالك المجموعة.') : t('يمكن للمشرفين فقط القيام بذلك.'));
       return;
     }
     toast(ok); load();
   }
   function remove(m: Member) {
-    Alert.alert(t('تشيل {0} من الجروب؟', [m.full_name.split(' ')[0]]), t('ما رح توصله رسائل الجروب.'), [
+    Alert.alert(t('إزالة {0} من المجموعة؟', [m.full_name.split(' ')[0]]), t('لن تصله رسائل المجموعة.'), [
       { text: t('لا'), style: 'cancel' },
-      { text: t('شيله'), style: 'destructive', onPress: () => act(() => supabase.rpc('group_remove_member', { conv: id, uid: m.user_id }), t('انشال من الجروب')) },
+      { text: t('إزالة'), style: 'destructive', onPress: () => act(() => supabase.rpc('group_remove_member', { conv: id, uid: m.user_id }), t('تمت الإزالة من المجموعة')) },
     ]);
   }
 
@@ -66,7 +66,7 @@ export default function Members() {
       <View style={{ paddingHorizontal: 16, paddingBottom: 8 }}>
         <Row gap={8} style={{ minHeight: 46, borderRadius: R.md, backgroundColor: C.soft, paddingHorizontal: 14 }}>
           <Search size={18} color={C.muted} />
-          <TextInput keyboardAppearance={isDark ? 'dark' : 'light'} value={q} onChangeText={setQ} placeholder={t('ابحث بالأعضاء')} placeholderTextColor={C.muted}
+          <TextInput keyboardAppearance={isDark ? 'dark' : 'light'} value={q} onChangeText={setQ} placeholder={t('ابحث في الأعضاء')} placeholderTextColor={C.muted}
             style={{ flex: 1, fontFamily: F.body, fontSize: 15, color: C.ink, textAlign: ta }} />
         </Row>
       </View>
@@ -88,7 +88,7 @@ export default function Members() {
                 </Row>
                 <Row gap={6}>
                   {m.username ? <T v="small" color={C.muted} numberOfLines={1}>{`⁦@${m.username}⁩`}</T> : null}
-                  {m.state === 'request' ? <T v="tiny" color={C.muted}>{t('· ما قبل لسا')}</T> : null}
+                  {m.state === 'request' ? <T v="tiny" color={C.muted}>{t('· لم يقبل بعد')}</T> : null}
                 </Row>
               </View>
               {ROLE[m.role] ? <View style={{ paddingHorizontal: 10, paddingVertical: 4, borderRadius: R.pill, backgroundColor: m.role === 'owner' ? C.primarySoft : C.soft }}><T v="tiny" color={m.role === 'owner' ? C.primaryDark : C.ink2}>{ROLE[m.role]}</T></View> : null}
@@ -109,9 +109,9 @@ export default function Members() {
               <T v="h3" numberOfLines={1} style={{ flex: 1 }}>{menu.full_name}</T>
             </Row>
             {menu.role === 'admin'
-              ? <MenuRow icon={<ShieldCheck size={21} color={C.ink} />} label={t('شيل الإشراف')} onPress={() => act(() => supabase.rpc('group_set_role', { conv: id, uid: menu.user_id, p_role: 'member' }), t('ما عاد مشرف'))} />
-              : <MenuRow icon={<UserPlus size={21} color={C.ink} />} label={t('اعمله مشرف')} onPress={() => act(() => supabase.rpc('group_set_role', { conv: id, uid: menu.user_id, p_role: 'admin' }), t('صار مشرف'))} />}
-            <MenuRow icon={<UserMinus size={21} color={C.danger} />} label={t('شيله من الجروب')} danger onPress={() => remove(menu)} />
+              ? <MenuRow icon={<ShieldCheck size={21} color={C.ink} />} label={t('إزالة الإشراف')} onPress={() => act(() => supabase.rpc('group_set_role', { conv: id, uid: menu.user_id, p_role: 'member' }), t('لم يعد مشرفًا'))} />
+              : <MenuRow icon={<UserPlus size={21} color={C.ink} />} label={t('اجعله مشرفاً')} onPress={() => act(() => supabase.rpc('group_set_role', { conv: id, uid: menu.user_id, p_role: 'admin' }), t('أصبح مشرفًا'))} />}
+            <MenuRow icon={<UserMinus size={21} color={C.danger} />} label={t('إزالته من المجموعة')} danger onPress={() => remove(menu)} />
           </>
         )}
       </SheetModal>

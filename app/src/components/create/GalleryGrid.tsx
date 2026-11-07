@@ -92,8 +92,8 @@ export function GalleryGrid({ kind, album, selected, multi, activeId, busyId, on
         {header}
         <View style={{ alignItems: 'center', gap: 10, padding: 28 }}>
           <View style={{ width: 64, height: 64, borderRadius: 32, backgroundColor: C.soft, alignItems: 'center', justifyContent: 'center' }}><ImageOff size={26} color={C.muted} /></View>
-          <T v="bodyMd" style={{ textAlign: 'center' }}>{t('اسمح ليونيميت يشوف صورك')}</T>
-          <T v="small" color={C.muted} style={{ textAlign: 'center', maxWidth: 280 }}>{t('عشان تطلع صورك وفيديوهاتك هون وتختار منها بكبسة، زي إنستغرام.')}</T>
+          <T v="bodyMd" style={{ textAlign: 'center' }}>{t('اسمح ليونيميت بالوصول إلى صورك')}</T>
+          <T v="small" color={C.muted} style={{ textAlign: 'center', maxWidth: 280 }}>{t('لتظهر صورك وفيديوهاتك هنا وتختار منها بلمسة، مثل إنستغرام.')}</T>
           <Tap onPress={() => Linking.openSettings()} style={{ flexDirection: 'row', alignItems: 'center', gap: 8, minHeight: 44, paddingHorizontal: 18, borderRadius: R.pill, backgroundColor: C.primary }}>
             <Settings size={16} color={C.onPrimary} /><T v="bold" color={C.onPrimary}>{t('افتح الإعدادات')}</T>
           </Tap>
@@ -127,7 +127,7 @@ export function GalleryGrid({ kind, album, selected, multi, activeId, busyId, on
       extraData={`${selected.join(',')}|${activeId}|${busyId}|${multi}`}
       contentContainerStyle={{ paddingBottom: contentBottom }}
       ListFooterComponent={loading ? <View style={{ padding: 18 }}><ActivityIndicator color={C.muted} /></View> : undefined}
-      ListEmptyComponent={perm === 'granted' && !loading ? <T v="small" color={C.muted} style={{ textAlign: 'center', padding: 28 }}>{t('ما في صور هون.')}</T> : perm === null ? <View style={{ padding: 28 }}><ActivityIndicator color={C.muted} /></View> : undefined}
+      ListEmptyComponent={perm === 'granted' && !loading ? <T v="small" color={C.muted} style={{ textAlign: 'center', padding: 28 }}>{t('لا توجد صور هنا.')}</T> : perm === null ? <View style={{ padding: 28 }}><ActivityIndicator color={C.muted} /></View> : undefined}
     />
   );
 }

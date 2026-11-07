@@ -14,10 +14,10 @@ export default function Unsupported() {
       <View style={{ flex: 1, justifyContent: 'center', padding: 24 }}>
         <Empty
           icon={<School size={30} color={C.primary} />}
-          title={t('جامعتك لسا مش على يونيميت')}
-          body={t('بنضيف الجامعات وحدة وحدة. ادخل بإيميلك الجامعي الرسمي، وإذا جامعتك مش موجودة رح نخبرك أول ما تنضاف.')}
+          title={t('جامعتك ليست على يونيميت بعد')}
+          body={t('نضيف الجامعات تباعاً. سجّل الدخول ببريدك الجامعي الرسمي، وإذا لم تكن جامعتك متاحة فسنبلغك فور إضافتها.')}
         />
-        <Button kind="dark" title={t('ادخل بإيميل ثاني')} onPress={signOut} />
+        <Button kind="dark" title={t('سجّل الدخول ببريد إلكتروني آخر')} onPress={signOut} />
       </View>
     </Screen>
   );

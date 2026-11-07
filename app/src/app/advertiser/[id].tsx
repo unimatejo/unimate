@@ -39,14 +39,14 @@ export default function Advertiser() {
   function call() {
     if (!a?.phone) return;
     if (campaign) supabase.rpc('track_ad', { campaign, what: 'call' }).then(() => {}, () => {});
-    Linking.openURL(`tel:${a.phone.replace(/[^\d+]/g, '')}`).catch(() => Alert.alert(t('ما قدرنا نفتح الرابط')));
+    Linking.openURL(`tel:${a.phone.replace(/[^\d+]/g, '')}`).catch(() => Alert.alert(t('تعذّر فتح الرابط')));
   }
 
   if (state !== 'ok' || !a) return (
     <Screen><Header title="" />
-      {state === 'loading' ? <Loading /> : <Empty icon={<CircleAlert size={28} color={C.muted} />} title={state === 'missing' ? t('هالصفحة مش متوفرة') : t('ما قدرنا نحمّل')}
-        body={state === 'missing' ? t('يمكن الإعلان خلص.') : t('تأكد من الإنترنت وجرّب كمان مرة.')}
-        action={state === 'error' ? <Button kind="soft" title={t('جرّب مرة ثانية')} onPress={load} style={{ paddingHorizontal: 24 }} /> : undefined} />}
+      {state === 'loading' ? <Loading /> : <Empty icon={<CircleAlert size={28} color={C.muted} />} title={state === 'missing' ? t('هذه الصفحة غير متوفرة') : t('تعذّر التحميل')}
+        body={state === 'missing' ? t('ربما انتهى الإعلان.') : t('تحقق من اتصالك بالإنترنت وحاول مرة أخرى.')}
+        action={state === 'error' ? <Button kind="soft" title={t('حاول مرة أخرى')} onPress={load} style={{ paddingHorizontal: 24 }} /> : undefined} />}
     </Screen>
   );
   const cover = a.photos[0];
@@ -96,8 +96,8 @@ export default function Advertiser() {
               </MapView>
             </View>
             {a.building_id
-              ? <Button title={t('وديني')} onPress={() => router.push({ pathname: '/map', params: { building: a.building_id, go: '1' } })} />
-              : <Button kind="soft" title={t('شوفه على خريطة الجامعة')} onPress={() => router.push({ pathname: '/map', params: { advertiser: a.id } })} />}
+              ? <Button title={t('الاتجاهات')} onPress={() => router.push({ pathname: '/map', params: { building: a.building_id, go: '1' } })} />
+              : <Button kind="soft" title={t('اعرضه على خريطة الجامعة')} onPress={() => router.push({ pathname: '/map', params: { advertiser: a.id } })} />}
           </View>
         )}
       </ScrollView>

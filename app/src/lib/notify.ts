@@ -33,11 +33,11 @@ export function scheduleLectureReminders(meetings: Meeting[], off: Record<string
 
 /** "In 10 minutes: <course>" — tapping it opens the walk to the room (lib/webpush useOpenTapped), else the timetable. */
 function lectureContent(m: Meeting, minutes: number): Notifications.NotificationContentInput {
-  const where = m.kind === 'online' ? t('أونلاين') : m.kind === 'blended' && !m.room_code && !m.building_name ? t('مدمج') : [m.building_name, m.room_code ? t('قاعة {0}', [m.room_code]) : null].filter(Boolean).join(' · ');
+  const where = m.kind === 'online' ? t('عبر الإنترنت') : m.kind === 'blended' && !m.room_code && !m.building_name ? t('مدمج') : [m.building_name, m.room_code ? t('قاعة {0}', [m.room_code]) : null].filter(Boolean).join(' · ');
   const walk = !!m.building_id && m.kind !== 'online';
   return {
-    title: t('بعد {0} دقايق: {1}', [minutes, m.course_name]),
-    body: walk ? t('{0} · {1} · اكبس وبوديك للقاعة', [where, clock(m.starts_at)]) : t('{0} · {1}', [where || t('شوف القاعة بالجدول'), clock(m.starts_at)]),
+    title: t('بعد {0} دقائق: {1}', [minutes, m.course_name]),
+    body: walk ? t('{0} · {1} · اضغط للانتقال إلى القاعة', [where, clock(m.starts_at)]) : t('{0} · {1}', [where || t('عرض القاعة في الجدول'), clock(m.starts_at)]),
     data: { kind: 'lecture', meeting: m.id, building: m.building_id, url: walk ? roomUrl(m) : '/(tabs)/schedule' },
   };
 }
@@ -94,7 +94,7 @@ async function doSchedule(meetings: Meeting[], off: Record<string, boolean>, use
       if (!next.length) continue;
       await Notifications.scheduleNotificationAsync({
         identifier: `night-${d}`,
-        content: { title: t('بكرة عندك {0}', [next.length === 1 ? t('محاضرة وحدة') : t('{0} محاضرات', [next.length])]), body: next.map((m) => `${clock(m.starts_at)} ${m.course_name}`).join('\n'), data: { kind: 'summary' } },
+        content: { title: t('لديك غداً {0}', [next.length === 1 ? t('محاضرة واحدة') : t('{0} محاضرات', [next.length])]), body: next.map((m) => `${clock(m.starts_at)} ${m.course_name}`).join('\n'), data: { kind: 'summary' } },
         trigger: { type: Notifications.SchedulableTriggerInputTypes.WEEKLY, weekday: d + 1, hour: 21, minute: 0, channelId: 'lectures' },
       });
     }

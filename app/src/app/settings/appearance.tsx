@@ -79,11 +79,11 @@ export default function Appearance() {
         <View style={{ gap: 8 }}>
           <T v="small" color={C.muted} style={{ paddingHorizontal: 6 }}>{t('اللغة')}</T>
           <View style={{ backgroundColor: C.card, borderRadius: 22, overflow: 'hidden' }}>
-            <Option icon={<GlyphTile icon={Smartphone} colors={GRAD.slate} size={36} />} label={t('حسب لغة التلفون')} on={lng === 'system'} onPress={() => pickLang('system')} />
+            <Option icon={<GlyphTile icon={Smartphone} colors={GRAD.slate} size={36} />} label={t('حسب لغة الجهاز')} on={lng === 'system'} onPress={() => pickLang('system')} />
             <Option icon={<GlyphTile icon={Languages} colors={GRAD.green} size={36} />} label="العربية" on={lng === 'ar'} onPress={() => pickLang('ar')} />
             <Option icon={<GlyphTile icon={Languages} colors={GRAD.blue} size={36} />} label="English" on={lng === 'en'} onPress={() => pickLang('en')} />
           </View>
-          <Row gap={6} style={{ paddingHorizontal: 6 }}><T v="tiny" color={C.muted}>{t('التطبيق بيعيد التشغيل ثانية وحدة لما تغيّر.')}</T></Row>
+          <Row gap={6} style={{ paddingHorizontal: 6 }}><T v="tiny" color={C.muted}>{t('سيُعاد تشغيل التطبيق لثانية واحدة عند التغيير.')}</T></Row>
         </View>
       </ScrollView>
     </Screen>

@@ -65,7 +65,7 @@ export default function PostScreen() {
     const body = draft.trim();
     setSending(true);
     const r = await run(supabase.from('comments').insert({ post_id: id, author_id: profile.id, body, parent_id: replyTo?.id ?? null })
-      .select('id, author_id, parent_id, body, created_at, author:profiles!comments_author_id_fkey(full_name, avatar_url, academic_title, title_verified)').single(), { msg: t('ما انبعت التعليق، جرّب كمان مرة.') });
+      .select('id, author_id, parent_id, body, created_at, author:profiles!comments_author_id_fkey(full_name, avatar_url, academic_title, title_verified)').single(), { msg: t('لم يُرسل التعليق، حاول مرة أخرى.') });
     setSending(false);
     if (!r.ok || !r.data) return; // the text stays in the box
     setDraft(''); setReplyTo(null);
@@ -73,7 +73,7 @@ export default function PostScreen() {
   }
 
   async function remove() {
-    Alert.alert(t('حذف المنشور؟'), t('ما بترجع.'), [{ text: t('إلغاء'), style: 'cancel' }, { text: t('حذف'), style: 'destructive', onPress: async () => { const r = await run(supabase.from('posts').delete().eq('id', id)); if (r.ok) { toast(t('انحذف المنشور')); router.back(); } } }]);
+    Alert.alert(t('حذف المنشور؟'), t('لا يمكن التراجع عن ذلك.'), [{ text: t('إلغاء'), style: 'cancel' }, { text: t('حذف'), style: 'destructive', onPress: async () => { const r = await run(supabase.from('posts').delete().eq('id', id)); if (r.ok) { toast(t('تم حذف المنشور')); router.back(); } } }]);
   }
 
   /** Long-press a comment: copy-free menu to reply, report, or delete (own comment, or any comment on my post). */
@@ -109,7 +109,7 @@ export default function PostScreen() {
             const own = item.author_id === post?.author_id;
             return (
               <Animated.View entering={FadeInDown}>
-              <Tap haptic={false} scale={0.99} onLongPress={() => commentMenu(item)} onPress={() => {}} accessibilityHint={t('اكبس مطوّل للخيارات')} style={{ flexDirection: 'row', gap: 10, marginStart: item.parent_id ? 40 : 0 }}>
+              <Tap haptic={false} scale={0.99} onLongPress={() => commentMenu(item)} onPress={() => {}} accessibilityHint={t('اضغط مطولاً لعرض الخيارات')} style={{ flexDirection: 'row', gap: 10, marginStart: item.parent_id ? 40 : 0 }}>
                 <Avatar id={item.author_id} name={item.author?.full_name} url={item.author?.avatar_url} size={item.parent_id ? 32 : 36} />
                 <View style={{ flex: 1, gap: 4 }}>
                   <View style={{ backgroundColor: C.card, borderRadius: 18, borderTopRightRadius: 6, paddingHorizontal: 12, paddingVertical: 8, alignSelf: 'flex-start' }}>
@@ -130,17 +130,17 @@ export default function PostScreen() {
               </Animated.View>
             );
           }}
-          ListEmptyComponent={state === 'ok' ? <T v="small" color={C.muted}>{t('كون أول واحد بيعلّق.')}</T>
+          ListEmptyComponent={state === 'ok' ? <T v="small" color={C.muted}>{t('كن أول من يعلّق.')}</T>
             : state === 'loading' ? <PostSkeleton />
-            : <Empty icon={<CircleAlert size={28} color={C.muted} />} title={state === 'missing' ? t('المنشور مش موجود') : t('ما قدرنا نحمّل')}
-                body={state === 'missing' ? t('يمكن صاحبه حذفه أو ما بتقدر تشوفه.') : t('تأكد من الإنترنت وجرّب كمان مرة.')}
-                action={state === 'error' ? <Button kind="soft" title={t('جرّب مرة ثانية')} onPress={() => { setState('loading'); load(); }} /> : undefined} />}
+            : <Empty icon={<CircleAlert size={28} color={C.muted} />} title={state === 'missing' ? t('المنشور غير موجود') : t('تعذّر التحميل')}
+                body={state === 'missing' ? t('ربما حذفه صاحبه أو لا يمكنك رؤيته.') : t('تحقق من اتصالك بالإنترنت وحاول مرة أخرى.')}
+                action={state === 'error' ? <Button kind="soft" title={t('حاول مرة أخرى')} onPress={() => { setState('loading'); load(); }} /> : undefined} />}
         />
         {post && <View style={{ backgroundColor: C.card, paddingHorizontal: 12, paddingTop: 8, paddingBottom: insets.bottom + 8, borderTopWidth: 1, borderTopColor: C.line, gap: 6 }}>
           {replyTo && <Row gap={6}><T v="tiny" color={C.muted} style={{ flex: 1 }}>{t('رد على')} {replyTo.author?.full_name}</T><Tap onPress={() => setReplyTo(null)}><T v="tiny" color={C.primary}>{t('إلغاء')}</T></Tap></Row>}
           <Row gap={8}>
-            <TextInput keyboardAppearance={isDark ? 'dark' : 'light'} value={draft} onChangeText={setDraft} placeholder={t('اكتب تعليق...')} placeholderTextColor={C.faint} multiline
-              style={{ flex: 1, minHeight: 46, maxHeight: 110, borderRadius: 23, backgroundColor: C.field, paddingHorizontal: 16, paddingVertical: 11, fontFamily: F.body, fontSize: 15, textAlign: ta, color: C.ink }} accessibilityLabel={t('اكتب تعليق')} />
+            <TextInput keyboardAppearance={isDark ? 'dark' : 'light'} value={draft} onChangeText={setDraft} placeholder={t('اكتب تعليقاً...')} placeholderTextColor={C.faint} multiline
+              style={{ flex: 1, minHeight: 46, maxHeight: 110, borderRadius: 23, backgroundColor: C.field, paddingHorizontal: 16, paddingVertical: 11, fontFamily: F.body, fontSize: 15, textAlign: ta, color: C.ink }} accessibilityLabel={t('اكتب تعليقاً')} />
             <Tap onPress={send} disabled={sending || !draft.trim()} accessibilityLabel={t('إرسال')} style={{ width: 46, height: 46, borderRadius: 23, backgroundColor: draft.trim() ? C.primary : C.line, alignItems: 'center', justifyContent: 'center' }}>
               <Send size={19} color={C.white} style={isAR ? { transform: [{ scaleX: -1 }] } : undefined} />
             </Tap>

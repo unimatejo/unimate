@@ -21,7 +21,7 @@ export async function run<T>(p: PromiseLike<Res<T>>, opts: { quiet?: boolean; ms
     return { ok: true, data, error: null };
   } catch (e) {
     reportError(e);
-    if (!opts.quiet) toast.error(opts.msg ?? t('تأكد من الإنترنت وجرّب كمان مرة.'));
+    if (!opts.quiet) toast.error(opts.msg ?? t('تحقق من اتصالك بالإنترنت وحاول مرة أخرى.'));
     return { ok: false, data: null, error: { message: e instanceof Error ? e.message : String(e) } };
   }
 }
@@ -39,12 +39,12 @@ export function userMessage(e: unknown): string {
 
 export function friendly(e: { message?: string; code?: string } | null | undefined): string {
   const m = e?.message ?? '';
-  if (isRateLimited(e)) return t('استنى شوي، بعتت كثير بوقت قصير.');
-  if (/username_not_allowed|name_not_allowed|bad_alias/.test(m)) return t('هالاسم فيه كلمة مش مسموحة. جرّب اسم ثاني.');
-  if (/fetch|network|Failed to fetch|timeout/i.test(m)) return t('تأكد من الإنترنت وجرّب كمان مرة.');
-  if (e?.code === '23505') return t('موجود من قبل.');
-  if (e?.code === '42501' || /row-level security|permission/i.test(m)) return t('ما عندك صلاحية لهالإشي.');
-  return t('صار خطأ، جرّب كمان مرة.');
+  if (isRateLimited(e)) return t('انتظر قليلاً، لقد أرسلت كثيراً في وقت قصير.');
+  if (/username_not_allowed|name_not_allowed|bad_alias/.test(m)) return t('يحتوي هذا الاسم على كلمة غير مسموح بها. جرّب اسمًا آخر.');
+  if (/fetch|network|Failed to fetch|timeout/i.test(m)) return t('تحقق من اتصالك بالإنترنت وحاول مرة أخرى.');
+  if (e?.code === '23505') return t('موجود مسبقًا.');
+  if (e?.code === '42501' || /row-level security|permission/i.test(m)) return t('ليست لديك صلاحية لهذا الإجراء.');
+  return t('حدث خطأ، حاول مرة أخرى.');
 }
 
 /**

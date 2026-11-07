@@ -74,7 +74,7 @@ export function CoverPicker({ video, onDone, onCancel }: { video: Picked; onDone
     if (photo) { onDone(photo); return; }
     setBusy(true);
     try { onDone(await frameAt(video.uri, at, player)); }
-    catch (e) { reportError(e); Alert.alert(t('ما زبط'), t('ما قدرنا ناخذ هالصورة من الفيديو، جرّب لحظة ثانية.')); }
+    catch (e) { reportError(e); Alert.alert(t('تعذّر ذلك'), t('تعذّر أخذ هذه الصورة من الفيديو، جرّب لحظة أخرى.')); }
     finally { setBusy(false); }
   }
 
@@ -100,7 +100,7 @@ export function CoverPicker({ video, onDone, onCancel }: { video: Picked; onDone
 
           <View style={{ gap: 14, paddingHorizontal: 20 }}>
             <T v="tiny" color={MUTED} style={{ textAlign: 'center' }}>
-              {photo ? t('هاي الصورة رح تبيّن على الفيديو قبل ما يشتغل') : t('حرّك المربع للّقطة اللي بتجذب اللي بيشوف صفحتك')}
+              {photo ? t('ستظهر هذه الصورة على الفيديو قبل تشغيله') : t('حرّك المربع إلى اللقطة التي تجذب زوّار صفحتك')}
             </T>
             <View onLayout={(e) => setW(e.nativeEvent.layout.width)} style={{ height: STRIP + 8, justifyContent: 'center', direction: 'ltr', opacity: photo ? 0.45 : 1 }}>
               <View style={{ height: STRIP, borderRadius: 12, overflow: 'hidden', flexDirection: 'row', backgroundColor: 'rgba(255,255,255,0.08)' }}>

@@ -14,13 +14,13 @@ type Link = { url: string; synced_at: string | null; last_count: number };
 const STALE = 12 * 3600000; // re-read Moodle at most twice a day, when the screen opens
 
 const ERR: Record<string, string> = {
-  not_university: t('الرابط لازم يكون من مودل جامعتك.'),
-  not_export_link: t('هاد مش رابط تصدير التقويم. انسخ «رابط التقويم» من صفحة التصدير.'),
-  bad_link: t('الرابط مش صحيح.'),
-  moodle_refused: t('المودل ما قبل الرابط. يمكن انتهى، اعمل رابط جديد.'),
-  moodle_unreachable: t('ما قدرنا نوصل للمودل هلأ، جرّب بعدين.'),
-  not_calendar: t('المودل ما قبل الرابط: يمكن انتهى أو انتسخ ناقص. اعمل رابط جديد والصقه كامل.'),
-  too_big: t('التقويم كبير كثير.'),
+  not_university: t('يجب أن يكون الرابط من Moodle جامعتك.'),
+  not_export_link: t('هذا ليس رابط تصدير التقويم. انسخ «رابط التقويم» من صفحة التصدير.'),
+  bad_link: t('الرابط غير صحيح.'),
+  moodle_refused: t('لم يقبل Moodle الرابط. ربما انتهت صلاحيته، أنشئ رابطاً جديداً.'),
+  moodle_unreachable: t('تعذّر الوصول إلى Moodle الآن، حاول لاحقًا.'),
+  not_calendar: t('لم يقبل Moodle الرابط: ربما انتهت صلاحيته أو نُسخ ناقصاً. أنشئ رابطاً جديداً والصقه كاملاً.'),
+  too_big: t('التقويم كبير جداً.'),
 };
 
 async function call(body: Record<string, unknown>) {
@@ -28,7 +28,7 @@ async function call(body: Record<string, unknown>) {
   if (!error) return { ok: true as const, data: data as { added: number; updated: number; found: number; matched: number } };
   let code = '';
   try { code = (await (error as { context?: Response }).context?.json())?.error ?? ''; } catch { /* no body */ }
-  return { ok: false as const, msg: ERR[code] ?? t('ما زبط، جرّب كمان مرة.') };
+  return { ok: false as const, msg: ERR[code] ?? t('تعذّر ذلك، حاول مرة أخرى.') };
 }
 
 /**
@@ -55,7 +55,7 @@ export function MoodleImport({ onImported }: { onImported?: () => void }) {
     if (!r.ok) { if (!quiet) toast.error(r.msg); return false; }
     await load();
     if (!quiet || r.data.added || r.data.updated) {
-      toast(r.data.added ? t('انضاف {0} موعد من المودل ✓', [String(r.data.added)]) : t('كل مواعيد المودل عندك ✓'));
+      toast(r.data.added ? t('تمت إضافة {0} موعد من Moodle ✓', [String(r.data.added)]) : t('كل مواعيد Moodle لديك ✓'));
       onImported?.();
     }
     return true;
@@ -73,7 +73,7 @@ export function MoodleImport({ onImported }: { onImported?: () => void }) {
   }
 
   function forget() {
-    Alert.alert(t('تفصل المودل؟'), t('المواعيد اللي انضافت بتضل، بس ما رح يجي إشي جديد.'), [
+    Alert.alert(t('فصل Moodle؟'), t('تبقى المواعيد المضافة، لكن لن تُضاف مواعيد جديدة.'), [
       { text: t('لا'), style: 'cancel' },
       { text: t('افصل'), style: 'destructive', onPress: async () => { await call({ forget: true }); load(); } },
     ]);
@@ -86,10 +86,10 @@ export function MoodleImport({ onImported }: { onImported?: () => void }) {
         <Row gap={10} style={[{ backgroundColor: C.card, borderRadius: 20, padding: 12 }, shadow]}>
           <GraduationCap size={20} color={C.primary} />
           <View style={{ flex: 1 }}>
-            <T v="bodyMd">{t('مربوط بالمودل')}</T>
-            <T v="tiny" color={C.muted}>{link.synced_at ? t('آخر تحديث {0}', [new Date(link.synced_at).toLocaleString(LOCALE, { weekday: 'short', hour: 'numeric', minute: '2-digit' })]) : t('لسا ما تحدّث')}</T>
+            <T v="bodyMd">{t('مرتبط بـ Moodle')}</T>
+            <T v="tiny" color={C.muted}>{link.synced_at ? t('آخر تحديث {0}', [new Date(link.synced_at).toLocaleString(LOCALE, { weekday: 'short', hour: 'numeric', minute: '2-digit' })]) : t('لم يُحدَّث بعد')}</T>
           </View>
-          <Tap onPress={() => sync()} disabled={busy} accessibilityRole="button" accessibilityLabel={t('حدّث من المودل')} style={{ padding: 8 }}>
+          <Tap onPress={() => sync()} disabled={busy} accessibilityRole="button" accessibilityLabel={t('تحديث من Moodle')} style={{ padding: 8 }}>
             <RefreshCw size={18} color={busy ? C.faint : C.ink} />
           </Tap>
           <Tap onPress={forget} accessibilityRole="button" style={{ padding: 8 }}><T v="tiny" color={C.red}>{t('افصل')}</T></Tap>
@@ -101,22 +101,22 @@ export function MoodleImport({ onImported }: { onImported?: () => void }) {
             <GraduationCap size={21} color={C.primary} />
           </View>
           <View style={{ flex: 1 }}>
-            <T v="bold">{t('جيب واجباتك من المودل')}</T>
-            <T v="tiny" color={C.muted}>{t('المصدر الرسمي: واجباتك وامتحاناتك حسب تسجيلك الحقيقي، وبتتحدّث لحالها')}</T>
+            <T v="bold">{t('استورد واجباتك من Moodle')}</T>
+            <T v="tiny" color={C.muted}>{t('المصدر الرسمي: واجباتك وامتحاناتك وفق تسجيلك الفعلي، وتتحدّث تلقائياً')}</T>
           </View>
           <T v="small" color={C.primary} style={{ fontFamily: F.bodyBold }}>{t('اربط')}</T>
         </Tap>
       )}
 
-      <RideSheet open={open} onClose={() => setOpen(false)} title={t('اربط المودل')} sub={t('بتاخد دقيقة وحدة')}>
+      <RideSheet open={open} onClose={() => setOpen(false)} title={t('اربط Moodle')} sub={t('يستغرق دقيقة واحدة')}>
         <View style={{ gap: 6, backgroundColor: C.soft, borderRadius: 16, padding: 12 }}>
-          {[t('افتح مودل جامعتك من المتصفح وسجّل دخول (الهاشمية: lms.hu.edu.jo).'), t('روح على «التقويم»، وتحت اكبس «استيراد أو تصدير التقويمات» وبعدين «تصدير التقويم».'),
-            t('اختار «كل الأحداث» و«الأيام الـ60 القادمة» أو «الفترة المخصصة».'), t('اكبس «احصل على رابط التقويم» وانسخ الرابط والصقه هون.')]
+          {[t('افتح Moodle جامعتك من المتصفح وسجّل الدخول (الهاشمية: lms.hu.edu.jo).'), t('انتقل إلى «التقويم»، ثم اضغط في الأسفل على «استيراد أو تصدير التقويمات» ثم «تصدير التقويم».'),
+            t('اختر «كل الأحداث» و«الأيام الـ60 القادمة» أو «الفترة المخصصة».'), t('اضغط «احصل على رابط التقويم» وانسخ الرابط والصقه هنا.')]
             .map((s, i) => <T key={i} v="small" color={C.ink2}>{`${i + 1}. ${s}`}</T>)}
         </View>
         <Field value={url} onChangeText={setUrl} placeholder="https://…/calendar/export_execute.php?…" autoCapitalize="none" autoCorrect={false} keyboardType="url"
           style={{ textAlign: 'left', writingDirection: 'ltr', fontSize: 13 }} />
-        <T v="tiny" color={C.muted}>{t('الرابط بيضل إلك بس، وبنقرأ منه المواعيد وبس. بتقدر تفصله بأي وقت.')}</T>
+        <T v="tiny" color={C.muted}>{t('يبقى الرابط خاصاً بك، ونقرأ منه المواعيد فقط. يمكنك فصله في أي وقت.')}</T>
         <Button title={t('استورد')} onPress={connect} loading={busy} disabled={busy || !url.trim()} />
       </RideSheet>
     </>

@@ -34,7 +34,7 @@ export const CourseRow = memo(function CourseRow({ c, scale, onChange, onDelete 
         <View style={{ flex: 1, gap: 2 }}>
           <T v="bold" numberOfLines={2}>{c.course_name}</T>
           <T v="tiny" color={planned ? C.violetInk : C.muted}>
-            {[c.course_code, planned ? t('لسا بدرسها') : null].filter(Boolean).join(' · ') || ' '}
+            {[c.course_code, planned ? t('ما زلت أدرسها') : null].filter(Boolean).join(' · ') || ' '}
           </T>
         </View>
         {/* hours stepper */}
@@ -56,14 +56,14 @@ export const CourseRow = memo(function CourseRow({ c, scale, onChange, onDelete 
       </Row>
 
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 6 }}>
-        <GradePill g={t('لسا')} on={planned} onPress={() => onChange({ grade: null })} />
+        <GradePill g={t('لاحقًا')} on={planned} onPress={() => onChange({ grade: null })} />
         {scale.map((s) => <GradePill key={s.g} g={s.g} on={c.grade === s.g} onPress={() => onChange({ grade: s.g })} />)}
         <GradePill g="P" on={c.grade === 'P'} onPress={() => onChange({ grade: 'P' })} />
       </ScrollView>
 
       {planned && (
         <View style={{ gap: 6 }}>
-          <T v="tiny" color={C.violetInk}>{t('العلامة اللي بدك تجيبها')}</T>
+          <T v="tiny" color={C.violetInk}>{t('العلامة التي تريد الحصول عليها')}</T>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 6 }}>
             {scale.map((s) => <GradePill key={s.g} soft g={s.g} on={c.target_grade === s.g} onPress={() => onChange({ target_grade: c.target_grade === s.g ? null : s.g })} />)}
           </ScrollView>

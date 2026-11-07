@@ -31,7 +31,7 @@ export function DrawTool({ W, H, strokes, onChange, onDone }: { W: number; H: nu
   };
   const point = (lx: number, ly: number) => [Math.min(1, Math.max(0, lx / W)), Math.min(1, Math.max(0, ly / H))] as const;
 
-  const tools: [Tool, string, typeof PenLine][] = [['pen', t('قلم'), PenLine], ['marker', t('ماركر'), Highlighter], ['neon', t('نيون'), Sparkles], ['eraser', t('ممحاة'), Eraser]];
+  const tools: [Tool, string, typeof PenLine][] = [['pen', t('قلم'), PenLine], ['marker', t('قلم تحديد'), Highlighter], ['neon', t('نيون'), Sparkles], ['eraser', t('ممحاة'), Eraser]];
   return (
     <Animated.View entering={FadeIn.duration(200)} style={{ position: 'absolute', top: 0, left: 0, width: W, height: H }}>
       {/* the strokes already drawn (only redrawn when they change) + the one being drawn on its own layer */}

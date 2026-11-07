@@ -16,7 +16,7 @@ type Section = { id: string; section_no: string; students: number };
 type College = { id: string; name_ar: string };
 
 const KINDS = Object.fromEntries(Object.entries(EVENT_KIND).filter(([k]) => k !== 'custom')) as Record<string, string>;
-const SCOPES: Record<Scope, string> = { section: t('شعبة وحدة'), course: t('كل شعب المادة'), college: t('كل مواد الكلية') };
+const SCOPES: Record<Scope, string> = { section: t('شعبة واحدة'), course: t('كل شعب المادة'), college: t('كل مواد الكلية') };
 
 /**
  * Admin › an official exam or deadline, straight to exactly one scope (admin_post_event, 0106): one section, every
@@ -68,24 +68,24 @@ export default function OfficialEvents() {
   async function post() {
     if (!target || busy) return;
     const at = when.toLocaleString(LOCALE, { weekday: 'long', day: 'numeric', month: 'long', hour: 'numeric', minute: '2-digit' });
-    if (!(await confirm(t('تنزّل الموعد الرسمي؟'), t('«{0}» · {1}\nلـ {2}. بيوصل إشعار لكل المسجلين.', [ttl, at, scopeName ?? '']), t('نزّله')))) return;
+    if (!(await confirm(t('نشر الموعد الرسمي؟'), t('«{0}» · {1}\nلـ {2}. سيصل إشعار إلى جميع المسجلين.', [ttl, at, scopeName ?? '']), t('انشره')))) return;
     setBusy(true); setMsg(null);
     const { data, error } = await supabase.rpc('admin_post_event', { p_scope: scope, p_target: target, p_kind: kind, p_title: ttl, p_starts: when.toISOString(), p_location: place.trim() || null });
     setBusy(false);
-    if (error) { setMsg(t('ما زبط: {0}', [error.message])); return; }
-    done(); setMsg(t('نزل ✓ ووصل لـ {0} طالب', [String(data ?? 0)])); setTitle(''); setPlace('');
+    if (error) { setMsg(t('تعذّر ذلك: {0}', [error.message])); return; }
+    done(); setMsg(t('نُشر ✓ ووصل إلى {0} طالب', [String(data ?? 0)])); setTitle(''); setPlace('');
   }
 
   return (
-    <AdminScreen title={t('مواعيد رسمية')} subtitle={t('امتحان أو تسليم بينزل فوراً للشعبة أو المادة أو الكلية بالضبط')}>
+    <AdminScreen title={t('مواعيد رسمية')} subtitle={t('امتحان أو تسليم يصل فوراً إلى الشعبة أو المادة أو الكلية المحددة بدقة')}>
       <Panel>
         <UniPicker value={uni} onChange={setUni} allowAll={false} />
-        <OptionPicker label={t('لمين')} value={scope} options={SCOPES} onChange={setScope} />
+        <OptionPicker label={t('لمن')} value={scope} options={SCOPES} onChange={setScope} />
         {scope === 'college'
-          ? <Item title={college?.name_ar ?? t('اختار الكلية')} sub={t('الكلية')} onPress={() => uni && setPick('college')} dim={!uni} />
-          : <Item title={course ? `${course.name_ar}${course.code && !course.code.startsWith('X') ? ` · ${course.code}` : ''}` : t('اختار المادة')} sub={t('المادة')} onPress={() => uni && setPick('course')} dim={!uni} />}
+          ? <Item title={college?.name_ar ?? t('اختر الكلية')} sub={t('الكلية')} onPress={() => uni && setPick('college')} dim={!uni} />
+          : <Item title={course ? `${course.name_ar}${course.code && !course.code.startsWith('X') ? ` · ${course.code}` : ''}` : t('اختر المادة')} sub={t('المادة')} onPress={() => uni && setPick('course')} dim={!uni} />}
         {scope === 'section' && course && (
-          <Item title={section ? `${sectionLabel(section.section_no)} · ${t('{0} طالب', [String(section.students)])}` : t('اختار الشعبة')} sub={t('الشعبة')} onPress={() => setPick('section')} />
+          <Item title={section ? `${sectionLabel(section.section_no)} · ${t('{0} طالب', [String(section.students)])}` : t('اختر الشعبة')} sub={t('الشعبة')} onPress={() => setPick('section')} />
         )}
       </Panel>
       <Panel>
@@ -94,9 +94,9 @@ export default function OfficialEvents() {
         <DateField value={when} onChange={(d) => { const x = new Date(when); x.setFullYear(d.getFullYear(), d.getMonth(), d.getDate()); setWhen(x); }} />
         <TimeField label={t('الساعة')} value={when} onChange={setWhen} />
         <Field label={t('المكان (اختياري)')} value={place} onChangeText={setPlace} maxLength={80} />
-        <Act label={t('نزّل الموعد')} kind="primary" onPress={post} disabled={!target || ttl.length < 2} loading={busy} />
+        <Act label={t('انشر الموعد')} kind="primary" onPress={post} disabled={!target || ttl.length < 2} loading={busy} />
         {msg && <T v="small" color={msg.includes('✓') ? C.greenInk : C.red}>{msg}</T>}
-        <Muted>{t('بيبيّن للطلاب بوسم «رسمي»، وما حدا بيقدر يشيله غير الإدارة.')}</Muted>
+        <Muted>{t('يظهر للطلاب بوسم «رسمي»، ولا يمكن لأحد إزالته سوى الإدارة.')}</Muted>
       </Panel>
 
       <Sheet open={pick === 'course'} onClose={() => setPick(null)} title={t('المادة')}>
@@ -104,7 +104,7 @@ export default function OfficialEvents() {
         {courses.map((c) => <Item key={c.id} title={c.name_ar} sub={c.code.startsWith('X') ? undefined : c.code} onPress={() => { setCourse(c); setPick(null); }} end={course?.id === c.id ? <Pill label="✓" tone="green" /> : undefined} />)}
       </Sheet>
       <Sheet open={pick === 'section'} onClose={() => setPick(null)} title={t('الشعبة')}>
-        {sections.length === 0 ? <Muted>{t('ما في شعب معروفة الرقم لهالمادة.')}</Muted>
+        {sections.length === 0 ? <Muted>{t('لا توجد شعب معروفة الرقم لهذه المادة.')}</Muted>
           : sections.map((s) => <Item key={s.id} title={sectionLabel(s.section_no)} sub={t('{0} طالب', [String(s.students)])} onPress={() => { setSection(s); setPick(null); }} end={section?.id === s.id ? <Pill label="✓" tone="green" /> : undefined} />)}
       </Sheet>
       <Sheet open={pick === 'college'} onClose={() => setPick(null)} title={t('الكلية')}>

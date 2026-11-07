@@ -17,23 +17,23 @@ export default function Notify() {
 
   async function send() {
     const who = uni ? unis.find((u) => u.id === uni)?.name_ar ?? '' : t('كل الطلاب بكل الجامعات');
-    if (!(await confirm(t('تبعت الإشعار؟'), t('رح يوصل الإشعار لـ {0}.', [who]), t('ابعت')))) return;
+    if (!(await confirm(t('إرسال الإشعار؟'), t('سيصل الإشعار إلى {0}.', [who]), t('أرسل')))) return;
     setBusy(true);
     const { data, error } = await supabase.rpc('admin_notify', { title: title.trim(), body: body.trim() || null, target: null, uni: uni || null });
     setBusy(false);
-    setMsg(error ? error.message : t('انبعت لـ {0} طالب ✓', [String(data)]));
+    setMsg(error ? error.message : t('تم الإرسال إلى {0} طالب ✓', [String(data)]));
     if (!error) { done(); setTitle(''); setBody(''); }
   }
 
   return (
-    <AdminScreen ownerOnly title={t('إرسال إشعار')} subtitle={t('بيطلع بصفحة الإشعارات، وبيوصل كإشعار للي مفعّلين')}>
+    <AdminScreen ownerOnly title={t('إرسال إشعار')} subtitle={t('يظهر في صفحة الإشعارات، ويصل كإشعار لمن فعّلوها')}>
       <Panel>
-        <UniPicker value={uni} onChange={setUni} label={t('لمين')} />
+        <UniPicker value={uni} onChange={setUni} label={t('لمن')} />
         <Field label={t('العنوان')} value={title} onChangeText={setTitle} maxLength={80} />
         <Field label={t('النص')} value={body} onChangeText={setBody} maxLength={300} multiline style={{ minHeight: 100, paddingTop: 14 }} />
-        <Act label={t('ابعت')} kind="primary" onPress={send} disabled={title.trim().length < 3} loading={busy} />
+        <Act label={t('أرسل')} kind="primary" onPress={send} disabled={title.trim().length < 3} loading={busy} />
         {msg && <T v="small" color={msg.includes('✓') ? C.greenInk : C.red}>{msg}</T>}
-        <Muted>{t('الإشعار ما بينسحب بعد ما ينبعت.')}</Muted>
+        <Muted>{t('لا يمكن سحب الإشعار بعد إرساله.')}</Muted>
       </Panel>
     </AdminScreen>
   );

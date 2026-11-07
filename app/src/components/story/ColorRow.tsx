@@ -33,7 +33,7 @@ export function ColorRow({ value, onChange, size = 30 }: { value: string; onChan
 
   if (spectrum) return (
     <Animated.View entering={FadeIn.duration(180)} exiting={FadeOut.duration(120)} style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 14, height: size + 14, direction: 'ltr' }}>
-      <Pressable onPress={() => setSpectrum(false)} accessibilityLabel={t('رجوع للألوان')} hitSlop={8}
+      <Pressable onPress={() => setSpectrum(false)} accessibilityLabel={t('العودة إلى الألوان')} hitSlop={8}
         style={{ width: size, height: size, borderRadius: size / 2, borderWidth: 2, borderColor: '#fff', backgroundColor: value, alignItems: 'center', justifyContent: 'center' }}>
         <X size={14} color={value === '#FFFFFF' ? '#000' : '#fff'} />
       </Pressable>

@@ -12,7 +12,7 @@ type PerfGroup = { kind: 'screen' | 'query'; name: string; n: number; p50: numbe
 type PerfSlow = { kind: string; name: string; ms: number; platform: string | null; at: string };
 type Perf = { groups: PerfGroup[]; slowest: PerfSlow[] };
 
-const SCREEN: Record<string, string> = { home: t('الرئيسية'), feed: t('المجتمع'), inbox: t('الرسائل'), chat: t('المحادثة'), profile: t('البروفايل'), schedule: t('الجدول') };
+const SCREEN: Record<string, string> = { home: t('الرئيسية'), feed: t('المجتمع'), inbox: t('الرسائل'), chat: t('المحادثة'), profile: t('الملف الشخصي'), schedule: t('الجدول') };
 const sec = (ms: number) => `${(ms / 1000).toLocaleString(undefined, { maximumFractionDigits: 1 })} ${t('ث')}`;
 // green under 1.5s, orange under 3s, red above
 const tone = (ms: number) => (ms < 1500 ? 'green' : ms < 3000 ? 'orange' : 'red');
@@ -52,7 +52,7 @@ function Performance() {
     <View style={{ gap: 10 }}>
       <Filters items={[['24', t('آخر 24 ساعة')], ['168', t('آخر 7 أيام')]]} value={hours} onChange={setHours} />
       <State loading={loading} error={error} empty={!screens.length && !queries.length}>
-        <Section title={t('وقت فتح الشاشات')} />
+        <Section title={t('وقت تحميل الشاشات')} />
         <Panel>
           {screens.map((g) => (
             <View key={g.name} style={{ flexDirection: 'row', alignItems: 'center', gap: 8, minHeight: 44 }}>
@@ -95,7 +95,7 @@ function Performance() {
 export default function ErrorsAndPerformance() {
   const [tab, setTab] = useState<'errors' | 'perf'>('errors');
   return (
-    <AdminScreen ownerOnly title={t('أخطاء التطبيق')} subtitle={t('أي خطأ أو بطء بيصير على تلفونات الطلاب بيوصل هون لحاله')}>
+    <AdminScreen ownerOnly title={t('أخطاء التطبيق')} subtitle={t('يصل إلى هنا تلقائياً أي خطأ أو بطء يحدث على هواتف الطلاب')}>
       <Filters items={[['errors', t('الأخطاء')], ['perf', t('الأداء')]]} value={tab} onChange={setTab} />
       {tab === 'errors' ? <Errors /> : <Performance />}
     </AdminScreen>

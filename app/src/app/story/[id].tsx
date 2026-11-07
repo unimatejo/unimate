@@ -86,15 +86,15 @@ export default function StoryViewer() {
     if (!s) return;
     let target = hid;
     if (!target) {
-      if (hlTitle.trim().length < 1) { Alert.alert(t('سمّي الهايلايت')); return; }
+      if (hlTitle.trim().length < 1) { Alert.alert(t('سمِّ القصص المميزة')); return; }
       const { data, error } = await supabase.from('highlights').insert({ owner_id: profile?.id ?? '', title: hlTitle.trim().slice(0, 30), cover_url: s.media_url }).select('id').single();
-      if (error || !data) { Alert.alert(t('ما زبط'), t('جرّب كمان مرة.')); return; }
+      if (error || !data) { Alert.alert(t('تعذّر ذلك'), t('حاول مرة أخرى.')); return; }
       target = data.id;
     }
     const { error } = await supabase.from('highlight_items').insert({ highlight_id: target, story_id: s.id });
     setHlOpen(false); unfreeze();
-    if (error) Alert.alert(t('ما زبط'), error.message.includes('limit') ? t('وصلت الحد: 30 قصة بالهايلايت.') : error.message.includes('duplicate') ? t('موجودة أصلاً بهالهايلايت.') : t('جرّب كمان مرة.'));
-    else Alert.alert(t('انضافت لأبرز القصص ✓'));
+    if (error) Alert.alert(t('تعذّر ذلك'), error.message.includes('limit') ? t('وصلت إلى الحد: 30 قصة في القصص المميزة.') : error.message.includes('duplicate') ? t('هذه القصة موجودة مسبقًا في هذه المجموعة المميزة.') : t('حاول مرة أخرى.'));
+    else Alert.alert(t('تمت الإضافة إلى القصص المميزة ✓'));
   }
 
   // leave once (never call navigation inside a state updater: it can run twice)
@@ -202,14 +202,14 @@ export default function StoryViewer() {
     if (!text || !s || replying) return false;
     setReplying(true);
     try {
-      const { data: conv, error } = await supabase.rpc('start_direct', { target: id, context: t('رد على ستوري') });
-      if (error || !conv) { Alert.alert(t('ما انبعت الرد'), t('هاد الشخص مسكّر الرسائل.')); return false; }
+      const { data: conv, error } = await supabase.rpc('start_direct', { target: id, context: t('رد على قصة') });
+      if (error || !conv) { Alert.alert(t('لم يُرسل الرد'), t('أغلق هذا الشخص استقبال الرسائل.')); return false; }
       const { error: me } = await supabase.from('messages').insert({ conversation_id: conv, sender_id: profile?.id ?? '', kind: 'story_reply', body: text, ref_id: s.id });
-      if (me) { Alert.alert(t('ما انبعت الرد'), t('جرّب مرة ثانية.')); return false; }
+      if (me) { Alert.alert(t('لم يُرسل الرد'), t('حاول مرة أخرى.')); return false; }
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
-      toast(t('انبعتت'));
+      toast(t('أُرسلت'));
       return true;
-    } catch { Alert.alert(t('ما انبعت الرد'), t('تأكد من الإنترنت وجرّب كمان مرة.')); return false; }
+    } catch { Alert.alert(t('لم يُرسل الرد'), t('تحقق من اتصالك بالإنترنت وحاول مرة أخرى.')); return false; }
     finally { setReplying(false); }
   }
   function react(emoji: string) {
@@ -227,21 +227,21 @@ export default function StoryViewer() {
   }
   function remove() {
     if (!s) return;
-    Alert.alert(t('حذف القصة'), t('أكيد بدك تحذفها؟'), [{ text: t('لا'), style: 'cancel', onPress: unfreeze }, {
+    Alert.alert(t('حذف القصة'), t('هل أنت متأكد من حذفها؟'), [{ text: t('لا'), style: 'cancel', onPress: unfreeze }, {
       text: t('احذف'), style: 'destructive', onPress: async () => {
         const { error } = await supabase.from('stories').delete().eq('id', s.id);
-        if (error) { toast.error(t('ما انحذفت، جرّب كمان مرة.')); unfreeze(); return; }
+        if (error) { toast.error(t('لم تُحذف، حاول مرة أخرى.')); unfreeze(); return; }
         dropCurrent();
       },
     }]);
   }
   function removeFromHighlight() {
     if (!s || !highlight) return;
-    Alert.alert(t('تشيلها من الهايلايت؟'), t('القصة نفسها بتضل بأرشيفك.'), [{ text: t('لا'), style: 'cancel', onPress: unfreeze }, {
-      text: t('شيلها'), style: 'destructive', onPress: async () => {
+    Alert.alert(t('إزالتها من القصص المميزة؟'), t('تبقى القصة نفسها في أرشيفك.'), [{ text: t('لا'), style: 'cancel', onPress: unfreeze }, {
+      text: t('إزالة'), style: 'destructive', onPress: async () => {
         const { error } = await supabase.from('highlight_items').delete().eq('highlight_id', highlight).eq('story_id', s.id);
-        if (error) { toast.error(t('ما زبط، جرّب كمان مرة.')); unfreeze(); return; }
-        toast(t('انشالت من الهايلايت'));
+        if (error) { toast.error(t('تعذّر ذلك، حاول مرة أخرى.')); unfreeze(); return; }
+        toast(t('تمت إزالتها من القصص المميزة'));
         dropCurrent();
       },
     }]);
@@ -265,9 +265,9 @@ export default function StoryViewer() {
     const { error } = mutedAuthor
       ? await supabase.from('story_mutes').delete().eq('user_id', profile.id).eq('muted_id', id)
       : await supabase.from('story_mutes').insert({ user_id: profile.id, muted_id: id });
-    if (error) { toast.error(t('ما زبط، جرّب كمان مرة.')); unfreeze(); return; }
-    if (mutedAuthor) { setMutedAuthor(false); toast(t('رجعت قصص {0} تبيّن', [author?.full_name ?? ''])); unfreeze(); return; }
-    toast(t('ما رح تبيّنلك قصص {0} بالشريط. ما رح يعرف.', [author?.full_name ?? '']));
+    if (error) { toast.error(t('تعذّر ذلك، حاول مرة أخرى.')); unfreeze(); return; }
+    if (mutedAuthor) { setMutedAuthor(false); toast(t('عادت قصص {0} إلى الظهور', [author?.full_name ?? ''])); unfreeze(); return; }
+    toast(t('لن تظهر لك قصص {0} في الشريط. ولن يعرف ذلك.', [author?.full_name ?? '']));
     close();
   }
   async function saveStory() {
@@ -278,24 +278,24 @@ export default function StoryViewer() {
   }
   async function shareStory() {
     const link = highlight ? `https://app.unimate.my/story/${id}?highlight=${highlight}` : `https://app.unimate.my/story/${id}`;
-    await shareLink(link, hlName ? t('هايلايت «{0}» على يونيميت', [hlName]) : t('قصة {0} على يونيميت', [author?.full_name ?? '']));
+    await shareLink(link, hlName ? t('القصص المميزة «{0}» على يونيميت', [hlName]) : t('قصة {0} على يونيميت', [author?.full_name ?? '']));
     unfreeze();
   }
 
   const menuItems: StoryMenuItem[] = !s ? [] : mine && highlight ? [
-    { key: 'edit', icon: Pencil, label: t('تعديل الهايلايت'), onPress: () => setEditHl(true) },
+    { key: 'edit', icon: Pencil, label: t('تعديل القصة المميزة'), onPress: () => setEditHl(true) },
     { key: 'save', icon: Download, label: t('احفظ'), onPress: saveStory },
     { key: 'share', icon: Share2, label: t('شارك الرابط'), onPress: shareStory },
-    { key: 'out', icon: MinusCircle, label: t('شيلها من الهايلايت'), onPress: removeFromHighlight, danger: true },
+    { key: 'out', icon: MinusCircle, label: t('إزالة من القصص المميزة'), onPress: removeFromHighlight, danger: true },
   ] : mine ? [
-    { key: 'viewers', icon: Eye, label: t('مين شافها'), onPress: () => { setActivity(true); } },
-    { key: 'hl', icon: Star, label: t('ضيفها لأبرز القصص'), onPress: openHighlights },
+    { key: 'viewers', icon: Eye, label: t('من شاهدها'), onPress: () => { setActivity(true); } },
+    { key: 'hl', icon: Star, label: t('أضفها إلى القصص المميزة'), onPress: openHighlights },
     { key: 'save', icon: Download, label: t('احفظ'), onPress: saveStory },
-    { key: 'close', icon: Users, label: t('الأصدقاء المقرّبين'), onPress: () => { away.current = true; router.push('/settings/close-friends'); } },
+    { key: 'close', icon: Users, label: t('الأصدقاء المقرّبون'), onPress: () => { away.current = true; router.push('/settings/close-friends'); } },
     { key: 'delete', icon: Trash2, label: t('احذف القصة'), onPress: remove, danger: true },
   ] : [
     { key: 'share', icon: Share2, label: t('شارك الرابط'), onPress: shareStory },
-    { key: 'mute', icon: BellOff, label: mutedAuthor ? t('رجّع قصص {0}', [author?.full_name?.split(' ')[0] ?? '']) : t('اكتم قصص {0}', [author?.full_name?.split(' ')[0] ?? '']), onPress: toggleMute },
+    { key: 'mute', icon: BellOff, label: mutedAuthor ? t('إظهار قصص {0}', [author?.full_name?.split(' ')[0] ?? '']) : t('اكتم قصص {0}', [author?.full_name?.split(' ')[0] ?? '']), onPress: toggleMute },
     { key: 'report', icon: Flag, label: t('إبلاغ'), danger: true, onPress: () => { away.current = true; router.push({ pathname: '/report', params: { type: 'story', id: s.id, user: id } }); } },
   ];
 
@@ -311,14 +311,14 @@ export default function StoryViewer() {
       {failed && (
         <View pointerEvents="none" style={{ position: 'absolute', top: 0, bottom: 0, left: 0, right: 0, alignItems: 'center', justifyContent: 'center' }}>
           <View style={{ paddingHorizontal: 18, paddingVertical: 10, borderRadius: 18, backgroundColor: 'rgba(0,0,0,0.6)' }}>
-            <T v="bold" color="#fff">{t('ما قدرنا نشغّل هالفيديو')}</T>
+            <T v="bold" color="#fff">{t('تعذّر تشغيل هذا الفيديو')}</T>
           </View>
         </View>
       )}
       {s?.kind === 'video' && !s.meta?.muted && (soundBlocked || muted) && (
         <Tap onPress={() => { setSoundBlocked(false); setMuted(false); }} accessibilityLabel={t('شغّل الصوت')}
           style={{ position: 'absolute', bottom: 150, alignSelf: 'center', flexDirection: 'row', alignItems: 'center', gap: 8, minHeight: 44, paddingHorizontal: 18, borderRadius: 22, backgroundColor: 'rgba(0,0,0,0.6)' }}>
-          <VolumeX size={18} color="#fff" /><T v="bold" color="#fff">{t('اكبس للصوت')}</T>
+          <VolumeX size={18} color="#fff" /><T v="bold" color="#fff">{t('اضغط لتشغيل الصوت')}</T>
         </Tap>
       )}
       {s && ready && <StoryStickersLayer story={s} mine={mine} width={W} height={H} onPause={pause} onResume={resume} />}
@@ -369,7 +369,7 @@ export default function StoryViewer() {
       <Modal visible={hlOpen} transparent animationType="slide" onRequestClose={() => { setHlOpen(false); unfreeze(); }}>
         <Pressable style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.4)' }} onPress={() => { setHlOpen(false); unfreeze(); }} />
         <View style={{ backgroundColor: C.card, borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: 18, gap: 12, paddingBottom: 40 }}>
-          <T v="h3">{t('ثبّت بأبرز القصص')}</T>
+          <T v="h3">{t('ثبّت في القصص المميزة')}</T>
           {hls.map((h) => (
             <Tap key={h.id} onPress={() => addTo(h.id)} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 50, paddingHorizontal: 12, borderRadius: 16, backgroundColor: C.soft }}>
               <Star size={18} color={C.orange} fill={C.orange} /><T v="bodyMd">{h.title}</T>
@@ -378,7 +378,7 @@ export default function StoryViewer() {
           <Row gap={8}>
             <TextInput value={hlTitle} onChangeText={setHlTitle} maxLength={30} placeholder={t('اسم جديد، مثلاً «سنة أولى»')} placeholderTextColor={C.faint} keyboardAppearance={isDark ? 'dark' : 'light'}
               style={{ flex: 1, minHeight: 48, borderRadius: 16, backgroundColor: C.field, paddingHorizontal: 14, fontFamily: F.body, fontSize: 15, color: C.ink, textAlign: ta }} />
-            <Tap onPress={() => addTo(null)} accessibilityLabel={t('هايلايت جديد')} style={{ width: 48, height: 48, borderRadius: 16, backgroundColor: C.primary, alignItems: 'center', justifyContent: 'center' }}><Plus size={22} color={C.onPrimary} /></Tap>
+            <Tap onPress={() => addTo(null)} accessibilityLabel={t('قصة مميزة جديدة')} style={{ width: 48, height: 48, borderRadius: 16, backgroundColor: C.primary, alignItems: 'center', justifyContent: 'center' }}><Plus size={22} color={C.onPrimary} /></Tap>
           </Row>
         </View>
       </Modal>

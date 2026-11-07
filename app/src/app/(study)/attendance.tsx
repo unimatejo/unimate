@@ -95,24 +95,24 @@ export default function Attendance() {
         {rows === null ? <ListSkeleton n={4} />
         : rows.length === 0 ? (
           <Empty icon={<CalendarX2 size={28} color={C.primary} />}
-            title={failed ? t('ما قدرنا نحمّل الغيابات') : t('ضيف موادك أول')}
-            body={failed ? t('تأكد من الإنترنت وجرّب كمان مرة.') : t('بنحسب غياباتك لكل مادة من جدولك، وبنحذرك قبل ما توصل الحد.')}
+            title={failed ? t('تعذّر تحميل الغيابات') : t('أضف موادك أولًا')}
+            body={failed ? t('تحقق من اتصالك بالإنترنت وحاول مرة أخرى.') : t('نحسب غياباتك لكل مادة من جدولك، وننبّهك قبل أن تصل إلى الحد.')}
             action={failed
-              ? <Button kind="soft" title={t('جرّب مرة ثانية')} onPress={load} style={{ paddingHorizontal: 24 }} />
-              : <Button title={t('ضيف موادي')} icon={<BookOpen size={18} color={C.white} />} onPress={() => router.push('/courses')} style={{ paddingHorizontal: 24 }} />} />
+              ? <Button kind="soft" title={t('حاول مرة أخرى')} onPress={load} style={{ paddingHorizontal: 24 }} />
+              : <Button title={t('أضف موادي')} icon={<BookOpen size={18} color={C.white} />} onPress={() => router.push('/courses')} style={{ paddingHorizontal: 24 }} />} />
         ) : (
           <>
             <Animated.View entering={FadeIn.duration(220)} style={[{ backgroundColor: C.card, borderRadius: 26, padding: 16, gap: 12 }, shadow]}>
               <Row gap={12}>
                 <GlyphTile icon={counts.over || counts.near ? AlertTriangle : ShieldCheck} colors={counts.over ? GRAD.red : counts.near ? GRAD.orange : GRAD.green} size={48} />
                 <View style={{ flex: 1, gap: 2 }}>
-                  <T v="h3">{counts.over ? t('في مواد تجاوزت فيها الحد') : counts.near ? t('انتبه لبعض المواد') : t('وضعك تمام بكل المواد')}</T>
-                  <T v="tiny" color={C.muted}>{t('المواد اللي فيها خطر بتطلع أول.')}</T>
+                  <T v="h3">{counts.over ? t('هناك مواد تجاوزت فيها الحد') : counts.near ? t('انتبه لبعض المواد') : t('وضعك جيد في جميع المواد')}</T>
+                  <T v="tiny" color={C.muted}>{t('تظهر المواد المعرّضة للخطر أولاً.')}</T>
                 </View>
               </Row>
               <Row gap={8}>
                 <Stat n={counts.ok} label={t('بأمان')} color={C.greenInk} soft={C.greenSoft} />
-                <Stat n={counts.near} label={t('قرّبت')} color={C.orangeInk} soft={C.orangeSoft} />
+                <Stat n={counts.near} label={t('اقتربت')} color={C.orangeInk} soft={C.orangeSoft} />
                 <Stat n={counts.over} label={t('تجاوزت')} color={C.red} soft={C.redSoft} />
               </Row>
             </Animated.View>
@@ -128,26 +128,26 @@ export default function Attendance() {
                       <GlyphTile icon={BookOpen} colors={courseColors(c.course_name)} size={44} />
                       <View style={{ flex: 1, gap: 2 }}>
                         <T v="bold" numberOfLines={2}>{c.course_name}</T>
-                        <T v="tiny" color={C.muted} numberOfLines={1}>{[c.course_code, t('{0} بالأسبوع', [c.per_week])].filter(Boolean).join(' · ')}</T>
+                        <T v="tiny" color={C.muted} numberOfLines={1}>{[c.course_code, t('{0} في الأسبوع', [c.per_week])].filter(Boolean).join(' · ')}</T>
                       </View>
                       <ChevronLeft size={18} color={C.faint} style={flip} />
                     </Row>
                     <Bar value={ratio} color={look.bar} />
                     <Row gap={8} style={{ justifyContent: 'space-between' }}>
                       <View style={{ gap: 2, flexShrink: 1 }}>
-                        <T v="small">{t('غبت {0} من {1} مسموح', [c.absent, c.limit_sessions])}</T>
+                        <T v="small">{t('غبت {0} من {1} مسموح بها', [c.absent, c.limit_sessions])}</T>
                         {c.excused > 0 && <T v="tiny" color={C.muted}>{t('و{0} بعذر', [c.excused])}</T>}
                       </View>
                       <View style={{ backgroundColor: look.soft, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 4 }}>
                         <T v="tiny" color={look.ink} style={{ fontFamily: F.bodyBold }}>
-                          {lv === 'over' ? t('تجاوزت الحد') : c.remaining === 0 ? t('ما ضلّك ولا غياب') : c.remaining === 1 ? t('ضلّك غياب واحد') : t('ضلّك {0} غيابات', [c.remaining])}
+                          {lv === 'over' ? t('تجاوزت الحد') : c.remaining === 0 ? t('لم يتبقَّ لك أي غياب') : c.remaining === 1 ? t('تبقّى لك غياب واحد') : t('تبقّى لك {0} غيابات', [c.remaining])}
                         </T>
                       </View>
                     </Row>
-                    {lv === 'over' && <T v="tiny" color={C.red}>{t('ممكن تنحرم من المادة. احكي مع الدكتور بأسرع وقت.')}</T>}
-                    <Tap onPress={() => setAdding(c)} accessibilityLabel={t('سجّل غياب بـ {0}', [c.course_name])}
+                    {lv === 'over' && <T v="tiny" color={C.red}>{t('قد تُحرم من المادة. تواصل مع الدكتور في أسرع وقت.')}</T>}
+                    <Tap onPress={() => setAdding(c)} accessibilityLabel={t('سجّل غيابًا في {0}', [c.course_name])}
                       style={{ minHeight: 40, borderRadius: 14, backgroundColor: C.soft, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
-                      <Plus size={16} color={C.ink} /><T v="small" style={{ fontFamily: F.bodyBold }}>{t('سجّل غياب')}</T>
+                      <Plus size={16} color={C.ink} /><T v="small" style={{ fontFamily: F.bodyBold }}>{t('سجّل غيابًا')}</T>
                     </Tap>
                   </Tap>
                 </Animated.View>
@@ -155,7 +155,7 @@ export default function Attendance() {
             })}
 
             <T v="tiny" color={C.faint} style={{ textAlign: 'center', marginTop: 4 }}>
-              {t('الحساب تقريبي حسب جدولك ({0} أسبوع). المرجع الرسمي سجل الدكتور.', [weeks])}
+              {t('الحساب تقريبي بناءً على جدولك ({0} أسبوع). المرجع الرسمي هو سجل الدكتور.', [weeks])}
             </T>
           </>
         )}

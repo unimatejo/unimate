@@ -56,15 +56,15 @@ export default function Conversations() {
   const shown = (list ?? []).filter((c) => kind === 'all' || c.kind === kind);
 
   return (
-    <AdminScreen ownerOnly title={t('المحادثات')} subtitle={full === false ? t('المحادثات الخاصة مقفلة، بتنفتح بس الرسائل اللي عليها بلاغ') : t('كل المحادثات على المنصة، بتتحدّث لحالها')}>
+    <AdminScreen ownerOnly title={t('المحادثات')} subtitle={full === false ? t('المحادثات الخاصة مغلقة، ولا تُفتح إلا الرسائل التي عليها بلاغ') : t('كل المحادثات على المنصة، تتحدّث تلقائيًا')}>
       {role === 'owner' && full !== null && (
         <Panel>
           <Toggle value={full} onChange={setMode} label={t('عرض المحادثات الخاصة كاملة')}
-            hint={full ? t('شغّال: الأدمنز بيشوفوا كل المحادثات. كل فتحة بتنسجل.') : t('مطفي: بتنفتح بس الرسائل اللي عليها بلاغ.')} />
+            hint={full ? t('مفعّل: يرى المشرفون جميع المحادثات، وتُسجَّل كل عملية فتح.') : t('متوقف: تُفتح الرسائل المبلّغ عنها فقط.')} />
         </Panel>
       )}
-      <SearchBox value={q} onChange={setQ} placeholder={t('ابحث باسم شخص أو يوزر أو اسم جروب')} />
-      <Filters items={[['all', t('الكل')], ['direct', t('خاص')], ['group', t('جروبات')], ['community', t('مجتمعات')]]} value={kind} onChange={setKind} />
+      <SearchBox value={q} onChange={setQ} placeholder={t('ابحث باسم شخص أو اسم مستخدم أو اسم مجموعة')} />
+      <Filters items={[['all', t('الكل')], ['direct', t('خاص')], ['group', t('المجموعات')], ['community', t('مجتمعات')]]} value={kind} onChange={setKind} />
       <State loading={list === null && !error} error={error} empty={!shown.length}>
         <Panel>
           {shown.map((c) => {
@@ -87,9 +87,9 @@ export default function Conversations() {
             <Muted>{[open.context_label,
               (open.members ?? []).length > 3
                 ? t('{0} عضو: {1}…', [String((open.members ?? []).length), (open.members ?? []).slice(0, 3).map((m) => m.name).join('، ')])
-                : (open.members ?? []).map((m) => `${m.name}${m.username ? ` (\u2066@${m.username}\u2069)` : ''}${m.state === 'request' ? ` · ${t('طلب')}` : m.state === 'left' ? ` · ${t('طلع')}` : ''}`).join('، '),
+                : (open.members ?? []).map((m) => `${m.name}${m.username ? ` (\u2066@${m.username}\u2069)` : ''}${m.state === 'request' ? ` · ${t('طلب')}` : m.state === 'left' ? ` · ${t('غادر')}` : ''}`).join('، '),
             ].filter(Boolean).join(' · ')}</Muted>
-            <T v="tiny" color={C.muted}>{t('بتوصلك الرسائل الجديدة لحالها وإنت فاتح.')}</T>
+            <T v="tiny" color={C.muted}>{t('تصلك الرسائل الجديدة تلقائياً أثناء فتح المحادثة.')}</T>
             <ChatViewer conversationId={open.id} members={open.members ?? []} />
           </View>
         )}

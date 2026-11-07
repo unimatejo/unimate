@@ -43,7 +43,7 @@ export default function NewMessage() {
 
   async function openChat(p: P) {
     const { data, error } = await supabase.rpc('start_direct', { target: p.id, context: null });
-    if (error) { Alert.alert(t('ما بتقدر تراسله'), error.message.includes('not accepting') ? t('هاد الطالب مسكّر الرسائل.') : t('جرّب بعدين.')); return; }
+    if (error) { Alert.alert(t('لا يمكنك مراسلته'), error.message.includes('not accepting') ? t('أغلق هذا الطالب استقبال الرسائل.') : t('حاول لاحقًا.')); return; }
     router.replace({ pathname: '/messages/[id]', params: { id: data as string } });
   }
 
@@ -52,12 +52,12 @@ export default function NewMessage() {
   }
 
   async function createGroup() {
-    if (title.trim().length < 2) { Alert.alert(t('سمّي الجروب')); return; }
-    if (picked.length < 1) { Alert.alert(t('اختار شخص واحد على الأقل')); return; }
+    if (title.trim().length < 2) { Alert.alert(t('سمِّ المجموعة')); return; }
+    if (picked.length < 1) { Alert.alert(t('اختر شخصاً واحداً على الأقل')); return; }
     setBusy(true);
     const { data, error } = await supabase.rpc('create_group', { title: title.trim(), members: picked.map((p) => p.id) });
     setBusy(false);
-    if (error) { Alert.alert(t('ما انعمل الجروب'), t('جرّب كمان مرة.')); return; }
+    if (error) { Alert.alert(t('لم تُنشأ المجموعة'), t('حاول مرة أخرى.')); return; }
     router.replace({ pathname: '/messages/[id]', params: { id: data as string } });
   }
 
@@ -65,17 +65,17 @@ export default function NewMessage() {
 
   return (
     <Screen>
-      <Header title={group ? t('جروب جديد') : t('رسالة جديدة')} />
+      <Header title={group ? t('مجموعة جديدة') : t('رسالة جديدة')} />
       <View style={{ paddingHorizontal: 18, gap: 12 }}>
         {!group && (
           <Tap onPress={() => setGroup(true)} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: C.card, borderRadius: 18, padding: 12 }}>
             <GlyphTile icon={UsersRound} colors={GRAD.violet} size={44} />
-            <T v="bold" style={{ flex: 1 }}>{t('اعمل جروب')}</T>
+            <T v="bold" style={{ flex: 1 }}>{t('أنشئ مجموعة')}</T>
           </Tap>
         )}
         {group && (
           <>
-            <Field label={t('اسم الجروب')} value={title} onChangeText={setTitle} maxLength={60} placeholder={t('مثلاً شلة مشروع التخرج')} />
+            <Field label={t('اسم المجموعة')} value={title} onChangeText={setTitle} maxLength={60} placeholder={t('مثلاً مجموعة مشروع التخرج')} />
             {picked.length > 0 && (
               <Row gap={8} style={{ flexWrap: 'wrap' }}>
                 {picked.map((p) => (
@@ -89,9 +89,9 @@ export default function NewMessage() {
         )}
         <Row gap={8} style={{ minHeight: 46, borderRadius: 15, backgroundColor: C.soft, paddingHorizontal: 14 }}>
           <Search size={19} color={C.muted} />
-          <TextInput keyboardAppearance={isDark ? 'dark' : 'light'} value={q} onChangeText={setQ} autoCapitalize="none" placeholder={t('دوّر بالاسم أو اليوزر')} placeholderTextColor={C.faint} style={{ flex: 1, fontFamily: F.body, fontSize: 15, textAlign: ta, color: C.ink }} />
+          <TextInput keyboardAppearance={isDark ? 'dark' : 'light'} value={q} onChangeText={setQ} autoCapitalize="none" placeholder={t('ابحث بالاسم أو اسم المستخدم')} placeholderTextColor={C.faint} style={{ flex: 1, fontFamily: F.body, fontSize: 15, textAlign: ta, color: C.ink }} />
         </Row>
-        {!q && <T v="tiny" color={C.muted}>{t('اللي بتتابعهم')}</T>}
+        {!q && <T v="tiny" color={C.muted}>{t('من تتابعهم')}</T>}
       </View>
       <FlatList
         data={people}
@@ -112,11 +112,11 @@ export default function NewMessage() {
             )}
           </Tap>
         )}
-        ListEmptyComponent={<Empty title={q ? t('ما لقينا حدا') : t('ما بتتابع حدا لهلأ')} body={q ? t('جرّب اسم ثاني أو اليوزر.') : t('دوّر على زميلك بالاسم أو اليوزر.')} />}
+        ListEmptyComponent={<Empty title={q ? t('لم يتم العثور على أحد') : t('لا تتابع أحدًا حتى الآن')} body={q ? t('جرّب اسمًا آخر أو اسم المستخدم.') : t('ابحث عن زميلك بالاسم أو اسم المستخدم.')} />}
       />
       {group && (
         <View style={{ position: 'absolute', bottom: 30, left: 18, right: 18 }}>
-          <Button title={`اعمل الجروب${picked.length ? ` (${picked.length + 1})` : ''}`} loading={busy} onPress={createGroup} />
+          <Button title={`${t('أنشئ مجموعة')}${picked.length ? ` (${picked.length + 1})` : ''}`} loading={busy} onPress={createGroup} />
         </View>
       )}
     </Screen>

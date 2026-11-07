@@ -26,7 +26,7 @@ export function AnnouncementCard({ a, index, onAuthor, onMenu }: { a: Announceme
   function openLink() {
     if (!a.link || !/^https:\/\//.test(a.link)) return;
     if (!isWebUrl(a.link)) return;
-    Linking.openURL(a.link).catch(() => Alert.alert(t('ما قدرنا نفتح الرابط')));
+    Linking.openURL(a.link).catch(() => Alert.alert(t('تعذّر فتح الرابط')));
   }
 
   return (
@@ -61,9 +61,9 @@ export function AnnouncementCard({ a, index, onAuthor, onMenu }: { a: Announceme
       </Row>
 
       <T v="h3" style={{ lineHeight: 26 }}>{a.title}</T>
-      <Tap haptic={false} disabled={!long} onPress={() => setOpen((o) => !o)} accessibilityLabel={long ? (open ? t('أقل') : t('اقرأ أكثر')) : undefined}>
+      <Tap haptic={false} disabled={!long} onPress={() => setOpen((o) => !o)} accessibilityLabel={long ? (open ? t('أقل') : t('اقرأ المزيد')) : undefined}>
         <T v="body" color={C.ink2} style={{ lineHeight: 24 }} selectable>{text}</T>
-        {long && <T v="small" color={C.primary} style={{ marginTop: 4, fontFamily: F.bodyBold }}>{open ? t('أقل') : t('اقرأ أكثر')}</T>}
+        {long && <T v="small" color={C.primary} style={{ marginTop: 4, fontFamily: F.bodyBold }}>{open ? t('أقل') : t('اقرأ المزيد')}</T>}
       </Tap>
 
       {a.link && /^https:\/\//.test(a.link) && (

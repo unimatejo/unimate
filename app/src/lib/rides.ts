@@ -27,7 +27,7 @@ export const LIMITS = { areaMin: 2, areaMax: 40, areasMax: 4, spotMax: 40, meetM
 export const AREAS: { city: string; areas: string[] }[] = [
   { city: t('عمّان'), areas: ['طبربور', 'ماركا', 'صويلح', 'الجبيهة', 'شفا بدران', 'أبو نصير', 'تلاع العلي', 'خلدا', 'المقابلين', 'الهاشمي الشمالي', 'وسط البلد'] },
   { city: t('الزرقاء'), areas: ['الزرقاء الجديدة', 'الرصيفة', 'الزرقاء القديمة', 'الهاشمية', 'الضليل', 'البتراوي'] },
-  { city: t('محافظات ثانية'), areas: ['المفرق', 'إربد', 'جرش', 'السلط', 'مادبا'] },
+  { city: t('محافظات أخرى'), areas: ['المفرق', 'إربد', 'جرش', 'السلط', 'مادبا'] },
 ];
 
 /** Where on campus a ride starts or ends. Names stay Arabic for the same reason as the areas. */
@@ -59,40 +59,40 @@ export const seatsLeft = (r: Pick<Ride, 'seats_total' | 'seats_taken'>) => Math.
 
 export function priceLabel(p: number) {
   const v = Number(p) || 0;
-  if (v <= 0) return t('ببلاش');
+  if (v <= 0) return t('مجاناً');
   return t('{0} دينار', [String(Number(v.toFixed(2)))]);
 }
 
 export const timeLabel = (iso: string) => new Date(iso).toLocaleTimeString(LOCALE, { hour: 'numeric', minute: '2-digit' });
 
 const startOfDay = (d: Date) => { const x = new Date(d); x.setHours(0, 0, 0, 0); return x; };
-/** "اليوم" / "بكرا" / "الأحد ٩ تشرين الثاني" */
+/** "اليوم" / "غداً" / "الأحد ٩ تشرين الثاني" */
 export function dayLabel(iso: string, now = new Date()) {
   const diff = Math.round((startOfDay(new Date(iso)).getTime() - startOfDay(now).getTime()) / 86400000);
   if (diff === 0) return t('اليوم');
-  if (diff === 1) return t('بكرا');
+  if (diff === 1) return t('غداً');
   return new Date(iso).toLocaleDateString(LOCALE, { weekday: 'long', day: 'numeric', month: 'long' });
 }
 export const dayKey = (iso: string) => startOfDay(new Date(iso)).toISOString();
 
-export const directionLabel = (d: Direction) => (d === 'to_campus' ? t('للجامعة') : t('من الجامعة'));
+export const directionLabel = (d: Direction) => (d === 'to_campus' ? t('إلى الجامعة') : t('من الجامعة'));
 
 /** Server errors (0072) in plain Arabic. */
 export function rideError(e: { message?: string } | null | undefined): string {
   const m = e?.message ?? '';
-  if (/bad_time/.test(m)) return t('اختار وقت من بعد 5 دقايق لحد أسبوعين.');
-  if (/rate_limited/.test(m)) return t('استنى شوي، عملت كثير بوقت قصير.');
-  if (/too_many_open/.test(m)) return t('عندك 10 توصيلات مفتوحة، الغي وحدة قبل ما تضيف.');
-  if (/not_available/.test(m)) return t('هالتوصيلة ما عادت متاحة.');
-  if (/own_ride/.test(m)) return t('هاي توصيلتك إنت.');
-  if (/no_seats/.test(m)) return t('ما في مقاعد كفاية.');
-  if (/already_requested/.test(m)) return t('طلبت مقعد بهالتوصيلة من قبل.');
-  if (/bad_phone/.test(m)) return t('رقم الموبايل مش صحيح، اكتبه مثل 0791234567.');
-  if (/too_many_stops/.test(m)) return t('بتقدر تختار لحد 4 مناطق.');
-  if (/not_pending/.test(m)) return t('هالطلب انرد عليه من قبل.');
-  if (/not allowed/.test(m)) return t('ما عندك صلاحية لهالإشي.');
-  if (/fetch|network|timeout/i.test(m)) return t('تأكد من الإنترنت وجرّب كمان مرة.');
-  return t('صار خطأ، جرّب كمان مرة.');
+  if (/bad_time/.test(m)) return t('اختر وقتاً بين 5 دقائق وأسبوعين من الآن.');
+  if (/rate_limited/.test(m)) return t('انتظر قليلاً، لقد قمت بالكثير في وقت قصير.');
+  if (/too_many_open/.test(m)) return t('لديك 10 توصيلات مفتوحة، ألغِ واحدة قبل أن تضيف.');
+  if (/not_available/.test(m)) return t('لم تعد هذه التوصيلة متاحة.');
+  if (/own_ride/.test(m)) return t('هذه توصيلتك أنت.');
+  if (/no_seats/.test(m)) return t('لا توجد مقاعد كافية.');
+  if (/already_requested/.test(m)) return t('لقد طلبت مقعدًا في هذه التوصيلة من قبل.');
+  if (/bad_phone/.test(m)) return t('رقم الجوال غير صحيح، اكتبه بهذا الشكل 0791234567.');
+  if (/too_many_stops/.test(m)) return t('يمكنك اختيار ما يصل إلى 4 مناطق.');
+  if (/not_pending/.test(m)) return t('تم الرد على هذا الطلب مسبقًا.');
+  if (/not allowed/.test(m)) return t('ليست لديك صلاحية لهذا الإجراء.');
+  if (/fetch|network|timeout/i.test(m)) return t('تحقق من اتصالك بالإنترنت وحاول مرة أخرى.');
+  return t('حدث خطأ، حاول مرة أخرى.');
 }
 
 export const clean = (s: string) => s.replace(/\s+/g, ' ').trim();

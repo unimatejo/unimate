@@ -43,7 +43,7 @@ export default function Announcements() {
   function menu(a: Announcement) {
     const opts: { text: string; style?: 'cancel' | 'destructive'; onPress?: () => void }[] = [];
     if (a.mine) opts.push({ text: t('تعديل'), onPress: () => router.push({ pathname: '/announcements/new', params: { id: a.id } }) });
-    if (a.can_pin) opts.push({ text: a.pinned ? t('إلغاء التثبيت') : t('تثبيت فوق'), onPress: () => pin(a) });
+    if (a.can_pin) opts.push({ text: a.pinned ? t('إلغاء التثبيت') : t('تثبيت في الأعلى'), onPress: () => pin(a) });
     if (a.mine) opts.push({ text: t('حذف'), style: 'destructive', onPress: () => remove(a) });
     opts.push({ text: t('إلغاء'), style: 'cancel' });
     Alert.alert(a.title, undefined, opts);
@@ -58,14 +58,14 @@ export default function Announcements() {
   }
 
   function remove(a: Announcement) {
-    Alert.alert(t('تحذف الإعلان؟'), t('بيختفي عند الكل.'), [
+    Alert.alert(t('حذف الإعلان؟'), t('سيختفي لدى الجميع.'), [
       { text: t('لا'), style: 'cancel' },
       { text: t('احذف'), style: 'destructive', onPress: async () => {
         const before = rows;
         setRows((r) => r?.filter((x) => x.id !== a.id) ?? r);
         const r = await run(supabase.rpc('delete_announcement', { p_id: a.id }));
         if (!r.ok) { setRows(before); return; }
-        toast(t('انحذف الإعلان'));
+        toast(t('تم حذف الإعلان'));
       } },
     ]);
   }
@@ -85,8 +85,8 @@ export default function Announcements() {
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: C.primarySoft, borderRadius: 22, padding: 12 }}>
             <GlyphTile icon={Megaphone} colors={GRAD.orange} size={44} />
             <View style={{ flex: 1, gap: 2 }}>
-              <T v="bodyMd">{t('إنت بتقدر تنشر إعلانات رسمية')}</T>
-              <T v="tiny" color={C.ink2}>{t('بيوصل إشعار لكل طالب بالكلية أو الجامعة اللي بتختارها.')}</T>
+              <T v="bodyMd">{t('يمكنك نشر إعلانات رسمية')}</T>
+              <T v="tiny" color={C.ink2}>{t('سيصل إشعار إلى كل طالب في الكلية أو الجامعة التي تختارها.')}</T>
             </View>
             <Button title={t('انشر')} onPress={() => router.push('/announcements/new')} style={{ minHeight: 38, paddingHorizontal: 16 }} />
           </View>
@@ -97,8 +97,8 @@ export default function Announcements() {
             onMenu={item.mine || item.can_pin ? () => menu(item) : undefined} />
         )}
         ListEmptyComponent={rows === null ? <ListSkeleton n={4} />
-          : failed ? <Empty title={t('ما قدرنا نحمّل الإعلانات')} body={t('تأكد من الإنترنت وجرّب كمان مرة.')} action={<Button kind="soft" title={t('جرّب مرة ثانية')} onPress={load} style={{ paddingHorizontal: 24 }} />} />
-          : <Empty icon={<Megaphone size={28} color={C.primary} />} title={t('ما في إعلانات لهلأ')} body={t('هون بتوصلك إعلانات الجامعة والعمادة الرسمية أول بأول.')} />}
+          : failed ? <Empty title={t('تعذّر تحميل الإعلانات')} body={t('تحقق من اتصالك بالإنترنت وحاول مرة أخرى.')} action={<Button kind="soft" title={t('حاول مرة أخرى')} onPress={load} style={{ paddingHorizontal: 24 }} />} />
+          : <Empty icon={<Megaphone size={28} color={C.primary} />} title={t('لا توجد إعلانات حتى الآن')} body={t('هنا تصلك إعلانات الجامعة والعمادة الرسمية أولًا بأول.')} />}
       />
     </Screen>
   );

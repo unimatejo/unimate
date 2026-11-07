@@ -51,29 +51,29 @@ export default function Settings() {
   const openAdmin = () => router.push('/admin');
 
   function logout() {
-    Alert.alert(t('تسجيل الخروج'), t('أكيد بدك تطلع من حسابك؟'), [
+    Alert.alert(t('تسجيل الخروج'), t('هل أنت متأكد من تسجيل الخروج؟'), [
       { text: t('لا'), style: 'cancel' },
-      { text: t('اطلع'), style: 'destructive', onPress: async () => { try { await signOut(); } finally { router.replace('/(auth)/login'); } } },
+      { text: t('خروج'), style: 'destructive', onPress: async () => { try { await signOut(); } finally { router.replace('/(auth)/login'); } } },
     ]);
   }
 
   // two steps on purpose: "log out" sits right above this, and a slip used to wipe the account
   function deleteAccount() {
-    Alert.alert(t('حذف الحساب؟'), t('هاد مش تسجيل خروج. إذا بدك تطلع بس، اختار «تسجيل الخروج».'), [
+    Alert.alert(t('حذف الحساب؟'), t('هذا ليس تسجيل خروج. إذا كنت تريد الخروج فقط، فاختر «تسجيل الخروج».'), [
       { text: t('تراجع'), style: 'cancel' },
-      { text: t('سجّل خروج بس'), onPress: logout },
-      { text: t('كمّل للحذف'), style: 'destructive', onPress: confirmDelete },
+      { text: t('تسجيل الخروج فقط'), onPress: logout },
+      { text: t('المتابعة للحذف'), style: 'destructive', onPress: confirmDelete },
     ]);
   }
   function confirmDelete() {
-    Alert.alert(t('متأكد بدك تحذف حسابك؟'), t('بنحذف حسابك ومنشوراتك وقصصك ومتابعاتك بعد 30 يوم. إذا سجلت دخول قبلها، بيرجع كل إشي زي ما هو.'), [
+    Alert.alert(t('هل أنت متأكد من أنك تريد حذف حسابك؟'), t('سنحذف حسابك ومنشوراتك وقصصك ومتابعاتك بعد 30 يوماً. إذا سجّلت الدخول قبل ذلك، يعود كل شيء كما كان.'), [
       { text: t('تراجع'), style: 'cancel' },
       { text: t('احذف حسابي'), style: 'destructive', onPress: async () => {
-        const r = await run(supabase.rpc('delete_my_account'), { msg: t('ما زبط حذف الحساب، جرّب كمان مرة.') });
+        const r = await run(supabase.rpc('delete_my_account'), { msg: t('تعذّر حذف الحساب، حاول مرة أخرى.') });
         if (!r.ok) return;
         await signOut();
         router.replace('/(auth)/login');
-        Alert.alert(t('رح ينحذف حسابك بعد 30 يوم'), t('إذا غيّرت رأيك، بس سجّل دخول قبلها وبيرجع كل إشي.'));
+        Alert.alert(t('سيُحذف حسابك بعد 30 يومًا'), t('إذا غيّرت رأيك، فقط سجّل الدخول قبل ذلك وسيعود كل شيء.'));
       } },
     ]);
   }
@@ -84,9 +84,9 @@ export default function Settings() {
       { icon: <ShieldCheck {...ic} />, color: C.primary, label: t('لوحة الإدارة'), value: t('كل الصلاحيات'), onPress: openAdmin },
     ] }] : []),
     { title: t('الحساب'), items: [
-      { icon: <UserPen {...ic} />, color: C.primary, label: t('تعديل البروفايل'), onPress: () => router.push('/settings/edit-profile') },
+      { icon: <UserPen {...ic} />, color: C.primary, label: t('تعديل الملف الشخصي'), onPress: () => router.push('/settings/edit-profile') },
       { icon: <Lock {...ic} />, color: C.violet, label: t('الخصوصية'), value: profile?.is_private ? t('خاص') : t('عام'), onPress: () => router.push('/settings/privacy') },
-      { icon: <Users {...ic} />, color: C.green, label: t('الأصدقاء المقربين'), onPress: () => router.push('/settings/close-friends') },
+      { icon: <Users {...ic} />, color: C.green, label: t('الأصدقاء المقرّبون'), onPress: () => router.push('/settings/close-friends') },
       ...(staffEmail || profile?.title_verified ? [{ icon: <GraduationCap {...ic} />, color: '#3D6BFF', label: t('أنا عضو هيئة تدريس / موظف'), value: profile?.title_verified ? titleLabel(profile.academic_title) : undefined, onPress: () => router.push('/settings/faculty') }] : []),
       { icon: <Bookmark {...ic} />, color: '#56627F', label: t('المحفوظات'), onPress: () => router.push('/settings/saved') },
     ] },
@@ -95,12 +95,12 @@ export default function Settings() {
       { icon: <MessageCircle {...ic} />, color: C.pink, label: t('الرسائل والاختفاء'), onPress: () => router.push('/settings/privacy') },
     ] },
     { title: t('الجهاز'), items: [
-      { icon: <KeyRound {...ic} />, color: C.primary, label: t('الصلاحيات'), value: t('كاميرا، صور، مايك…'), onPress: () => router.push('/settings/permissions') },
+      { icon: <KeyRound {...ic} />, color: C.primary, label: t('الصلاحيات'), value: t('كاميرا، صور، ميكروفون…'), onPress: () => router.push('/settings/permissions') },
       { icon: <Palette {...ic} />, color: C.violet, label: t('المظهر واللغة'), value: [{ midnight: t('كحلي'), black: t('أسود'), light: t('فاتح') }[themePref()], isAR ? 'العربية' : 'English'].join(' · '), onPress: () => router.push('/settings/appearance') },
-      { icon: <UserPlus {...ic} />, color: C.green, label: t('ادعي زملاءك'), onPress: () => inviteFriends(nm(university)) },
+      { icon: <UserPlus {...ic} />, color: C.green, label: t('ادعُ زملاءك'), onPress: () => inviteFriends(nm(university)) },
     ] },
     { title: t('الأمان'), items: [
-      { icon: <Ban {...ic} />, color: C.red, label: t('المحظورين'), onPress: () => router.push('/settings/blocked') },
+      { icon: <Ban {...ic} />, color: C.red, label: t('المحظورون'), onPress: () => router.push('/settings/blocked') },
       { icon: <EyeOff {...ic} />, color: '#56627F', label: t('الكلمات المخفية'), onPress: () => router.push('/settings/hidden-words') },
     ] },
     { title: t('المساعدة'), items: [
@@ -125,8 +125,8 @@ export default function Settings() {
       <ScrollView contentContainerStyle={{ padding: 18, paddingTop: 4, gap: 20, paddingBottom: 60 }} keyboardShouldPersistTaps="handled">
         <Row gap={8} style={[{ minHeight: 46, borderRadius: 15, backgroundColor: C.card, paddingHorizontal: 14 }, shadow]}>
           <Search size={18} color={C.muted} />
-          <TextInput value={q} onChangeText={setQ} placeholder={t('ابحث بالإعدادات')} placeholderTextColor={C.faint} keyboardAppearance={isDark ? 'dark' : 'light'}
-            style={{ flex: 1, fontFamily: F.body, fontSize: 15, color: C.ink, textAlign: ta }} accessibilityLabel={t('ابحث بالإعدادات')} />
+          <TextInput value={q} onChangeText={setQ} placeholder={t('ابحث في الإعدادات')} placeholderTextColor={C.faint} keyboardAppearance={isDark ? 'dark' : 'light'}
+            style={{ flex: 1, fontFamily: F.body, fontSize: 15, color: C.ink, textAlign: ta }} accessibilityLabel={t('ابحث في الإعدادات')} />
         </Row>
 
         {!k && (
@@ -145,7 +145,7 @@ export default function Settings() {
           <Group key={g.title + gi} title={g.title} delay={gi * 30}>
             {g.items.map((it) => <Item key={it.label} {...it} />)}
           </Group>
-        ) : <T key="none" v="small" color={C.muted} style={{ textAlign: 'center' }}>{t('ما لقينا إعداد بهالاسم')}</T>)}
+        ) : <T key="none" v="small" color={C.muted} style={{ textAlign: 'center' }}>{t('لا يوجد إعداد بهذا الاسم')}</T>)}
 
         <Tap haptic={false} onPress={() => router.push('/settings/about')} style={{ alignItems: 'center', gap: 2 }}>
           <T v="tiny" color={C.faint} style={{ textAlign: 'center' }}>{t('يونيميت · الإصدار {0}', [Constants.expoConfig?.version ?? ''])}</T>

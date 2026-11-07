@@ -12,8 +12,8 @@ type Push = { user_id: string; title: string; body: string; url: string; tag: st
 type Tok = { token: string; user_id: string; platform: string; keys: { p256dh: string; auth: string } | null };
 
 const PREVIEW: Record<string, string> = {
-  image: '📷 صورة', view_once: '📷 صورة لمرة وحدة', voice: '🎤 رسالة صوتية', file: '📎 ملف', sticker: 'ستيكر',
-  location: '📍 موقع', contact: '👤 جهة اتصال', poll: '📊 استطلاع رأي', post_share: 'شارك منشور', story_reply: 'رد على الستوري', social_share: 'شارك رابط',
+  image: '📷 صورة', view_once: '📷 صورة للمشاهدة مرة واحدة', voice: '🎤 رسالة صوتية', file: '📎 ملف', sticker: 'ملصق',
+  location: '📍 موقع', contact: '👤 جهة اتصال', poll: '📊 استطلاع رأي', post_share: 'شارك منشورًا', story_reply: 'ردّ على القصة', social_share: 'شارك رابطًا',
 };
 const SOCIAL = new Set(['like', 'comment', 'follow', 'follow_request', 'mention', 'story_like']);
 
@@ -32,7 +32,7 @@ async function forMessage(id: string): Promise<Push[]> {
   const off = new Set((prefs ?? []).filter((p) => p.messages === false).map((p) => p.user_id));
   // "show message text" off: the lock screen only says there's a new message
   const hidden = new Set((prefs ?? []).filter((p) => p.preview === false).map((p) => p.user_id));
-  const name = who?.full_name || 'حدا';
+  const name = who?.full_name || 'أحدهم';
   const text = c.vanish ? 'رسالة جديدة' : (m.kind === 'text' ? (m.body ?? '') : PREVIEW[m.kind] ?? 'رسالة جديدة').slice(0, 140);
   const group = c.kind === 'group';
   return to.filter((u) => !off.has(u)).map((u) => ({

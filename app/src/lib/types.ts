@@ -32,6 +32,8 @@ export type Post = {
   category: string; audience: string; title: string | null; body: string; price_jod: number | null;
   lost_found: 'lost' | 'found' | null; is_pinned: boolean; hide_likes: boolean;
   like_count: number; comment_count: number; created_at: string;
+  /** set by an admin: the like number shown instead of the real one (the likers list stays real) */
+  shown_likes?: number | null;
   author?: Pick<Profile, 'id' | 'full_name' | 'avatar_url' | 'study_year' | 'username' | 'is_verified' | 'academic_title' | 'title_verified'> & { major?: { name_ar: string } | null };
   media?: { id: string; kind: string; url: string; file_name: string | null; size_bytes: number | null; position: number; meta?: unknown }[];
   poll?: { options: string[] } | null;

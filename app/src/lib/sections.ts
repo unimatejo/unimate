@@ -13,10 +13,10 @@ type EventTrust = 'official' | 'crowd' | 'mine';
 /** Where an exam or deadline came from: official (Moodle, the university/admins), classmates (not official yet), or mine. */
 export function eventSource(e: { owner_id: string | null; source?: string | null; shared_ask?: boolean | null; confirmations?: number | null; edited?: boolean | null }): { trust: EventTrust; label: string } {
   // the section's event, moved by this student for themselves (0135)
-  if (!e.owner_id && e.edited) return { trust: 'mine', label: t('عدّلته عندك') };
-  if (e.source === 'moodle') return { trust: 'official', label: t('رسمي · المودل') };
+  if (!e.owner_id && e.edited) return { trust: 'mine', label: t('عدّلته لديك') };
+  if (e.source === 'moodle') return { trust: 'official', label: t('رسمي · Moodle') };
   if (!e.owner_id) return e.source === 'crowd'
-    ? { trust: 'crowd', label: t('من زملاءك · مش رسمي ({0})', [String(e.confirmations ?? 0)]) }
+    ? { trust: 'crowd', label: t('من زملائك · غير رسمي ({0})', [String(e.confirmations ?? 0)]) }
     : { trust: 'official', label: t('رسمي') };
-  return { trust: 'mine', label: e.shared_ask ? t('بانتظار زملاءك يأكدوه') : t('خاص فيك') };
+  return { trust: 'mine', label: e.shared_ask ? t('بانتظار تأكيد زملائك') : t('خاص بك') };
 }

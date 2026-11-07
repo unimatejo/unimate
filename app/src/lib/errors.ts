@@ -47,7 +47,7 @@ export function installGlobalErrorHandler() {
   g.ErrorUtils.setGlobalHandler((error, isFatal) => {
     reportError(error, !!isFatal);
     // never show technical text to students: it goes to the team's error log
-    if (isFatal) Alert.alert(t('في إشي ما زبط'), t('فريق يونيميت وصله خبر. سكّر التطبيق وافتحه كمان مرة.'));
+    if (isFatal) Alert.alert(t('حدث خطأ ما'), t('وصل الخبر إلى فريق يونيميت. أغلق التطبيق وافتحه مرة أخرى.'));
     else prev(error, isFatal);
   });
 }

@@ -35,9 +35,9 @@ export function SectionAsks({ onChange }: { onChange?: () => void }) {
     setBusy(k);
     const r = await run(supabase.rpc('confirm_section_event', { p_section: a.section_id, p_kind: a.kind, p_day: a.day }), { quiet: true });
     setBusy(null);
-    if (!r.ok) { toast.error(t('ما زبط، جرّب كمان مرة.')); return; }
+    if (!r.ok) { toast.error(t('تعذّر ذلك، حاول مرة أخرى.')); return; }
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
-    toast(a.count + 1 >= a.needed ? t('صار عند كل الشعبة ✓') : t('انضاف عندك ✓'));
+    toast(a.count + 1 >= a.needed ? t('أصبح لدى الشعبة كلها ✓') : t('تمت الإضافة لديك ✓'));
     await load();
     onChange?.();
   }
@@ -58,7 +58,7 @@ export function SectionAsks({ onChange }: { onChange?: () => void }) {
                 <Users size={19} color={C.primary} />
               </View>
               <View style={{ flex: 1, gap: 2 }}>
-                <T v="bold" numberOfLines={2}>{t('{0} من شعبتك ضافوا {1}', [String(a.count), EVENT_KIND[a.kind] ?? a.title])}</T>
+                <T v="bold" numberOfLines={2}>{t('{0} من شعبتك أضافوا {1}', [String(a.count), EVENT_KIND[a.kind] ?? a.title])}</T>
                 <T v="small" color={C.ink2} numberOfLines={1}>{nm({ name_ar: a.course_name, name_en: a.course_name_en })}</T>
                 <T v="tiny" color={C.muted}>{when}</T>
               </View>
@@ -68,11 +68,11 @@ export function SectionAsks({ onChange }: { onChange?: () => void }) {
               <View style={{ height: 6, borderRadius: 3, backgroundColor: C.soft, overflow: 'hidden', flexDirection: 'row' }}>
                 <View style={{ width: `${Math.min(100, (a.count / a.needed) * 100)}%`, backgroundColor: C.primary, borderRadius: 3 }} />
               </View>
-              <T v="tiny" color={C.muted} style={{ fontFamily: F.bodyMd }}>{t('بيصير لكل الشعبة لما يأكده {0}', [String(a.needed)])}</T>
+              <T v="tiny" color={C.muted} style={{ fontFamily: F.bodyMd }}>{t('سيُطبَّق على الشعبة كلها عندما يؤكده {0}', [String(a.needed)])}</T>
             </View>
             <Row gap={8}>
-              <Button title={t('صح، عندي كمان')} onPress={() => confirm(a)} loading={busy === k} disabled={!!busy} style={{ flex: 1, minHeight: 42 }} />
-              <Button kind="soft" title={t('مش متأكد')} onPress={() => setHidden((h) => new Set(h).add(k))} disabled={!!busy} style={{ flex: 1, minHeight: 42 }} />
+              <Button title={t('صحيح، لديّ أيضًا')} onPress={() => confirm(a)} loading={busy === k} disabled={!!busy} style={{ flex: 1, minHeight: 42 }} />
+              <Button kind="soft" title={t('غير متأكد')} onPress={() => setHidden((h) => new Set(h).add(k))} disabled={!!busy} style={{ flex: 1, minHeight: 42 }} />
             </Row>
           </Animated.View>
         );

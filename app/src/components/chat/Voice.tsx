@@ -42,7 +42,7 @@ export function VoiceRecorder({ onRecorded, onRecording, disabled }: {
   async function start() {
     const perm = await requestRecordingPermissionsAsync();
     if (!perm.granted) {
-      Alert.alert(t('المايك مسكّر'), t('اسمح ليونيميت يستخدم المايك عشان تبعت رسائل صوتية.'), [
+      Alert.alert(t('الوصول إلى الميكروفون غير مسموح'), t('اسمح ليونيميت باستخدام الميكروفون لإرسال رسائل صوتية.'), [
         { text: t('لاحقاً'), style: 'cancel' }, ...(Platform.OS !== 'web' ? [{ text: t('افتح الإعدادات'), onPress: () => Linking.openSettings() }] : []),
       ]);
       return;
@@ -52,7 +52,7 @@ export function VoiceRecorder({ onRecorded, onRecording, disabled }: {
       await recorder.prepareToRecordAsync();
       recorder.record();
       setOn(true);
-    } catch { Alert.alert(t('ما زبط التسجيل'), t('جرّب كمان مرة.')); }
+    } catch { Alert.alert(t('تعذّر التسجيل'), t('حاول مرة أخرى.')); }
   }
 
   async function finish(send: boolean) {
@@ -65,11 +65,11 @@ export function VoiceRecorder({ onRecorded, onRecording, disabled }: {
       setOn(false);
       const uri = recorder.uri;
       if (!send || !uri) return;
-      if (length < 1) { Alert.alert(t('التسجيل قصير كتير'), t('اكبس على المايك واحكي، بعدين اكبس إرسال.')); return; }
+      if (length < 1) { Alert.alert(t('التسجيل قصير جداً'), t('اضغط على الميكروفون وتحدّث، ثم اضغط إرسال.')); return; }
       const mime = Platform.OS === 'web' ? 'audio/webm' : uri.endsWith('.m4a') || uri.endsWith('.mp4') ? 'audio/m4a' : 'audio/aac';
       setSending(true);
       await onRecorded({ uri, mime }, Math.round(length));
-    } catch { Alert.alert(t('ما انبعتت الرسالة الصوتية'), t('جرّب كمان مرة.')); }
+    } catch { Alert.alert(t('لم تُرسل الرسالة الصوتية'), t('حاول مرة أخرى.')); }
     finally { setSending(false); setOn(false); stopping.current = false; }
   }
 
@@ -88,7 +88,7 @@ export function VoiceRecorder({ onRecorded, onRecording, disabled }: {
       <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 10, minHeight: 44, borderRadius: 22, backgroundColor: C.soft, paddingHorizontal: 14 }}>
         <Dot />
         <T v="bold" style={{ fontVariant: ['tabular-nums'] }}>{fmt(secs)}</T>
-        <T v="tiny" color={C.muted} style={{ flex: 1 }} numberOfLines={1}>{t('عم يسجّل… اكبس إرسال لما تخلص')}</T>
+        <T v="tiny" color={C.muted} style={{ flex: 1 }} numberOfLines={1}>{t('جارٍ التسجيل… اضغط إرسال عند الانتهاء')}</T>
       </View>
       <Tap onPress={() => finish(true)} accessibilityLabel={t('إرسال')} style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: C.primary, alignItems: 'center', justifyContent: 'center' }}>
         <Send size={19} color={C.onPrimary} style={isAR ? { transform: [{ scaleX: -1 }] } : undefined} />
@@ -119,7 +119,7 @@ export function VoiceBubble({ path, seconds, mine }: { path: string; seconds: nu
 
   return (
     <View style={[{ flexDirection: 'row', alignItems: 'center', gap: 10, width: 230, paddingHorizontal: 12, paddingVertical: 8 }, bubble(mine), { borderRadius: 22 }]}>
-      <Tap onPress={toggle} disabled={!uri} accessibilityLabel={st.playing ? t('وقّف الرسالة الصوتية') : t('تشغيل الرسالة الصوتية')} scale={0.9} hitSlop={4}
+      <Tap onPress={toggle} disabled={!uri} accessibilityLabel={st.playing ? t('إيقاف الرسالة الصوتية') : t('تشغيل الرسالة الصوتية')} scale={0.9} hitSlop={4}
         style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: mine ? C.onPrimary : C.inverse, alignItems: 'center', justifyContent: 'center' }}>
         {!uri ? <ActivityIndicator size="small" color={mine ? C.primary : C.onInverse} /> : st.playing ? <Pause size={15} color={mine ? C.primary : C.onInverse} fill={mine ? C.primary : C.onInverse} /> : <Play size={15} color={mine ? C.primary : C.onInverse} fill={mine ? C.primary : C.onInverse} style={{ marginStart: 2 }} />}
       </Tap>

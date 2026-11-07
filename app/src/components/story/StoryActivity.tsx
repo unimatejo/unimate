@@ -9,7 +9,7 @@ import { ListSkeleton } from '@/components/ui/Skeleton';
 import { Avatar, Row, T, Tap } from '@/components/ui';
 import { mediaUrl, supabase, photoWidth } from '@/lib/supabase';
 import { C, F } from '@/lib/theme';
-import { timeAgo } from '@/lib/util';
+import { fmtCount, timeAgo } from '@/lib/util';
 import { t } from '@/lib/i18n';
 
 type Story = { id: string; media_url: string; kind: string };
@@ -35,7 +35,7 @@ export function ActivityChip({ viewers, onOpen }: { viewers: StoryViewer[]; onOp
       ) : <Eye size={18} color="#FFFFFF" />}
       <View>
         <T v="bold" color="#FFFFFF" style={{ fontSize: 13 }}>{t('النشاط')}</T>
-        <T v="tiny" color="#D5DAEA">{viewers.length ? t('{0} مشاهدة', [viewers.length]) : t('ما حدا شافها لهلأ')}</T>
+        <T v="tiny" color="#D5DAEA">{viewers.length ? t('{0} مشاهدة', [viewers.length]) : t('لم يشاهدها أحد حتى الآن')}</T>
       </View>
       {likes > 0 && <Row gap={3}><Heart size={14} color={C.pink} fill={C.pink} /><T v="tiny" color="#FFFFFF">{likes}</T></Row>}
     </Tap>
@@ -106,7 +106,7 @@ export function StoryActivitySheet({ open, onClose, stories, index, onPick, me }
 
       {/* tabs */}
       <View style={{ flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: C.line }}>
-        {([['views', t('المشاهدين'), views?.length], ['replies', t('الردود'), replies?.length]] as const).map(([k, label, n]) => {
+        {([['views', t('المشاهدون'), views?.length], ['replies', t('الردود'), replies?.length]] as const).map(([k, label, n]) => {
           const on = tab === k;
           return (
             <Tap key={k} onPress={() => setTab(k)} haptic={false} accessibilityRole="tab" accessibilityState={{ selected: on }}
@@ -121,10 +121,10 @@ export function StoryActivitySheet({ open, onClose, stories, index, onPick, me }
       <ScrollView style={{ maxHeight: 420 }} contentContainerStyle={{ paddingHorizontal: 18, paddingBottom: 12, gap: 4 }}>
         {tab === 'views' ? (
           views === null ? <ListSkeleton n={4} /> : views.length === 0 ? (
-            <Empty icon={<Eye size={26} color={C.muted} />} text={t('ما حدا شاف هالقصة لهلأ.')} />
+            <Empty icon={<Eye size={26} color={C.muted} />} text={t('لم يشاهد أحد هذه القصة حتى الآن.')} />
           ) : (
             <>
-              {likes > 0 && <Row gap={6} style={{ paddingVertical: 6 }}><Heart size={15} color={C.pink} fill={C.pink} /><T v="small" color={C.muted}>{t('عجبت {0}', [likes])}</T></Row>}
+              {likes > 0 && <Row gap={6} style={{ paddingVertical: 6 }}><Heart size={15} color={C.pink} fill={C.pink} /><T v="small" color={C.muted}>{t('{0} إعجاب', [fmtCount(likes)])}</T></Row>}
               {views.map((v) => (
                 <Tap key={v.viewer_id} haptic={false} onPress={() => { onClose(); router.push({ pathname: '/user/[id]', params: { id: v.viewer_id } }); }}
                   style={{ flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 60 }}>
@@ -134,13 +134,13 @@ export function StoryActivitySheet({ open, onClose, stories, index, onPick, me }
                     {v.viewed_at ? <T v="tiny" color={C.muted}>{timeAgo(v.viewed_at)}</T> : null}
                   </View>
                   {repliedBy.has(v.viewer_id) && <MessageCircle size={18} color={C.muted} accessibilityLabel={t('رد')} />}
-                  {v.liked && <Heart size={18} color={C.pink} fill={C.pink} accessibilityLabel={t('عجبته')} />}
+                  {v.liked && <Heart size={18} color={C.pink} fill={C.pink} accessibilityLabel={t('أعجبه')} />}
                 </Tap>
               ))}
             </>
           )
         ) : replies === null ? <ListSkeleton n={3} /> : replies.length === 0 ? (
-          <Empty icon={<MessageCircle size={26} color={C.muted} />} text={t('ما في ردود على هالقصة لهلأ.')} />
+          <Empty icon={<MessageCircle size={26} color={C.muted} />} text={t('لا توجد ردود على هذه القصة حتى الآن.')} />
         ) : replies.map((r) => (
           <Tap key={r.id} haptic={false} onPress={() => { onClose(); router.push({ pathname: '/messages/[id]', params: { id: r.conversation_id } }); }}
             style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 12, paddingVertical: 8 }}>

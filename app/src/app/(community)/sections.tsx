@@ -12,9 +12,9 @@ const ICON: Record<string, typeof Search> = {
   market: ShoppingBag, exchange: ArrowLeftRight, transport_housing: Bus, events: Sparkles, opportunities: Briefcase,
 };
 const DESC: Record<string, string> = {
-  square: t('أسئلة سريعة ونقاشات'), summaries: t('شارك ونزّل ملخصات المواد'), assignments: t('مواعيد ونقاش الواجبات'),
-  tutoring: t('درّس أو لاقي مدرّس'), lost_found: t('ضاع منك إشي أو لقيت إشي'), market: t('بيع وشراء كتب وأدوات'),
-  exchange: t('بدّل كتابك أو تبرع فيه'), transport_housing: t('توصيلة مشتركة وسكن'), events: t('نشاطات وأندية ورياضة'), opportunities: t('تدريب وشغل جزئي ومنح'),
+  square: t('أسئلة سريعة ونقاشات'), summaries: t('شارك ملخصات المواد ونزّلها'), assignments: t('مواعيد الواجبات ومناقشتها'),
+  tutoring: t('درّس أو ابحث عن مدرّس'), lost_found: t('أضعت شيئًا أو وجدت شيئًا'), market: t('بيع وشراء الكتب والأدوات'),
+  exchange: t('بادل كتابك أو تبرّع به'), transport_housing: t('توصيلة مشتركة وسكن'), events: t('نشاطات وأندية ورياضة'), opportunities: t('تدريب وعمل جزئي ومنح'),
 };
 
 /** Every community section in one grid. */

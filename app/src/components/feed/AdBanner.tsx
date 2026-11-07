@@ -35,7 +35,7 @@ export function AdBanner({ placement }: { placement: 'feed_card' | 'market_banne
         </View>
         <Tap onPress={ad.cta_kind ? () => adAction(ad) : () => openAdvertiser(ad)}
           style={{ minHeight: 40, paddingHorizontal: 14, borderRadius: 12, backgroundColor: C.primarySoft, justifyContent: 'center' }}>
-          <T v="bold" color={C.primary} style={{ fontSize: 13 }}>{ad.cta_kind ? ad.cta_label || CTA_DEFAULT[ad.cta_kind] : t('شوف')}</T>
+          <T v="bold" color={C.primary} style={{ fontSize: 13 }}>{ad.cta_kind ? ad.cta_label || CTA_DEFAULT[ad.cta_kind] : t('عرض')}</T>
         </Tap>
       </Row>
     </Tap>

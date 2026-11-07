@@ -82,20 +82,20 @@ export default function EditProfile() {
       await setPhoto(publicUrl('avatars', path));
     } catch (e) {
       setPreview(null);
-      Alert.alert(t('ما زبط تغيير الصورة'), userMessage(e));
+      Alert.alert(t('تعذّر تغيير الصورة'), userMessage(e));
     }
     setUploading(false);
   }
 
   function changePhoto() {
-    const opts = [t('اختار من الصور'), t('صوّر هلأ'), ...(avatar ? [t('شيل الصورة')] : []), t('إلغاء')];
+    const opts = [t('اختر من الصور'), t('صوّر الآن'), ...(avatar ? [t('إزالة الصورة')] : []), t('إلغاء')];
     const run = (i: number) => {
-      if (opts[i] === t('اختار من الصور')) choose(false);
-      else if (opts[i] === t('صوّر هلأ')) choose(true);
-      else if (opts[i] === t('شيل الصورة')) setPhoto(null).then(() => setPreview(null)).catch(() => Alert.alert(t('ما زبط'), t('جرّب كمان مرة.')));
+      if (opts[i] === t('اختر من الصور')) choose(false);
+      else if (opts[i] === t('صوّر الآن')) choose(true);
+      else if (opts[i] === t('إزالة الصورة')) setPhoto(null).then(() => setPreview(null)).catch(() => Alert.alert(t('تعذّر ذلك'), t('حاول مرة أخرى.')));
     };
-    if (Platform.OS === 'ios') ActionSheetIOS.showActionSheetWithOptions({ options: opts, cancelButtonIndex: opts.length - 1, destructiveButtonIndex: avatar ? 2 : undefined, title: t('صورة البروفايل') }, run);
-    else Alert.alert(t('صورة البروفايل'), undefined, opts.map((o, i) => ({ text: o, style: o === t('إلغاء') ? 'cancel' : o === t('شيل الصورة') ? 'destructive' : 'default', onPress: () => run(i) })));
+    if (Platform.OS === 'ios') ActionSheetIOS.showActionSheetWithOptions({ options: opts, cancelButtonIndex: opts.length - 1, destructiveButtonIndex: avatar ? 2 : undefined, title: t('صورة الملف الشخصي') }, run);
+    else Alert.alert(t('صورة الملف الشخصي'), undefined, opts.map((o, i) => ({ text: o, style: o === t('إلغاء') ? 'cancel' : o === t('إزالة الصورة') ? 'destructive' : 'default', onPress: () => run(i) })));
   }
 
   async function save() {
@@ -103,15 +103,15 @@ export default function EditProfile() {
     const u = username.trim().replace(/^@+/, '').toLowerCase();
     const igH = handleFrom(ig, 'instagram'); const snH = handleFrom(snap, 'snapchat');
     if (name.trim().length < 2) { Alert.alert(t('اكتب اسمك')); return; }
-    if (u && !/^[a-z0-9._]{3,24}$/.test(u)) { Alert.alert(t('اسم المستخدم'), t('من 3 لـ 24 حرف إنجليزي أو أرقام أو . و _ (بدون مسافات).')); return; }
-    if (profile.username && !u) { Alert.alert(t('اسم المستخدم'), t('لازم يكون عندك يوزر.')); return; }
+    if (u && !/^[a-z0-9._]{3,24}$/.test(u)) { Alert.alert(t('اسم المستخدم'), t('من 3 إلى 24 حرفًا إنجليزيًا أو رقمًا أو . و _ (دون مسافات).')); return; }
+    if (profile.username && !u) { Alert.alert(t('اسم المستخدم'), t('يجب أن يكون لديك اسم مستخدم.')); return; }
     const changingUser = !!u && u !== (profile.username ?? '').toLowerCase();
     if (changingUser) {
-      if (lockedDays > 0) { Alert.alert(t('اسم المستخدم'), t('بتقدر تغيّر اليوزر بعد {0} يوم.', [lockedDays])); return; }
+      if (lockedDays > 0) { Alert.alert(t('اسم المستخدم'), t('يمكنك تغيير اسم المستخدم بعد {0} يوم.', [lockedDays])); return; }
       const { data: ok } = await supabase.rpc('username_available', { u });
-      if (!ok) { Alert.alert(t('اسم المستخدم'), t('هاد اليوزر مأخوذ، جرّب غيره.')); return; }
+      if (!ok) { Alert.alert(t('اسم المستخدم'), t('اسم المستخدم هذا محجوز، جرّب اسمًا آخر.')); return; }
       if (cooldown > 0) {
-        const sure = await new Promise<boolean>((res) => Alert.alert(t('تغيير اليوزر'), t('@{0}\nبعدها ما بتقدر تغيّره لمدة {1} يوم. متأكد؟', [u, cooldown]), [{ text: t('لا'), style: 'cancel', onPress: () => res(false) }, { text: t('غيّره'), onPress: () => res(true) }]));
+        const sure = await new Promise<boolean>((res) => Alert.alert(t('تغيير اسم المستخدم'), t('@{0}\nلن تتمكن بعدها من تغييره لمدة {1} يوم. هل أنت متأكد؟', [u, cooldown]), [{ text: t('لا'), style: 'cancel', onPress: () => res(false) }, { text: t('غيّره'), onPress: () => res(true) }]));
         if (!sure) return;
       }
     }
@@ -124,12 +124,12 @@ export default function EditProfile() {
     }).eq('id', profile.id);
     if (!error) {
       const { error: se } = await supabase.rpc('set_my_socials', { p_instagram: igH || null, p_snapchat: snH || null });
-      if (se && /socials_blocked/.test(se.message)) Alert.alert(t('حسابات التواصل'), t('الإدارة منعت إضافة حسابات تواصل على بروفايلك. للاستفسار تواصل مع الدعم.'));
+      if (se && /socials_blocked/.test(se.message)) Alert.alert(t('حسابات التواصل'), t('منعت الإدارة إضافة حسابات التواصل إلى ملفك الشخصي. للاستفسار تواصل مع الدعم.'));
     }
     setSaving(false);
     if (error) {
       reportError(new Error(`profile save: ${error.code} ${error.message}`));
-      Alert.alert(t('ما انحفظ'), error.code === '23505' ? t('اسم المستخدم مأخوذ، جرّب غيره.') : error.message.includes('username_cooldown') ? t('بتقدر تغيّر اليوزر بعد {0} يوم.', [error.message.match(/username_cooldown:(\d+)/)?.[1] ?? cooldown]) : t('تأكد من الإنترنت وجرّب كمان مرة.'));
+      Alert.alert(t('لم يُحفظ'), error.code === '23505' ? t('اسم المستخدم مستخدم بالفعل، جرّب اسماً آخر.') : error.message.includes('username_cooldown') ? t('يمكنك تغيير اسم المستخدم بعد {0} يوم.', [error.message.match(/username_cooldown:(\d+)/)?.[1] ?? cooldown]) : t('تحقق من اتصالك بالإنترنت وحاول مرة أخرى.'));
       return;
     }
     // birthday: the date stays private; what shows on the profile follows the choice
@@ -146,7 +146,7 @@ export default function EditProfile() {
   return (
     <Screen>
       <AvatarCropper src={cropSrc} onCancel={() => setCropSrc(null)} onDone={cropped} />
-      <Header title={t('تعديل البروفايل')} right={
+      <Header title={t('تعديل الملف الشخصي')} right={
         <Tap onPress={save} disabled={saving || uploading} accessibilityLabel={t('احفظ')} style={{ minHeight: 40, paddingHorizontal: 14, borderRadius: 12, backgroundColor: C.primary, alignItems: 'center', justifyContent: 'center', opacity: saving || uploading ? 0.5 : 1 }}>
           {saving ? <ActivityIndicator color={C.onPrimary} /> : <T v="bold" color={C.onPrimary}>{t('احفظ')}</T>}
         </Tap>
@@ -162,15 +162,15 @@ export default function EditProfile() {
                 <Camera size={16} color={C.onPrimary} />
               </View>
             </View>
-            <T v="bold" color={C.primaryDark}>{uploading ? t('عم نرفع الصورة…') : shown ? t('غيّر الصورة') : t('حط صورة')}</T>
+            <T v="bold" color={C.primaryDark}>{uploading ? t('جارٍ رفع الصورة…') : shown ? t('غيّر الصورة') : t('أضف صورة')}</T>
           </Tap>
 
           <Field label={t('الاسم')} value={name} onChangeText={setName} maxLength={60} placeholder={t('اسمك الكامل')} />
           <View style={{ gap: 4 }}>
             <Field label={t('اسم المستخدم')} value={username} editable={lockedDays === 0} onChangeText={(t) => setUsername(t.replace(/\s/g, '').toLowerCase())} autoCapitalize="none" autoCorrect={false} placeholder={t('مثلاً sara.cs')} style={{ textAlign: 'left', writingDirection: 'ltr', opacity: lockedDays > 0 ? 0.6 : 1 }} />
-            <Row gap={6}><Lock size={12} color={C.muted} /><T v="tiny" color={C.muted}>{lockedDays > 0 ? t('بتقدر تغيّر اليوزر بعد {0} يوم.', [lockedDays]) : cooldown > 0 ? t('بتقدر تغيّر اليوزر مرة كل {0} يوم.', [cooldown]) : t('بتقدر تغيّر اليوزر متى ما بدك.')}</T></Row>
+            <Row gap={6}><Lock size={12} color={C.muted} /><T v="tiny" color={C.muted}>{lockedDays > 0 ? t('يمكنك تغيير اسم المستخدم بعد {0} يوم.', [lockedDays]) : cooldown > 0 ? t('يمكنك تغيير اسم المستخدم مرة كل {0} يوم.', [cooldown]) : t('يمكنك تغيير اسم المستخدم متى شئت.')}</T></Row>
           </View>
-          <Field label={t('نبذة')} value={bio} onChangeText={setBio} multiline maxLength={150} placeholder={t('إشي عنك بسطر')} style={{ minHeight: 84, textAlignVertical: 'top', paddingTop: 12 }} />
+          <Field label={t('نبذة')} value={bio} onChangeText={setBio} multiline maxLength={150} placeholder={t('نبذة عنك في سطر')} style={{ minHeight: 84, textAlignVertical: 'top', paddingTop: 12 }} />
           <T v="tiny" color={C.muted} style={{ marginTop: -10 }}>{bio.length}/150</T>
 
           <View style={{ gap: 8 }}>
@@ -183,18 +183,18 @@ export default function EditProfile() {
           <View style={{ gap: 10, backgroundColor: C.card, borderRadius: 22, padding: 14 }}>
             <T v="h3">{t('تاريخ الميلاد')} 🎂</T>
             <DateField value={birth} onChange={setBirth} max={new Date(new Date().getFullYear() - 14, 11, 31)} />
-            <T v="small" color={C.ink2}>{t('شو بيبيّن على بروفايلك؟')}</T>
+            <T v="small" color={C.ink2}>{t('ماذا يظهر في ملفك الشخصي؟')}</T>
             <Row gap={8} style={{ flexWrap: 'wrap' }}>
-              <Chip label={t('السنة بس (مواليد {0})', [birth ? String(birth.getFullYear()) : '…'])} active={showBirth === 'year'} onPress={() => setShowBirth('year')} />
-              <Chip label={t('التاريخ كامل')} active={showBirth === 'full'} onPress={() => setShowBirth('full')} />
-              <Chip label={t('ولا إشي')} active={showBirth === 'none'} onPress={() => setShowBirth('none')} />
+              <Chip label={t('السنة فقط (مواليد {0})', [birth ? String(birth.getFullYear()) : '…'])} active={showBirth === 'year'} onPress={() => setShowBirth('year')} />
+              <Chip label={t('التاريخ كاملاً')} active={showBirth === 'full'} onPress={() => setShowBirth('full')} />
+              <Chip label={t('لا شيء')} active={showBirth === 'none'} onPress={() => setShowBirth('none')} />
             </Row>
-            <T v="tiny" color={C.muted}>{t('بيومك بيطلع على بروفايلك إنه عيد ميلادك، إذا اخترت التاريخ كامل.')}</T>
+            <T v="tiny" color={C.muted}>{t('في يوم ميلادك سيظهر على ملفك الشخصي أنه عيد ميلادك، إذا اخترت التاريخ كاملاً.')}</T>
           </View>
 
           <View style={{ gap: 10, backgroundColor: C.card, borderRadius: 22, padding: 14 }}>
-            <T v="h3">{t('حساباتك التانية')}</T>
-            <T v="tiny" color={C.muted}>{t('اكتب اسم المستخدم أو الصق رابط حسابك. بيطلع زر على بروفايلك بيفتح حسابك بكبسة، حسب «مين بيشوف حساباتي» بالخصوصية.')}</T>
+            <T v="h3">{t('حساباتك الأخرى')}</T>
+            <T v="tiny" color={C.muted}>{t('اكتب اسم المستخدم أو الصق رابط حسابك. سيظهر زر في ملفك الشخصي يفتح حسابك بضغطة واحدة، وفق إعداد «من يرى حساباتي» في الخصوصية.')}</T>
             <Row gap={10}><InstagramGlyph size={40} /><View style={{ flex: 1 }}><Field label={t('إنستغرام')} value={ig} onChangeText={setIg} autoCapitalize="none" autoCorrect={false} placeholder={t('username أو instagram.com/username')} style={{ textAlign: 'left', writingDirection: 'ltr' }} /></View></Row>
             {igH ? <Row gap={6}><AtSign size={13} color={C.muted} /><T v="tiny" color={C.muted} style={{ writingDirection: 'ltr' }}>instagram.com/{igH}</T></Row> : null}
             <Row gap={10}><SnapGlyph size={40} /><View style={{ flex: 1 }}><Field label={t('سناب شات')} value={snap} onChangeText={setSnap} autoCapitalize="none" autoCorrect={false} placeholder={t('username أو الرابط')} style={{ textAlign: 'left', writingDirection: 'ltr' }} /></View></Row>
@@ -206,7 +206,7 @@ export default function EditProfile() {
           </View>
 
           <Button title={t('احفظ التغييرات')} icon={<Check size={18} color={C.white} />} onPress={save} loading={saving} disabled={uploading} />
-          {avatar && <Button kind="ghost" title={t('شيل صورة البروفايل')} icon={<Trash2 size={16} color={C.danger} />} onPress={() => setPhoto(null).then(() => setPreview(null))} />}
+          {avatar && <Button kind="ghost" title={t('إزالة صورة الملف الشخصي')} icon={<Trash2 size={16} color={C.danger} />} onPress={() => setPhoto(null).then(() => setPreview(null))} />}
         </ScrollView>
       </KeyboardAvoidingView>
     </Screen>

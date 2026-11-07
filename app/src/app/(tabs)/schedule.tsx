@@ -29,11 +29,11 @@ import { featureOn, useAppContent } from '@/lib/appContent';
 const KIND: Record<string, [string, string, string]> = {
   lecture: [t('محاضرة'), C.primarySoft, C.primary],
   lab: [t('مختبر'), C.greenSoft, C.greenInk],
-  online: [t('أونلاين'), C.violetSoft, C.violetInk],
+  online: [t('عبر الإنترنت'), C.violetSoft, C.violetInk],
   blended: [t('مدمج'), C.skySoft, C.blue],
   tutorial: [t('مناقشة'), C.orangeSoft, C.orangeInk],
 };
-const EVENT: Record<string, string> = { exam_first: t('امتحان أول'), exam_second: t('امتحان ثاني'), exam_mid: t('امتحان نصفي'), exam_final: t('امتحان نهائي'), quiz: t('كويز'), assignment: t('تسليم واجب'), project: t('مشروع'), custom: t('موعد') };
+const EVENT: Record<string, string> = { exam_first: t('امتحان أول'), exam_second: t('امتحان ثانٍ'), exam_mid: t('امتحان نصفي'), exam_final: t('امتحان نهائي'), quiz: t('اختبار قصير'), assignment: t('تسليم واجب'), project: t('مشروع'), custom: t('موعد') };
 
 const KIND_ICON = { lecture: BookOpen, lab: FlaskConical, online: Video, blended: MonitorSmartphone, tutorial: MessagesSquare } as const;
 const PALETTE = [GRAD.blue, GRAD.pink, GRAD.green, GRAD.orange, GRAD.violet, GRAD.teal, GRAD.indigo, GRAD.red];
@@ -82,9 +82,9 @@ export default function Schedule() {
     }
     setAbsent((a) => ({ ...a, [key]: 'pending' }));
     const r = await run(supabase.from('attendance_marks').insert({ section_id: m.section_id, on_date: today, slot: m.starts_at.slice(0, 5), status: 'absent' }).select('id').single(), { quiet: true });
-    if (!r.ok || !r.data) { setAbsent((a) => { const n = { ...a }; delete n[key]; return n; }); toast.error(t('ما انسجل الغياب، جرّب كمان مرة.')); return; }
+    if (!r.ok || !r.data) { setAbsent((a) => { const n = { ...a }; delete n[key]; return n; }); toast.error(t('لم يُسجَّل الغياب، حاول مرة أخرى.')); return; }
     setAbsent((a) => ({ ...a, [key]: (r.data as unknown as { id: string }).id }));
-    toast(t('انسجل غياب {0} ✓', [m.course_name]));
+    toast(t('تم تسجيل غياب {0} ✓', [m.course_name]));
   }
 
   useEffect(() => {
@@ -109,11 +109,11 @@ export default function Schedule() {
 
   // a classmate's time that isn't mine (another section in the same Teams group): gone from my schedule in one tap
   function notMine(m: Meeting) {
-    Alert.alert(t('مش محاضرتك؟'), t('بنشيلها من جدولك إنت بس، وما بتتغيّر عند زملائك.'), [
+    Alert.alert(t('ليست محاضرتك؟'), t('سنزيلها من جدولك أنت فقط، ولن تتغيّر لدى زملائك.'), [
       { text: t('لا'), style: 'cancel' },
-      { text: t('شيلها'), style: 'destructive', onPress: async () => {
+      { text: t('إزالة'), style: 'destructive', onPress: async () => {
         const { error } = await supabase.from('personal_meetings').insert({ user_id: profile?.id, section_id: m.section_id, replaces: m.id, hidden: true });
-        if (error) Alert.alert(t('ما زبط'), t('جرّب كمان مرة.')); else reload();
+        if (error) Alert.alert(t('تعذّر ذلك'), t('حاول مرة أخرى.')); else reload();
       } },
     ]);
   }
@@ -122,12 +122,12 @@ export default function Schedule() {
     if (!profile || flipping) return;
     setFlipping(id);
     setOff((o) => ({ ...o, [id]: !enabled }));
-    const r = await run(supabase.from('reminders').upsert({ user_id: profile.id, meeting_id: id, enabled }, { onConflict: 'user_id,meeting_id' }), { msg: t('ما قدرنا نغيّر التنبيه، جرّب كمان مرة.') });
+    const r = await run(supabase.from('reminders').upsert({ user_id: profile.id, meeting_id: id, enabled }, { onConflict: 'user_id,meeting_id' }), { msg: t('تعذّر تغيير التنبيه، حاول مرة أخرى.') });
     if (!r.ok) setOff((o) => ({ ...o, [id]: enabled }));
     setFlipping(null);
   }
 
-  function openLink(url: string) { if (!isWebUrl(url)) { Alert.alert(t('الرابط مش صالح')); return; } Linking.openURL(url).catch(() => Alert.alert(t('ما قدرنا نفتح الرابط'))); }
+  function openLink(url: string) { if (!isWebUrl(url)) { Alert.alert(t('الرابط غير صالح')); return; } Linking.openURL(url).catch(() => Alert.alert(t('تعذّر فتح الرابط'))); }
 
   function eventMenu(e: (typeof events)[number]) {
     Alert.alert(e.title, new Date(e.starts_at).toLocaleString(LOCALE, { weekday: 'long', day: 'numeric', month: 'long', hour: 'numeric', minute: '2-digit' }) + (e.location ? `\n${e.location}` : ''), [
@@ -142,12 +142,12 @@ export default function Schedule() {
         <Row style={{ justifyContent: 'space-between' }}>
           <View>
             <T v="h1">{t('جدولي')}</T>
-            <Row gap={6}><View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: C.green }} /><T v="tiny" color={C.greenInk}>{t('بيتحدّث تلقائياً')}</T></Row>
+            <Row gap={6}><View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: C.green }} /><T v="tiny" color={C.greenInk}>{t('يتحدّث تلقائياً')}</T></Row>
           </View>
           <Row gap={8}>
             <IconButton label={t('صوّر جدولك')} onPress={() => router.push({ pathname: '/courses', params: { scan: '1' } })}><ScanLine size={21} color={C.ink} /></IconButton>
             <IconButton label={t('موادي')} onPress={() => router.push('/courses')}><BookOpen size={21} color={C.ink} /></IconButton>
-            <IconButton label={t('أضف موعد أو امتحان')} onPress={() => router.push('/event/new')}><CalendarPlus size={21} color={C.ink} /></IconButton>
+            <IconButton label={t('أضف موعداً أو امتحاناً')} onPress={() => router.push('/event/new')}><CalendarPlus size={21} color={C.ink} /></IconButton>
             <IconButton label={t('إعدادات التنبيهات')} onPress={() => router.push('/settings/reminders')}><Bell size={21} color={C.ink} /></IconButton>
           </Row>
         </Row>
@@ -158,7 +158,7 @@ export default function Schedule() {
             <Row gap={12}>
               <View style={{ flex: 1, gap: 2 }}>
                 <T v="small" color={C.onPrimary} style={{ opacity: 0.75 }}>{new Date().toLocaleDateString(LOCALE, { weekday: 'long', day: 'numeric', month: 'long' })}</T>
-                <T v="h2" color={C.onPrimary} style={{ fontFamily: F.display, fontSize: 22 }}>{todayCount ? t('عندك {0} {1} اليوم', [todayCount, todayCount === 1 ? t('محاضرة') : todayCount === 2 ? t('محاضرتين') : t('محاضرات')]) : t('اليوم فاضي')}</T>
+                <T v="h2" color={C.onPrimary} style={{ fontFamily: F.display, fontSize: 22 }}>{todayCount ? t('لديك {0} {1} اليوم', [todayCount, todayCount === 1 ? t('محاضرة') : todayCount === 2 ? t('محاضرتين') : t('محاضرات')]) : t('لا شيء اليوم')}</T>
               </View>
               <GlyphTile icon={Clock} colors={['rgba(14,20,48,0.22)', 'rgba(14,20,48,0.10)']} size={52} live />
             </Row>
@@ -209,14 +209,14 @@ export default function Schedule() {
         </View>
 
         {loading && meetings.length === 0 ? <ListSkeleton n={3} />
-        : error && meetings.length === 0 ? <Empty icon={<Clock size={28} color={C.red} />} title={t('ما قدرنا نحمّل الجدول')} body={t('تأكد من الإنترنت وجرّب كمان مرة.')} action={<Button kind="soft" title={t('جرّب مرة ثانية')} onPress={reload} style={{ paddingHorizontal: 24 }} />} />
+        : error && meetings.length === 0 ? <Empty icon={<Clock size={28} color={C.red} />} title={t('تعذّر تحميل الجدول')} body={t('تحقق من اتصالك بالإنترنت وحاول مرة أخرى.')} action={<Button kind="soft" title={t('حاول مرة أخرى')} onPress={reload} style={{ paddingHorizontal: 24 }} />} />
         : list.length === 0 ? (
-          <Empty icon={<Clock size={28} color={C.primary} />} title={t('ما عندك محاضرات هاليوم')}
-            body={meetings.length === 0 ? t('جيب موادك من Teams بكبسة، أو ضيفها مرة وحدة. وقت المحاضرة اللي بيضيفه أي زميل بشعبتك بيطلع للكل.') : t('استمتع بيومك.')}
+          <Empty icon={<Clock size={28} color={C.primary} />} title={t('ليست لديك محاضرات في هذا اليوم')}
+            body={meetings.length === 0 ? t('استورد موادك من Teams بضغطة واحدة، أو أضفها مرة واحدة. موعد المحاضرة الذي يضيفه أي زميل في شعبتك يظهر للجميع.') : t('استمتع بيومك.')}
             action={meetings.length === 0 ? (
               <View style={{ gap: 8, marginTop: 8 }}>
                 <Button title={t('صوّر جدولك')} icon={<ScanLine size={18} color={C.white} />} onPress={() => router.push({ pathname: '/courses', params: { scan: '1' } })} style={{ paddingHorizontal: 22 }} />
-                <Button kind="soft" title={t('ضيف موادي')} icon={<BookOpen size={18} color={C.primary} />} onPress={() => router.push('/courses')} style={{ paddingHorizontal: 22 }} />
+                <Button kind="soft" title={t('أضف موادي')} icon={<BookOpen size={18} color={C.primary} />} onPress={() => router.push('/courses')} style={{ paddingHorizontal: 22 }} />
               </View>
             ) : undefined} />
         ) : list.map((m, i) => {
@@ -248,13 +248,13 @@ export default function Schedule() {
                       <T v="tiny" color={C.muted} numberOfLines={1}>{[m.instructor, sectionLabel(m.section_no)].filter(Boolean).join(' · ')}</T>
                     </View>
                     {live ? (
-                      <Row gap={6} style={{ backgroundColor: g[1], paddingHorizontal: 10, paddingVertical: 5, borderRadius: 999 }}><LiveDot /><T v="tiny" color={C.white}>{t('هلأ')}</T></Row>
+                      <Row gap={6} style={{ backgroundColor: g[1], paddingHorizontal: 10, paddingVertical: 5, borderRadius: 999 }}><LiveDot /><T v="tiny" color={C.white}>{t('الآن')}</T></Row>
                     ) : <Tag label={k[0]} bg={k[1]} fg={k[2]} />}
                   </Row>
                   {m.changed && (
                     <Tap haptic={false} onPress={() => router.push('/courses')} style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 10, paddingVertical: 7, borderRadius: 12, backgroundColor: m.changed === 'cancelled' ? C.redSoft : C.orangeSoft }}>
                       <T v="tiny" color={m.changed === 'cancelled' ? C.red : C.orange} style={{ flex: 1 }}>
-                        {m.changed === 'cancelled' ? t('ألغيت هالمحاضرة هالأسبوع') : t('موعد معدّل لهالأسبوع بس')}{m.note ? ` · ${m.note}` : ''}
+                        {m.changed === 'cancelled' ? t('تم إلغاء هذه المحاضرة هذا الأسبوع') : t('موعد معدّل لهذا الأسبوع فقط')}{m.note ? ` · ${m.note}` : ''}
                       </T>
                     </Tap>
                   )}
@@ -269,18 +269,18 @@ export default function Schedule() {
                         <Video size={15} color={C.violet} /><T v="small" color={C.violet}>{t('ادخل المحاضرة')}</T>
                       </Tap>
                     ) : (
-                      <Tap onPress={() => router.push(roomRoute(m))} accessibilityLabel={m.building_id ? t('وديني: {0}', [placeLine(m)]) : placeLine(m)}
+                      <Tap onPress={() => router.push(roomRoute(m))} accessibilityLabel={m.building_id ? t('الاتجاهات: {0}', [placeLine(m)]) : placeLine(m)}
                         style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 38, paddingHorizontal: 12, borderRadius: 12, backgroundColor: C.primarySoft }}>
                         {m.building_id ? <Navigation size={15} color={C.primary} /> : <MapPin size={15} color={C.primary} />}
-                        <T v="small" color={C.primary} numberOfLines={1} style={{ flexShrink: 1 }}>{m.building_id ? t('وديني · {0}', [placeLine(m)]) : placeLine(m)}</T>
+                        <T v="small" color={C.primary} numberOfLines={1} style={{ flexShrink: 1 }}>{m.building_id ? t('الاتجاهات · {0}', [placeLine(m)]) : placeLine(m)}</T>
                       </Tap>
                     )}
                     {done && m.changed !== 'cancelled' && (() => {
                       const on = !!absent[`${m.section_id}|${m.starts_at.slice(0, 5)}`];
                       return (
-                        <Tap onPress={() => toggleAbsent(m)} accessibilityRole="button" accessibilityState={{ checked: on }} accessibilityLabel={on ? t('شيل الغياب') : t('غبت عن هالمحاضرة')}
+                        <Tap onPress={() => toggleAbsent(m)} accessibilityRole="button" accessibilityState={{ checked: on }} accessibilityLabel={on ? t('إزالة الغياب') : t('غبت عن هذه المحاضرة')}
                           style={{ height: 38, paddingHorizontal: 10, borderRadius: 12, backgroundColor: on ? C.redSoft : C.soft, flexDirection: 'row', alignItems: 'center', gap: 5 }}>
-                          <UserX size={15} color={on ? C.red : C.muted} /><T v="tiny" color={on ? C.red : C.muted}>{on ? t('غبت ✓') : t('غبت؟')}</T>
+                          <UserX size={15} color={on ? C.red : C.muted} /><T v="tiny" color={on ? C.red : C.muted}>{on ? t('غبت ✓') : t('هل غبت؟')}</T>
                         </Tap>
                       );
                     })()}
@@ -289,12 +289,12 @@ export default function Schedule() {
                       <Pencil size={15} color={C.muted} /><T v="tiny" color={C.muted}>{t('عدّل')}</T>
                     </Tap>
                     {m.source !== 'personal' && m.source !== 'change' && (
-                      <Tap onPress={() => notMine(m)} accessibilityLabel={t('مش محاضرتي')}
+                      <Tap onPress={() => notMine(m)} accessibilityLabel={t('ليست محاضرتي')}
                         style={{ height: 38, paddingHorizontal: 10, borderRadius: 12, backgroundColor: C.soft, flexDirection: 'row', alignItems: 'center', gap: 5 }}>
-                        <EyeOff size={15} color={C.muted} /><T v="tiny" color={C.muted}>{t('مش إلي')}</T>
+                        <EyeOff size={15} color={C.muted} /><T v="tiny" color={C.muted}>{t('ليس لي')}</T>
                       </Tap>
                     )}
-                    <Tap onPress={() => flip(m.id, !enabled)} disabled={flipping === m.id} accessibilityLabel={enabled ? t('وقّف التنبيه') : t('شغّل التنبيه')} accessibilityState={{ checked: enabled }}
+                    <Tap onPress={() => flip(m.id, !enabled)} disabled={flipping === m.id} accessibilityLabel={enabled ? t('إيقاف التنبيه') : t('شغّل التنبيه')} accessibilityState={{ checked: enabled }}
                       style={{ width: 38, height: 38, borderRadius: 12, backgroundColor: enabled ? C.orangeSoft : C.soft, alignItems: 'center', justifyContent: 'center' }}>
                       {enabled ? <Bell size={17} color={C.orange} fill={C.orange} /> : <BellOff size={17} color={C.muted} />}
                     </Tap>

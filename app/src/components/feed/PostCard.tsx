@@ -11,13 +11,13 @@ import { PostVideo } from '@/components/feed/PostVideo';
 import { TitleBadge, titledName } from '@/components/profile/TitleBadge';
 import { Avatar, Row, T, Tag, Tap } from '@/components/ui';
 import { useAuth } from '@/lib/auth';
-import { toggleLike, toggleSave } from '@/lib/posts';
+import { likesShown, toggleLike, toggleSave } from '@/lib/posts';
 import { optimistic, run } from '@/lib/run';
 import { toast } from '@/lib/toast';
 import { mediaUrl, supabase, photoWidth } from '@/lib/supabase';
 import { CATEGORY, C, F, shadow } from '@/lib/theme';
 import type { Post } from '@/lib/types';
-import { timeAgo } from '@/lib/util';
+import { fmtCount, timeAgo } from '@/lib/util';
 import { nm, t } from '@/lib/i18n';
 
 /** One photo page: shows the signed URL, cached under its storage path so the same photo appears instantly elsewhere. */
@@ -34,8 +34,8 @@ function Photo({ path, width, height, onDoubleTap, onAspect, radius }: { path: s
 
 async function openFile(path: string) {
   const uri = await mediaUrl('posts', path);
-  if (!uri) { Alert.alert(t('ما قدرنا نفتح الملف')); return; }
-  WebBrowser.openBrowserAsync(uri).catch(() => Alert.alert(t('ما قدرنا نفتح الملف')));
+  if (!uri) { Alert.alert(t('تعذّر فتح الملف')); return; }
+  WebBrowser.openBrowserAsync(uri).catch(() => Alert.alert(t('تعذّر فتح الملف')));
 }
 
 /** Poll: tap an option to vote, then see the results. One vote per person (poll_votes primary key). */
@@ -73,7 +73,7 @@ function Poll({ postId, options }: { postId: string; options: string[] }) {
           </Tap>
         );
       })}
-      <T v="tiny" color={C.muted}>{total} {t('صوت')}{mine == null ? t(' · اكبس على خيار لتصوّت') : ''}</T>
+      <T v="tiny" color={C.muted}>{total} {t('صوت')}{mine == null ? t(' · اضغط على خيار للتصويت') : ''}</T>
     </View>
   );
 }
@@ -146,15 +146,18 @@ function PostCardView({ post, onLikes, compact, detail }: { post: Post; onLikes?
     const before = p;
     if (!before.liked) Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
     await optimistic(`like:${p.id}`,
-      () => setP((x) => ({ ...x, liked: !before.liked, like_count: Math.max(0, before.like_count + (before.liked ? -1 : 1)) })),
-      () => setP((x) => ({ ...x, liked: before.liked, like_count: before.like_count })),
+      () => setP((x) => {
+        const d = before.liked ? -1 : 1;
+        return { ...x, liked: !before.liked, like_count: Math.max(0, before.like_count + d), shown_likes: before.shown_likes == null ? null : Math.max(0, before.shown_likes + d) };
+      }),
+      () => setP((x) => ({ ...x, liked: before.liked, like_count: before.like_count, shown_likes: before.shown_likes })),
       () => toggleLike(before, profile.id));
   }
   async function save() {
     if (!profile) return;
     const before = p;
     const ok = await optimistic(`save:${p.id}`, () => setP((x) => ({ ...x, saved: !before.saved })), () => setP((x) => ({ ...x, saved: before.saved })), () => toggleSave(before, profile.id));
-    if (ok) toast(before.saved ? t('انشال من المحفوظات') : t('انحفظ'));
+    if (ok) toast(before.saved ? t('تمت الإزالة من المحفوظات') : t('تم الحفظ'));
   }
   const [gone, setGone] = useState(false);
   const mine = p.author_id === profile?.id;
@@ -164,9 +167,9 @@ function PostCardView({ post, onLikes, compact, detail }: { post: Post; onLikes?
     const opts: [string, () => void, ('destructive' | undefined)?][] = [
       [p.saved ? t('إلغاء الحفظ') : t('حفظ'), save],
       [t('أرسل لصديق'), () => router.push({ pathname: '/share', params: { post: p.id } })],
-      [t('شوف البروفايل'), () => router.push({ pathname: '/user/[id]', params: { id: p.author_id } })],
+      [t('عرض الملف الشخصي'), () => router.push({ pathname: '/user/[id]', params: { id: p.author_id } })],
       mine
-        ? [t('حذف المنشور'), () => Alert.alert(t('حذف المنشور؟'), t('ما بترجع.'), [{ text: t('إلغاء'), style: 'cancel' }, { text: t('حذف'), style: 'destructive', onPress: async () => { const r = await run(supabase.from('posts').delete().eq('id', p.id)); if (r.ok) { setGone(true); toast(t('انحذف المنشور')); if (detail) router.back(); } } }]), 'destructive']
+        ? [t('حذف المنشور'), () => Alert.alert(t('حذف المنشور؟'), t('لا يمكن التراجع عن ذلك.'), [{ text: t('إلغاء'), style: 'cancel' }, { text: t('حذف'), style: 'destructive', onPress: async () => { const r = await run(supabase.from('posts').delete().eq('id', p.id)); if (r.ok) { setGone(true); toast(t('تم حذف المنشور')); if (detail) router.back(); } } }]), 'destructive']
         : [t('إبلاغ'), () => router.push({ pathname: '/report', params: { type: 'post', id: p.id, user: p.author_id } }), 'destructive'],
     ];
     if (Platform.OS === 'ios') {
@@ -191,7 +194,7 @@ function PostCardView({ post, onLikes, compact, detail }: { post: Post; onLikes?
           </Row>
           <T v="tiny" color={C.muted} style={{ fontFamily: F.body }}>{[nm(p.author?.major), timeAgo(p.created_at)].filter(Boolean).join(' · ')}</T>
         </View>
-        {p.lost_found ? <Tag label={p.lost_found === 'lost' ? t('ضاع مني') : t('لقيت')} bg={p.lost_found === 'lost' ? C.orangeSoft : C.greenSoft} fg={p.lost_found === 'lost' ? '#C2410C' : C.greenInk} />
+        {p.lost_found ? <Tag label={p.lost_found === 'lost' ? t('مفقود') : t('وجدت')} bg={p.lost_found === 'lost' ? C.orangeSoft : C.greenSoft} fg={p.lost_found === 'lost' ? '#C2410C' : C.greenInk} />
           : <Tag label={cat.label} bg={cat.soft} fg={cat.ink} />}
         <Tap onPress={menu} accessibilityLabel={t('خيارات المنشور')} style={{ width: 34, height: 34, alignItems: 'center', justifyContent: 'center', marginEnd: -6 }}>
           <MoreHorizontal size={20} color={C.muted} />
@@ -213,7 +216,7 @@ function PostCardView({ post, onLikes, compact, detail }: { post: Post; onLikes?
             <View style={{ width: 36, height: 40, borderRadius: 8, backgroundColor: C.redSoft, alignItems: 'center', justifyContent: 'center' }}><FileText size={18} color="#E11D48" /></View>
             <View style={{ flex: 1 }}>
               <T v="bold" style={{ fontSize: 13 }} numberOfLines={1}>{f.file_name ?? t('ملف')}</T>
-              {f.size_bytes ? <T v="tiny" color={C.muted}>{(f.size_bytes / 1048576).toFixed(1)} {t('ميجا · اكبس لتفتحه')}</T> : null}
+              {f.size_bytes ? <T v="tiny" color={C.muted}>{(f.size_bytes / 1048576).toFixed(1)} {t('ميجا · اضغط لفتحه')}</T> : null}
             </View>
           </Tap>
         ))}
@@ -225,13 +228,13 @@ function PostCardView({ post, onLikes, compact, detail }: { post: Post; onLikes?
           <Animated.View style={heartStyle}><Heart size={22} color={p.liked ? C.pink : C.ink2} fill={p.liked ? C.pink : 'none'} /></Animated.View>
         </Tap>
         {!p.hide_likes || p.author_id === profile?.id ? (
-          <Tap onPress={() => onLikes?.(p)} accessibilityLabel={t('مين عمل لايك')} style={{ minHeight: 44, justifyContent: 'center', paddingHorizontal: 4 }}>
-            <T v="bold" color={C.ink2} style={{ fontSize: 13 }}>{p.like_count}</T>
+          <Tap onPress={() => onLikes?.(p)} accessibilityLabel={t('من أبدى إعجابه')} style={{ minHeight: 44, justifyContent: 'center', paddingHorizontal: 4 }}>
+            <T v="bold" color={C.ink2} style={{ fontSize: 13 }}>{fmtCount(likesShown(p))}</T>
           </Tap>
         ) : null}
         <Tap onPress={() => { if (!detail) router.push({ pathname: '/post/[id]', params: { id: p.id } }); }} accessibilityLabel={t('التعليقات')}
           style={{ flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 44, paddingHorizontal: 10 }}>
-          <MessageCircle size={22} color={C.ink2} /><T v="bold" color={C.ink2} style={{ fontSize: 13 }}>{p.comment_count}</T>
+          <MessageCircle size={22} color={C.ink2} /><T v="bold" color={C.ink2} style={{ fontSize: 13 }}>{fmtCount(p.comment_count)}</T>
         </Tap>
         <Tap onPress={() => router.push({ pathname: '/share', params: { post: p.id } })} accessibilityLabel={t('أرسل لصديق')} style={{ minHeight: 44, paddingHorizontal: 10, justifyContent: 'center' }}>
           <Send size={21} color={C.ink2} />
@@ -250,7 +253,7 @@ function PostCardView({ post, onLikes, compact, detail }: { post: Post; onLikes?
             ))}
           </View>
           <T v="tiny" color={C.ink2} style={{ flex: 1 }} numberOfLines={1}>
-            {p.like_count > 1 ? t('عجبت {0} و{1} غيره', [likers[0].full_name.split(' ')[0], String(p.like_count - 1)]) : t('عجبت {0}', [likers[0].full_name.split(' ')[0]])}
+            {likesShown(p) > 1 ? t('أُعجب به {0} و{1} آخرون', [likers[0].full_name.split(' ')[0], fmtCount(likesShown(p) - 1)]) : t('أُعجب به {0}', [likers[0].full_name.split(' ')[0]])}
           </T>
         </Tap>
       )}

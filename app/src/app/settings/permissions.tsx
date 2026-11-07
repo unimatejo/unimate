@@ -25,18 +25,18 @@ async function webNotif() {
   return { granted: s === 'granted', canAskAgain: s !== 'denied', status: s === 'denied' ? 'denied' : undefined };
 }
 const PERMS: Perm[] = [
-  { key: 'notif', icon: <Bell {...ic} />, color: C.orange, label: t('التنبيهات'), why: Platform.OS === 'web' ? t('إشعار لما توصلك رسالة أو حدا يتفاعل معك، حتى لو الموقع مسكّر.') : t('تذكير قبل المحاضرات والامتحانات، وملخص بكرة كل ليلة.'), get: () => Platform.OS === 'web' ? webNotif() : Notifications.getPermissionsAsync() },
-  { key: 'camera', icon: <Camera {...ic} />, color: C.pink, label: t('الكاميرا'), why: t('تصوّر ستوري أو صورة بالمحادثة.'), get: () => ImagePicker.getCameraPermissionsAsync(), ask: () => ImagePicker.requestCameraPermissionsAsync() },
-  { key: 'photos', icon: <ImageIcon {...ic} />, color: C.green, label: t('الصور'), why: t('تختار صور للمنشورات والستوري والبروفايل.'), get: () => ImagePicker.getMediaLibraryPermissionsAsync(), ask: () => ImagePicker.requestMediaLibraryPermissionsAsync() },
-  { key: 'mic', icon: <Mic {...ic} />, color: C.violet, label: t('المايك'), why: t('الرسائل الصوتية وصوت فيديو الستوري.'), get: () => getRecordingPermissionsAsync(), ask: () => requestRecordingPermissionsAsync() },
-  { key: 'location', icon: <MapPin {...ic} />, color: C.primary, label: t('الموقع'), why: t('توصل لقاعتك على خريطة الحرم. ما بنشارك موقعك مع حدا.'), get: () => Location.getForegroundPermissionsAsync(), ask: () => Location.requestForegroundPermissionsAsync() },
+  { key: 'notif', icon: <Bell {...ic} />, color: C.orange, label: t('التنبيهات'), why: Platform.OS === 'web' ? t('إشعار عند وصول رسالة إليك أو عند تفاعل أحد معك، حتى لو كان الموقع مغلقاً.') : t('تذكير قبل المحاضرات والامتحانات، وملخص ليوم الغد كل ليلة.'), get: () => Platform.OS === 'web' ? webNotif() : Notifications.getPermissionsAsync() },
+  { key: 'camera', icon: <Camera {...ic} />, color: C.pink, label: t('الكاميرا'), why: t('لتصوير قصة أو صورة في المحادثة.'), get: () => ImagePicker.getCameraPermissionsAsync(), ask: () => ImagePicker.requestCameraPermissionsAsync() },
+  { key: 'photos', icon: <ImageIcon {...ic} />, color: C.green, label: t('الصور'), why: t('لاختيار صور للمنشورات والقصص والملف الشخصي.'), get: () => ImagePicker.getMediaLibraryPermissionsAsync(), ask: () => ImagePicker.requestMediaLibraryPermissionsAsync() },
+  { key: 'mic', icon: <Mic {...ic} />, color: C.violet, label: t('الميكروفون'), why: t('الرسائل الصوتية وصوت فيديو القصة.'), get: () => getRecordingPermissionsAsync(), ask: () => requestRecordingPermissionsAsync() },
+  { key: 'location', icon: <MapPin {...ic} />, color: C.primary, label: t('الموقع'), why: t('اعثر على قاعتك على خريطة الحرم. لا نشارك موقعك مع أحد.'), get: () => Location.getForegroundPermissionsAsync(), ask: () => Location.requestForegroundPermissionsAsync() },
 ];
 
 const LABEL: Record<State, [string, string, string]> = {
   granted: [t('مسموح'), C.greenSoft, C.greenInk],
   denied: [t('ممنوع'), C.redSoft, C.red],
-  ask: [t('ما انسأل'), C.soft, C.muted],
-  unavailable: [t('مش متاح هون'), C.soft, C.faint],
+  ask: [t('لم يُطلب'), C.soft, C.muted],
+  unavailable: [t('غير متاح هنا'), C.soft, C.faint],
 };
 
 /** One place to see and fix what UniMate can use on this phone. */
@@ -73,13 +73,13 @@ export default function Permissions() {
 
   return (
     <Screen>
-      <Header title={t('الصلاحيات')} subtitle={t('شو بيقدر يونيميت يستخدم على جهازك')} />
+      <Header title={t('الصلاحيات')} subtitle={t('ما الذي يمكن ليونيميت استخدامه على جهازك')} />
       <ScrollView contentContainerStyle={{ padding: 18, paddingTop: 4, gap: 14, paddingBottom: 60 }}>
         {/* notifications off: one quiet note here (never a pop-up), with the way back on */}
         {st.notif === 'denied' && (
           <View style={{ gap: 10, backgroundColor: C.orangeSoft, borderRadius: 20, padding: 14 }}>
-            <T v="bodyMd">{t('الإشعارات موقوفة')}</T>
-            <T v="small" color={C.ink2}>{Platform.OS === 'web' ? t('فعّلها من إعدادات المتصفح (رمز القفل جنب الرابط)، عشان توصلك المحاضرات والامتحانات والرسائل.') : t('فعّلها من إعدادات جهازك، عشان توصلك تذكيرات المحاضرات والامتحانات.')}</T>
+            <T v="bodyMd">{t('الإشعارات متوقفة')}</T>
+            <T v="small" color={C.ink2}>{Platform.OS === 'web' ? t('فعّلها من إعدادات المتصفح (رمز القفل بجانب الرابط)، لتصلك المحاضرات والامتحانات والرسائل.') : t('فعّلها من إعدادات جهازك، لتصلك تذكيرات المحاضرات والامتحانات.')}</T>
             {Platform.OS !== 'web' && <Tap onPress={() => Linking.openSettings().catch(() => {})} accessibilityRole="button" style={{ alignSelf: 'flex-start', minHeight: 40, paddingHorizontal: 16, borderRadius: 999, backgroundColor: C.inverse, justifyContent: 'center' }}><T v="bold" color={C.onInverse}>{t('افتح إعدادات الجهاز')}</T></Tap>}
           </View>
         )}
@@ -111,8 +111,8 @@ export default function Permissions() {
         <Row gap={8} center={false} style={{ backgroundColor: C.primarySoft, borderRadius: 18, padding: 12 }}>
           <T v="small" color={C.ink2} style={{ flex: 1 }}>
             {Platform.OS === 'web'
-              ? t('على المتصفح، بتتحكم بالصلاحيات من رمز القفل جنب الرابط فوق.')
-              : t('إذا منعت إشي بالغلط، اكبس عليه وبنفتحلك إعدادات الجهاز لترجعه. بنطلب كل صلاحية بس لما تحتاجها.')}
+              ? t('في المتصفح، يمكنك التحكم بالأذونات من رمز القفل بجانب الرابط في الأعلى.')
+              : t('إذا رفضت شيئاً عن طريق الخطأ، اضغط عليه وسنفتح لك إعدادات الجهاز لإعادته. نطلب كل صلاحية فقط عندما تحتاج إليها.')}
           </T>
         </Row>
       </ScrollView>

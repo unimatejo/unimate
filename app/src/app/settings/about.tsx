@@ -29,7 +29,7 @@ export default function About() {
           <Image source={require('../../../assets/images/icon.png')} style={{ width: 96, height: 96, borderRadius: 26 }} />
           <T v="h1">UniMate | يونيميت</T>
           <T v="small" color={C.muted}>{t('الإصدار {0}', [Constants.expoConfig?.version ?? ''])}</T>
-          <T v="body" color={C.ink2} style={{ textAlign: 'center', marginTop: 4 }}>{t('جامعتك كلها بتطبيق واحد: جدولك، زملاؤك، خريطة الحرم، ومجتمع جامعتك.')}</T>
+          <T v="body" color={C.ink2} style={{ textAlign: 'center', marginTop: 4 }}>{t('جامعتك كلها في تطبيق واحد: جدولك، وزملاؤك، وخريطة الحرم، ومجتمع جامعتك.')}</T>
         </View>
 
         <View style={[{ backgroundColor: C.card, borderRadius: 22, padding: 18, gap: 4, alignItems: 'center' }, shadow]}>

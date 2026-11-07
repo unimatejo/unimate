@@ -13,7 +13,7 @@ type Group = { title?: string; options: string[] };
 type Common = {
   /** quick picks: a flat list, or titled groups ("عمّان", "الزرقاء"…) */
   options: string[] | Group[];
-  /** what the "غير" box asks for, e.g. "اكتب المنطقة" */
+  /** what the "أخرى" box asks for, e.g. "اكتب المنطقة" */
   placeholder: string;
   maxLength?: number;
   keyboardType?: KeyboardTypeOptions;
@@ -26,7 +26,7 @@ function groups(o: string[] | Group[]): Group[] {
 }
 
 /**
- * Quick-pick chips plus "غير" to type anything else — the same pattern everywhere a list can't cover everyone.
+ * Quick-pick chips plus "أخرى" to type anything else — the same pattern everywhere a list can't cover everyone.
  * Single choice: tapping the active chip again clears it.
  */
 export function ChoiceField({ value, onChange, commitOnBlur, ...p }: Common & {
@@ -51,7 +51,7 @@ export function ChoiceField({ value, onChange, commitOnBlur, ...p }: Common & {
               <Chip key={o} label={o} active={!other && value != null && same(o, value)}
                 onPress={() => { setOther(false); onChange(value != null && same(o, value) && !other ? null : o); }} />
             ))}
-            {i === all.length - 1 && <Chip label={t('غير')} active={other} onPress={() => { setOther(!other); onChange(!other && norm(draft) ? norm(draft) : null); }} />}
+            {i === all.length - 1 && <Chip label={t('أخرى')} active={other} onPress={() => { setOther(!other); onChange(!other && norm(draft) ? norm(draft) : null); }} />}
           </Row>
         </View>
       ))}
@@ -90,12 +90,12 @@ export function MultiChoiceField({ value, onChange, max, ...p }: Common & { valu
       <Row gap={8}>
         <View style={{ flex: 1 }}>
           <Field value={draft} onChangeText={setDraft} onSubmitEditing={add} returnKeyType="done" maxLength={p.maxLength} editable={!full}
-            placeholder={full ? t('وصلت للحد ({0})', [String(max)]) : p.placeholder} />
+            placeholder={full ? t('وصلت إلى الحد ({0})', [String(max)]) : p.placeholder} />
         </View>
-        <Tap onPress={add} disabled={!typed || !!err || full} accessibilityRole="button" accessibilityLabel={t('ضيف')}
+        <Tap onPress={add} disabled={!typed || !!err || full} accessibilityRole="button" accessibilityLabel={t('أضف')}
           style={{ height: 52, paddingHorizontal: 16, borderRadius: 16, flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: typed && !err && !full ? C.primary : C.soft }}>
           <Plus size={16} color={typed && !err && !full ? C.onPrimary : C.muted} />
-          <T v="small" color={typed && !err && !full ? C.onPrimary : C.muted} style={{ fontFamily: F.bodyBold }}>{t('ضيف')}</T>
+          <T v="small" color={typed && !err && !full ? C.onPrimary : C.muted} style={{ fontFamily: F.bodyBold }}>{t('أضف')}</T>
         </Tap>
       </Row>
       {err ? <T v="tiny" color={C.red}>{err}</T> : null}

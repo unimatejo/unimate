@@ -4,13 +4,13 @@ export function timeAgo(iso: string): string {
   if (s < 60) return t('الآن');
   const m = Math.floor(s / 60);
   // Arabic counting: 3–10 take the plural (دقائق/ساعات), 11+ take the singular (دقيقة/ساعة)
-  if (m < 60) return m === 1 ? t('قبل دقيقة') : m === 2 ? t('قبل دقيقتين') : m <= 10 ? t('قبل {0} دقائق', [m]) : t('قبل {0} دقيقة', [m]);
+  if (m < 60) return m === 1 ? t('منذ دقيقة') : m === 2 ? t('منذ دقيقتين') : m <= 10 ? t('منذ {0} دقائق', [m]) : t('منذ {0} دقيقة', [m]);
   const h = Math.floor(m / 60);
-  if (h < 24) return h === 1 ? t('قبل ساعة') : h === 2 ? t('قبل ساعتين') : h <= 10 ? t('قبل {0} ساعات', [h]) : t('قبل {0} ساعة', [h]);
+  if (h < 24) return h === 1 ? t('منذ ساعة') : h === 2 ? t('منذ ساعتين') : h <= 10 ? t('منذ {0} ساعات', [h]) : t('منذ {0} ساعة', [h]);
   const d = Math.floor(h / 24);
   if (d === 1) return t('أمس');
-  if (d === 2) return t('قبل يومين');
-  if (d < 7) return t('قبل {0} أيام', [d]);
+  if (d === 2) return t('منذ يومين');
+  if (d < 7) return t('منذ {0} أيام', [d]);
   return new Date(iso).toLocaleDateString(LOCALE, { day: 'numeric', month: 'short' });
 }
 
@@ -54,7 +54,7 @@ export function minutesUntil(weekday: number, time: string, now = new Date()): n
 export function greeting(d = new Date()): string {
   const h = d.getHours();
   if (h < 12) return t('صباح الخير');
-  return t('مسا الخير');
+  return t('مساء الخير');
 }
 
 /** Accepts "@name", "name", or any instagram.com / snapchat.com link and returns just the username. */
@@ -70,4 +70,18 @@ export function handleFrom(input: string, site: 'instagram' | 'snapchat') {
 export function isStaffEmail(email?: string | null) {
   const [local, dom] = (email ?? '').toLowerCase().split('@');
   return !!local && !!dom && /\.edu\.jo$/.test(dom) && !/^[0-9]+$/.test(local) && !/^(std|sta|st|ses|stu|student|students)\./.test(dom);
+}
+
+/**
+ * Counts (followers, likes, comments) the way Instagram shows them, always in Western digits:
+ * 9,999 · 10K · 11.1K · 100K · 1M · 1.2M. Rounded down, so 10,999 is 10.9K, never 11K.
+ */
+export function fmtCount(n: number | null | undefined): string {
+  const v = Math.max(0, Math.floor(n ?? 0));
+  if (v < 10_000) return v.toLocaleString('en-US');
+  // whole tenths first (integer maths), so 10,300 is 10.3K and not 10.2K from a floating-point slip
+  const short = (unit: number, sign: string) => `${Math.floor(v / (unit / 10)) / 10}`.replace(/\.0$/, '') + sign;
+  if (v < 1_000_000) return short(1000, 'K');
+  if (v < 1_000_000_000) return short(1_000_000, 'M');
+  return short(1_000_000_000, 'B');
 }

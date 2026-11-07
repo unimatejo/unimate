@@ -63,13 +63,13 @@ export function HighlightEditor({ open, edit, onClose, onSaved }: {
   function tapStory(s: Story) {
     Haptics.selectionAsync().catch(() => {});
     if (pickingCover) {
-      if (s.kind !== 'image') { toast(t('الغلاف لازم يكون صورة')); return; }
+      if (s.kind !== 'image') { toast(t('يجب أن يكون الغلاف صورة')); return; }
       setCover(s.media_url); setPickingCover(false); return;
     }
     if (sel.includes(s.id)) {
       if (cover === s.media_url) setCover(null);
       setSel(sel.filter((x) => x !== s.id));
-    } else if (sel.length >= MAX) toast(t('الحد {0} قصة بالهايلايت', [String(MAX)]));
+    } else if (sel.length >= MAX) toast(t('الحد الأقصى {0} قصة في القصص المميزة', [String(MAX)]));
     else setSel([...sel, s.id]);
   }
 
@@ -82,14 +82,14 @@ export function HighlightEditor({ open, edit, onClose, onSaved }: {
     try {
       const { path } = await uploadPicked('stories', profile.id, m);
       setCover(path); setPickingCover(false);
-    } catch { toast.error(t('ما زبط رفع الصورة، جرّب كمان مرة.')); }
+    } catch { toast.error(t('تعذّر رفع الصورة، حاول مرة أخرى.')); }
   }
 
   async function save() {
     if (!profile || busy) return;
-    if (!sel.length) { Alert.alert(t('اختار قصة وحدة على الأقل')); return; }
+    if (!sel.length) { Alert.alert(t('اختر قصة واحدة على الأقل')); return; }
     const name = title.trim().slice(0, 30);
-    if (!name) { Alert.alert(t('سمّي الهايلايت')); return; }
+    if (!name) { Alert.alert(t('سمِّ القصص المميزة')); return; }
     setBusy(true);
     try {
       let id = edit?.id;
@@ -107,21 +107,21 @@ export function HighlightEditor({ open, edit, onClose, onSaved }: {
       // one at a time, in the order picked: that's the order they play in
       for (const story_id of added) { const { error } = await supabase.from('highlight_items').insert({ highlight_id: id, story_id }); if (error) throw error; }
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
-      toast(edit ? t('انحفظ الهايلايت ✓') : t('انعمل الهايلايت ✓'));
+      toast(edit ? t('تم حفظ القصة المميزة ✓') : t('تم إنشاء القصة المميزة ✓'));
       onSaved(); onClose();
     } catch (e) {
-      Alert.alert(t('ما زبط'), String((e as Error)?.message ?? '').includes('limit') ? t('الحد {0} قصة بالهايلايت', [String(MAX)]) : t('جرّب كمان مرة.'));
+      Alert.alert(t('تعذّر ذلك'), String((e as Error)?.message ?? '').includes('limit') ? t('الحد الأقصى {0} قصة في القصص المميزة', [String(MAX)]) : t('حاول مرة أخرى.'));
     } finally { setBusy(false); }
   }
 
   function remove() {
     if (!edit) return;
-    Alert.alert(t('تحذف الهايلايت؟'), t('القصص نفسها ما بتنحذف، بس بتطلع من الهايلايت.'), [
+    Alert.alert(t('حذف القصة المميزة؟'), t('لن تُحذف القصص نفسها، لكنها ستُزال من القصص المميزة.'), [
       { text: t('لا'), style: 'cancel' },
       { text: t('احذف'), style: 'destructive', onPress: async () => {
         const { error } = await supabase.from('highlights').delete().eq('id', edit.id);
-        if (error) { Alert.alert(t('ما زبط'), t('جرّب كمان مرة.')); return; }
-        toast(t('انحذف الهايلايت')); onSaved(); onClose();
+        if (error) { Alert.alert(t('تعذّر ذلك'), t('حاول مرة أخرى.')); return; }
+        toast(t('تم حذف القصة المميزة')); onSaved(); onClose();
       } },
     ]);
   }
@@ -132,7 +132,7 @@ export function HighlightEditor({ open, edit, onClose, onSaved }: {
       <SafeAreaView style={{ flex: 1, backgroundColor: C.bg }}>
         <Row gap={8} style={{ paddingHorizontal: 12, paddingVertical: 8 }}>
           <Tap onPress={onClose} accessibilityLabel={t('إغلاق')} style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}><X size={22} color={C.ink} /></Tap>
-          <T v="h3" style={{ flex: 1, textAlign: 'center' }}>{edit ? t('تعديل الهايلايت') : t('هايلايت جديد')}</T>
+          <T v="h3" style={{ flex: 1, textAlign: 'center' }}>{edit ? t('تعديل القصة المميزة') : t('قصة مميزة جديدة')}</T>
           <Tap onPress={save} disabled={busy} style={{ minHeight: 38, paddingHorizontal: 18, borderRadius: R.pill, backgroundColor: C.primary, alignItems: 'center', justifyContent: 'center', opacity: busy ? 0.6 : 1 }}>
             <T v="bold" color={C.onPrimary}>{t('تم')}</T>
           </Tap>
@@ -148,20 +148,20 @@ export function HighlightEditor({ open, edit, onClose, onSaved }: {
           </View>
           <Row gap={8}>
             <Tap onPress={() => setPickingCover((v) => !v)} style={{ minHeight: 34, paddingHorizontal: 14, borderRadius: R.pill, backgroundColor: pickingCover ? C.inverse : C.soft, justifyContent: 'center' }}>
-              <T v="small" color={pickingCover ? C.onInverse : C.ink} style={{ fontFamily: F.bodyBold }}>{pickingCover ? t('اختار صورة من تحت') : t('غيّر الغلاف')}</T>
+              <T v="small" color={pickingCover ? C.onInverse : C.ink} style={{ fontFamily: F.bodyBold }}>{pickingCover ? t('اختر صورة من الأسفل') : t('غيّر الغلاف')}</T>
             </Tap>
             <Tap onPress={coverFromGallery} accessibilityLabel={t('غلاف من صورك')} style={{ minHeight: 34, paddingHorizontal: 12, borderRadius: R.pill, backgroundColor: C.soft, flexDirection: 'row', alignItems: 'center', gap: 6 }}>
               <ImagePlus size={16} color={C.ink} /><T v="small" style={{ fontFamily: F.bodyBold }}>{t('من صورك')}</T>
             </Tap>
           </Row>
-          <TextInput value={title} onChangeText={setTitle} maxLength={30} placeholder={t('اسم الهايلايت، مثلاً «سنة أولى»')} placeholderTextColor={C.faint} keyboardAppearance={isDark ? 'dark' : 'light'}
+          <TextInput value={title} onChangeText={setTitle} maxLength={30} placeholder={t('اسم القصة المميزة، مثلاً «سنة أولى»')} placeholderTextColor={C.faint} keyboardAppearance={isDark ? 'dark' : 'light'}
             style={{ alignSelf: 'stretch', minHeight: 48, borderRadius: 16, backgroundColor: C.card, borderWidth: 1, borderColor: C.line, paddingHorizontal: 14, fontFamily: F.body, fontSize: 15, color: C.ink, textAlign: ta }} />
           <T v="tiny" color={C.muted}>{t('{0} مختارة · قصص آخر {1} يوم', [String(sel.length), String(ARCHIVE_DAYS)])}</T>
         </View>
 
         <ScrollView contentContainerStyle={{ paddingHorizontal: 16, flexDirection: 'row', flexWrap: 'wrap', gap: 6, paddingBottom: edit ? 110 : 40 }}>
           {list === null ? [0, 1, 2, 3, 4, 5].map((k) => <Bone key={k} w={side} h={side * 1.6} r={16} />)
-            : list.length === 0 ? <View style={{ width: '100%' }}><Empty title={t('ما عندك قصص بالأرشيف')} body={t('نزّل ستوري وبعدين بتقدر تحطها بهايلايت.')} /></View>
+            : list.length === 0 ? <View style={{ width: '100%' }}><Empty title={t('لا توجد لديك قصص في الأرشيف')} body={t('انشر قصة، ثم يمكنك إضافتها إلى القصص المميزة.')} /></View>
             : list.map((s) => {
               const n = sel.indexOf(s.id);
               const isCover = coverPath === s.media_url;
@@ -189,7 +189,7 @@ export function HighlightEditor({ open, edit, onClose, onSaved }: {
         {edit && (
           <View style={{ position: 'absolute', left: 16, right: 16, bottom: 26 }}>
             <Tap onPress={remove} style={{ minHeight: 50, borderRadius: 16, backgroundColor: C.card, borderWidth: 1, borderColor: C.line, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-              <Trash2 size={18} color={C.red} /><T v="bold" color={C.red}>{t('احذف الهايلايت')}</T>
+              <Trash2 size={18} color={C.red} /><T v="bold" color={C.red}>{t('احذف القصة المميزة')}</T>
             </Tap>
           </View>
         )}

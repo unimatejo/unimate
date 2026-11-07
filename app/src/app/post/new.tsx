@@ -37,11 +37,11 @@ import { markFeedStale } from '@/lib/posts';
 import { latinDigits } from '@/lib/util';
 
 const POST_AUD = [['university', t('الجامعة')], ['college', t('كليتي')], ['major', t('تخصصي')], ['friends', t('أصدقائي')]] as const;
-const STORY_AUD = [['friends', t('أصدقائي')], ['close_friends', t('المقربين')], ['major', t('تخصصي')], ['university', t('الجامعة')]] as const;
+const STORY_AUD = [['friends', t('أصدقائي')], ['close_friends', t('المقرّبون')], ['major', t('تخصصي')], ['university', t('الجامعة')]] as const;
 
 type Mode = 'post' | 'story' | 'live';
-const MODES: [Mode, string][] = [['post', t('منشور')], ['story', t('ستوري')], ['live', t('مباشر')]];
-const TITLES: Record<Mode, string> = { post: t('منشور جديد'), story: t('ستوري جديدة'), live: t('بث مباشر') };
+const MODES: [Mode, string][] = [['post', t('منشور')], ['story', t('قصة')], ['live', t('مباشر')]];
+const TITLES: Record<Mode, string> = { post: t('منشور جديد'), story: t('قصة جديدة'), live: t('بث مباشر') };
 
 /** a picked video, framed and trimmed the way it was set in the crop editor */
 function VideoPreview({ m }: { m: Picked }) {
@@ -161,7 +161,7 @@ function CreateScreen() {
         } else setActive(i);
         return;
       }
-      if (sel.length >= 10) { Alert.alert(t('10 بالكثير'), t('بتقدر تختار لحد 10 صور وفيديوهات.')); return; }
+      if (sel.length >= 10) { Alert.alert(t('10 كحد أقصى'), t('يمكنك اختيار ما يصل إلى 10 صور وفيديوهات.')); return; }
     } else if (i >= 0) return;
     const seq = ++pickSeq.current;
     setLoadingId(a.id);
@@ -184,7 +184,7 @@ function CreateScreen() {
       } else {
         setItems([m]); setSel([a.id]); setActive(0); setPostAspect(null);
       }
-    } catch (e) { Alert.alert(t('ما زبط'), userMessage(e)); }
+    } catch (e) { Alert.alert(t('تعذّر ذلك'), userMessage(e)); }
     finally { if (seq === pickSeq.current) setLoadingId(null); }
   }, [mode, sel, multi, items, active, isStory, maxSec]);
 
@@ -244,7 +244,7 @@ function CreateScreen() {
         if (isStory) { openEditor(m, true); return; }
         setItems([m]); setActive(0);
       }
-    } catch (e) { Alert.alert(t('ما زبط'), userMessage(e)); }
+    } catch (e) { Alert.alert(t('تعذّر ذلك'), userMessage(e)); }
   }
   async function storyPick(camera: boolean): Promise<Picked | null> {
     const p = await pickMedia({ video: true, camera, maxSec, anyLength: !camera });
@@ -259,7 +259,7 @@ function CreateScreen() {
       if (mode === 'post') { if (postAspect == null && m.aspect) setPostAspect(m.aspect); setItems((cur) => [...cur, m].slice(0, 10)); setActive(items.length); return; }
       if (isStory) { openEditor(m, true); return; }
       setItems([m]); setActive(0);
-    } catch (e) { Alert.alert(t('ما زبط'), userMessage(e)); }
+    } catch (e) { Alert.alert(t('تعذّر ذلك'), userMessage(e)); }
   }
   function toggleItem(i: number) {
     // tap a chosen photo to see it; tap it again to crop it again (the × takes it out)
@@ -304,18 +304,18 @@ function CreateScreen() {
 
   async function publish(story?: { m: Picked; o: Overlay[]; audience: string }) {
     if (busy) return;
-    if (!profile?.university_id) { Alert.alert(t('ما انتشر'), t('كمّل معلومات حسابك (الجامعة) أول.')); return; }
+    if (!profile?.university_id) { Alert.alert(t('تعذّر النشر'), t('أكمل معلومات حسابك (الجامعة) أولًا.')); return; }
     setBusy(true);
     try {
       if (isStory) {
         const m = story?.m ?? media;
-        if (!m) { Alert.alert(t('ضيف صورة أو فيديو للستوري')); setBusy(false); return; }
+        if (!m) { Alert.alert(t('أضف صورة أو فيديو إلى القصة')); setBusy(false); return; }
         if (Platform.OS !== 'web') {
           logStep('story', 'share');
           // phones: it goes up in the background (the "قصتك" circle shows how far), the student carries on now
           void enqueueStory(m, { author_id: profile.id, university_id: profile.university_id, kind: m.kind, duration_sec: playLength(m),
             caption: (m.meta?.caption ?? body.trim()) || null, audience: story?.audience ?? STORY_AUD[aud][0], overlays: story?.o ?? overlays });
-          toast(t('عم نرفع قصتك…'));
+          toast(t('جارٍ رفع قصتك…'));
           Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
           setBusy(false);
           if (editing) { setEditing(false); afterSheet(() => goBack('/community')); } else goBack('/community');
@@ -337,8 +337,8 @@ function CreateScreen() {
         if (error) throw error;
       } else {
         const opts = poll?.map((o) => o.trim()).filter(Boolean) ?? null;
-        if (poll && (!body.trim() || (opts?.length ?? 0) < 2)) { Alert.alert(t('الاستطلاع'), t('اكتب السؤال فوق وخيارين على الأقل.')); setBusy(false); return; }
-        if (mode === 'post' && !body.trim() && !items.length && !pdf) { Alert.alert(t('اكتب إشي أو ضيف صورة أو ملف')); setBusy(false); return; }
+        if (poll && (!body.trim() || (opts?.length ?? 0) < 2)) { Alert.alert(t('الاستطلاع'), t('اكتب السؤال في الأعلى وخيارين على الأقل.')); setBusy(false); return; }
+        if (mode === 'post' && !body.trim() && !items.length && !pdf) { Alert.alert(t('اكتب شيئاً أو أضف صورة أو ملفاً')); setBusy(false); return; }
         // upload files first, so a failed upload never leaves an empty post behind
         const ups = await Promise.all(items.map(async (m) => {
           const up = await uploadPicked('posts', profile.id, m);
@@ -351,7 +351,7 @@ function CreateScreen() {
         const paths = ups.map((u) => u.path);
         const pdfPath = pdf && mode === 'post' ? await uploadFile('posts', profile.id, pdf) : null;
         const price_jod = cat === 'market' && price ? Number(latinDigits(price).replace(/,/g, '.')) : null;
-        if (price_jod != null && !Number.isFinite(price_jod)) { Alert.alert(t('السعر بالدينار'), t('اكتب السعر أرقام بس.')); setBusy(false); return; }
+        if (price_jod != null && !Number.isFinite(price_jod)) { Alert.alert(t('السعر بالدينار'), t('اكتب السعر بالأرقام فقط.')); setBusy(false); return; }
         const { data: post, error } = await supabase.from('posts').insert({
           author_id: profile.id, university_id: profile.university_id, community_id: params.community ?? null,
           category: cat, audience: params.community ? 'community' : POST_AUD[aud][0],
@@ -376,7 +376,7 @@ function CreateScreen() {
       if (editing) { setEditing(false); afterSheet(() => goBack('/community')); } else goBack('/community');
     } catch (e) {
       reportError(e);
-      Alert.alert(t('ما انتشر'), userMessage(e));
+      Alert.alert(t('تعذّر النشر'), userMessage(e));
     } finally { setBusy(false); }
   }
 
@@ -393,7 +393,7 @@ function CreateScreen() {
           <T style={{ flex: 1, textAlign: 'center', fontFamily: F.bodyBold, fontSize: 17 }}>{TITLES[mode]}</T>
           <Tap onPress={() => publish()} disabled={busy} accessibilityLabel={t('نشر')}
             style={{ minHeight: 38, paddingHorizontal: 20, borderRadius: R.pill, backgroundColor: C.primary, alignItems: 'center', justifyContent: 'center', opacity: busy ? 0.6 : 1 }}>
-            <T v="bold" color={C.onPrimary}>{busy ? t('عم ننشر…') : t('نشر')}</T>
+            <T v="bold" color={C.onPrimary}>{busy ? t('جارٍ النشر…') : t('نشر')}</T>
           </Tap>
         </Row>
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
@@ -410,7 +410,7 @@ function CreateScreen() {
                   <TextInput keyboardAppearance={isDark ? 'dark' : 'light'} value={title} onChangeText={setTitle} placeholder={t('العنوان')} placeholderTextColor={C.faint} style={{ fontFamily: F.title, fontSize: 18, color: C.ink, textAlign: ta, minHeight: 40 }} />
                 )}
                 <TextInput keyboardAppearance={isDark ? 'dark' : 'light'} value={body} onChangeText={setBody} multiline autoFocus
-                  placeholder={t('شو ببالك؟ اسأل، شارك ملخص، أو احكي للدفعة...')} placeholderTextColor={C.faint}
+                  placeholder={t('بماذا تفكر؟ اسأل، أو شارك ملخصًا، أو تحدّث إلى دفعتك...')} placeholderTextColor={C.faint}
                   style={{ fontFamily: F.body, fontSize: 17, lineHeight: 28, color: C.ink, textAlign: ta, minHeight: 110, textAlignVertical: 'top' }} accessibilityLabel={t('نص المنشور')} />
               </View>
             </Row>
@@ -420,16 +420,16 @@ function CreateScreen() {
                 <T v="bold">{t('غلاف الفيديو')}</T>
                 <Row gap={10} style={{ flexWrap: 'wrap' }}>
                   {items.map((m, i) => m.kind === 'video' && (
-                    <Tap key={i} onPress={() => setCoverOf(i)} accessibilityLabel={t('اختار غلاف الفيديو')}
+                    <Tap key={i} onPress={() => setCoverOf(i)} accessibilityLabel={t('اختر غلاف الفيديو')}
                       style={{ width: 72, height: 96, borderRadius: 14, overflow: 'hidden', backgroundColor: C.soft, borderWidth: 1, borderColor: C.line }}>
                       {m.cover ? <Image source={{ uri: m.cover.uri }} style={{ flex: 1 }} contentFit="cover" /> : <VideoPreview m={m} />}
                       <View style={{ position: 'absolute', left: 0, right: 0, bottom: 0, paddingVertical: 4, backgroundColor: 'rgba(0,0,0,0.55)', alignItems: 'center' }}>
-                        <T v="tiny" color="#fff">{m.cover ? t('غيّر') : t('اختار')}</T>
+                        <T v="tiny" color="#fff">{m.cover ? t('غيّر') : t('اختر')}</T>
                       </View>
                     </Tap>
                   ))}
                 </Row>
-                <T v="tiny" color={C.muted}>{t('اختار اللقطة اللي بتبيّن بصفحتك قبل ما الفيديو يشتغل، أو صورة من الاستوديو.')}</T>
+                <T v="tiny" color={C.muted}>{t('اختر اللقطة التي تظهر في صفحتك قبل تشغيل الفيديو، أو صورة من الاستوديو.')}</T>
               </View>
             )}
 
@@ -437,20 +437,20 @@ function CreateScreen() {
               <Row gap={10} style={{ backgroundColor: C.card, borderWidth: 1, borderColor: C.line, borderRadius: 18, padding: 12 }}>
                 <FileText size={22} color={C.primary} />
                 <T v="bold" numberOfLines={1} style={{ flex: 1, fontSize: 14 }}>{pdf.name}</T>
-                <Tap onPress={() => setPdf(null)} accessibilityLabel={t('شيل الملف')} style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}><X size={18} color={C.muted} /></Tap>
+                <Tap onPress={() => setPdf(null)} accessibilityLabel={t('إزالة الملف')} style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}><X size={18} color={C.muted} /></Tap>
               </Row>
             )}
             {mode === 'post' && poll && (
               <View style={{ gap: 8, backgroundColor: C.card, borderWidth: 1, borderColor: C.line, borderRadius: 20, padding: 12 }}>
-                <T v="bold">{t('خيارات الاستطلاع (السؤال هو النص فوق)')}</T>
+                <T v="bold">{t('خيارات الاستطلاع (السؤال هو النص في الأعلى)')}</T>
                 {poll.map((o, i) => (
                   <Row key={i} gap={6}>
                     <TextInput keyboardAppearance={isDark ? 'dark' : 'light'} value={o} onChangeText={(v) => setPoll(poll.map((x, j) => (j === i ? v : x)))} maxLength={60} placeholder={t('الخيار {0}', [i + 1])} placeholderTextColor={C.faint}
                       style={{ flex: 1, minHeight: 44, borderRadius: 16, backgroundColor: C.soft, paddingHorizontal: 12, fontFamily: F.body, fontSize: 15, color: C.ink, textAlign: ta }} />
-                    {poll.length > 2 && <Tap onPress={() => setPoll(poll.filter((_, j) => j !== i))} accessibilityLabel={t('شيل الخيار')} style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}><X size={16} color={C.muted} /></Tap>}
+                    {poll.length > 2 && <Tap onPress={() => setPoll(poll.filter((_, j) => j !== i))} accessibilityLabel={t('إزالة الخيار')} style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}><X size={16} color={C.muted} /></Tap>}
                   </Row>
                 ))}
-                {poll.length < 4 && <Tap onPress={() => setPoll([...poll, ''])} style={{ flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 44 }}><Plus size={16} color={C.primary} /><T v="bold" color={C.primary}>{t('ضيف خيار')}</T></Tap>}
+                {poll.length < 4 && <Tap onPress={() => setPoll([...poll, ''])} style={{ flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 44 }}><Plus size={16} color={C.primary} /><T v="bold" color={C.primary}>{t('أضف خيارًا')}</T></Tap>}
               </View>
             )}
             {mode === 'post' && (
@@ -462,14 +462,14 @@ function CreateScreen() {
 
             {mode === 'post' && !params.community && (
               <View style={{ gap: 10 }}>
-                <T v="bold">{t('بأي قسم؟')}</T>
+                <T v="bold">{t('في أي قسم؟')}</T>
                 <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
                   {Object.entries(CATEGORY).map(([k, v]) => <Chip key={k} label={v.label} dot={v.color} active={cat === k} onPress={() => setCat(k)} />)}
                 </View>
               </View>
             )}
             {mode === 'post' && cat === 'lost_found' && (
-              <Row gap={8}><Chip label={t('لقيت')} active={lf === 'found'} onPress={() => setLf('found')} /><Chip label={t('ضاع مني')} active={lf === 'lost'} onPress={() => setLf('lost')} /></Row>
+              <Row gap={8}><Chip label={t('وجدت')} active={lf === 'found'} onPress={() => setLf('found')} /><Chip label={t('مفقود')} active={lf === 'lost'} onPress={() => setLf('lost')} /></Row>
             )}
             {mode === 'post' && cat === 'market' && (
               <TextInput keyboardAppearance={isDark ? 'dark' : 'light'} value={price} onChangeText={setPrice} keyboardType="decimal-pad" placeholder={t('السعر بالدينار')} placeholderTextColor={C.faint}
@@ -478,7 +478,7 @@ function CreateScreen() {
 
             {!params.community && (
               <View style={{ gap: 10 }}>
-                <T v="bold">{t('مين بيشوفه؟')}</T>
+                <T v="bold">{t('من يمكنه رؤيته؟')}</T>
                 <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
                   {auds.map(([k, l], i) => <Chip key={k} label={l} active={aud === i} onPress={() => setAud(i)} />)}
                 </View>
@@ -525,8 +525,8 @@ function CreateScreen() {
   const busyOverlay = busy && !editing ? (
     <Animated.View entering={FadeIn} style={{ position: 'absolute', top: 0, bottom: 0, left: 0, right: 0, backgroundColor: C.overlay, alignItems: 'center', justifyContent: 'center' }}>
       <View style={{ backgroundColor: C.card, borderRadius: R.xl, paddingVertical: 24, paddingHorizontal: 32, alignItems: 'center', gap: 6 }}>
-        <T v="bold">{isStory ? t('عم نرفع قصتك…') : t('عم ننشر منشورك…')}</T>
-        {media?.kind === 'video' && <T v="tiny" color={C.muted}>{t('الفيديو بياخذ ثواني أكثر')}</T>}
+        <T v="bold">{isStory ? t('جارٍ رفع قصتك…') : t('جارٍ نشر منشورك…')}</T>
+        {media?.kind === 'video' && <T v="tiny" color={C.muted}>{t('يستغرق الفيديو بضع ثوانٍ إضافية')}</T>}
       </View>
     </Animated.View>
   ) : null;
@@ -576,15 +576,15 @@ function CreateScreen() {
           )}
         </View>
         <Row style={{ paddingStart: 14, paddingEnd: 10, paddingVertical: 8, justifyContent: 'space-between' }}>
-          <Tap onPress={openAlbums} accessibilityLabel={t('اختار ألبوم')} style={{ flexDirection: 'row', alignItems: 'center', gap: 4, minHeight: 44 }}>
+          <Tap onPress={openAlbums} accessibilityLabel={t('اختر ألبوماً')} style={{ flexDirection: 'row', alignItems: 'center', gap: 4, minHeight: 44 }}>
             <T v="bold" style={{ fontSize: 16 }}>{album?.title ?? t('الأحدث')}</T><ChevronDown size={18} color={C.ink} />
           </Tap>
           <Row gap={8}>
             {mode === 'post' && (
-              <Tap onPress={toggleMulti} accessibilityLabel={t('اختيار أكثر من وحدة')} accessibilityState={{ selected: multi }}
+              <Tap onPress={toggleMulti} accessibilityLabel={t('اختيار أكثر من واحد')} accessibilityState={{ selected: multi }}
                 style={{ flexDirection: 'row', alignItems: 'center', gap: 6, height: 36, paddingHorizontal: 12, borderRadius: R.pill, backgroundColor: multi ? C.primary : C.card, borderWidth: multi ? 0 : 1, borderColor: C.line }}>
                 <Copy size={15} color={multi ? C.onPrimary : C.ink} />
-                <T v="tiny" color={multi ? C.onPrimary : C.ink}>{multi ? t('{0} من 10', [items.length]) : t('اختار أكثر')}</T>
+                <T v="tiny" color={multi ? C.onPrimary : C.ink}>{multi ? t('{0} من 10', [items.length]) : t('اختر المزيد')}</T>
               </Tap>
             )}
             <Tap onPress={() => (camera ? setCamOpen(true) : fromCamera())} accessibilityLabel={t('الكاميرا')}
@@ -631,7 +631,7 @@ function CreateScreen() {
             <View style={{ width: 44 }} />
           </Row>
           <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: 18, paddingHorizontal: 28, paddingBottom: 90 }}>
-            <Tap onPress={addFromGallery} scale={0.96} accessibilityLabel={t('اختار من الصور')}
+            <Tap onPress={addFromGallery} scale={0.96} accessibilityLabel={t('اختر من الصور')}
               style={{ width: '100%', maxWidth: 340, minHeight: 120, borderRadius: 28, backgroundColor: 'rgba(255,255,255,0.1)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.16)', alignItems: 'center', justifyContent: 'center', gap: 10 }}>
               <Images size={34} color="#fff" />
               <T v="bold" color="#fff" style={{ fontSize: 17 }}>{t('من الصور والفيديوهات')}</T>
@@ -639,9 +639,9 @@ function CreateScreen() {
             <Tap onPress={fromCamera} scale={0.96} accessibilityLabel={t('صوّر')}
               style={{ width: '100%', maxWidth: 340, minHeight: 64, borderRadius: 22, backgroundColor: '#fff', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10 }}>
               <Camera size={22} color="#05070F" />
-              <T v="bold" color="#05070F" style={{ fontSize: 16 }}>{t('صوّر هلأ')}</T>
+              <T v="bold" color="#05070F" style={{ fontSize: 16 }}>{t('صوّر الآن')}</T>
             </Tap>
-            <T v="tiny" color="rgba(255,255,255,0.6)" style={{ textAlign: 'center', maxWidth: 300 }}>{t('بعدها بتحرّك الصورة وتكبّرها بإصبعين، وبتضيف نص وملصقات. الستوري بتختفي بعد 24 ساعة.')}</T>
+            <T v="tiny" color="rgba(255,255,255,0.6)" style={{ textAlign: 'center', maxWidth: 300 }}>{t('بعدها يمكنك تحريك الصورة وتكبيرها بإصبعين، وإضافة نص وملصقات. تختفي القصة بعد 24 ساعة.')}</T>
           </View>
         </SafeAreaView>
         {modeBar}
@@ -666,14 +666,14 @@ function CreateScreen() {
       {mode === 'live' ? (
         <Animated.View entering={FadeIn} style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32, gap: 12 }}>
           <View style={{ width: 84, height: 84, borderRadius: 42, backgroundColor: C.primarySoft, alignItems: 'center', justifyContent: 'center' }}><Radio size={38} color={C.primary} /></View>
-          <T v="h2" style={{ textAlign: 'center' }}>{t('البث المباشر جاي قريباً')}</T>
-          <T v="small" color={C.muted} style={{ textAlign: 'center', maxWidth: 300 }}>{t('عم نشتغل عليه. لهلأ بتقدر تنزّل ستوري أو ريلز.')}</T>
+          <T v="h2" style={{ textAlign: 'center' }}>{t('البث المباشر قريباً')}</T>
+          <T v="small" color={C.muted} style={{ textAlign: 'center', maxWidth: 300 }}>{t('نعمل عليه. يمكنك حاليًا نشر قصة أو ريلز.')}</T>
         </Animated.View>
       ) : (
         <ScrollView contentContainerStyle={{ paddingBottom: 120 }}>
           {/* big preview of the chosen photo / video */}
           <Tap haptic={false} scale={0.99} onPress={media ? (isStory ? () => setEditing(true) : undefined) : addFromGallery}
-            accessibilityLabel={media ? t('المعاينة') : t('اختار من الصور')}
+            accessibilityLabel={media ? t('المعاينة') : t('اختر من الصور')}
             style={{ marginHorizontal: 12, marginTop: 4, height: mode === 'post' ? Math.min(420, (width - 24) / (postAspect ?? 1)) : 420, ...(mode === 'post' ? {} : { width: Math.min(width - 24, 420 * 9 / 16), alignSelf: 'center' }), borderRadius: 24, backgroundColor: C.card, borderWidth: media ? 0 : 1, borderColor: C.line, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' }}>
             {media ? (
               <>
@@ -694,7 +694,7 @@ function CreateScreen() {
               <Animated.View entering={FadeInDown.springify().damping(SPRING.damping)} style={{ alignItems: 'center', gap: 10, padding: 24 }}>
                 <View style={{ width: 64, height: 64, borderRadius: 32, backgroundColor: C.soft, alignItems: 'center', justifyContent: 'center' }}><Images size={28} color={C.primary} /></View>
                 <T v="h3" style={{ textAlign: 'center' }}>{t('اختر من جهازك')}</T>
-                <T v="small" color={C.muted} style={{ textAlign: 'center' }}>{mode === 'story' ? t('اختار صورة أو فيديو') : t('اختار صور، أو اكبس التالي لمنشور نص')}</T>
+                <T v="small" color={C.muted} style={{ textAlign: 'center' }}>{mode === 'story' ? t('اختر صورة أو فيديو') : t('اختر صوراً، أو اضغط التالي لمنشور نصي')}</T>
               </Animated.View>
             )}
           </Tap>
@@ -717,7 +717,7 @@ function CreateScreen() {
                 </View>
                 {i === active && <View pointerEvents="none" style={{ position: 'absolute', top: 0, bottom: 0, left: 0, right: 0, borderWidth: 3, borderColor: C.primary }} />}
                 {i === active && (
-                  <Tap onPress={() => removeItem(i)} accessibilityLabel={t('شيل الصورة')} hitSlop={8}
+                  <Tap onPress={() => removeItem(i)} accessibilityLabel={t('إزالة الصورة')} hitSlop={8}
                     style={{ position: 'absolute', top: 4, right: 4, width: 28, height: 28, borderRadius: 14, backgroundColor: 'rgba(5,7,15,0.7)', alignItems: 'center', justifyContent: 'center' }}>
                     <X size={15} color="#fff" />
                   </Tap>
@@ -725,7 +725,7 @@ function CreateScreen() {
               </Tap>
             ))}
             {(mode === 'post' ? items.length < 10 : items.length === 0) && (
-              <Tap onPress={addFromGallery} accessibilityLabel={t('ضيف من الصور')}
+              <Tap onPress={addFromGallery} accessibilityLabel={t('أضف من الصور')}
                 style={{ width: tile, height: tile, backgroundColor: C.card, borderWidth: 1, borderColor: C.line, alignItems: 'center', justifyContent: 'center', gap: 4 }}>
                 <Plus size={24} color={C.ink} />
                 <T v="tiny" color={C.muted}>{t('من الصور')}</T>
@@ -733,7 +733,7 @@ function CreateScreen() {
             )}
           </View>
           {mode === 'story' && (
-            <T v="tiny" color={C.muted} style={{ paddingHorizontal: 18, paddingTop: 12 }}>{t('الستوري بتختفي بعد 24 ساعة. الفيديو لحد 15 ثانية، والصور بتقدر تثبّتها بأبرز القصص.')}</T>
+            <T v="tiny" color={C.muted} style={{ paddingHorizontal: 18, paddingTop: 12 }}>{t('تختفي القصة بعد 24 ساعة. مدة الفيديو حتى 15 ثانية، ويمكنك تثبيت الصور في القصص المميزة.')}</T>
           )}
         </ScrollView>
       )}

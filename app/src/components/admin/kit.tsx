@@ -11,7 +11,7 @@ import { useAuth } from '@/lib/auth';
 import { supabase } from '@/lib/supabase';
 import { useTeamStatus } from '@/lib/team';
 import { C, F, R, isDark } from '@/lib/theme';
-import { flip, isAR, t, ta } from '@/lib/i18n';
+import { flip, isAR, LOCALE, t, ta } from '@/lib/i18n';
 
 // ---------- data ----------
 type Res<T> = { data: T | null; error: { message: string } | null };
@@ -44,15 +44,15 @@ export function useUnis() {
 }
 export function clearUniCache() { uniCache = null; }
 
-export const fmtDate = (s?: string | null) => s ? new Date(s).toLocaleString(isAR ? 'ar-JO' : 'en-GB', { dateStyle: 'medium', timeStyle: 'short' }) : '—';
-export const fmtNum = (n?: number | null) => (n ?? 0).toLocaleString(isAR ? 'ar-JO' : 'en-US');
+export const fmtDate = (s?: string | null) => s ? new Date(s).toLocaleString(LOCALE, { dateStyle: 'medium', timeStyle: 'short' }) : '—';
+export const fmtNum = (n?: number | null) => (n ?? 0).toLocaleString(LOCALE);
 
 export async function audit(action: string, target_type: string, target_id: string, meta: Record<string, unknown> = {}) {
   await supabase.rpc('admin_log', { action, target_type, target_id, meta });
 }
 
 /** Ask first, always: resolves true only when the admin taps the red button. */
-export function confirm(title: string, message: string, ok = t('أكيد')): Promise<boolean> {
+export function confirm(title: string, message: string, ok = t('بالتأكيد')): Promise<boolean> {
   return new Promise((res) => Alert.alert(title, message, [
     { text: t('تراجع'), style: 'cancel', onPress: () => res(false) },
     { text: ok, style: 'destructive', onPress: () => res(true) },
@@ -151,7 +151,7 @@ function SideMenu({ role }: { role: Role }) {
       <View style={{ padding: 16, borderTopWidth: 1, borderTopColor: C.line, gap: 8 }}>
         {team?.team
           ? <Button kind="soft" title={t('تسجيل خروج')} onPress={() => signOut()} />
-          : <Button kind="soft" title={t('رجوع للتطبيق')} onPress={() => router.replace('/(tabs)')} />}
+          : <Button kind="soft" title={t('العودة إلى التطبيق')} onPress={() => router.replace('/(tabs)')} />}
       </View>
     </View>
   );
@@ -163,7 +163,7 @@ export function AdminScreen({ title, subtitle, right, ownerOnly, children, scrol
   const wide = useWide();
   const allowed = role === 'owner' || (role === 'moderator' && !ownerOnly);
   const body = role === undefined ? <Loading /> : !allowed ? (
-    <Empty icon={<ShieldAlert size={28} color={C.primary} />} title={t('للمشرفين بس')} body={ownerOnly && role ? t('هالقسم للمالك بس.') : t('هالحساب مش مشرف.')} />
+    <Empty icon={<ShieldAlert size={28} color={C.primary} />} title={t('للمشرفين فقط')} body={ownerOnly && role ? t('هذا القسم للمالك فقط.') : t('هذا الحساب ليس مشرفًا.')} />
   ) : scroll ? (
     <ScrollView contentContainerStyle={[{ padding: 16, paddingTop: 4, gap: 12, paddingBottom: 80 }, wide && { paddingHorizontal: 32, paddingTop: 8, maxWidth: 1120, width: '100%', alignSelf: 'center' }]} keyboardShouldPersistTaps="handled">{children}</ScrollView>
   ) : <View style={{ flex: 1 }}>{children}</View>;
@@ -229,9 +229,9 @@ export function Pill({ label, tone = '' }: { label: string; tone?: string }) {
 
 const STATUS: Record<string, [string, string]> = {
   active: [t('فعّال'), 'green'], suspended: [t('موقوف مؤقتاً'), 'orange'], banned: [t('محظور'), 'red'],
-  open: [t('مفتوح'), 'red'], reviewing: [t('قيد المراجعة'), 'orange'], resolved: [t('انحل'), 'green'], dismissed: [t('مرفوض'), ''],
+  open: [t('مفتوح'), 'red'], reviewing: [t('قيد المراجعة'), 'orange'], resolved: [t('تم الحل'), 'green'], dismissed: [t('مرفوض'), ''],
   pending: [t('بانتظار الموافقة'), 'orange'], approved: [t('مقبول'), 'green'], rejected: [t('مرفوض'), ''],
-  answered: [t('انرد عليه'), 'green'], closed: [t('مسكّر'), ''], draft: [t('مسودة'), 'orange'], verified: [t('موثّق'), 'green'],
+  answered: [t('تم الرد عليه'), 'green'], closed: [t('مغلق'), ''], draft: [t('مسودة'), 'orange'], verified: [t('موثّق'), 'green'],
 };
 export function Status({ s }: { s: string }) {
   const [l, c] = STATUS[s] ?? [s, ''];
@@ -276,9 +276,9 @@ export function Muted({ children }: { children: ReactNode }) {
 
 /** Loading / error / empty for admin lists. */
 export function State({ loading, error, empty, children }: { loading: boolean; error: string | null; empty?: boolean; children: ReactNode }) {
-  if (error) return <Panel><T v="small" color={C.red}>{/fetch|network|timeout/i.test(error) ? t('تأكد من الإنترنت وجرّب كمان مرة.') : t('صار خطأ: {0}', [error])}</T></Panel>;
+  if (error) return <Panel><T v="small" color={C.red}>{/fetch|network|timeout/i.test(error) ? t('تحقق من اتصالك بالإنترنت وحاول مرة أخرى.') : t('حدث خطأ: {0}', [error])}</T></Panel>;
   if (loading) return <Loading />;
-  if (empty) return <Panel><Muted>{t('ما في إشي هون.')}</Muted></Panel>;
+  if (empty) return <Panel><Muted>{t('لا يوجد شيء هنا.')}</Muted></Panel>;
   return <>{children}</>;
 }
 
@@ -311,7 +311,7 @@ function PromptHost() {
     <Sheet open={!!p} onClose={() => close(null)} title={p?.title}>
       <Field value={v} onChangeText={setV} placeholder={p?.hint} autoFocus multiline style={{ minHeight: 60, paddingTop: 14 }} />
       <Actions>
-        <Act label={t('تمام')} kind="primary" onPress={() => close(v)} />
+        <Act label={t('حسناً')} kind="primary" onPress={() => close(v)} />
         <Act label={t('إلغاء')} onPress={() => close(null)} />
       </Actions>
     </Sheet>
@@ -327,7 +327,7 @@ export function UniPicker({ value, onChange, allowAll = true, label = t('الج�
   const list = unis.filter((u) => !q || u.name_ar.includes(q) || u.name_en?.toLowerCase().includes(q.toLowerCase()));
   return (
     <>
-      <Item title={cur ? (isAR ? cur.name_ar : cur.name_en || cur.name_ar) : allowAll ? t('كل الجامعات') : t('اختار جامعة')} sub={label} onPress={() => setOpen(true)} />
+      <Item title={cur ? (isAR ? cur.name_ar : cur.name_en || cur.name_ar) : allowAll ? t('كل الجامعات') : t('اختر جامعة')} sub={label} onPress={() => setOpen(true)} />
       <Sheet open={open} onClose={() => setOpen(false)} title={label}>
         <SearchBox value={q} onChange={setQ} placeholder={t('ابحث')} />
         {allowAll && <Item title={t('كل الجامعات')} onPress={() => { onChange(''); setOpen(false); }} end={!value ? <Pill label="✓" tone="green" /> : undefined} />}

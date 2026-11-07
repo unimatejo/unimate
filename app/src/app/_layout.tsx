@@ -52,11 +52,11 @@ export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
   return (
     <View style={{ flex: 1, backgroundColor: C.bg, padding: 24, paddingTop: 110, gap: 14, alignItems: 'center' }}>
       <Text style={{ fontSize: 44 }}>🛠️</Text>
-      <Text style={{ fontSize: 22, fontWeight: '700', color: C.ink, textAlign: 'center' }}>{stale ? t('في نسخة جديدة من يونيميت') : t('في إشي ما زبط هون')}</Text>
-      <Text style={{ fontSize: 15, color: C.muted, textAlign: 'center', maxWidth: 320 }}>{stale ? t('اكبس «حدّث» عشان تفتح النسخة الجديدة.') : t('جرّب كمان مرة. إذا ضلت، فريق يونيميت وصله خبر وعم يشتغل عليها.')}</Text>
+      <Text style={{ fontSize: 22, fontWeight: '700', color: C.ink, textAlign: 'center' }}>{stale ? t('يتوفر إصدار جديد من يونيميت') : t('حدث خطأ ما هنا')}</Text>
+      <Text style={{ fontSize: 15, color: C.muted, textAlign: 'center', maxWidth: 320 }}>{stale ? t('اضغط «حدّث» لفتح النسخة الجديدة.') : t('حاول مرة أخرى. إذا استمرت المشكلة، فقد أُبلغ فريق يونيميت ويعمل على حلّها.')}</Text>
       <Text onPress={() => { if (stale && typeof window !== 'undefined') window.location.replace(`${window.location.pathname}?v=${Date.now().toString(36)}`); else retry(); }}
-        style={{ alignSelf: 'stretch', fontSize: 16, fontWeight: '700', color: C.onPrimary, backgroundColor: C.primary, textAlign: 'center', paddingVertical: 14, borderRadius: 16, overflow: 'hidden', marginTop: 8 }}>{stale ? t('حدّث') : t('جرّب كمان مرة')}</Text>
-      <Text onPress={() => { retry(); router.replace('/(tabs)'); }} style={{ fontSize: 15, color: C.primary, textAlign: 'center', paddingVertical: 10 }}>{t('ارجع للرئيسية')}</Text>
+        style={{ alignSelf: 'stretch', fontSize: 16, fontWeight: '700', color: C.onPrimary, backgroundColor: C.primary, textAlign: 'center', paddingVertical: 14, borderRadius: 16, overflow: 'hidden', marginTop: 8 }}>{stale ? t('حدّث') : t('حاول مرة أخرى')}</Text>
+      <Text onPress={() => { retry(); router.replace('/(tabs)'); }} style={{ fontSize: 15, color: C.primary, textAlign: 'center', paddingVertical: 10 }}>{t('العودة إلى الرئيسية')}</Text>
     </View>
   );
 }
@@ -131,11 +131,11 @@ function Gate() {
       <View style={{ position: 'absolute', top: 0, bottom: 0, left: 0, right: 0, backgroundColor: C.bg, alignItems: 'center', justifyContent: 'center', padding: 28, gap: 14 }}>
         {profileError ? (
           <>
-            <Text style={{ fontFamily: F.title, fontSize: 20, color: C.ink, textAlign: 'center' }}>{t('ما قدرنا نحمّل حسابك')}</Text>
-            <Text style={{ fontFamily: F.body, fontSize: 15, color: C.muted, textAlign: 'center' }}>{t('تأكد من الإنترنت وجرّب كمان مرة.')}</Text>
+            <Text style={{ fontFamily: F.title, fontSize: 20, color: C.ink, textAlign: 'center' }}>{t('تعذّر تحميل حسابك')}</Text>
+            <Text style={{ fontFamily: F.body, fontSize: 15, color: C.muted, textAlign: 'center' }}>{t('تحقق من اتصالك بالإنترنت وحاول مرة أخرى.')}</Text>
             <Pressable onPress={async () => { setRetrying(true); await refreshProfile(); setRetrying(false); }} disabled={retrying}
               style={{ minHeight: 50, paddingHorizontal: 28, borderRadius: 16, backgroundColor: C.primary, alignItems: 'center', justifyContent: 'center' }}>
-              {retrying ? <ActivityIndicator color={C.onPrimary} /> : <Text style={{ fontFamily: F.bodyBold, fontSize: 16, color: C.onPrimary }}>{t('جرّب كمان مرة')}</Text>}
+              {retrying ? <ActivityIndicator color={C.onPrimary} /> : <Text style={{ fontFamily: F.bodyBold, fontSize: 16, color: C.onPrimary }}>{t('حاول مرة أخرى')}</Text>}
             </Pressable>
             <Pressable onPress={signOut} style={{ minHeight: 44, justifyContent: 'center' }}><Text style={{ fontFamily: F.bodyMd, color: C.primary }}>{t('تسجيل الخروج')}</Text></Pressable>
           </>

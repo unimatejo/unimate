@@ -7,8 +7,8 @@ const page = (msg: string) => new Response(`<!doctype html><html lang="ar" dir="
 Deno.serve(async (req) => {
   const q = new URL(req.url).searchParams;
   const u = q.get('u') ?? '', s = q.get('s') ?? '';
-  if (!/^[0-9a-f-]{36}$/.test(u) || s !== (await sign(u))) return page('الرابط مش صالح.');
+  if (!/^[0-9a-f-]{36}$/.test(u) || s !== (await sign(u))) return page('الرابط غير صالح.');
   const db = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
   await db.from('notification_prefs').upsert({ user_id: u, email_offers: false }, { onConflict: 'user_id' });
-  return page('تمام، ما رح يوصلك عروض على الإيميل بعد هيك. بتقدر ترجّعها من إعدادات التنبيهات بالتطبيق.');
+  return page('تم. لن تصلك العروض على بريدك الإلكتروني بعد الآن، ويمكنك إعادة تفعيلها من إعدادات التنبيهات في التطبيق.');
 });

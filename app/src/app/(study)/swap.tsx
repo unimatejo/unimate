@@ -19,7 +19,7 @@ type Sec = { id: string; section_no: string; instructor: string | null; meetings
 type Mine = { section: Sec & { course: { id: string; name_ar: string; code: string } } };
 type Req = { id: string; course_id: string; from_section_id: string; to_section_id: string; status: string; matched_with: string | null; created_at: string };
 
-const when = (s?: Sec) => s?.meetings?.length ? s.meetings.map((m) => `${WEEKDAYS_SHORT[m.weekday]} ${clock(m.starts_at)}`).join(' · ') : t('الوقت بيتحدد');
+const when = (s?: Sec) => s?.meetings?.length ? s.meetings.map((m) => `${WEEKDAYS_SHORT[m.weekday]} ${clock(m.starts_at)}`).join(' · ') : t('سيُحدَّد الوقت لاحقاً');
 
 /** Section swaps: offer your section of a course for another one, matched automatically. */
 export default function Swap() {
@@ -56,7 +56,7 @@ export default function Swap() {
       const { data: p } = await supabase.from('swap_requests').select('id, user_id').in('id', matchedIds);
       setPartners(Object.fromEntries((p ?? []).map((x) => [x.id, x.user_id])));
     }
-    } catch { toast(t('ما قدرنا نحمّل، اسحب لتحت وجرّب كمان مرة.')); }
+    } catch { toast(t('تعذّر التحميل، اسحب للأسفل وحاول مرة أخرى.')); }
     finally { setLoading(false); }
   }, [profile]);
   useEffect(() => { load(); }, [load]);
@@ -68,17 +68,17 @@ export default function Swap() {
     setBusy(true);
     try {
       const { error } = await supabase.from('swap_requests').insert({ user_id: profile.id, course_id: mm.section.course.id, from_section_id: mm.section.id, to_section_id: to });
-      if (error) { Alert.alert(t('ما زبط'), error.code === '23505' ? t('عندك طلب لنفس الشعبة.') : t('جرّب كمان مرة.')); return; }
+      if (error) { Alert.alert(t('تعذّر ذلك'), error.code === '23505' ? t('لديك طلب للشعبة نفسها.') : t('حاول مرة أخرى.')); return; }
       setPick((p) => ({ ...p, [mm.section.id]: '' }));
-      toast(t('انبعت الطلب'));
+      toast(t('تم إرسال الطلب'));
       await load();
     } finally { setBusy(false); }
   }
 
   function close(id: string) {
-    Alert.alert(t('تسكّر الطلب؟'), t('ما رح نلاقيلك تبديل لهالشعبة بعدها.'), [
+    Alert.alert(t('إغلاق الطلب؟'), t('لن نبحث لك عن تبديل لهذه الشعبة بعد ذلك.'), [
       { text: t('إلغاء'), style: 'cancel' },
-      { text: t('سكّر'), style: 'destructive', onPress: async () => {
+      { text: t('إغلاق'), style: 'destructive', onPress: async () => {
         const prev = reqs;
         setReqs((r) => r.filter((x) => x.id !== id));
         const r = await run(supabase.from('swap_requests').update({ status: 'closed' }).eq('id', id));
@@ -89,7 +89,7 @@ export default function Swap() {
 
   async function talk(partner: string, course: string) {
     const { data, error } = await supabase.rpc('start_direct', { target: partner, context: t('تبديل شعبة · {0}', [course]) });
-    if (error || !data) { Alert.alert(t('ما زبط فتح المحادثة')); return; }
+    if (error || !data) { Alert.alert(t('تعذّر فتح المحادثة')); return; }
     router.push({ pathname: '/messages/[id]', params: { id: data as string } });
   }
 
@@ -98,7 +98,7 @@ export default function Swap() {
 
   return (
     <Screen>
-      <Header title={t('تبديل الشعب')} subtitle={t('بنلاقيلك حدا بدّه التبديل بالعكس')} />
+      <Header title={t('تبديل الشعب')} subtitle={t('سنجد لك شخصاً يريد التبديل المعاكس')} />
       <ScrollView refreshControl={<PullRefresh onRefresh={load} />} contentContainerStyle={{ padding: 18, paddingTop: 4, gap: 14, paddingBottom: 60 }}>
         {reqs.length > 0 && <T v="h3">{t('طلباتك')}</T>}
         {reqs.map((r) => {
@@ -108,7 +108,7 @@ export default function Swap() {
               <Row gap={10}>
                 {r.status === 'matched' ? <CheckCircle2 size={20} color={C.green} /> : <Clock size={20} color={C.orange} />}
                 <T v="bold" style={{ flex: 1 }}>{courseName(r.course_id)}</T>
-                <Tap onPress={() => close(r.id)} accessibilityLabel={t('سكّر الطلب')} style={{ width: 36, height: 36, alignItems: 'center', justifyContent: 'center' }}><X size={18} color={C.muted} /></Tap>
+                <Tap onPress={() => close(r.id)} accessibilityLabel={t('إغلاق الطلب')} style={{ width: 36, height: 36, alignItems: 'center', justifyContent: 'center' }}><X size={18} color={C.muted} /></Tap>
               </Row>
               <Row gap={8}>
                 <T v="bodyMd">{t('شعبة')} {secNo(r.course_id, r.from_section_id)}</T>
@@ -116,21 +116,21 @@ export default function Swap() {
                 <T v="bodyMd">{t('شعبة')} {secNo(r.course_id, r.to_section_id)}</T>
               </Row>
               {r.status === 'matched' && partner
-                ? <Button kind="green" title={t('احكي مع اللي بدّه يبدّل')} icon={<MessageCircle size={18} color={C.white} />} onPress={() => talk(partner, courseName(r.course_id))} />
-                : <T v="tiny" color={C.muted}>{t('بنخبرك أول ما حدا يطلب العكس.')}</T>}
+                ? <Button kind="green" title={t('تحدّث مع من يريد التبديل')} icon={<MessageCircle size={18} color={C.white} />} onPress={() => talk(partner, courseName(r.course_id))} />
+                : <T v="tiny" color={C.muted}>{t('سنبلغك فور أن يطلب أحد التبديل المعاكس.')}</T>}
             </Animated.View>
           );
         })}
 
         <T v="h3">{t('اطلب تبديل')}</T>
-        {mine.length === 0 && !loading && <Empty title={t('جدولك لسا ما وصل')} body={t('لما توصل شعبك بتقدر تطلب تبديل.')} />}
+        {mine.length === 0 && !loading && <Empty title={t('لم يصل جدولك بعد')} body={t('عند وصول شعبك يمكنك طلب تبديل.')} />}
         {mine.map((mm) => {
           const alts = (others[mm.section.course.id] ?? []).filter((s) => s.id !== mm.section.id);
           return (
             <View key={mm.section.id} style={{ gap: 10, backgroundColor: C.card, borderRadius: 22, padding: 14 }}>
               <T v="bold">{nm(mm.section.course)}</T>
               <T v="tiny" color={C.muted}>{sectionLabel(mm.section.section_no)} · {when(mm.section)}</T>
-              {alts.length === 0 ? <T v="small" color={C.muted}>{t('ما في شعب تانية مسجلة لهالمادة لهلأ.')}</T> : (
+              {alts.length === 0 ? <T v="small" color={C.muted}>{t('لا توجد شعب أخرى مسجلة لهذه المادة حتى الآن.')}</T> : (
                 <>
                   <Row gap={8} style={{ flexWrap: 'wrap' }}>
                     {alts.map((s) => <Chip key={s.id} label={t('شعبة {0}', [s.section_no])} active={pick[mm.section.id] === s.id} onPress={() => setPick((p) => ({ ...p, [mm.section.id]: s.id }))} />)}
@@ -146,7 +146,7 @@ export default function Swap() {
             </View>
           );
         })}
-        <T v="tiny" color={C.muted} style={{ textAlign: 'center' }}>{t('التبديل الرسمي بيصير من نظام التسجيل بالجامعة، يونيميت بس بيجمعكم.')}</T>
+        <T v="tiny" color={C.muted} style={{ textAlign: 'center' }}>{t('يتم التبديل الرسمي عبر نظام التسجيل في الجامعة، ويقتصر دور يونيميت على الجمع بينكم.')}</T>
       </ScrollView>
     </Screen>
   );

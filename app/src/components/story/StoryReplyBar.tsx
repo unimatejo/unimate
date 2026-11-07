@@ -48,7 +48,7 @@ export const StoryReplyBar = forwardRef<ReplyBarHandle, {
           style={{ flexDirection: 'row', justifyContent: 'center', gap: 2 }}>
           {QUICK_REACTIONS.map((e) => (
             <Pressable key={e} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {}); onReact(e); input.current?.blur(); }}
-              accessibilityRole="button" accessibilityLabel={t('ابعت {0}', [e])}
+              accessibilityRole="button" accessibilityLabel={t('أرسل {0}', [e])}
               style={({ pressed }) => ({ width: 44, height: 52, alignItems: 'center', justifyContent: 'center', borderRadius: 22, opacity: pressed ? 0.6 : 1 })}>
               <T style={{ fontSize: 31, lineHeight: 42 }}>{e}</T>
             </Pressable>
@@ -59,7 +59,7 @@ export const StoryReplyBar = forwardRef<ReplyBarHandle, {
         <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', minHeight: 48, borderRadius: 24, borderWidth: 1, borderColor: 'rgba(255,255,255,0.6)', backgroundColor: focused ? 'rgba(5,8,24,0.45)' : 'rgba(255,255,255,0.06)', paddingStart: 16, paddingEnd: has ? 6 : 16 }}>
           <TextInput ref={input} value={text} onChangeText={setText} onSubmitEditing={send} onFocus={() => focus(true)} onBlur={() => focus(false)}
             placeholder={t('أرسل رسالة')} placeholderTextColor="rgba(255,255,255,0.8)" keyboardAppearance="dark" returnKeyType="send" maxLength={1000} multiline={false}
-            accessibilityLabel={t('رد على الستوري')}
+            accessibilityLabel={t('رد على القصة')}
             style={{ flex: 1, minHeight: 46, fontFamily: F.body, fontSize: 15, color: '#FFFFFF', textAlign: ta, ...(Platform.OS === 'web' ? ({ outlineStyle: 'none' } as object) : {}) }} />
           {has && (
             <Animated.View entering={FadeIn.duration(180)} exiting={FadeOut.duration(120)}>
@@ -74,7 +74,7 @@ export const StoryReplyBar = forwardRef<ReplyBarHandle, {
             <Tap onPress={onLike} accessibilityLabel={liked ? t('إلغاء الإعجاب') : t('إعجاب')} style={{ width: 46, height: 48, alignItems: 'center', justifyContent: 'center' }}>
               <Heart size={27} color={liked ? C.pink : '#FFFFFF'} fill={liked ? C.pink : 'none'} />
             </Tap>
-            <Tap onPress={() => input.current?.focus()} accessibilityLabel={t('رد بالخاص')} style={{ width: 46, height: 48, alignItems: 'center', justifyContent: 'center' }}>
+            <Tap onPress={() => input.current?.focus()} accessibilityLabel={t('رد في الخاص')} style={{ width: 46, height: 48, alignItems: 'center', justifyContent: 'center' }}>
               <Send size={25} color="#FFFFFF" style={isAR ? { transform: [{ scaleX: -1 }] } : undefined} />
             </Tap>
           </>

@@ -12,7 +12,7 @@ let show: ((i: Item | null) => void) | null = null;
 /** On the web, React Native's Alert does nothing; route it to an in-app dialog instead. */
 if (Platform.OS === 'web') {
   Alert.alert = (title: string, message?: string, buttons?: AlertButton[]) => {
-    show?.({ title, message, buttons: buttons?.length ? buttons : [{ text: t('تمام') }] });
+    show?.({ title, message, buttons: buttons?.length ? buttons : [{ text: t('حسناً') }] });
   };
 }
 
@@ -38,7 +38,7 @@ export function WebAlertHost() {
           {rest.map((b, i) => (
             <Pressable key={i} onPress={() => close(b)} accessibilityRole="button"
               style={({ pressed }) => ({ minHeight: 54, paddingHorizontal: 16, alignItems: 'center', justifyContent: 'center', borderTopWidth: (i || item.title || item.message) ? 1 : 0, borderTopColor: C.line, backgroundColor: pressed ? C.soft : 'transparent' })}>
-              <T v="bodyMd" color={b.style === 'destructive' ? C.red : C.ink} style={{ textAlign: 'center' }}>{b.text ?? t('تمام')}</T>
+              <T v="bodyMd" color={b.style === 'destructive' ? C.red : C.ink} style={{ textAlign: 'center' }}>{b.text ?? t('حسناً')}</T>
             </Pressable>
           ))}
         </View>

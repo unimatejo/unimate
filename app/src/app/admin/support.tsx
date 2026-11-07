@@ -33,7 +33,7 @@ export default function Support() {
 
   return (
     <AdminScreen title={t('الدعم')}>
-      <Filters items={[['open', t('المفتوحة')], ['answered', t('انرد عليها')], ['closed', t('المسكّرة')], ['all', t('الكل')]]} value={filter} onChange={setFilter} />
+      <Filters items={[['open', t('المفتوحة')], ['answered', t('تم الرد عليها')], ['closed', t('المغلقة')], ['all', t('الكل')]]} value={filter} onChange={setFilter} />
       <State loading={loading} error={error} empty={data?.length === 0}>
         <View style={{ gap: 8 }}>
           {(data ?? []).map((x) => (
@@ -48,10 +48,10 @@ export default function Support() {
             <Status s={sel.status} />
             <Muted>{`${sel.user?.full_name ?? '—'} · ${fmtDate(sel.created_at)}`}</Muted>
             <Panel><T v="body" selectable>{sel.body}</T></Panel>
-            <Field label={t('الرد (بيوصله إشعار)')} value={reply} onChangeText={setReply} multiline style={{ minHeight: 100, paddingTop: 14 }} />
+            <Field label={t('الرد (سيصله إشعار)')} value={reply} onChangeText={setReply} multiline style={{ minHeight: 100, paddingTop: 14 }} />
             <Actions>
-              <Act label={t('ابعت الرد')} kind="primary" onPress={() => answer(false)} disabled={!reply.trim()} loading={busy} />
-              <Act label={t('سكّر الطلب')} onPress={() => answer(true)} />
+              <Act label={t('أرسل الرد')} kind="primary" onPress={() => answer(false)} disabled={!reply.trim()} loading={busy} />
+              <Act label={t('إغلاق الطلب')} onPress={() => answer(true)} />
             </Actions>
           </>
         )}

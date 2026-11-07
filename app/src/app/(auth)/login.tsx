@@ -44,9 +44,9 @@ export default function Login() {
     setError(null); setMsBusy(true);
     try {
       const res = await signInWithMicrosoftAndCourses();
-      if ('error' in res && res.error && res.error.message !== 'cancelled' && res.error.message !== 'redirecting') setError(t('ما زبط الدخول بمايكروسوفت. ممكن جامعتك بتطلب موافقة، جرّب رابط على الإيميل.'));
+      if ('error' in res && res.error && res.error.message !== 'cancelled' && res.error.message !== 'redirecting') setError(t('تعذّر تسجيل الدخول بحساب Microsoft. قد تتطلب جامعتك موافقة، جرّب رابطًا عبر البريد الإلكتروني.'));
     } catch {
-      setError(t('ما قدرنا نبعث الرسالة. تأكد من الإنترنت وجرّب مرة ثانية.'));
+      setError(t('تعذّر إرسال الرسالة. تأكد من اتصالك بالإنترنت وحاول مرة أخرى.'));
     } finally { setMsBusy(false); }
   }
 
@@ -55,23 +55,23 @@ export default function Login() {
     setError(null); setMailBusy(true);
     try {
       let uni;
-      try { uni = await universityForEmail(email); } catch { setError(t('تأكد من الإنترنت وجرّب كمان مرة.')); return; }
+      try { uni = await universityForEmail(email); } catch { setError(t('تحقق من اتصالك بالإنترنت وحاول مرة أخرى.')); return; }
       // not a university email: this is the team's sign-in (password + authenticator code). It never says whether the email is on the team.
       if (!uni) { router.push({ pathname: '/(auth)/team', params: { email: email.trim().toLowerCase() } }); return; }
       const { error: e } = await sendEmailCode(email);
       if (e) {
-        setError(/rate|limit/i.test(e.message) ? t('وصلنا الحد المسموح من الإيميلات هلأ. جرّب بعد شوي.') : t('ما قدرنا نبعث الرسالة. تأكد من الإنترنت وجرّب مرة ثانية.'));
+        setError(/rate|limit/i.test(e.message) ? t('وصلنا إلى الحد المسموح من رسائل البريد الإلكتروني حاليًا. حاول بعد قليل.') : t('تعذّر إرسال الرسالة. تأكد من اتصالك بالإنترنت وحاول مرة أخرى.'));
         return;
       }
       router.push({ pathname: '/(auth)/verify', params: { email, uni: nm(uni) } });
     } catch {
-      setError(t('ما قدرنا نبعث الرسالة. تأكد من الإنترنت وجرّب مرة ثانية.'));
+      setError(t('تعذّر إرسال الرسالة. تأكد من اتصالك بالإنترنت وحاول مرة أخرى.'));
     } finally { setMailBusy(false); }
   }
 
   // links opened inside WhatsApp / Instagram / Snapchat use their own browser, which loses the Microsoft sign-in half way
   const inApp = Platform.OS === 'web' && typeof navigator !== 'undefined'
-    ? (/WhatsApp/i.test(navigator.userAgent) ? 'واتساب' : /Instagram/i.test(navigator.userAgent) ? 'إنستغرام' : /FBAN|FBAV|FB_IAB/i.test(navigator.userAgent) ? 'فيسبوك' : /Snapchat/i.test(navigator.userAgent) ? 'سناب' : /TikTok|musical_ly/i.test(navigator.userAgent) ? 'تيك توك' : /Telegram/i.test(navigator.userAgent) ? 'تيليجرام' : null)
+    ? (/WhatsApp/i.test(navigator.userAgent) ? 'واتساب' : /Instagram/i.test(navigator.userAgent) ? 'إنستغرام' : /FBAN|FBAV|FB_IAB/i.test(navigator.userAgent) ? 'فيسبوك' : /Snapchat/i.test(navigator.userAgent) ? 'سناب شات' : /TikTok|musical_ly/i.test(navigator.userAgent) ? 'تيك توك' : /Telegram/i.test(navigator.userAgent) ? 'تيليجرام' : null)
     : null;
   return (
     <View style={{ flex: 1, backgroundColor: C.bg }}>
@@ -96,37 +96,37 @@ export default function Login() {
 
           <SafeAreaView edges={['bottom']} style={{ flex: 1, paddingHorizontal: 24, paddingTop: 26, paddingBottom: 16, gap: 18 }}>
             <Animated.View entering={FadeIn.delay(100).duration(220)} style={{ gap: 8 }}>
-              <T v="h1">{content.login?.title?.trim() || t('جامعتك كلها بجيبتك')}</T>
-              <T v="body" color={C.muted}>{content.login?.tagline?.trim() || t('جدولك بيطلع لحاله، ومجتمع جامعتك كله بمكان واحد، ورسائل بدون رقم جوال.')}</T>
+              <T v="h1">{content.login?.title?.trim() || t('جامعتك كلها في جيبك')}</T>
+              <T v="body" color={C.muted}>{content.login?.tagline?.trim() || t('جدولك يظهر تلقائيًا، ومجتمع جامعتك كله في مكان واحد، ورسائل دون رقم جوال.')}</T>
             </Animated.View>
 
             {inApp && (
               <View style={{ backgroundColor: C.orangeSoft, borderRadius: 18, padding: 14, gap: 8 }}>
-                <T v="bold" color={C.orange}>{t('افتح الرابط بسفاري أو كروم')}</T>
-                <T v="small" color={C.ink2}>{t('إنت فاتح يونيميت من جوا {0}، وتسجيل الدخول بمايكروسوفت ما بيكمل من هون. اكبس ⋯ فوق واختار «افتح بالمتصفح»، أو انسخ الرابط والصقه بسفاري.', [inApp])}</T>
-                <Button kind="white" title={t('انسخ الرابط')} onPress={() => { try { navigator.clipboard?.writeText('https://app.unimate.my'); } catch { /* */ } Alert.alert(t('انسخ الرابط ✓'), 'https://app.unimate.my'); }} style={{ minHeight: 40 }} />
+                <T v="bold" color={C.orange}>{t('افتح الرابط في سفاري أو كروم')}</T>
+                <T v="small" color={C.ink2}>{t('أنت تفتح يونيميت من داخل {0}، ولا يمكن إكمال تسجيل الدخول بمايكروسوفت من هنا. اضغط ⋯ في الأعلى واختر «افتح في المتصفح»، أو انسخ الرابط والصقه في سفاري.', [inApp])}</T>
+                <Button kind="white" title={t('انسخ الرابط')} onPress={() => { try { navigator.clipboard?.writeText('https://app.unimate.my'); } catch { /* */ } Alert.alert(t('تم نسخ الرابط ✓'), 'https://app.unimate.my'); }} style={{ minHeight: 40 }} />
               </View>
             )}
             <Animated.View entering={FadeIn.delay(200).duration(220)} style={{ gap: 10 }}>
               {MS_READY && (
                 <>
-                  <Button title={t('ادخل بحساب الجامعة (مايكروسوفت)')} loading={msBusy} disabled={mailBusy} onPress={microsoft} icon={<GraduationCap size={20} color={C.white} />} />
+                  <Button title={t('سجّل الدخول بحساب الجامعة (مايكروسوفت)')} loading={msBusy} disabled={mailBusy} onPress={microsoft} icon={<GraduationCap size={20} color={C.white} />} />
                   <Row gap={10} style={{ marginVertical: 2 }}><View style={{ flex: 1, height: 1, backgroundColor: C.line }} /><T v="tiny" color={C.faint}>{t('أو')}</T><View style={{ flex: 1, height: 1, backgroundColor: C.line }} /></Row>
                 </>
               )}
               <Field
-                value={email} onChangeText={setEmail} placeholder={t('إيميلك الجامعي')}
+                value={email} onChangeText={setEmail} placeholder={t('بريدك الإلكتروني الجامعي')}
                 keyboardType="email-address" autoCapitalize="none" autoComplete="email" textContentType="emailAddress"
                 style={{ textAlign: 'left', writingDirection: 'ltr' }} onSubmitEditing={sendCode} returnKeyType="send"
               />
-              <Button kind={MS_READY ? 'soft' : 'primary'} title={t('ابعتلي رابط على إيميلي')} loading={mailBusy} onPress={sendCode} disabled={!email.includes('@') || msBusy} icon={<Mail size={19} color={MS_READY ? C.ink : C.white} />} />
+              <Button kind={MS_READY ? 'soft' : 'primary'} title={t('أرسل لي رابطاً على بريدي الإلكتروني')} loading={mailBusy} onPress={sendCode} disabled={!email.includes('@') || msBusy} icon={<Mail size={19} color={MS_READY ? C.ink : C.white} />} />
               {error && <T v="small" color={C.danger} style={{ textAlign: 'center' }}>{error}</T>}
             </Animated.View>
 
             <View style={{ flex: 1 }} />
             <Row gap={6} style={{ justifyContent: 'center' }}>
               <Lock size={13} color={C.faint} />
-              <T v="tiny" color={C.faint} style={{ fontFamily: F.body }}>{t('بنبعتلك رابط دخول على إيميل جامعتك. ما في كلمة سر.')}</T>
+              <T v="tiny" color={C.faint} style={{ fontFamily: F.body }}>{t('سنرسل لك رابط تسجيل الدخول إلى بريدك الجامعي. لا حاجة إلى كلمة مرور.')}</T>
             </Row>
           </SafeAreaView>
         </ScrollView>

@@ -10,8 +10,8 @@ import { timeAgo } from '@/lib/util';
 import { t } from '@/lib/i18n';
 
 type Ticket = { id: string; subject: string; body: string; status: string; reply: string | null; created_at: string };
-const TOPICS = [t('مشكلة بالجدول'), t('مشكلة بالدخول'), t('بلاغ عن شخص'), t('اقتراح'), t('إعلان لمحلي'), t('طلب نسخة من بياناتي'), t('إشي تاني')];
-const STATUS: Record<string, [string, string, string]> = { open: [t('مفتوح'), C.orangeSoft, C.orangeInk], answered: [t('انرد عليه'), C.greenSoft, C.greenInk], closed: [t('مسكّر'), C.soft, C.muted] };
+const TOPICS = [t('مشكلة في الجدول'), t('مشكلة في تسجيل الدخول'), t('بلاغ عن شخص'), t('اقتراح'), t('إعلان لمتجري'), t('طلب نسخة من بياناتي'), t('شيء آخر')];
+const STATUS: Record<string, [string, string, string]> = { open: [t('مفتوح'), C.orangeSoft, C.orangeInk], answered: [t('تم الرد عليه'), C.greenSoft, C.greenInk], closed: [t('مغلق'), C.soft, C.muted] };
 
 /** Settings › contact support. */
 export default function Support() {
@@ -30,15 +30,15 @@ export default function Support() {
 
   async function send() {
     if (busy || !profile) return;
-    if (body.trim().length < 5) { Alert.alert(t('اكتب تفاصيل أكتر شوي')); return; }
+    if (body.trim().length < 5) { Alert.alert(t('اكتب تفاصيل أكثر قليلاً')); return; }
     setBusy(true);
     let error: unknown = null;
     try { ({ error } = await supabase.from('support_tickets').insert({ user_id: profile.id, subject: topic, body: body.trim() })); }
     catch (e) { error = e; }
     finally { setBusy(false); }
-    if (error) { Alert.alert(t('ما زبط'), t('جرّب كمان مرة.')); return; }
+    if (error) { Alert.alert(t('تعذّر ذلك'), t('حاول مرة أخرى.')); return; }
     setBody(''); load();
-    Alert.alert(t('وصلتنا ✓'), t('بنرد عليك هون بأسرع وقت.'));
+    Alert.alert(t('تم الاستلام ✓'), t('سنرد عليك هنا في أسرع وقت.'));
   }
 
   return (
@@ -47,10 +47,10 @@ export default function Support() {
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView contentContainerStyle={{ padding: 18, paddingTop: 4, gap: 14, paddingBottom: 60 }} keyboardShouldPersistTaps="handled">
           <View style={{ gap: 12, backgroundColor: C.card, borderRadius: 22, padding: 14 }}>
-            <Row gap={10}><LifeBuoy size={22} color={C.primary} /><T v="h3">{t('احكيلنا شو صاير')}</T></Row>
+            <Row gap={10}><LifeBuoy size={22} color={C.primary} /><T v="h3">{t('أخبرنا بما حدث')}</T></Row>
             <Row gap={8} style={{ flexWrap: 'wrap' }}>{TOPICS.map((tp) => <Chip key={tp} label={tp} active={topic === tp} onPress={() => setTopic(tp)} />)}</Row>
             <Field value={body} onChangeText={setBody} multiline maxLength={1500} placeholder={t('اكتب التفاصيل...')} style={{ minHeight: 120, textAlignVertical: 'top', paddingTop: 12 }} />
-            <Button title={t('ابعت')} onPress={send} loading={busy} />
+            <Button title={t('أرسل')} onPress={send} loading={busy} />
           </View>
 
           {tickets.length > 0 && <T v="h3" style={{ paddingHorizontal: 4 }}>{t('طلباتك')}</T>}

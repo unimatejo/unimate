@@ -19,7 +19,7 @@ export function useProfilePatch() {
     if (error) {
       // undo only the keys that failed, keep other pending edits
       setDraft((d) => { const n = { ...d }; for (const k of Object.keys(p)) delete (n as Record<string, unknown>)[k]; return n; });
-      Alert.alert(t('ما زبط الحفظ'), t('تأكد من الإنترنت وجرب كمان مرة.')); return;
+      Alert.alert(t('تعذّر الحفظ'), t('تحقق من اتصالك بالإنترنت وحاول مرة أخرى.')); return;
     }
     await refreshProfile();
     setDraft((d) => { const n = { ...d }; for (const k of Object.keys(p)) delete (n as Record<string, unknown>)[k]; return n; });
@@ -51,7 +51,7 @@ export function usePrefs() {
     let before: Prefs = DEFAULT_PREFS;
     setPrefs((x) => { before = x; return { ...x, ...p }; });
     const { error } = await supabase.from('notification_prefs').upsert({ user_id: profile.id, ...p }, { onConflict: 'user_id' });
-    if (error) { setPrefs(before); Alert.alert(t('ما زبط الحفظ'), t('تأكد من الإنترنت وجرب كمان مرة.')); return false; }
+    if (error) { setPrefs(before); Alert.alert(t('تعذّر الحفظ'), t('تحقق من اتصالك بالإنترنت وحاول مرة أخرى.')); return false; }
     return true;
   }, [profile]);
   return { prefs, set, loaded };

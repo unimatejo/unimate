@@ -92,10 +92,10 @@ export function StickerBody({ o, width, live }: { o: Overlay; width: number; liv
             <Text style={{ fontFamily: F.bodyBold, fontSize: 12, color: '#FF6B4A' }}>{t('دورك')}</Text>
             <Text style={{ fontFamily: F.display, fontSize: fs * 0.95, color: '#0E1430', textAlign: 'center' }}>{o.text || t('شاركنا صورتك')}</Text>
           </View>
-          <Pressable disabled={!live?.onAddYours} onPress={live?.onAddYours} accessibilityRole="button" accessibilityLabel={t('ضيف صورتك')}
+          <Pressable disabled={!live?.onAddYours} onPress={live?.onAddYours} accessibilityRole="button" accessibilityLabel={t('أضف صورتك')}
             style={{ marginHorizontal: 10, marginBottom: 10, minHeight: 40, borderRadius: 12, backgroundColor: '#F2F3F7', flexDirection: 'row', gap: 6, alignItems: 'center', justifyContent: 'center' }}>
             <Camera size={16} color="#0E1430" />
-            <Text style={{ fontFamily: F.bodyBold, fontSize: 14, color: '#0E1430' }}>{t('ضيف صورتك')}</Text>
+            <Text style={{ fontFamily: F.bodyBold, fontSize: 14, color: '#0E1430' }}>{t('أضف صورتك')}</Text>
           </Pressable>
         </View>
       );
@@ -141,7 +141,7 @@ export function StickerBody({ o, width, live }: { o: Overlay; width: number; liv
         </View>
       );
     case 'poll': {
-      const opts = o.data?.options?.length ? o.data.options : [t('آه'), t('لا')];
+      const opts = o.data?.options?.length ? o.data.options : [t('نعم'), t('لا')];
       const voted = live?.poll?.mine != null || live?.author;
       return (
         <View style={{ width: card, gap: 8 }}>
@@ -169,7 +169,7 @@ export function StickerBody({ o, width, live }: { o: Overlay; width: number; liv
       return (
         <View style={{ width: card, borderRadius: 20, overflow: 'hidden', backgroundColor: '#FFFFFF', shadowColor: '#000', shadowOpacity: 0.2, shadowRadius: 10 }}>
           <LinearGradient colors={['#FF6B4A', '#E0306B']} style={{ paddingHorizontal: 14, paddingVertical: 14 }}>
-            <Text style={{ fontFamily: F.display, fontSize: fs, color: '#FFFFFF', textAlign: 'center' }}>{o.text || t('اسألني سؤال')}</Text>
+            <Text style={{ fontFamily: F.display, fontSize: fs, color: '#FFFFFF', textAlign: 'center' }}>{o.text || t('اسألني سؤالاً')}</Text>
           </LinearGradient>
           <Pressable disabled={!live?.onAsk} onPress={live?.onAsk} accessibilityRole="button" accessibilityLabel={t('اكتب ردك')} style={{ margin: 10, minHeight: 44, borderRadius: 12, backgroundColor: '#F2F3F7', alignItems: 'center', justifyContent: 'center' }}>
             <Text style={{ fontFamily: F.bodyMd, fontSize: 14, color: '#8A93AE' }}>{live?.author ? t('{0} رد', [String(live.question?.count ?? 0)]) : t('اكتب ردك…')}</Text>
@@ -196,11 +196,11 @@ export function StickerBody({ o, width, live }: { o: Overlay; width: number; liv
             <Text style={{ fontFamily: F.display, fontSize: fs * 0.95, color: '#FFFFFF', textAlign: 'center' }}>{o.text || t('عدّاد')}</Text>
             {left > 0 ? (
               <View style={{ flexDirection: 'row', gap: 8, direction: 'ltr' }}>{box(d, t('يوم'))}{box(h, t('ساعة'))}{box(m, t('دقيقة'))}{box(sec, t('ثانية'))}</View>
-            ) : <Text style={{ fontFamily: F.bodyBold, fontSize: 16, color: '#FFFFFF' }}>{t('خلص الوقت 🎉')}</Text>}
+            ) : <Text style={{ fontFamily: F.bodyBold, fontSize: 16, color: '#FFFFFF' }}>{t('انتهى الوقت 🎉')}</Text>}
             <Pressable disabled={!live?.onRemind || live?.author} onPress={live?.onRemind} accessibilityRole="button"
               style={{ minHeight: 36, paddingHorizontal: 16, borderRadius: 18, backgroundColor: live?.countdown?.mine ? 'rgba(255,255,255,0.25)' : '#FFFFFF', alignItems: 'center', justifyContent: 'center' }}>
               <Text style={{ fontFamily: F.bodyBold, fontSize: 13, color: live?.countdown?.mine ? '#FFFFFF' : '#2E5BFF' }}>
-                {live?.author ? t('{0} طلبوا تذكير', [String(live.countdown?.count ?? 0)]) : live?.countdown?.mine ? t('رح نذكّرك ✓') : t('ذكّرني')}
+                {live?.author ? t('{0} طلبوا تذكيراً', [String(live.countdown?.count ?? 0)]) : live?.countdown?.mine ? t('سنذكّرك ✓') : t('ذكّرني')}
               </Text>
             </Pressable>
           </LinearGradient>

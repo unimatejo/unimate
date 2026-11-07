@@ -64,7 +64,7 @@ export default function NewAnnouncement() {
       setBusy(false);
       if (!r.ok) return;
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
-      toast(t('انحفظ التعديل ✓'));
+      toast(t('تم حفظ التعديل ✓'));
       router.back();
       return;
     }
@@ -72,7 +72,7 @@ export default function NewAnnouncement() {
     const { data: n } = await supabase.rpc('announcement_audience_count', { p_college: college });
     setBusy(false);
     const where = options.find(([k]) => k === scope)?.[1] ?? '';
-    Alert.alert(t('تنشر الإعلان؟'), t('بيوصل إشعار لـ {0} شخص بـ{1}.', [String(n ?? 0), where]), [
+    Alert.alert(t('نشر الإعلان؟'), t('سيصل إشعار إلى {0} شخص في {1}.', [String(n ?? 0), where]), [
       { text: t('لا'), style: 'cancel' },
       { text: t('انشر'), onPress: async () => {
         setBusy(true);
@@ -80,11 +80,11 @@ export default function NewAnnouncement() {
         setBusy(false);
         if (!r.ok) {
           const m = String(r.error?.message ?? '');
-          Alert.alert(t('ما انتشر'), /rate_limited/.test(m) ? t('وصلت الحد: 10 إعلانات باليوم.') : /bad_link/.test(m) ? t('الرابط لازم يبلش بـ https://') : /not_allowed/.test(m) ? t('ما عندك صلاحية تنشر بهالمكان.') : t('تأكد من الإنترنت وجرّب كمان مرة.'));
+          Alert.alert(t('تعذّر النشر'), /rate_limited/.test(m) ? t('وصلت إلى الحد: 10 إعلانات في اليوم.') : /bad_link/.test(m) ? t('يجب أن يبدأ الرابط بـ https://') : /not_allowed/.test(m) ? t('ليست لديك صلاحية النشر في هذا المكان.') : t('تحقق من اتصالك بالإنترنت وحاول مرة أخرى.'));
           return;
         }
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
-        toast(t('انتشر الإعلان ✓'));
+        toast(t('تم نشر الإعلان ✓'));
         router.back();
       } },
     ]);
@@ -94,8 +94,8 @@ export default function NewAnnouncement() {
   if (!options.length) return (
     <Screen>
       <Header title={t('إعلان جديد')} />
-      <Empty icon={<Landmark size={28} color={C.primary} />} title={t('النشر للإدارة والعمادات بس')}
-        body={t('الإعلانات الرسمية بينشرها رئيس الجامعة والعمداء ورؤساء الأقسام ومكتب العميد بعد توثيق حساباتهم.')} />
+      <Empty icon={<Landmark size={28} color={C.primary} />} title={t('النشر للإدارة والعمادات فقط')}
+        body={t('ينشر الإعلانات الرسمية رئيس الجامعة والعمداء ورؤساء الأقسام ومكتب العميد بعد توثيق حساباتهم.')} />
     </Screen>
   );
 
@@ -113,13 +113,13 @@ export default function NewAnnouncement() {
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
         <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ padding: 18, gap: 16, paddingBottom: 60 }}>
           <View style={{ gap: 8 }}>
-            <T v="bold">{t('لمين الإعلان؟')}</T>
+            <T v="bold">{t('لمن الإعلان؟')}</T>
             <Row gap={8} style={{ flexWrap: 'wrap' }}>
               {options.map(([k, label]) => (
                 <Chip key={k} label={label} active={scope === k} onPress={() => { if (!editing) setScope(k); }} />
               ))}
             </Row>
-            {editing && <T v="tiny" color={C.muted}>{t('ما بتقدر تغيّر الجهة بعد النشر.')}</T>}
+            {editing && <T v="tiny" color={C.muted}>{t('لا يمكنك تغيير الجهة بعد النشر.')}</T>}
           </View>
 
           <View style={{ gap: 4 }}>
@@ -134,14 +134,14 @@ export default function NewAnnouncement() {
           <View style={{ gap: 4 }}>
             <Field label={t('رابط (اختياري)')} value={link} onChangeText={setLink} autoCapitalize="none" autoCorrect={false} keyboardType="url"
               placeholder="https://hu.edu.jo/..." style={{ textAlign: 'left', writingDirection: 'ltr' }} />
-            {!linkOk(link) && <T v="tiny" color={C.red}>{t('الرابط لازم يبلش بـ https://')}</T>}
+            {!linkOk(link) && <T v="tiny" color={C.red}>{t('يجب أن يبدأ الرابط بـ https://')}</T>}
           </View>
 
-          <Button kind="soft" title={preview ? t('خبّي المعاينة') : t('معاينة')} icon={<Eye size={18} color={C.primary} />} onPress={() => setPreview((p) => !p)} />
+          <Button kind="soft" title={preview ? t('إخفاء المعاينة') : t('معاينة')} icon={<Eye size={18} color={C.primary} />} onPress={() => setPreview((p) => !p)} />
           {preview && <AnnouncementCard a={draft} index={0} onAuthor={() => {}} />}
 
           <Button title={editing ? t('احفظ التعديل') : t('انشر الإعلان')} icon={<Send size={18} color={C.white} />} loading={busy} disabled={!valid} onPress={submit} />
-          {!editing && <T v="tiny" color={C.muted} style={{ textAlign: 'center' }}>{t('بيوصل إشعار لكل اللي بالجهة اللي اخترتها، وبيبين اسمك ورتبتك على الإعلان.')}</T>}
+          {!editing && <T v="tiny" color={C.muted} style={{ textAlign: 'center' }}>{t('سيصل إشعار إلى كل من في الجهة التي اخترتها، وسيظهر اسمك ورتبتك على الإعلان.')}</T>}
         </ScrollView>
       </KeyboardAvoidingView>
     </Screen>

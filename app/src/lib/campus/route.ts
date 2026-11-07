@@ -242,11 +242,11 @@ function stepsOf(line: LL[], cum: number[], dest: string): Step[] {
     if (ad < 30) continue;
     const right = d > 0;
     const turn: Step['turn'] = ad > 150 ? 'back' : ad < 55 ? (right ? 'slight-right' : 'slight-left') : right ? 'right' : 'left';
-    const text = turn === 'back' ? t('ارجع لورا') : turn === 'right' ? t('لِف يمين') : turn === 'left' ? t('لِف شمال') : turn === 'slight-right' ? t('ميّل يمين') : t('ميّل شمال');
+    const text = turn === 'back' ? t('استدر إلى الخلف') : turn === 'right' ? t('انعطف إلى اليمين') : turn === 'left' ? t('انعطف إلى اليسار') : turn === 'slight-right' ? t('انعطف قليلًا إلى اليمين') : t('انعطف قليلًا إلى اليسار');
     steps.push({ at: cum[i], text, turn });
     lastAt = cum[i];
   }
-  steps.push({ at: cum[cum.length - 1], text: t('وصلت {0}', [dest]), turn: 'arrive' });
+  steps.push({ at: cum[cum.length - 1], text: t('وصلت إلى {0}', [dest]), turn: 'arrive' });
   return steps;
 }
 

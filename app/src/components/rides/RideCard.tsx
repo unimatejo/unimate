@@ -11,7 +11,7 @@ import { flip, t } from '@/lib/i18n';
 /** Filled seats in the app's ink, free ones in the brand colour: "how full is it" at a glance. */
 export function SeatIcons({ total, taken, size = 16 }: { total: number; taken: number; size?: number }) {
   return (
-    <View accessible accessibilityLabel={t('{0} مقاعد فاضية من {1}', [String(Math.max(0, total - taken)), String(total)])} style={{ flexDirection: 'row', gap: 3 }}>
+    <View accessible accessibilityLabel={t('{0} مقاعد شاغرة من {1}', [String(Math.max(0, total - taken)), String(total)])} style={{ flexDirection: 'row', gap: 3 }}>
       {Array.from({ length: total }, (_, i) => (
         <Armchair key={i} size={size} color={i < taken ? C.faint : C.primary} fill={i < taken ? 'transparent' : C.primarySoft} strokeWidth={2.2} />
       ))}
@@ -19,27 +19,27 @@ export function SeatIcons({ total, taken, size = 16 }: { total: number; taken: n
   );
 }
 
-/** A ride in the feed (or a "بدي توصيلة" ask). `action` is the button / status on the right edge (ask, pending, my requests…). */
+/** A ride in the feed (or a "أريد توصيلة" ask). `action` is the button / status on the right edge (ask, pending, my requests…). */
 export function RideCard({ ride, mine, onPress, action }: { ride: Ride; mine: boolean; onPress: () => void; action?: React.ReactNode }) {
   const need = ride.kind === 'need';
   const free = seatsLeft(ride);
   const route = routeLabel(ride);
   return (
-    <Tap haptic={false} scale={0.985} onPress={onPress} accessibilityRole="button" accessibilityLabel={`${need ? t('بدي توصيلة') : ''} ${route} ${timeLabel(ride.depart_at)}`}
+    <Tap haptic={false} scale={0.985} onPress={onPress} accessibilityRole="button" accessibilityLabel={`${need ? t('أريد توصيلة') : ''} ${route} ${timeLabel(ride.depart_at)}`}
       style={[{ backgroundColor: C.card, borderRadius: 26, padding: 14, gap: 12 }, shadow]}>
       <Row gap={12} center={false}>
         <View style={{ alignItems: 'center', minWidth: 64, paddingTop: 2 }}>
           <T style={{ fontFamily: F.display, fontSize: 22, lineHeight: 28 }}>{timeLabel(ride.depart_at)}</T>
           {need
-            ? <T v="tiny" color={free ? C.orangeInk : C.greenInk}>{free ? t('بدو توصيلة') : t('لقى حدا')}</T>
-            : <T v="tiny" color={free ? C.greenInk : C.muted}>{free ? t('{0} فاضي', [String(free)]) : t('مليانة')}</T>}
+            ? <T v="tiny" color={free ? C.orangeInk : C.greenInk}>{free ? t('يريد توصيلة') : t('وجد شخصًا')}</T>
+            : <T v="tiny" color={free ? C.greenInk : C.muted}>{free ? t('{0} شاغر', [String(free)]) : t('ممتلئة')}</T>}
         </View>
         <View style={{ flex: 1, gap: 6 }}>
           <Row gap={6}>
             <Image source={EMOJI.pin} style={{ width: 20, height: 20 }} contentFit="contain" />
             <T v="bold" numberOfLines={2} style={{ flexShrink: 1, fontSize: 16 }}>{route}</T>
           </Row>
-          {ride.campus_spot ? <T v="small" color={C.ink2} numberOfLines={1}>{t('بالجامعة: {0}', [ride.campus_spot])}</T> : null}
+          {ride.campus_spot ? <T v="small" color={C.ink2} numberOfLines={1}>{t('في الجامعة: {0}', [ride.campus_spot])}</T> : null}
           {ride.meet_point ? <T v="small" color={C.ink2} numberOfLines={1}>{t('نقطة التجمّع: {0}', [ride.meet_point])}</T> : null}
           <Row gap={10}>
             {need ? <T v="tiny" color={C.ink2}>{t('{0} أشخاص', [String(ride.seats_total)])}</T> : <SeatIcons total={ride.seats_total} taken={ride.seats_taken} />}

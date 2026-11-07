@@ -156,7 +156,7 @@ export default function Community() {
             <Tap onPress={() => router.push('/post/new')} scale={0.98} accessibilityLabel={t('منشور جديد')}
               style={[{ marginHorizontal: 18, flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: C.card, borderRadius: 20, paddingHorizontal: 10, minHeight: 56 }, shadow]}>
               <Avatar id={profile?.id} name={profile?.full_name} url={profile?.avatar_url} size={36} />
-              <T v="body" color={C.faint} style={{ flex: 1 }} numberOfLines={1}>{t('شو ببالك؟ اسأل أو شارك ملخص...')}</T>
+              <T v="body" color={C.faint} style={{ flex: 1 }} numberOfLines={1}>{t('بماذا تفكر؟ اسأل أو شارك ملخصًا...')}</T>
               <View style={{ width: 36, height: 36, borderRadius: 12, backgroundColor: C.greenSoft, alignItems: 'center', justifyContent: 'center' }}><ImageIcon size={19} color={C.green} /></View>
             </Tap>
           </View>
@@ -170,12 +170,12 @@ export default function Community() {
         removeClippedSubviews={Platform.OS === 'android'}
         ListFooterComponent={!loading && posts.length < 2 ? <View style={{ marginTop: 10 }}><SuggestedPeople /></View> : undefined}
         ListEmptyComponent={loading ? <View style={{ paddingHorizontal: 18 }}><ListSkeleton n={3} kind="post" /></View>
-          : failed ? <Empty icon={<CircleAlert size={28} color={C.red} />} title={t('ما قدرنا نحمّل')} body={t('تأكد من الإنترنت وجرّب كمان مرة.')}
-              action={<Button kind="soft" title={t('جرّب مرة ثانية')} onPress={load} style={{ paddingHorizontal: 24 }} />} />
-          : tab === 1 && !profile?.college_id ? <Empty icon={<GraduationCap size={28} color={C.primary} />} title={t('اختار كليتك أول')} body={t('عشان نوريك منشورات كليتك.')}
-              action={<Button kind="soft" title={t('تعديل البروفايل')} onPress={() => router.push('/settings/edit-profile')} style={{ paddingHorizontal: 24 }} />} />
-          : <Empty icon={<Plus size={28} color={C.primary} />} title={tab === 2 ? t('تابع زملاءك عشان تشوف منشوراتهم') : t('كون أول واحد بينشر')}
-            body={t('اسأل سؤال، شارك ملخص، أو بلّغ عن غرض ضايع.')} />}
+          : failed ? <Empty icon={<CircleAlert size={28} color={C.red} />} title={t('تعذّر التحميل')} body={t('تحقق من اتصالك بالإنترنت وحاول مرة أخرى.')}
+              action={<Button kind="soft" title={t('حاول مرة أخرى')} onPress={load} style={{ paddingHorizontal: 24 }} />} />
+          : tab === 1 && !profile?.college_id ? <Empty icon={<GraduationCap size={28} color={C.primary} />} title={t('اختر كليتك أولاً')} body={t('لنعرض لك منشورات كليتك.')}
+              action={<Button kind="soft" title={t('تعديل الملف الشخصي')} onPress={() => router.push('/settings/edit-profile')} style={{ paddingHorizontal: 24 }} />} />
+          : <Empty icon={<Plus size={28} color={C.primary} />} title={tab === 2 ? t('تابع زملاءك لترى منشوراتهم') : t('كن أول من ينشر')}
+            body={t('اسأل سؤالاً، شارك ملخصاً، أو أبلغ عن غرض مفقود.')} />}
       />
       </OnScreenProvider>
       <LikesSheet post={likesOf} onClose={() => setLikesOf(null)} />

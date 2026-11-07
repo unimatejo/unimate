@@ -24,7 +24,7 @@ export function DateField({ value, onChange, max }: { value: Date | null; onChan
   return (
     <>
       <Tap onPress={() => setOpen(true)} style={{ minHeight: 48, borderRadius: 14, backgroundColor: C.field, paddingHorizontal: 14, justifyContent: 'center' }}>
-        <T v="bodyMd" color={value ? C.ink : C.faint}>{value ? value.toLocaleDateString(LOCALE, { day: 'numeric', month: 'long', year: 'numeric' }) : t('اختار التاريخ')}</T>
+        <T v="bodyMd" color={value ? C.ink : C.faint}>{value ? value.toLocaleDateString(LOCALE, { day: 'numeric', month: 'long', year: 'numeric' }) : t('اختر التاريخ')}</T>
       </Tap>
       {open && <DateTimePicker value={value ?? new Date(2005, 0, 1)} mode="date" maximumDate={max} onChange={(_, d) => { setOpen(false); if (d) onChange(d); }} />}
     </>

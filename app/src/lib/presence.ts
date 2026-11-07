@@ -76,15 +76,15 @@ export function useActivityLine(id?: string | null) {
   if (!id || !enabled) return null;
   if (on) return t('نشط الآن');
   if (mins == null) return null;
-  if (mins < 60) return t('نشط قبل {0} د', [Math.max(4, mins)]);
+  if (mins < 60) return t('نشط منذ {0} د', [Math.max(4, mins)]);
   const h = Math.floor(mins / 60);
-  if (h < 24) return t('نشط قبل {0} س', [h]);
+  if (h < 24) return t('نشط منذ {0} س', [h]);
   return null; // older than a day: say nothing, like Instagram
 }
 
 // ---------- "typing…" in the inbox ----------
 // The chat screen already broadcasts typing inside the conversation; it also pings each other member's
-// personal inbox channel so their inbox row can show "عم يكتب…".
+// personal inbox channel so their inbox row can show "يكتب…".
 const typingNow = new Map<string, number>(); // conversation id → until
 const typingSubs = new Set<() => void>();
 let typingVer = 0;

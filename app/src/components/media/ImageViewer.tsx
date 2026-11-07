@@ -127,7 +127,7 @@ export function ImageViewer({ uri, images, index = 0, onClose }: { uri?: string 
         a.download = `unimate-${Date.now()}.${(blob.type.split('/')[1] || 'jpg').replace('jpeg', 'jpg')}`;
         document.body.appendChild(a); a.click(); a.remove();
         setTimeout(() => URL.revokeObjectURL(a.href), 4000);
-        toast(t('انحفظت الصورة'));
+        toast(t('تم حفظ الصورة'));
       } catch { window.open(u, '_blank'); }
       return;
     }

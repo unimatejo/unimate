@@ -21,7 +21,7 @@ const KIND: Record<string, { icon: LucideIcon; g: G; label: string; words?: stri
   shop: { icon: ShoppingBag, g: GRAD.yellow, label: t('محل'), words: ['محل', 'محلات', 'سوبرماركت', 'دكان'] },
   print: { icon: Printer, g: GRAD.yellow, label: t('طباعة وقرطاسية'), words: ['طباعة', 'تصوير', 'قرطاسية', 'مكتبة تصوير'] },
   parking: { icon: Car, g: GRAD.slate, label: t('موقف سيارات'), words: ['موقف', 'مواقف', 'باركينج', 'كراج'] },
-  bus: { icon: Bus, g: GRAD.teal, label: t('موقف باص'), words: ['باص', 'باصات', 'مجمع', 'سرفيس', 'كوستر'] },
+  bus: { icon: Bus, g: GRAD.teal, label: t('موقف حافلات'), words: ['باص', 'حافلات', 'مجمع', 'سرفيس', 'كوستر'] },
   gate: { icon: DoorOpen, g: GRAD.indigo, label: t('بوابة'), words: ['بوابة', 'باب', 'مدخل'] },
   mosque: { icon: Moon, g: GRAD.green, label: t('مسجد'), words: ['مسجد', 'مصلى', 'جامع'] },
   library: { icon: BookOpen, g: GRAD.violet, label: t('مكتبة'), words: ['مكتبة'] },
@@ -40,10 +40,10 @@ const GROUPS: Record<string, string[]> = {
 export const FILTERS = [
   { key: 'all', label: t('الكل') },
   { key: 'building', label: t('المباني') },
-  { key: 'food', label: t('أكل وقهوة') },
-  { key: 'shops', label: t('أكشاك ومحلات') },
+  { key: 'food', label: t('طعام وقهوة') },
+  { key: 'shops', label: t('أكشاك ومتاجر') },
   { key: 'parking', label: t('مواقف') },
-  { key: 'bus', label: t('باصات') },
+  { key: 'bus', label: t('حافلات') },
   { key: 'service', label: t('خدمات') },
 ] as const;
 export type FilterKey = (typeof FILTERS)[number]['key'];

@@ -15,8 +15,8 @@ import { toast } from '@/lib/toast';
 import { LOCALE, nm, t } from '@/lib/i18n';
 
 const KINDS: [string, string][] = [
-  ['exam_first', t('فيرست')], ['exam_second', t('سكند')], ['exam_mid', t('ميد')], ['exam_final', t('فاينل')],
-  ['quiz', t('كويز')], ['assignment', t('واجب')], ['project', t('مشروع')], ['custom', t('تذكير خاص')],
+  ['exam_first', t('الامتحان الأول')], ['exam_second', t('الامتحان الثاني')], ['exam_mid', t('الامتحان النصفي')], ['exam_final', t('الامتحان النهائي')],
+  ['quiz', t('اختبار قصير')], ['assignment', t('واجب')], ['project', t('مشروع')], ['custom', t('تذكير خاص')],
 ];
 type Sec = { id: string; section_no: string; course: { name_ar: string; name_en?: string | null } };
 
@@ -57,7 +57,7 @@ export default function NewEvent() {
   useEffect(() => {
     if (!editId) return;
     supabase.from('academic_events').select('kind, title, starts_at, location, section_id, owner_id, shared_ask').eq('id', editId).maybeSingle().then(({ data }) => {
-      if (!data) { Alert.alert(t('الموعد مش موجود')); router.back(); return; }
+      if (!data) { Alert.alert(t('الموعد غير موجود')); router.back(); return; }
       setKind(data.kind); setTitle(data.title); setDate(new Date(data.starts_at)); setLocation(data.location ?? '');
       setSection(data.section_id); setShare(!!data.shared_ask); setOfficial(!data.owner_id); setDirect(!data.owner_id);
       if (data.owner_id) return;
@@ -80,7 +80,7 @@ export default function NewEvent() {
   async function save() {
     if (!profile || busy) return;
     const ttl = title.trim() || [label, courseName].filter(Boolean).join(' · ');
-    if (!ttl) { Alert.alert(t('اكتب عنوان')); return; }
+    if (!ttl) { Alert.alert(t('اكتب عنواناً')); return; }
     const canShare = !!section && kind !== 'custom' && sectionKnown(secs.find((x) => x.id === section)?.section_no);
     const toAll = admin && direct && canShare;
     const row = { kind, title: ttl, starts_at: date.toISOString(), location: location.trim() || null, section_id: section,
@@ -89,27 +89,27 @@ export default function NewEvent() {
     try {
       if (editId) {
         const { error } = await supabase.from('academic_events').update(row).eq('id', editId);
-        if (error) { Alert.alert(t('ما زبط'), t('بتقدر تعدّل بس المواعيد اللي إنت ضفتها.')); return; }
+        if (error) { Alert.alert(t('تعذّر ذلك'), t('يمكنك تعديل المواعيد التي أضفتها أنت فقط.')); return; }
       } else {
         const { data, error } = await supabase.from('academic_events').insert({ ...row, created_by: profile.id }).select('id').single();
-        if (error || !data) { Alert.alert(t('ما زبط'), t('جرّب كمان مرة.')); return; }
+        if (error || !data) { Alert.alert(t('تعذّر ذلك'), t('حاول مرة أخرى.')); return; }
         // if mine was the one that tipped it over, it's folded into the section's event: the reminder goes there
         const { data: now } = await supabase.from('academic_events').select('merged_into').eq('id', data.id).maybeSingle();
-        if (now?.merged_into) toast(t('صار عند كل الشعبة ✓ أكّده كذا واحد منكم'));
+        if (now?.merged_into) toast(t('أصبح لدى الشعبة كلها ✓ أكّده عدد منكم'));
         await supabase.from('reminders').upsert({ user_id: profile.id, event_id: now?.merged_into ?? data.id, minutes: kind.startsWith('exam') ? 1440 : 120, enabled: true }, { onConflict: 'user_id,event_id' });
       }
       router.back();
-    } catch { Alert.alert(t('ما زبط'), t('تأكد من الإنترنت وجرّب كمان مرة.')); }
+    } catch { Alert.alert(t('تعذّر ذلك'), t('تحقق من اتصالك بالإنترنت وحاول مرة أخرى.')); }
     finally { setBusy(false); }
   }
 
   function remove() {
     if (!editId) return;
-    Alert.alert(t('تحذف الموعد؟'), official ? t('رح ينحذف من جدول كل طلاب الشعبة.') : undefined, [
+    Alert.alert(t('حذف الموعد؟'), official ? t('سيُحذف من جدول جميع طلاب الشعبة.') : undefined, [
       { text: t('إلغاء'), style: 'cancel' },
       { text: t('حذف'), style: 'destructive', onPress: async () => {
         const { error, count } = await supabase.from('academic_events').delete({ count: 'exact' }).eq('id', editId);
-        if (error || !count) { Alert.alert(t('ما زبط'), t('بتقدر تحذف بس المواعيد اللي إنت ضفتها.')); return; }
+        if (error || !count) { Alert.alert(t('تعذّر ذلك'), t('يمكنك حذف المواعيد التي أضفتها أنت فقط.')); return; }
         router.back();
       } },
     ]);
@@ -123,8 +123,8 @@ export default function NewEvent() {
       event_id: editId, starts_at: date.toISOString(), location: location.trim() || null, title: title.trim() || null, hidden, updated_at: new Date().toISOString(),
     }, { onConflict: 'user_id,event_id' }), { quiet: true });
     setBusy(false);
-    if (!r.ok) { Alert.alert(t('ما زبط'), t('تأكد من الإنترنت وجرّب كمان مرة.')); return; }
-    toast(hidden ? t('انشال من جدولك ✓') : t('انحفظ عندك ✓ باقي الشعبة ما بيتغيّر عندهم'));
+    if (!r.ok) { Alert.alert(t('تعذّر ذلك'), t('تحقق من اتصالك بالإنترنت وحاول مرة أخرى.')); return; }
+    toast(hidden ? t('تمت الإزالة من جدولك ✓') : t('تم الحفظ لديك ✓ لن يتغيّر لدى بقية الشعبة'));
     router.back();
   }
 
@@ -133,8 +133,8 @@ export default function NewEvent() {
     setBusy(true);
     const r = await run(supabase.from('event_overrides').delete().eq('event_id', editId), { quiet: true });
     setBusy(false);
-    if (!r.ok) { Alert.alert(t('ما زبط'), t('تأكد من الإنترنت وجرّب كمان مرة.')); return; }
-    toast(t('رجع للموعد الرسمي'));
+    if (!r.ok) { Alert.alert(t('تعذّر ذلك'), t('تحقق من اتصالك بالإنترنت وحاول مرة أخرى.')); return; }
+    toast(t('عاد إلى الموعد الرسمي'));
     router.back();
   }
 
@@ -143,8 +143,8 @@ export default function NewEvent() {
     setBusy(true);
     const r = await run(supabase.rpc('dispute_section_event', { p_event: editId }), { quiet: true });
     setBusy(false);
-    if (!r.ok) { toast.error(t('ما زبط، جرّب كمان مرة.')); return; }
-    toast(r.data ? t('انشال الموعد من الشعبة') : t('وصلنا ✓ لما يقولوا كمان زملاء إنه غلط بينشال'));
+    if (!r.ok) { toast.error(t('تعذّر ذلك، حاول مرة أخرى.')); return; }
+    toast(r.data ? t('تمت إزالة الموعد من الشعبة') : t('وصلنا ✓ عندما يؤكد زملاء آخرون أنه خطأ، ستتم إزالته'));
     router.back();
   }
 
@@ -153,10 +153,10 @@ export default function NewEvent() {
 
   return (
     <Screen>
-      <Header title={editId ? t('تعديل الموعد') : t('أضف موعد')} />
+      <Header title={editId ? t('تعديل الموعد') : t('أضف موعداً')} />
       <ScrollView contentContainerStyle={{ padding: 18, paddingTop: 4, gap: 14, paddingBottom: 60 }} keyboardShouldPersistTaps="handled">
         <View style={{ gap: 10 }}>
-          <T v="bold" style={{ fontSize: 14 }}>{t('شو نوعه؟')}</T>
+          <T v="bold" style={{ fontSize: 14 }}>{t('ما نوعه؟')}</T>
           <Row gap={8} style={{ flexWrap: 'wrap' }}>{KINDS.map(([k, l]) => <Chip key={k} label={l} active={kind === k} onPress={() => !locked && setKind(k)} />)}</Row>
         </View>
         {secs.length > 0 && (
@@ -182,25 +182,25 @@ export default function NewEvent() {
         <Field label={t('المكان (اختياري)')} value={location} onChangeText={setLocation} placeholder={t('مثلاً قاعة 204 أو المدرج الكبير')} />
         {section && kind !== 'custom' && !official && !sectionKnown(secs.find((x) => x.id === section)?.section_no) && (
           <View style={{ backgroundColor: C.orangeSoft, borderRadius: 18, padding: 12 }}>
-            <T v="small" color={C.orangeInk}>{t('رقم شعبتك بهالمادة مش محدد، فالموعد بيضل عندك إنت بس. حدّده من «موادي» عشان تقدر تشاركه مع شعبتك.')}</T>
+            <T v="small" color={C.orangeInk}>{t('رقم شعبتك في هذه المادة غير محدد، لذا يبقى الموعد لديك أنت فقط. حدّده من «موادي» لتتمكن من مشاركته مع شعبتك.')}</T>
           </View>
         )}
         {section && kind !== 'custom' && !official && sectionKnown(secs.find((x) => x.id === section)?.section_no) && (
           <View style={{ backgroundColor: C.card, borderRadius: 18, padding: 12, gap: 10 }}>
-            <Toggle label={t('عند كل الشعبة')} value={share} onChange={setShare}
-              hint={t('لما كم واحد من شعبتك يضيفوا نفس الموعد بنفس اليوم، بينزل تلقائي عند كل الشعبة. لحد ما يصير هيك بيضل عندك إنت بس.')} />
-            {admin && <Toggle label={t('نزّله رسمي هلأ (للإدارة)')} hint={t('لهالشعبة بس، فوراً. لمادة كاملة أو كلية: الإدارة › مواعيد رسمية')} value={direct} onChange={setDirect} />}
+            <Toggle label={t('لدى الشعبة كلها')} value={share} onChange={setShare}
+              hint={t('عندما يضيف عدة أشخاص من شعبتك الموعد نفسه في اليوم نفسه، يُضاف تلقائيًا لدى الشعبة كلها. وحتى يحدث ذلك يبقى لديك أنت فقط.')} />
+            {admin && <Toggle label={t('انشره رسميًا الآن (للإدارة)')} hint={t('لهذه الشعبة فقط، فورًا. لمادة كاملة أو كلية: الإدارة › مواعيد رسمية')} value={direct} onChange={setDirect} />}
           </View>
         )}
         {official && !admin ? (
           <View style={{ gap: 10 }}>
             <View style={{ backgroundColor: C.card, borderRadius: 18, padding: 14 }}>
-              <T v="small" color={C.ink2}>{mine ? t('غيّرت هالموعد عندك. باقي الشعبة بيشوفوا الموعد الرسمي.') : t('هاد موعد رسمي لكل الشعبة. أي تعديل بتعمله بيضل عندك إنت بس.')}</T>
+              <T v="small" color={C.ink2}>{mine ? t('غيّرت هذا الموعد لديك. يرى باقي الشعبة الموعد الرسمي.') : t('هذا موعد رسمي لكل الشعبة. أي تعديل تجريه يبقى لديك وحدك.')}</T>
             </View>
-            <Button title={t('احفظ عندي')} onPress={() => saveMine()} loading={busy} disabled={busy} />
-            {mine && <Button kind="soft" title={t('رجّع الموعد الرسمي')} onPress={backToOfficial} disabled={busy} />}
-            <Button kind="ghost" title={t('شيله من جدولي')} onPress={() => saveMine(true)} disabled={busy} />
-            <Button kind="ghost" title={t('الموعد غلط لكل الشعبة')} onPress={dispute} disabled={busy} />
+            <Button title={t('احفظ لديّ')} onPress={() => saveMine()} loading={busy} disabled={busy} />
+            {mine && <Button kind="soft" title={t('استعادة الموعد الرسمي')} onPress={backToOfficial} disabled={busy} />}
+            <Button kind="ghost" title={t('إزالة من جدولي')} onPress={() => saveMine(true)} disabled={busy} />
+            <Button kind="ghost" title={t('الموعد خاطئ للشعبة كلها')} onPress={dispute} disabled={busy} />
           </View>
         ) : (
           <>

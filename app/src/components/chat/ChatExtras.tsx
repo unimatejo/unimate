@@ -8,7 +8,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Avatar, Row, T, Tap } from '@/components/ui';
 import { C, SPRING, shadow } from '@/lib/theme';
-import { isAR, rtlLayout, t } from '@/lib/i18n';
+import { LOCALE, rtlLayout, t } from '@/lib/i18n';
 
 // ---------- bubble look (shared by every message kind) ----------
 /** Mine: coral accent with navy text; theirs: surface 2. Round 20 with a 6px "tail" corner on the sender's side. */
@@ -26,11 +26,11 @@ function dayLabel(iso: string) {
   const d = new Date(iso), now = new Date();
   const start = (x: Date) => new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime();
   const diff = Math.round((start(now) - start(d)) / 86400000);
-  const time = d.toLocaleTimeString(isAR ? 'ar-JO' : 'en-GB', { hour: 'numeric', minute: '2-digit' });
+  const time = d.toLocaleTimeString(LOCALE, { hour: 'numeric', minute: '2-digit' });
   if (diff === 0) return `${t('اليوم')} ${time}`;
-  if (diff === 1) return `${t('مبارح')} ${time}`;
-  if (diff < 7) return `${d.toLocaleDateString(isAR ? 'ar-JO' : 'en-GB', { weekday: 'long' })} ${time}`;
-  return d.toLocaleDateString(isAR ? 'ar-JO' : 'en-GB', { day: 'numeric', month: 'long', year: d.getFullYear() === now.getFullYear() ? undefined : 'numeric' });
+  if (diff === 1) return `${t('أمس')} ${time}`;
+  if (diff < 7) return `${d.toLocaleDateString(LOCALE, { weekday: 'long' })} ${time}`;
+  return d.toLocaleDateString(LOCALE, { day: 'numeric', month: 'long', year: d.getFullYear() === now.getFullYear() ? undefined : 'numeric' });
 }
 export function DateSep({ iso }: { iso: string }) {
   return <T v="tiny" color={C.muted} style={{ alignSelf: 'center', paddingTop: 10, paddingBottom: 6 }}>{dayLabel(iso)}</T>;
@@ -104,7 +104,7 @@ export function ReactionChips({ list, mine, me, onPress }: { list: Reaction[]; m
   const minePicked = list.some((r) => r.user_id === me);
   return (
     <Animated.View entering={ZoomIn.duration(240)} style={{ alignSelf: mine ? 'flex-start' : 'flex-end', marginTop: -12, marginHorizontal: 10, zIndex: 2 }}>
-      <Tap onPress={onPress} haptic={false} accessibilityLabel={t('مين تفاعل')} hitSlop={10}
+      <Tap onPress={onPress} haptic={false} accessibilityLabel={t('من تفاعل')} hitSlop={10}
         style={{ flexDirection: 'row', alignItems: 'center', gap: 2, paddingHorizontal: 7, height: 24, borderRadius: 12, backgroundColor: C.soft, borderWidth: 2, borderColor: minePicked ? C.primary : C.bg }}>
         <T style={{ fontSize: 13 }}>{kinds.join('')}</T>
         {list.length > 1 && <T v="tiny" color={C.muted} style={{ fontSize: 11 }}>{list.length}</T>}
@@ -159,8 +159,8 @@ export function ReactionsSheet({ list, people, me, onClose, onRemove }: {
             style={{ flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 56 }}>
             <Avatar id={r.user_id} name={p?.full_name ?? ''} url={p?.avatar_url ?? null} size={40} />
             <View style={{ flex: 1 }}>
-              <T v="bodyMd">{isMe ? t('إنت') : p?.full_name ?? ''}</T>
-              {isMe && <T v="tiny" color={C.muted}>{t('اكبس لتشيله')}</T>}
+              <T v="bodyMd">{isMe ? t('أنت') : p?.full_name ?? ''}</T>
+              {isMe && <T v="tiny" color={C.muted}>{t('اضغط لإزالته')}</T>}
             </View>
             <T style={{ fontSize: 26 }}>{r.emoji}</T>
           </Tap>
@@ -172,10 +172,10 @@ export function ReactionsSheet({ list, people, me, onClose, onRemove }: {
 
 /** Under your last message in a group: "Seen by everyone", or the faces of who saw it. */
 export function SeenBy({ readers, total, people, onPress }: { readers: string[]; total: number; people: Record<string, Person>; onPress: () => void }) {
-  if (!readers.length) return <T v="tiny" color={C.faint} style={{ fontSize: 11 }}>{t('انبعتت')}</T>;
-  if (readers.length >= total) return <T v="tiny" color={C.muted} style={{ fontSize: 11 }}>{t('شافها الكل')}</T>;
+  if (!readers.length) return <T v="tiny" color={C.faint} style={{ fontSize: 11 }}>{t('أُرسلت')}</T>;
+  if (readers.length >= total) return <T v="tiny" color={C.muted} style={{ fontSize: 11 }}>{t('شاهدها الجميع')}</T>;
   return (
-    <Tap onPress={onPress} haptic={false} accessibilityLabel={t('مين شافها')}>
+    <Tap onPress={onPress} haptic={false} accessibilityLabel={t('من شاهدها')}>
       <Row gap={4}>
         <View style={{ flexDirection: 'row' }}>
           {readers.slice(0, 3).map((u, i) => (
@@ -184,7 +184,7 @@ export function SeenBy({ readers, total, people, onPress }: { readers: string[];
             </View>
           ))}
         </View>
-        <T v="tiny" color={C.muted} style={{ fontSize: 11 }}>{t('شافها {0}', [String(readers.length)])}</T>
+        <T v="tiny" color={C.muted} style={{ fontSize: 11 }}>{t('شاهدها {0}', [String(readers.length)])}</T>
       </Row>
     </Tap>
   );

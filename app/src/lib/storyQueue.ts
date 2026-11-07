@@ -54,7 +54,7 @@ export async function enqueueStory(m: Picked, row: Row) {
   const ext = m.kind === 'video' ? (/\.(mov|mp4|m4v)$/i.exec(clean)?.[1]?.toLowerCase() ?? 'mp4') : 'jpg';
   const copy = new File(folder(), `${id}.${ext}`);
   try { await LegacyFS.copyAsync({ from: clean, to: copy.uri }); } catch (e) {
-    reportError(e); toast.error(t('ما قدرنا نقرأ الملف، جرّب تختاره كمان مرة.')); return;
+    reportError(e); toast.error(t('تعذّرت قراءة الملف، حاول اختياره مرة أخرى.')); return;
   }
   progress.set(id, 0.02);
   jobs = [...jobs, { id, file: copy.uri, mime: m.mime, kind: m.kind, duration: m.duration, size: m.size, width: m.width, height: m.height, meta: m.meta ?? null, row, tries: 0 }];
@@ -82,7 +82,7 @@ async function run() {
       } catch (e) {
         if (e instanceof Final) { reportError(e); toast.error(e.message); drop(j, false); continue; }
         j.tries += 1;
-        if (j.tries >= 6) { j.failed = true; save(); notify(); toast.error(t('النت ضعيف وما ارتفعت قصتك. اكبس على «قصتك» نجرّب كمان مرة.')); continue; }
+        if (j.tries >= 6) { j.failed = true; save(); notify(); toast.error(t('الاتصال بالإنترنت ضعيف ولم تُرفع قصتك. اضغط على «قصتك» لنحاول مرة أخرى.')); continue; }
         save();
         // a dropped connection: wait a bit longer each time, then carry on from the last piece
         await new Promise((r) => setTimeout(r, [2000, 5000, 12000, 25000, 45000][j.tries - 1] ?? 45000));
@@ -99,13 +99,13 @@ function drop(j: Job, ok: boolean) {
   jobs = jobs.filter((x) => x.id !== j.id); progress.delete(j.id);
   save(); notify();
   step('story', 'done');
-  if (ok) { toast(t('انضافت قصتك ✓')); doneSubs.forEach((f) => f()); }
+  if (ok) { toast(t('تمت إضافة قصتك ✓')); doneSubs.forEach((f) => f()); }
 }
 
 async function send(j: Job) {
   const set = (p: number) => { progress.set(j.id, p); notify(); };
   const src = new File(j.file);
-  if (!src.exists) throw new Final(t('ما لقينا ملف القصة، نزّلها كمان مرة.'));
+  if (!src.exists) throw new Final(t('لم يتم العثور على ملف القصة، انشرها مرة أخرى.'));
   // 1. a light video for every phone and every connection (once; the light copy replaces the original)
   step('story', `send ${j.kind} try ${j.tries + 1}`);
   if (j.kind === 'video' && !j.shrunk) {
@@ -133,7 +133,7 @@ async function send(j: Job) {
   }
   const file = new File(j.file);
   const size = file.size ?? 0;
-  if (j.kind === 'video' && size > MAX_BYTES) throw new Final(t('الفيديو كبير كثير. قصّره أو اختار جزء أقصر.'));
+  if (j.kind === 'video' && size > MAX_BYTES) throw new Final(t('الفيديو كبير جداً. قصّره أو اختر جزءاً أقصر.'));
   // 2. the file, in pieces that survive a dropped connection
   if (!j.path) { j.path = `${j.row.author_id}/${Crypto.randomUUID()}.${j.mime === 'image/jpeg' ? 'jpg' : j.mime.split('/')[1]?.replace('quicktime', 'mov') ?? 'mp4'}`; save(); }
   step('story', `upload ${Math.round(size / 1024)} KB`);

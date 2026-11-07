@@ -11,6 +11,8 @@ import { supabase } from '@/lib/supabase';
 import { C } from '@/lib/theme';
 import type { Post } from '@/lib/types';
 import { nm, t } from '@/lib/i18n';
+import { likesShown } from '@/lib/posts';
+import { fmtCount } from '@/lib/util';
 
 type Liker = { user_id: string; profile: { id: string; full_name: string; avatar_url: string | null; major: { name_ar: string } | null } | null };
 
@@ -54,7 +56,7 @@ export function LikesSheet({ post, onClose }: { post: Post | null; onClose: () =
         <View style={{ alignSelf: 'center', width: 42, height: 5, borderRadius: 3, backgroundColor: C.line, marginBottom: 12 }} />
         <Row style={{ justifyContent: 'space-between', marginBottom: 8 }}>
           <T v="h2">{t('الإعجابات')}</T>
-          <Row gap={5}><Heart size={16} color={C.pink} fill={C.pink} /><T v="bold" color="#D12C4F">{post?.like_count ?? 0}</T></Row>
+          <Row gap={5}><Heart size={16} color={C.pink} fill={C.pink} /><T v="bold" color="#D12C4F">{fmtCount(post ? likesShown(post) : 0)}</T></Row>
         </Row>
         <FlatList
           data={rows}
@@ -74,11 +76,11 @@ export function LikesSheet({ post, onClose }: { post: Post | null; onClose: () =
               )}
             </Row>
           )}
-          ListEmptyComponent={loading ? <ActivityIndicator color={C.primary} style={{ marginVertical: 24 }} /> : <T v="small" color={C.muted}>{t('ما في إعجابات لهلأ.')}</T>}
+          ListEmptyComponent={loading ? <ActivityIndicator color={C.primary} style={{ marginVertical: 24 }} /> : <T v="small" color={C.muted}>{t('لا توجد إعجابات حتى الآن.')}</T>}
         />
         <Row gap={6} style={{ marginTop: 10 }}>
           <Lock size={14} color={C.muted} />
-          <T v="tiny" color={C.muted}>{t('صاحب المنشور بيقدر يخفي عدد اللايكات من الإعدادات')}</T>
+          <T v="tiny" color={C.muted}>{t('يمكن لصاحب المنشور إخفاء عدد الإعجابات من الإعدادات')}</T>
         </Row>
       </View>
     </Modal>

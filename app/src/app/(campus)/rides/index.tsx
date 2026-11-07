@@ -50,14 +50,14 @@ export default function Rides() {
   }, [shown]);
 
   function leave(r: Ride) {
-    Alert.alert(t('تلغي طلبك؟'), t('بنبلّغ السائق إنك مش جاي.'), [
+    Alert.alert(t('إلغاء طلبك؟'), t('سنُبلغ السائق بأنك لن تأتي.'), [
       { text: t('لا'), style: 'cancel' },
-      { text: t('الغي'), style: 'destructive', onPress: async () => {
+      { text: t('إلغاء'), style: 'destructive', onPress: async () => {
         setBusy(r.id);
         const res = await run(supabase.rpc('leave_ride', { p_ride: r.id }), { quiet: true });
         setBusy(null);
         if (!res.ok) { toast.error(rideError(res.error)); return; }
-        toast(t('انلغى طلبك'));
+        toast(t('تم إلغاء طلبك'));
         load();
       } },
     ]);
@@ -68,7 +68,7 @@ export default function Rides() {
     if (mine) {
       return (
         <Tap onPress={() => router.push({ pathname: '/rides/[id]', params: { id: r.id } })} style={{ backgroundColor: r.pending_count ? C.primary : C.soft, borderRadius: 999, paddingHorizontal: 12, height: 34, justifyContent: 'center' }}>
-          <T v="tiny" color={r.pending_count ? C.onPrimary : C.ink2} style={{ fontFamily: F.bodyBold }}>{r.pending_count ? t('{0} طلبات', [String(r.pending_count)]) : t('ما في طلبات')}</T>
+          <T v="tiny" color={r.pending_count ? C.onPrimary : C.ink2} style={{ fontFamily: F.bodyBold }}>{r.pending_count ? t('{0} طلبات', [String(r.pending_count)]) : t('لا توجد طلبات')}</T>
         </Tap>
       );
     }
@@ -77,44 +77,44 @@ export default function Rides() {
       return (
         <Row gap={6}>
           <View style={{ backgroundColor: ok ? C.greenSoft : C.orangeSoft, borderRadius: 999, paddingHorizontal: 10, height: 30, justifyContent: 'center' }}>
-            <T v="tiny" color={ok ? C.greenInk : C.orangeInk} style={{ fontFamily: F.bodyBold }}>{ok ? t('انقبلت ✓') : r.kind === 'need' ? t('بانتظار رده') : t('بانتظار السائق')}</T>
+            <T v="tiny" color={ok ? C.greenInk : C.orangeInk} style={{ fontFamily: F.bodyBold }}>{ok ? t('تم قبولك ✓') : r.kind === 'need' ? t('بانتظار رده') : t('بانتظار السائق')}</T>
           </View>
-          <Tap onPress={() => leave(r)} disabled={busy === r.id} accessibilityLabel={t('الغي طلبي')} style={{ paddingHorizontal: 8, height: 30, justifyContent: 'center' }}>
-            <T v="tiny" color={C.red}>{t('الغي')}</T>
+          <Tap onPress={() => leave(r)} disabled={busy === r.id} accessibilityLabel={t('إلغاء طلبي')} style={{ paddingHorizontal: 8, height: 30, justifyContent: 'center' }}>
+            <T v="tiny" color={C.red}>{t('إلغاء')}</T>
           </Tap>
         </Row>
       );
     }
     const need = r.kind === 'need';
-    if (r.my_status === 'declined') return <T v="tiny" color={C.muted}>{need ? t('لقى حدا ثاني') : t('اعتذر السائق')}</T>;
-    if (!seatsLeft(r)) return <T v="tiny" color={C.muted}>{need ? t('لقى حدا') : t('مليانة')}</T>;
+    if (r.my_status === 'declined') return <T v="tiny" color={C.muted}>{need ? t('وجد شخصًا آخر') : t('اعتذر السائق')}</T>;
+    if (!seatsLeft(r)) return <T v="tiny" color={C.muted}>{need ? t('وجد شخصًا') : t('ممتلئة')}</T>;
     return (
       <Tap onPress={() => setAsk(r)} style={{ backgroundColor: C.primary, borderRadius: 999, paddingHorizontal: 14, height: 34, justifyContent: 'center' }} accessibilityRole="button">
-        <T v="tiny" color={C.onPrimary} style={{ fontFamily: F.bodyBold }}>{need ? t('بوصلك') : t('اطلب مقعد')}</T>
+        <T v="tiny" color={C.onPrimary} style={{ fontFamily: F.bodyBold }}>{need ? t('سأوصلك') : t('اطلب مقعد')}</T>
       </Tap>
     );
   }
 
   return (
     <Screen>
-      <Header title={t('توصيلات')} subtitle={t('من طلاب جامعتك، موثّقين بإيميلهم الجامعي')}
+      <Header title={t('توصيلات')} subtitle={t('من طلاب جامعتك، موثّقون ببريدهم الإلكتروني الجامعي')}
         right={<Button title={t('اعرض توصيلة')} icon={<Plus size={16} color={C.onPrimary} />} onPress={() => router.push('/rides/new')} style={{ minHeight: 40, paddingHorizontal: 14 }} />} />
       <ScrollView contentContainerStyle={{ paddingHorizontal: 18, paddingBottom: 60, gap: 14 }} refreshControl={<PullRefresh onRefresh={load} />}>
         <Animated.View entering={FadeIn.duration(220)} style={[{ backgroundColor: C.card, borderRadius: 26, padding: 14, flexDirection: 'row', alignItems: 'center', gap: 12 }, shadow]}>
           <Image source={EMOJI.car} style={{ width: 64, height: 64 }} contentFit="contain" />
           <View style={{ flex: 1, gap: 2 }}>
-            <T v="bold">{t('وفّر وقتك ومصاريك')}</T>
-            <T v="small" color={C.muted}>{t('شارك سيارتك مع زملاءك أو لاقي مقعد لمحاضرتك، والكل من جامعتك.')}</T>
+            <T v="bold">{t('وفّر وقتك ومصاريفك')}</T>
+            <T v="small" color={C.muted}>{t('شارك سيارتك مع زملائك أو اعثر على مقعد إلى محاضرتك، والجميع من جامعتك.')}</T>
             <Tap onPress={() => router.push({ pathname: '/rides/new', params: { kind: 'need' } })} accessibilityRole="button" style={{ alignSelf: 'flex-start', marginTop: 6, backgroundColor: C.primarySoft, borderRadius: 999, paddingHorizontal: 12, height: 32, justifyContent: 'center' }}>
-              <T v="tiny" color={C.primary} style={{ fontFamily: F.bodyBold }}>{t('ما عندي سيارة؟ اطلب توصيلة')}</T>
+              <T v="tiny" color={C.primary} style={{ fontFamily: F.bodyBold }}>{t('ليست لديك سيارة؟ اطلب توصيلة')}</T>
             </Tap>
           </View>
         </Animated.View>
 
-        <Segmented items={[t('للجامعة'), t('من الجامعة'), t('الكل')]} value={dir} onChange={(i) => { setDir(i); setArea(null); setRows(null); }} />
+        <Segmented items={[t('إلى الجامعة'), t('من الجامعة'), t('الكل')]} value={dir} onChange={(i) => { setDir(i); setArea(null); setRows(null); }} />
         <Row gap={8}>
-          <Chip label={t('سيارات فيها مكان')} active={kind === 'offer'} onPress={() => { setKind('offer'); setArea(null); }} />
-          <Chip label={needCount ? t('بدهم توصيلة ({0})', [String(needCount)]) : t('بدهم توصيلة')} active={kind === 'need'} onPress={() => { setKind('need'); setArea(null); }} />
+          <Chip label={t('سيارات بها مقاعد متاحة')} active={kind === 'offer'} onPress={() => { setKind('offer'); setArea(null); }} />
+          <Chip label={needCount ? t('يريدون توصيلة ({0})', [String(needCount)]) : t('يريدون توصيلة')} active={kind === 'need'} onPress={() => { setKind('need'); setArea(null); }} />
         </Row>
 
         {areas.length > 1 && (
@@ -125,15 +125,15 @@ export default function Rides() {
         )}
 
         {rows === null ? <ListSkeleton n={4} />
-          : failed && !rows.length ? <Empty title={t('ما قدرنا نحمّل التوصيلات')} body={t('تأكد من الإنترنت وجرّب كمان مرة.')} action={<Button kind="soft" title={t('جرّب مرة ثانية')} onPress={load} />} />
+          : failed && !rows.length ? <Empty title={t('تعذّر تحميل التوصيلات')} body={t('تحقق من اتصالك بالإنترنت وحاول مرة أخرى.')} action={<Button kind="soft" title={t('حاول مرة أخرى')} onPress={load} />} />
           : !shown.length ? (
             kind === 'need' ? (
-              <Empty icon={<Image source={EMOJI.oncoming} style={{ width: 72, height: 72 }} contentFit="contain" />} title={t('ما حدا طالب توصيلة هلأ')}
-                body={t('إذا إنت بدك توصيلة، نزّل طلبك وزملاءك اللي عندهم سيارة بيشوفوه.')}
-                action={<Button title={t('بدي توصيلة')} onPress={() => router.push({ pathname: '/rides/new', params: { kind: 'need' } })} style={{ marginTop: 8, paddingHorizontal: 22 }} />} />
+              <Empty icon={<Image source={EMOJI.oncoming} style={{ width: 72, height: 72 }} contentFit="contain" />} title={t('لا أحد يطلب توصيلة الآن')}
+                body={t('إذا كنت تريد توصيلة، انشر طلبك وسيراه زملاؤك الذين يملكون سيارة.')}
+                action={<Button title={t('أريد توصيلة')} onPress={() => router.push({ pathname: '/rides/new', params: { kind: 'need' } })} style={{ marginTop: 8, paddingHorizontal: 22 }} />} />
             ) : (
-              <Empty icon={<Image source={EMOJI.oncoming} style={{ width: 72, height: 72 }} contentFit="contain" />} title={t('ما في توصيلات لهلأ')}
-                body={t('كون أول واحد بيعرض توصيلة، أو نزّل طلب إنك بدك توصيلة.')}
+              <Empty icon={<Image source={EMOJI.oncoming} style={{ width: 72, height: 72 }} contentFit="contain" />} title={t('لا توجد توصيلات حتى الآن')}
+                body={t('كن أول من يعرض توصيلة، أو انشر طلبًا بأنك تحتاج توصيلة.')}
                 action={<Button title={t('اعرض توصيلة')} onPress={() => router.push('/rides/new')} style={{ marginTop: 8, paddingHorizontal: 22 }} />} />
             )
           ) : days.map(([k, list]) => (
@@ -145,7 +145,7 @@ export default function Rides() {
               ))}
             </View>
           ))}
-        <T v="tiny" color={C.faint} style={{ textAlign: 'center' }}>{t('الرقم بيبيّن بس بين السائق والراكب بعد القبول.')}</T>
+        <T v="tiny" color={C.faint} style={{ textAlign: 'center' }}>{t('لا يظهر الرقم إلا للسائق والراكب بعد القبول.')}</T>
       </ScrollView>
       <AskSeatSheet ride={ask} onClose={() => setAsk(null)} onDone={() => { setAsk(null); load(); }} />
     </Screen>

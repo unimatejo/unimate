@@ -21,40 +21,40 @@ export default function Admins() {
   useEffect(() => { const x = setTimeout(() => setTerm(q.trim()), 300); return () => clearTimeout(x); }, [q]);
 
   async function add(u: UserRow) {
-    if (!(await confirm(t('تضيف {0}؟', [u.full_name]), role === 'owner' ? t('رح يصير مالك وإله كل الصلاحيات، ومنها إضافة وشيل المشرفين.') : t('رح يصير مشرف: البلاغات، فحص المحتوى، إيقاف الحسابات، توثيق الأساتذة والدعم. ما بيشوف المحادثات الخاصة غير المبلّغ عنها، وما بيعدّل الجامعات أو الإعلانات أو الإشعارات العامة.'), t('أضف')))) return;
+    if (!(await confirm(t('إضافة {0}؟', [u.full_name]), role === 'owner' ? t('سيصبح مالكًا ولديه جميع الصلاحيات، ومنها إضافة المشرفين وإزالتهم.') : t('سيصبح مشرفًا: البلاغات، وفحص المحتوى، وإيقاف الحسابات، وتوثيق الأساتذة، والدعم. لا يرى المحادثات الخاصة غير المبلّغ عنها، ولا يعدّل الجامعات أو الإعلانات أو الإشعارات العامة.'), t('أضف')))) return;
     const { error: e } = await supabase.from('admins').insert({ user_id: u.id, role });
     if (e) { setMsg(e.message); return; }
     await audit('add_admin', 'user', u.id, { role }); done(); setQ(''); setMsg(null); reload();
   }
   async function remove(a: A) {
-    if (!(await confirm(t('تشيل {0} من المشرفين؟', [a.p?.full_name ?? '']), t('ما رح يقدر يفتح لوحة الإدارة بعدها.'), t('شيل')))) return;
+    if (!(await confirm(t('إزالة {0} من المشرفين؟', [a.p?.full_name ?? '']), t('لن يتمكن من فتح لوحة الإدارة بعد ذلك.'), t('إزالة')))) return;
     await supabase.from('admins').delete().eq('user_id', a.user_id);
     await audit('remove_admin', 'user', a.user_id); done(); reload();
   }
 
   return (
-    <AdminScreen title={t('المشرفين')} subtitle={t('المالك بس بيقدر يضيف ويشيل مشرفين')} ownerOnly>
+    <AdminScreen title={t('المشرفون')} subtitle={t('يمكن للمالك فقط إضافة المشرفين وإزالتهم')} ownerOnly>
       <State loading={loading} error={error}>
         <View style={{ gap: 8 }}>
           {(data ?? []).map((a) => (
             <Item key={a.user_id} title={a.p?.full_name ?? '—'} sub={fmtDate(a.created_at)}
               end={<View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                 <Pill label={a.role === 'owner' ? t('مالك') : t('مشرف')} tone={a.role === 'owner' ? 'violet' : 'blue'} />
-                {a.role !== 'owner' && <Act label={t('شيل')} kind="danger" onPress={() => remove(a)} />}
+                {a.role !== 'owner' && <Act label={t('إزالة')} kind="danger" onPress={() => remove(a)} />}
               </View>} />
           ))}
         </View>
       </State>
-      <Section title={t('أضف مشرف')} />
+      <Section title={t('أضف مشرفاً')} />
       <Panel>
         <Filters items={[['moderator', t('مشرف')], ['owner', t('مالك')]]} value={role} onChange={setRole} />
-        <SearchBox value={q} onChange={setQ} placeholder={t('دوّر بالاسم أو اليوزر أو الإيميل')} />
+        <SearchBox value={q} onChange={setQ} placeholder={t('ابحث بالاسم أو اسم المستخدم أو البريد الإلكتروني')} />
         {(found.data ?? []).map((u) => (
           <Item key={u.id} start={<Avatar id={u.id} name={u.full_name} url={u.avatar_url} size={38} />} title={u.full_name}
             sub={[u.username ? `@${u.username}` : null, u.university].filter(Boolean).join(' · ')}
             end={u.is_admin ? <Pill label={t('مشرف')} tone="violet" /> : <Act label={t('أضف')} kind="primary" onPress={() => add(u)} />} />
         ))}
-        {term.length >= 2 && !found.loading && (found.data ?? []).length === 0 && <Muted>{t('ما لقينا حدا.')}</Muted>}
+        {term.length >= 2 && !found.loading && (found.data ?? []).length === 0 && <Muted>{t('لم يتم العثور على أحد.')}</Muted>}
         {msg && <T v="small" color={C.red}>{msg}</T>}
       </Panel>
     </AdminScreen>

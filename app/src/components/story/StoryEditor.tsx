@@ -271,7 +271,7 @@ export function StoryEditor({ media, initial, onCancel, onDone, onShare, sharing
   const gVStyle = useAnimatedStyle(() => ({ opacity: withTiming(fx.gV.value * fx.on.value, { duration: 90 }) }));
   const gHStyle = useAnimatedStyle(() => ({ opacity: withTiming(fx.gH.value * fx.on.value, { duration: 90 }) }));
   const MAX_ITEMS = 29; // the story keeps up to 30 things (one is the drawing)
-  const full = () => { if (itemsRef.current.length >= MAX_ITEMS) { toast(t('وصلت للحد، احذف شي قبل ما تضيف')); return true; } return false; };
+  const full = () => { if (itemsRef.current.length >= MAX_ITEMS) { toast(t('وصلت إلى الحد، احذف عنصرًا قبل الإضافة')); return true; } return false; };
 
   function saveDraft() {
     if (!draft) return;
@@ -320,8 +320,8 @@ export function StoryEditor({ media, initial, onCancel, onDone, onShare, sharing
   const changed = items.length > 0 || strokes.length > 0 || filter !== 'none' || caption.trim().length > 0;
   function close() {
     if (!changed) { onCancel(); return; }
-    Alert.alert(t('تتجاهل التعديلات؟'), t('إذا طلعت هلأ بتروح التعديلات على هالستوري.'), [
-      { text: t('كمّل تعديل'), style: 'cancel' },
+    Alert.alert(t('تجاهل التعديلات؟'), t('إذا خرجت الآن، ستفقد التعديلات على هذه القصة.'), [
+      { text: t('متابعة التعديل'), style: 'cancel' },
       { text: t('تجاهل'), style: 'destructive', onPress: onCancel },
     ]);
   }
@@ -331,7 +331,7 @@ export function StoryEditor({ media, initial, onCancel, onDone, onShare, sharing
       if (Platform.OS === 'web') {
         const a = document.createElement('a'); a.href = m.uri; a.download = `unimate-story.${m.kind === 'video' ? 'mp4' : 'jpg'}`; document.body.appendChild(a); a.click(); a.remove();
       } else await Share.share({ url: m.uri });
-      toast(t('انحفظت'));
+      toast(t('تم الحفظ'));
     } catch { /* cancelled */ }
   }
 
@@ -392,7 +392,7 @@ export function StoryEditor({ media, initial, onCancel, onDone, onShare, sharing
         {!busyUI && (
           <Animated.View style={[{ position: 'absolute', top: 10, gap: 10, alignItems: TOOL_ALIGN }, LTR, toolSide(10), uiStyle]}>
             {m.kind === 'video' && (
-              <Tool label={soundOff ? t('الصوت مطفي') : t('الصوت شغّال')} show={expanded} active={soundOff}
+              <Tool label={soundOff ? t('الصوت مكتوم') : t('الصوت مفعّل')} show={expanded} active={soundOff}
                 onPress={() => { if (soundBlocked) { setSoundBlocked(false); setSoundOff(false); return; } setSoundOff((v) => !v); }}>
                 {soundOff || soundBlocked ? <VolumeX size={20} color={soundOff ? '#000' : '#fff'} /> : <Volume2 size={20} color="#fff" />}
               </Tool>
@@ -405,11 +405,11 @@ export function StoryEditor({ media, initial, onCancel, onDone, onShare, sharing
             <Tool label={t('فلاتر')} show={expanded} active={filtersOpen} onPress={() => setFiltersOpen((f) => !f)}><Wand2 size={20} color={filtersOpen ? '#000' : '#fff'} /></Tool>
             {expanded && (
               <Animated.View entering={FadeIn.duration(180)} exiting={FadeOut.duration(140)} style={{ gap: 10, alignItems: TOOL_ALIGN }}>
-                <Tool label={t('منشن')} show onPress={() => setTray('mention')}><AtSign size={20} color="#fff" /></Tool>
+                <Tool label={t('إشارة')} show onPress={() => setTray('mention')}><AtSign size={20} color="#fff" /></Tool>
                 <Tool label={t('الخلفية')} show onPress={cycleBg}><Palette size={20} color="#fff" /></Tool>
                 {m.kind === 'video' && <Tool label={t('قص الفيديو')} show onPress={() => setTrim(true)}><Scissors size={20} color="#fff" /></Tool>}
                 <Tool label={t('حفظ')} show onPress={save}><Download size={20} color="#fff" /></Tool>
-                <Tool label={noReplies ? t('الردود موقفة') : t('إيقاف الردود')} show active={noReplies} onPress={() => setNoReplies((v) => !v)}>
+                <Tool label={noReplies ? t('الردود متوقفة') : t('إيقاف الردود')} show active={noReplies} onPress={() => setNoReplies((v) => !v)}>
                   <MessageCircleOff size={20} color={noReplies ? '#000' : '#fff'} />
                 </Tool>
               </Animated.View>
@@ -441,7 +441,7 @@ export function StoryEditor({ media, initial, onCancel, onDone, onShare, sharing
         {/* caption, at the bottom of the frame */}
         {!busyUI && (
           <Animated.View style={[{ position: 'absolute', bottom: 10, left: 12, right: 12, flexDirection: 'row', alignItems: 'center', gap: 6 }, uiStyle]}>
-            <TextInput value={caption} multiline maxLength={200} onChangeText={(v) => setCaption(v.slice(0, 200))} placeholder={t('أضف وصف…')} placeholderTextColor="rgba(255,255,255,0.75)" keyboardAppearance="dark"
+            <TextInput value={caption} multiline maxLength={200} onChangeText={(v) => setCaption(v.slice(0, 200))} placeholder={t('أضف وصفاً…')} placeholderTextColor="rgba(255,255,255,0.75)" keyboardAppearance="dark"
               style={{ flex: 1, minHeight: 36, maxHeight: 84, color: '#fff', fontFamily: F.bodyMd, fontSize: 14, textAlign: isAR ? 'right' : 'left', textShadowColor: 'rgba(0,0,0,0.5)', textShadowRadius: 4, ...(Platform.OS === 'web' ? { outlineStyle: 'none' } as object : {}) }} />
             {caption.length > 150 ? <Text style={{ fontFamily: F.bodyBold, fontSize: 12, color: caption.length >= 200 ? '#FF6B6B' : 'rgba(255,255,255,0.8)', writingDirection: 'ltr' }}>{caption.length}/200</Text> : null}
           </Animated.View>
@@ -456,20 +456,20 @@ export function StoryEditor({ media, initial, onCancel, onDone, onShare, sharing
       {sharing && (
         <View pointerEvents="none" style={{ position: 'absolute', bottom: insets.bottom + 72, alignSelf: 'center', flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 16, height: 38, borderRadius: 19, backgroundColor: 'rgba(0,0,0,0.6)' }}>
           <ActivityIndicator color="#fff" size="small" />
-          <Text style={{ fontFamily: F.bodyBold, fontSize: 13, color: '#fff' }}>{media.kind === 'video' ? t('عم نجهّز الفيديو وننشره…') : t('عم ننشر…')}</Text>
+          <Text style={{ fontFamily: F.bodyBold, fontSize: 13, color: '#fff' }}>{media.kind === 'video' ? t('جارٍ تجهيز الفيديو ونشره…') : t('جارٍ النشر…')}</Text>
         </View>
       )}
       {/* share: your story / close friends / go on */}
       <Animated.View style={[{ position: 'absolute', bottom: insets.bottom + 8, left: 12, right: 12, height: 52, flexDirection: 'row', alignItems: 'center', gap: 8 }, uiStyle, busyUI && { display: 'none' }]} pointerEvents={busyUI ? 'none' : 'auto'}>
-        <Pressable onPress={() => { if (tooLong) { setTrim(true); return; } const r = result(); if (onShare) onShare(r.media, r.overlays, 'friends'); else onDone(r.media, r.overlays); }} disabled={sharing} accessibilityLabel={t('شارك بقصتك')}
+        <Pressable onPress={() => { if (tooLong) { setTrim(true); return; } const r = result(); if (onShare) onShare(r.media, r.overlays, 'friends'); else onDone(r.media, r.overlays); }} disabled={sharing} accessibilityLabel={t('شارك في قصتك')}
           style={({ pressed }) => ({ flex: 1, height: 46, borderRadius: 23, backgroundColor: '#262626', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, opacity: pressed ? 0.8 : 1 })}>
           <View style={{ width: 28, height: 28, borderRadius: 14, borderWidth: 2, borderColor: '#FF6B4A', padding: 1.5 }}><Avatar id={profile?.id} name={profile?.full_name} url={profile?.avatar_url} size={21} /></View>
           <Text style={{ fontFamily: F.bodyBold, fontSize: 14, color: '#fff' }}>{t('قصتك')}</Text>
         </Pressable>
-        <Pressable onPress={() => { if (tooLong) { setTrim(true); return; } const r = result(); if (onShare) onShare(r.media, r.overlays, 'close_friends'); else onDone(r.media, r.overlays); }} disabled={sharing} accessibilityLabel={t('شارك مع المقربين')}
+        <Pressable onPress={() => { if (tooLong) { setTrim(true); return; } const r = result(); if (onShare) onShare(r.media, r.overlays, 'close_friends'); else onDone(r.media, r.overlays); }} disabled={sharing} accessibilityLabel={t('شارك مع الأصدقاء المقرّبين')}
           style={({ pressed }) => ({ flex: 1, height: 46, borderRadius: 23, backgroundColor: '#262626', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, opacity: pressed ? 0.8 : 1 })}>
           <View style={{ width: 26, height: 26, borderRadius: 13, backgroundColor: '#34C759', alignItems: 'center', justifyContent: 'center' }}><Star size={14} color="#fff" fill="#fff" /></View>
-          <Text style={{ fontFamily: F.bodyBold, fontSize: 14, color: '#fff' }}>{t('المقرّبين')}</Text>
+          <Text style={{ fontFamily: F.bodyBold, fontSize: 14, color: '#fff' }}>{t('المقرّبون')}</Text>
         </Pressable>
         <Pressable onPress={() => { const r = result(); onDone(r.media, r.overlays); }} disabled={sharing} accessibilityLabel={t('التالي')}
           style={({ pressed }) => ({ width: 46, height: 46, borderRadius: 23, backgroundColor: '#FF6B4A', alignItems: 'center', justifyContent: 'center', opacity: pressed ? 0.85 : 1 })}>

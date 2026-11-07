@@ -57,7 +57,7 @@ export default function CallScreen() {
     leave();
   }
 
-  const label = status === 'active' ? `${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, '0')}` : status === 'missed' ? t('ما رد') : status === 'declined' ? t('رفض المكالمة') : status === 'ended' ? t('انتهت المكالمة') : kind === 'video' ? t('مكالمة فيديو... بترن') : t('مكالمة صوتية... بترن');
+  const label = status === 'active' ? `${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, '0')}` : status === 'missed' ? t('لم يرد') : status === 'declined' ? t('رفض المكالمة') : status === 'ended' ? t('انتهت المكالمة') : kind === 'video' ? t('مكالمة فيديو... جارٍ الرنين') : t('مكالمة صوتية... جارٍ الرنين');
 
   return (
     <View style={{ flex: 1, backgroundColor: '#0E1430' }}>

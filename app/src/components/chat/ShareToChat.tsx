@@ -66,14 +66,14 @@ export function ShareToChat({ place, onClose }: { place: { lat: number; lng: num
       </View>
       <ScrollView style={{ flexGrow: 0 }} contentContainerStyle={{ gap: 2 }} keyboardShouldPersistTaps="handled">
         {chats === null && [0, 1, 2, 3].map((i) => <View key={i} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 60 }}><Bone w={46} h={46} r={23} /><Bone w="50%" h={14} /></View>)}
-        {chats?.length === 0 && <T v="small" color={C.muted} style={{ paddingVertical: 20, textAlign: 'center' }}>{t('ما عندك محادثات لهلأ.')}</T>}
+        {chats?.length === 0 && <T v="small" color={C.muted} style={{ paddingVertical: 20, textAlign: 'center' }}>{t('لا توجد لديك محادثات حتى الآن.')}</T>}
         {shown.map((c) => (
           <Tap key={c.id} onPress={() => share(c)} disabled={!!busy} scale={0.98} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 60, opacity: busy && busy !== c.id ? 0.5 : 1 }}>
             {c.kind === 'direct' ? <Avatar id={c.other} name={c.name} url={c.avatar} size={46} />
               : <View style={{ width: 46, height: 46, borderRadius: 23, backgroundColor: C.soft, alignItems: 'center', justifyContent: 'center' }}><Users size={20} color={C.ink} /></View>}
             <T v="bodyMd" numberOfLines={1} style={{ flex: 1 }}>{c.name}</T>
             <View style={{ minHeight: 34, paddingHorizontal: 16, borderRadius: 17, backgroundColor: C.primary, justifyContent: 'center' }}>
-              <T v="bold" color={C.onPrimary} style={{ fontSize: 13 }}>{busy === c.id ? '…' : t('ابعت')}</T>
+              <T v="bold" color={C.onPrimary} style={{ fontSize: 13 }}>{busy === c.id ? '…' : t('أرسل')}</T>
             </View>
           </Tap>
         ))}

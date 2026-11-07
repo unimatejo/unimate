@@ -38,7 +38,7 @@ export default function StudyRules() {
     supabase.rpc('study_rules_for', { uni }).then(({ data, error }) => {
       if (!live) return;
       setLoading(false);
-      if (error || !data) { setLoadErr(error?.message ?? t('ما لقينا الجامعة')); return; }
+      if (error || !data) { setLoadErr(error?.message ?? t('لم يتم العثور على الجامعة')); return; }
       const r = data as Rules;
       setPct(String(r.absence_pct)); setWeeks(String(r.weeks)); setMaxGpa(Number(r.max_gpa) === 5 ? 5 : 4);
       setScale((r.scale ?? []).map((x) => ({ g: x.g, p: String(x.p) })));
@@ -50,17 +50,17 @@ export default function StudyRules() {
   const problems = useMemo(() => {
     const out: string[] = [];
     const a = num(pct), w = num(weeks);
-    if (!(a >= 1 && a <= 50) || Math.round(a * 2) !== a * 2) out.push(t('نسبة الغياب لازم تكون بين 1 و50 (بخطوات 0.5).'));
-    if (!(w >= 8 && w <= 20) || !Number.isInteger(w)) out.push(t('عدد أسابيع الفصل لازم يكون رقم صحيح بين 8 و20.'));
-    if (scale.length < 1 || scale.length > 20) out.push(t('السلم لازم يكون فيه من علامة وحدة لـ 20 علامة.'));
+    if (!(a >= 1 && a <= 50) || Math.round(a * 2) !== a * 2) out.push(t('يجب أن تكون نسبة الغياب بين 1 و50 (بزيادات 0.5).'));
+    if (!(w >= 8 && w <= 20) || !Number.isInteger(w)) out.push(t('يجب أن يكون عدد أسابيع الفصل رقمًا صحيحًا بين 8 و20.'));
+    if (scale.length < 1 || scale.length > 20) out.push(t('يجب أن يحتوي السلم على علامة واحدة إلى 20 علامة.'));
     const seen = new Set<string>();
     scale.forEach((x, i) => {
       const g = x.g.trim().toUpperCase(), p = num(x.p);
-      if (!LETTER.test(g)) out.push(t('السطر {0}: «{1}» مش علامة صحيحة (متل A أو B+ أو F).', [i + 1, x.g || '—']));
+      if (!LETTER.test(g)) out.push(t('السطر {0}: «{1}» ليست علامة صحيحة (مثل A أو B+ أو F).', [i + 1, x.g || '—']));
       else if (seen.has(g)) out.push(t('العلامة {0} مكررة.', [g]));
       seen.add(g);
-      if (!(p >= 0 && p <= maxGpa)) out.push(t('السطر {0}: النقاط لازم تكون بين 0 و{1}.', [i + 1, maxGpa]));
-      if (i > 0) { const prev = num(scale[i - 1].p); if (p >= 0 && prev >= 0 && p >= prev) out.push(t('السطر {0}: النقاط لازم تكون أقل من اللي فوقها.', [i + 1])); }
+      if (!(p >= 0 && p <= maxGpa)) out.push(t('السطر {0}: يجب أن تكون النقاط بين 0 و{1}.', [i + 1, maxGpa]));
+      if (i > 0) { const prev = num(scale[i - 1].p); if (p >= 0 && prev >= 0 && p >= prev) out.push(t('السطر {0}: يجب أن تكون النقاط أقل من نقاط السطر الذي فوقه.', [i + 1])); }
     });
     return out;
   }, [pct, weeks, scale, maxGpa]);
@@ -76,9 +76,9 @@ export default function StudyRules() {
 
   async function save(rules: Record<string, unknown>, msg: string) {
     if (!uni) return;
-    if (!(await confirm(t('تحفظ القواعد؟'), msg, t('احفظ')))) return;
+    if (!(await confirm(t('حفظ القواعد؟'), msg, t('احفظ')))) return;
     setBusy(true);
-    const r = await run(supabase.rpc('admin_set_study_rules', { p_university: uni, p_rules: rules }), { msg: t('ما انحفظت. تأكد إنه كل القيم صحيحة.') });
+    const r = await run(supabase.rpc('admin_set_study_rules', { p_university: uni, p_rules: rules }), { msg: t('لم تُحفظ. تأكد من أن جميع القيم صحيحة.') });
     setBusy(false);
     if (r.ok) { done(); setVer((v) => v + 1); }
   }
@@ -88,7 +88,7 @@ export default function StudyRules() {
     save({
       absence_pct: num(pct), weeks: num(weeks), max_gpa: maxGpa,
       scale: scale.map((x) => ({ g: x.g.trim().toUpperCase(), p: Math.round(num(x.p) * 100) / 100 })),
-    }, t('بيتطبق على كل طلاب هالجامعة بحاسبة المعدل والغيابات.'));
+    }, t('يُطبَّق على جميع طلاب هذه الجامعة في حاسبة المعدل والغيابات.'));
   }
 
   const inputStyle = { minHeight: 44, borderRadius: 12, backgroundColor: C.soft, paddingHorizontal: 12, fontFamily: F.bodyMd, fontSize: 15, color: C.ink, textAlign: 'center' as const };
@@ -127,18 +127,18 @@ export default function StudyRules() {
               <TextInput keyboardAppearance={isDark ? 'dark' : 'light'} value={x.p} onChangeText={(v) => setRow(i, { p: v.slice(0, 5) })} keyboardType="decimal-pad"
                 style={[inputStyle, { flex: 1 }]} accessibilityLabel={t('النقاط')} />
               <Row gap={4} style={{ width: 120, justifyContent: 'flex-end' }}>
-                <Tap onPress={() => move(i, -1)} disabled={i === 0} accessibilityLabel={t('لفوق')} style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: C.soft, alignItems: 'center', justifyContent: 'center', opacity: i === 0 ? 0.4 : 1 }}><ArrowUp size={16} color={C.ink} /></Tap>
-                <Tap onPress={() => move(i, 1)} disabled={i === scale.length - 1} accessibilityLabel={t('لتحت')} style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: C.soft, alignItems: 'center', justifyContent: 'center', opacity: i === scale.length - 1 ? 0.4 : 1 }}><ArrowDown size={16} color={C.ink} /></Tap>
+                <Tap onPress={() => move(i, -1)} disabled={i === 0} accessibilityLabel={t('إلى الأعلى')} style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: C.soft, alignItems: 'center', justifyContent: 'center', opacity: i === 0 ? 0.4 : 1 }}><ArrowUp size={16} color={C.ink} /></Tap>
+                <Tap onPress={() => move(i, 1)} disabled={i === scale.length - 1} accessibilityLabel={t('إلى الأسفل')} style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: C.soft, alignItems: 'center', justifyContent: 'center', opacity: i === scale.length - 1 ? 0.4 : 1 }}><ArrowDown size={16} color={C.ink} /></Tap>
                 <Tap onPress={() => setScale((s) => s.filter((_, j) => j !== i))} accessibilityLabel={t('احذف')} style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: C.redSoft, alignItems: 'center', justifyContent: 'center' }}><Trash2 size={16} color={C.red} /></Tap>
               </Row>
             </Row>
           ))}
           {scale.length < 20 && (
             <Tap onPress={() => setScale((s) => [...s, { g: '', p: '' }])} style={{ flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 44 }}>
-              <Plus size={16} color={C.primary} /><T v="small" color={C.primary}>{t('ضيف علامة')}</T>
+              <Plus size={16} color={C.primary} /><T v="small" color={C.primary}>{t('أضف علامة')}</T>
             </Tap>
           )}
-          <Muted>{t('بيتطبق على كل طلاب هالجامعة بحاسبة المعدل والغيابات')}</Muted>
+          <Muted>{t('يُطبَّق على جميع طلاب هذه الجامعة في حاسبة المعدل والغيابات')}</Muted>
         </Panel>
 
         {problems.length > 0 && (
@@ -149,7 +149,7 @@ export default function StudyRules() {
 
         <Actions>
           <Act label={t('احفظ')} kind="primary" onPress={saveAll} disabled={problems.length > 0 || !uni} loading={busy} />
-          <Act label={t('رجّع الافتراضي')} onPress={() => save({}, t('بترجع النسبة 15%، و16 أسبوع، وسلم العلامات الأردني الافتراضي.'))} disabled={!uni || busy} />
+          <Act label={t('استعادة الافتراضي')} onPress={() => save({}, t('تعود النسبة إلى 15%، و16 أسبوعاً، وسلّم العلامات الأردني الافتراضي.'))} disabled={!uni || busy} />
         </Actions>
       </State>
     </AdminScreen>

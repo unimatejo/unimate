@@ -53,7 +53,7 @@ async function pickRaw(opts: { video?: boolean; maxSec?: number; camera?: boolea
   // the web needs no permission, and waiting for one would make the browser block the picker (it must open from the tap)
   const perm = Platform.OS === 'web' ? { granted: true } : opts.camera ? await ImagePicker.requestCameraPermissionsAsync() : await ImagePicker.requestMediaLibraryPermissionsAsync();
   if (!perm.granted) {
-    Alert.alert(opts.camera ? t('الكاميرا مسكّرة') : t('الصور مسكّرة'), t('افتح الإعدادات واسمح ليونيميت يوصل للصور والكاميرا.'), [
+    Alert.alert(opts.camera ? t('الوصول إلى الكاميرا غير مسموح') : t('الوصول إلى الصور غير مسموح'), t('افتح الإعدادات واسمح ليونيميت بالوصول إلى الصور والكاميرا.'), [
       { text: t('لاحقاً'), style: 'cancel' }, { text: t('افتح الإعدادات'), onPress: () => Linking.openSettings() },
     ]);
     return null;
@@ -72,7 +72,7 @@ async function pickRaw(opts: { video?: boolean; maxSec?: number; camera?: boolea
   if (a.type === 'video') {
     // the browser reports seconds, phones milliseconds
     const durMs = a.duration == null ? null : Platform.OS === 'web' ? a.duration * 1000 : a.duration;
-    if ((durMs ?? 0) > pickMax * 1000 + 500) { Alert.alert(t('الفيديو طويل'), t('الفيديو لازم يكون {0} ثانية أو أقل.', [pickMax])); return null; }
+    if ((durMs ?? 0) > pickMax * 1000 + 500) { Alert.alert(t('الفيديو طويل'), t('يجب أن تكون مدة الفيديو {0} ثانية أو أقل.', [pickMax])); return null; }
     if ((a.fileSize ?? 0) > (trimLater ? 600 : 50) * 1048576) { Alert.alert(t('الفيديو كبير'), t('جرّب فيديو أقصر.')); return null; }
     return { uri: a.uri, mime: a.mimeType ?? 'video/mp4', kind: 'video', duration: durMs, size: a.fileSize, width: a.width || undefined, height: a.height || undefined };
   }
@@ -95,7 +95,7 @@ export async function pickPdf(): Promise<{ uri: string; mime: string; name: stri
   const res = await DocumentPicker.getDocumentAsync({ type: 'application/pdf', copyToCacheDirectory: true, multiple: false });
   if (res.canceled || !res.assets?.[0]) return null;
   const a = res.assets[0];
-  if ((a.size ?? 0) > 10 * 1048576) { Alert.alert(t('الملف كبير'), t('أكبر حجم 10 ميجا.')); return null; }
+  if ((a.size ?? 0) > 10 * 1048576) { Alert.alert(t('الملف كبير'), t('الحد الأقصى للحجم 10 ميغابايت.')); return null; }
   return { uri: a.uri, mime: 'application/pdf', name: a.name ?? t('ملف.pdf'), size: a.size ?? null };
 }
 
@@ -106,7 +106,7 @@ export async function pickPdf(): Promise<{ uri: string; mime: string; name: stri
 export async function pickPhotos(max = 10, videos = false): Promise<Picked[]> {
   const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
   if (!perm.granted) {
-    Alert.alert(t('الصور مسكّرة'), t('افتح الإعدادات واسمح ليونيميت يوصل للصور والكاميرا.'), [
+    Alert.alert(t('الوصول إلى الصور غير مسموح'), t('افتح الإعدادات واسمح ليونيميت بالوصول إلى الصور والكاميرا.'), [
       { text: t('لاحقاً'), style: 'cancel' }, { text: t('افتح الإعدادات'), onPress: () => Linking.openSettings() },
     ]);
     return [];
@@ -211,7 +211,7 @@ export async function uploadPicked<M extends { trim?: { start: number; end: numb
     }
     const buf = small?.blob ?? await readBytes(small?.uri ?? file.uri);
     const size0 = (buf as { size?: number; byteLength?: number }).size ?? (buf as { byteLength?: number }).byteLength ?? 0;
-    if (mime.startsWith('video/') && size0 > 50 * 1048576) throw new UserError(t('الفيديو كبير كثير. قصّره أو اختار جزء أقصر.'));
+    if (mime.startsWith('video/') && size0 > 50 * 1048576) throw new UserError(t('الفيديو كبير جداً. قصّره أو اختر جزءاً أقصر.'));
     // big files get more time (about 150 KB/s on a slow connection), never less than 90 seconds
     const bytes = (buf as { size?: number; byteLength?: number }).size ?? (buf as { byteLength?: number }).byteLength ?? 0;
     const ms = Math.max(90_000, Math.min(600_000, 30_000 + bytes / 150));
@@ -223,7 +223,7 @@ export async function uploadPicked<M extends { trim?: { start: number; end: numb
     return { path, meta };
   } catch (e) {
     reportError(e);
-    const msg = e instanceof Error && e.message === 'timeout' ? t('الإنترنت بطيء، جرّب كمان مرة.') : t('ما زبط رفع الملف، تأكد من الإنترنت وجرّب كمان مرة.');
+    const msg = e instanceof Error && e.message === 'timeout' ? t('الاتصال بالإنترنت بطيء، حاول مرة أخرى.') : t('تعذّر رفع الملف، تأكد من اتصالك بالإنترنت وحاول مرة أخرى.');
     throw new UserError(msg);
   }
 }
@@ -231,7 +231,7 @@ export async function uploadPicked<M extends { trim?: { start: number; end: numb
 /** A file straight from disk to storage through a one-time upload address (phones only). */
 async function streamUp(bucket: string, path: string, uri: string, mime: string) {
   const size = new File(uri).size ?? 0;
-  if (size > 50 * 1048576) throw new UserError(t('الفيديو كبير كثير. قصّره أو اختار جزء أقصر.'));
+  if (size > 50 * 1048576) throw new UserError(t('الفيديو كبير جداً. قصّره أو اختر جزءاً أقصر.'));
   const { data, error } = await supabase.storage.from(bucket).createSignedUploadUrl(path);
   if (error || !data) throw error ?? new Error('no upload address');
   const ms = Math.max(90_000, Math.min(600_000, 30_000 + size / 150));

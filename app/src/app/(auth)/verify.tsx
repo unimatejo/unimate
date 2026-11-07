@@ -26,7 +26,7 @@ export default function Verify() {
     let e: unknown = null;
     try { ({ error: e } = await verifyEmailCode(email, c)); } catch (x) { e = x; } finally { setBusy(false); }
     if (e) {
-      setError(t('الرمز غلط أو انتهى. تأكد منه وجرّب مرة ثانية.'));
+      setError(t('الرمز غير صحيح أو انتهت صلاحيته. تحقق منه وحاول مرة أخرى.'));
       boxes.current?.shake();
       return;
     }
@@ -41,20 +41,20 @@ export default function Verify() {
           <View style={{ width: 64, height: 64, borderRadius: 22, backgroundColor: C.primarySoft, alignItems: 'center', justifyContent: 'center' }}>
             <MailCheck size={30} color={C.primary} />
           </View>
-          <T v="h1">{t('افتح إيميلك')}</T>
-          <T v="body" color={C.muted}>{t('بعتنا رسالة على')} {`\u2066${email}\u2069`}{uni ? ` (${uni})` : ''}{t('. اضغط الرابط اللي فيها من هالتلفون وبتدخل علطول، أو اكتب الرمز هون إذا وصلك رمز.')}</T>
+          <T v="h1">{t('افتح بريدك الإلكتروني')}</T>
+          <T v="body" color={C.muted}>{t('راسلنا على')} {`\u2066${email}\u2069`}{uni ? ` (${uni})` : ''}{t('. اضغط على الرابط الموجود فيها من هذا الهاتف لتسجيل الدخول مباشرة، أو اكتب الرمز هنا إذا وصلك رمز.')}</T>
         </Animated.View>
 
         <CodeBoxes ref={boxes} value={code} onChange={setCode} onComplete={(c) => { if (!busy) verify(c); }} />
         {error && <T v="small" color={C.danger}>{error}</T>}
         <Button title={t('تأكيد')} loading={busy} disabled={code.length < 6} onPress={() => verify()} />
-        <Button kind="ghost" title={wait > 0 ? t('ابعت مرة ثانية بعد {0} ثانية', [wait]) : t('ما وصلني، ابعت مرة ثانية')} disabled={wait > 0}
+        <Button kind="ghost" title={wait > 0 ? t('أعد الإرسال بعد {0} ثانية', [wait]) : t('لم يصلني الرمز، أعد الإرسال')} disabled={wait > 0}
           onPress={async () => {
             setWait(60); setError(null);
             try {
               const { error: e } = await sendEmailCode(email);
-              if (e) { setWait(0); setError(/rate|limit/i.test(e.message) ? t('وصلنا الحد المسموح من الإيميلات هلأ. جرّب بعد شوي.') : t('ما قدرنا نبعث الرسالة. تأكد من الإنترنت وجرّب مرة ثانية.')); }
-            } catch { setWait(0); setError(t('ما قدرنا نبعث الرسالة. تأكد من الإنترنت وجرّب مرة ثانية.')); }
+              if (e) { setWait(0); setError(/rate|limit/i.test(e.message) ? t('وصلنا إلى الحد المسموح من رسائل البريد الإلكتروني حاليًا. حاول بعد قليل.') : t('تعذّر إرسال الرسالة. تأكد من اتصالك بالإنترنت وحاول مرة أخرى.')); }
+            } catch { setWait(0); setError(t('تعذّر إرسال الرسالة. تأكد من اتصالك بالإنترنت وحاول مرة أخرى.')); }
           }} style={{ minHeight: 44 }} />
       </KeyboardAvoidingView>
     </Screen>

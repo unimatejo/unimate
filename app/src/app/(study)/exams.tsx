@@ -29,7 +29,7 @@ type Mate = { user_id: string; full_name: string; username: string | null; avata
 
 const KIND = EVENT_KIND;
 const isExam = (k: string) => k.startsWith('exam') || k === 'quiz';
-const PLACES = [t('المكتبة'), t('الكافتيريا'), t('قاعة دراسة'), t('أونلاين'), t('البيت')];
+const PLACES = [t('المكتبة'), t('الكافتيريا'), t('قاعة دراسة'), t('عبر الإنترنت'), t('المنزل')];
 const DAY = 86400000;
 const startOfDay = (d: Date) => { const x = new Date(d); x.setHours(0, 0, 0, 0); return x; };
 /** Sunday-based week, like the timetable */
@@ -42,7 +42,7 @@ function urgency(d: number): [string, string] {
   if (d <= 7) return [C.primarySoft, C.primary];
   return [C.soft, C.ink2];
 }
-const leftLabel = (d: number) => d <= 0 ? t('اليوم') : d === 1 ? t('بكرة') : t('بعد {0} يوم', [d]);
+const leftLabel = (d: number) => d <= 0 ? t('اليوم') : d === 1 ? t('غداً') : t('بعد {0} يوم', [d]);
 
 /** Exam mode: what's coming, how long is left, and who from my section is studying right now. */
 export default function Exams() {
@@ -100,7 +100,7 @@ export default function Exams() {
     const out: { label: string; items: Ev[] }[] = [];
     for (const e of upcoming) {
       const w = weekOf(new Date(e.starts_at));
-      const label = w === thisW ? t('هالأسبوع') : w === nextW ? t('الأسبوع الجاي')
+      const label = w === thisW ? t('هذا الأسبوع') : w === nextW ? t('الأسبوع القادم')
         : t('أسبوع {0}', [new Date(w).toLocaleDateString(LOCALE, { day: 'numeric', month: 'long' })]);
       const g = out[out.length - 1];
       if (g && g.label === label) g.items.push(e); else out.push({ label, items: [e] });
@@ -125,7 +125,7 @@ export default function Exams() {
     const until = new Date(Math.min(Date.now() + hours * 3600_000, Date.now() + 6 * 3600_000 - 60_000)).toISOString();
     const { error } = await supabase.from('studying_now').upsert({ section_id: sectionId, place: place ? place.slice(0, 60) : null, until }, { onConflict: 'user_id' });
     setBusy(false);
-    if (error) { Alert.alert(t('ما زبط'), t('تأكد من الإنترنت وجرّب كمان مرة.')); return; }
+    if (error) { Alert.alert(t('تعذّر ذلك'), t('تحقق من اتصالك بالإنترنت وحاول مرة أخرى.')); return; }
     setMine({ section_id: sectionId, place, until }); setPicking(null);
   }
   async function stopStudying() {
@@ -133,12 +133,12 @@ export default function Exams() {
     setBusy(true);
     const { error } = await supabase.from('studying_now').delete().eq('user_id', profile.id);
     setBusy(false);
-    if (error) { Alert.alert(t('ما زبط'), t('تأكد من الإنترنت وجرّب كمان مرة.')); return; }
+    if (error) { Alert.alert(t('تعذّر ذلك'), t('تحقق من اتصالك بالإنترنت وحاول مرة أخرى.')); return; }
     setMine(null);
   }
   async function message(id: string) {
     const { data, error } = await supabase.rpc('start_direct', { target: id, context: t('دراسة للامتحان') });
-    if (error) { Alert.alert(t('ما بتقدر تراسله'), error.message.includes('not accepting') ? t('هاد الطالب مسكّر الرسائل.') : t('جرّب بعدين.')); return; }
+    if (error) { Alert.alert(t('لا يمكنك مراسلته'), error.message.includes('not accepting') ? t('أغلق هذا الطالب استقبال الرسائل.') : t('حاول لاحقًا.')); return; }
     router.push({ pathname: '/messages/[id]', params: { id: data as string } });
   }
 
@@ -146,15 +146,15 @@ export default function Exams() {
 
   return (
     <Screen>
-      <Header title={t('امتحاناتي')} subtitle={t('العد التنازلي ومين عم يدرس معك')}
-        right={<IconButton label={t('أضف امتحان أو موعد')} onPress={() => router.push('/event/new')}><CalendarPlus size={21} color={C.ink} /></IconButton>} />
+      <Header title={t('امتحاناتي')} subtitle={t('العد التنازلي ومن يدرس معك')}
+        right={<IconButton label={t('أضف امتحاناً أو موعداً')} onPress={() => router.push('/event/new')}><CalendarPlus size={21} color={C.ink} /></IconButton>} />
       <ScrollView contentContainerStyle={{ paddingHorizontal: 18, paddingBottom: 120, gap: 16 }} refreshControl={<PullRefresh onRefresh={load} />}>
         <SectionAsks onChange={load} />
         <MoodleImport onImported={load} />
         {events === null ? <ListSkeleton n={4} /> : !next ? (
-          <Empty icon={<GraduationCap size={28} color={C.primary} />} title={t('ما في امتحانات قريبة')}
-            body={t('ضيف امتحاناتك ومواعيد التسليم، وبنذكّرك قبلها بيوم وقبلها بساعة. ولما كم واحد من شعبتك يضيفوا نفس الموعد بيصير عند الكل.')}
-            action={<Button title={t('أضف امتحان')} icon={<CalendarPlus size={18} color={C.white} />} onPress={() => router.push('/event/new')} style={{ paddingHorizontal: 22, marginTop: 8 }} />} />
+          <Empty icon={<GraduationCap size={28} color={C.primary} />} title={t('لا توجد امتحانات قريبة')}
+            body={t('أضف امتحاناتك ومواعيد التسليم، وسنذكّرك قبلها بيوم وقبلها بساعة. وعندما يضيف عدد من زملائك في الشعبة الموعد نفسه، يصبح لدى الجميع.')}
+            action={<Button title={t('أضف امتحاناً')} icon={<CalendarPlus size={18} color={C.white} />} onPress={() => router.push('/event/new')} style={{ paddingHorizontal: 22, marginTop: 8 }} />} />
         ) : (
           <>
             <Hero e={next} now={now} onPress={() => open(next)} />
@@ -171,8 +171,8 @@ export default function Exams() {
         {courses.length > 0 && (
           <View style={{ gap: 10 }}>
             <View style={{ gap: 2 }}>
-              <T v="h3">{t('عم بدرس هلأ')}</T>
-              <T v="tiny" color={C.muted}>{t('خلّي زملاءك بشعبتك يعرفوا إنك عم تدرس، ويمكن تدرسوا سوا. بيطفى لحاله.')}</T>
+              <T v="h3">{t('أدرس الآن')}</T>
+              <T v="tiny" color={C.muted}>{t('دع زملاءك في شعبتك يعرفون أنك تدرس الآن، وربما تدرسون معًا. يتوقف تلقائيًا.')}</T>
             </View>
             {courses.map((c) => {
               const on = mine?.section_id === c.id;
@@ -188,21 +188,21 @@ export default function Exams() {
                       </T>
                     </View>
                     {on ? (
-                      <Tap onPress={stopStudying} disabled={busy} accessibilityLabel={t('وقّف')}
+                      <Tap onPress={stopStudying} disabled={busy} accessibilityLabel={t('إيقاف')}
                         style={{ flexDirection: 'row', alignItems: 'center', gap: 6, height: 36, paddingHorizontal: 12, borderRadius: 12, backgroundColor: C.greenSoft }}>
-                        <Square size={13} color={C.greenInk} fill={C.greenInk} /><T v="tiny" color={C.greenInk}>{t('وقّف')}</T>
+                        <Square size={13} color={C.greenInk} fill={C.greenInk} /><T v="tiny" color={C.greenInk}>{t('إيقاف')}</T>
                       </Tap>
                     ) : (
-                      <Tap onPress={() => { setPicking(picking === c.id ? null : c.id); setPlace(null); setHours(2); }} accessibilityLabel={t('عم بدرس هلأ')}
+                      <Tap onPress={() => { setPicking(picking === c.id ? null : c.id); setPlace(null); setHours(2); }} accessibilityLabel={t('أدرس الآن')}
                         style={{ flexDirection: 'row', alignItems: 'center', gap: 6, height: 36, paddingHorizontal: 12, borderRadius: 12, backgroundColor: C.primarySoft }}>
-                        <Timer size={15} color={C.primary} /><T v="tiny" color={C.primary}>{t('بدرس هلأ')}</T>
+                        <Timer size={15} color={C.primary} /><T v="tiny" color={C.primary}>{t('أدرس الآن')}</T>
                       </Tap>
                     )}
                   </Row>
 
                   {on && mine && (
                     <T v="tiny" color={C.greenInk}>
-                      {t('شغّال لحد {0}', [new Date(mine.until).toLocaleTimeString(LOCALE, { hour: 'numeric', minute: '2-digit' })])}{mine.place ? ` · ${mine.place}` : ''}
+                      {t('مفعّل حتى {0}', [new Date(mine.until).toLocaleTimeString(LOCALE, { hour: 'numeric', minute: '2-digit' })])}{mine.place ? ` · ${mine.place}` : ''}
                     </T>
                   )}
 
@@ -210,15 +210,15 @@ export default function Exams() {
                     <Animated.View entering={FadeIn.duration(180)} style={{ gap: 10 }}>
                       <T v="tiny" color={C.muted}>{t('لكم ساعة؟')}</T>
                       <Row gap={8}>{[1, 2, 3].map((h) => <Chip key={h} label={h === 1 ? t('ساعة') : h === 2 ? t('ساعتين') : t('3 ساعات')} active={hours === h} onPress={() => setHours(h)} />)}</Row>
-                      <T v="tiny" color={C.muted}>{t('وين؟ (اختياري)')}</T>
+                      <T v="tiny" color={C.muted}>{t('أين؟ (اختياري)')}</T>
                       <Row gap={8} style={{ flexWrap: 'wrap' }}>{PLACES.map((p) => <Chip key={p} label={p} active={place === p} onPress={() => setPlace(place === p ? null : p)} />)}</Row>
-                      <Button title={mine ? t('انقل الدراسة لهالمادة') : t('يلا، بلّش')} loading={busy} onPress={() => startStudying(c.id)} />
+                      <Button title={mine ? t('انقل الدراسة إلى هذه المادة') : t('هيا، ابدأ')} loading={busy} onPress={() => startStudying(c.id)} />
                     </Animated.View>
                   )}
 
                   {list.length > 0 && (
                     <View style={{ gap: 8 }}>
-                      <T v="tiny" color={C.muted}>{list.length === 1 ? t('زميل وحد عم يدرس هلأ') : t('{0} من زملائك عم يدرسوا هلأ', [list.length])}</T>
+                      <T v="tiny" color={C.muted}>{list.length === 1 ? t('زميل واحد يدرس الآن') : t('{0} من زملائك يدرسون الآن', [list.length])}</T>
                       {list.slice(0, 6).map((m) => (
                         <Row key={m.user_id} gap={10}>
                           <Tap haptic={false} scale={0.97} onPress={() => router.push({ pathname: '/user/[id]', params: { id: m.user_id } })} style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 10 }}>
@@ -226,7 +226,7 @@ export default function Exams() {
                             <View style={{ flex: 1 }}>
                               <T v="small" numberOfLines={1}>{m.full_name}</T>
                               <T v="tiny" color={C.muted} numberOfLines={1}>
-                                {[m.place, t('لحد {0}', [new Date(m.until).toLocaleTimeString(LOCALE, { hour: 'numeric', minute: '2-digit' })])].filter(Boolean).join(' · ')}
+                                {[m.place, t('حتى {0}', [new Date(m.until).toLocaleTimeString(LOCALE, { hour: 'numeric', minute: '2-digit' })])].filter(Boolean).join(' · ')}
                               </T>
                             </View>
                           </Tap>
@@ -247,7 +247,7 @@ export default function Exams() {
         {past.length > 0 && (
           <View style={{ gap: 8 }}>
             <Tap haptic={false} onPress={() => setPastOpen(!pastOpen)} style={{ flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 40 }}>
-              <T v="h3" style={{ flex: 1 }}>{t('خلصت ({0})', [past.length])}</T>
+              <T v="h3" style={{ flex: 1 }}>{t('المنتهية ({0})', [past.length])}</T>
               <ChevronDown size={18} color={C.muted} style={{ transform: [{ rotate: pastOpen ? '180deg' : '0deg' }] }} />
             </Tap>
             {pastOpen && past.map((e) => <Row1 key={e.id} e={e} now={now} onPress={() => open(e)} past />)}
@@ -274,11 +274,11 @@ function Hero({ e, now, onPress }: { e: Ev; now: number; onPress: () => void }) 
         <LinearGradient colors={(isExam(e.kind) ? GRAD.violet : GRAD.orange) as unknown as [string, string]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={{ padding: 18, gap: 14 }}>
           <View style={{ position: 'absolute', top: -50, left: -40, width: 170, height: 170, borderRadius: 85, backgroundColor: 'rgba(255,255,255,0.14)' }} />
           <View style={{ gap: 4 }}>
-            <T v="tiny" color={C.white} style={{ opacity: 0.85 }}>{t('الجاي')} · {KIND[e.kind] ?? t('موعد')}</T>
+            <T v="tiny" color={C.white} style={{ opacity: 0.85 }}>{t('القادم')} · {KIND[e.kind] ?? t('موعد')}</T>
             <T v="h2" color={C.white} numberOfLines={2} style={{ fontFamily: F.display, fontSize: 23 }}>{e.course_name ?? e.title}</T>
           </View>
           {started ? (
-            <T v="bold" color={C.white}>{t('بلّش هلأ. بالتوفيق! 🤞')}</T>
+            <T v="bold" color={C.white}>{t('ابدأ الآن. بالتوفيق! 🤞')}</T>
           ) : (
             <Row gap={8}>{unit(d, d === 1 ? t('يوم') : t('أيام'))}{unit(h, t('ساعة'))}{unit(m, t('دقيقة'))}</Row>
           )}

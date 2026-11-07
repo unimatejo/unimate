@@ -114,13 +114,13 @@ export default function Gpa() {
     setRows((x) => x?.map((r) => (r.id === id ? { ...r, ...p } : r)) ?? null);
     clearTimeout(timers.current[id]);
     timers.current[id] = setTimeout(async () => {
-      const ok = await run(supabase.from('grade_records').update(p).eq('id', id), { msg: t('ما انحفظ التعديل، جرّب كمان مرة.') });
+      const ok = await run(supabase.from('grade_records').update(p).eq('id', id), { msg: t('لم يُحفظ التعديل، حاول مرة أخرى.') });
       if (ok.ok) tick();
     }, 450);
   }
 
   function remove(c: Course) {
-    Alert.alert(t('تحذف «{0}»؟', [c.course_name]), t('بتنشال من حساب معدلك.'), [
+    Alert.alert(t('حذف «{0}»؟', [c.course_name]), t('ستُستبعد من حساب معدلك.'), [
       { text: t('لا'), style: 'cancel' },
       { text: t('احذف'), style: 'destructive', onPress: async () => {
         const before = rows;
@@ -137,7 +137,7 @@ export default function Gpa() {
     if (name.length < 1 || name.length > 80) { Alert.alert(t('اكتب اسم المادة')); return; }
     const r = await run(supabase.from('grade_records').insert({ term_label: term, course_name: name, credit_hours: adding.hours, position: all.length })
       .select('id, term_label, course_name, course_code, credit_hours, grade, target_grade, section_id, position').single(),
-      { msg: t('ما انضافت المادة، جرّب كمان مرة.') });
+      { msg: t('لم تُضف المادة، حاول مرة أخرى.') });
     if (r.ok && r.data) { setRows((x) => [...(x ?? []), r.data as unknown as Course]); setAdding(null); tick(); }
   }
 
@@ -146,27 +146,27 @@ export default function Gpa() {
     setImporting(true);
     try {
       const { data, error } = await supabase.from('enrollments').select('section:sections(id, course:courses(name_ar, code, credit_hours))').eq('user_id', profile.id);
-      if (error) { Alert.alert(t('ما قدرنا نجيب موادك'), t('تأكد من الإنترنت وجرّب كمان مرة.')); return; }
+      if (error) { Alert.alert(t('تعذّر جلب موادك'), t('تحقق من اتصالك بالإنترنت وحاول مرة أخرى.')); return; }
       const have = new Set(all.map((r) => r.section_id).filter(Boolean));
        
       const fresh = ((data ?? []) as any[]).map((e) => e.section).filter((s) => s && !have.has(s.id)).map((s, i) => ({
         term_label: term, course_name: String(s.course?.name_ar ?? t('مادة')).slice(0, 80), course_code: s.course?.code ? String(s.course.code).slice(0, 20) : null,
         credit_hours: Math.max(0, Math.min(12, Number(s.course?.credit_hours) || 3)), section_id: s.id, position: all.length + i,
       }));
-      if (!fresh.length) { Alert.alert(t('موادك موجودة'), t('كل مواد جدولك هالفصل مضافة.')); return; }
+      if (!fresh.length) { Alert.alert(t('موادك موجودة'), t('كل مواد جدولك لهذا الفصل مضافة.')); return; }
       const r = await run(supabase.from('grade_records').insert(fresh).select('id, term_label, course_name, course_code, credit_hours, grade, target_grade, section_id, position'),
-        { msg: t('ما انضافت المواد، جرّب كمان مرة.') });
+        { msg: t('لم تُضف المواد، حاول مرة أخرى.') });
       if (r.ok && r.data) { setRows((x) => [...(x ?? []), ...(r.data as Course[])]); Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {}); }
     } finally { setImporting(false); }
   }
 
   async function saveBase() {
     const h = Math.round(Number(baseText.hours) || 0), g = Number(baseText.gpa.replace(',', '.')) || 0;
-    if (h < 0 || h > 300) { Alert.alert(t('عدد الساعات من 0 لـ 300')); return; }
-    if (g < 0 || g > maxGpa) { Alert.alert(t('المعدل من 0 لـ {0}', [maxGpa])); return; }
+    if (h < 0 || h > 300) { Alert.alert(t('عدد الساعات من 0 إلى 300')); return; }
+    if (g < 0 || g > maxGpa) { Alert.alert(t('المعدل من 0 إلى {0}', [maxGpa])); return; }
     if (h > 0 && g === 0) { Alert.alert(t('اكتب معدلك التراكمي')); return; }
     const next = { hours: h, gpa: round2(g) };
-    const r = await run(supabase.from('gpa_base').upsert(next, { onConflict: 'user_id' }), { msg: t('ما انحفظ، جرّب كمان مرة.') });
+    const r = await run(supabase.from('gpa_base').upsert(next, { onConflict: 'user_id' }), { msg: t('لم يُحفظ، حاول مرة أخرى.') });
     if (r.ok) { setBase(next); tick(); }
   }
 
@@ -175,15 +175,15 @@ export default function Gpa() {
   const st = standing ? STANDING_LABEL[standing] : null;
   return (
     <Screen>
-      <Header title={t('معدلي')} subtitle={t('بيضل إلك بس، ما حدا بيشوفه')} />
+      <Header title={t('معدلي')} subtitle={t('يبقى لك وحدك، ولا يراه أحد')} />
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
         <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ padding: 18, paddingTop: 4, gap: 14, paddingBottom: 120 }}>
           {/* the honor board: official GPAs from the university */}
-          {featureOn(content, 'honor') && <Tap onPress={() => router.push('/honor')} scale={0.98} accessibilityRole="button" accessibilityLabel={t('شوف ترتيبك بين المتفوقين')}
+          {featureOn(content, 'honor') && <Tap onPress={() => router.push('/honor')} scale={0.98} accessibilityRole="button" accessibilityLabel={t('اعرف ترتيبك بين المتفوقين')}
             style={{ flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: C.card, borderRadius: 22, padding: 12, borderWidth: 1, borderColor: '#F5A90055' }}>
             <Image source={require('../../../assets/emoji3d/trophy_3d.png')} style={{ width: 40, height: 40 }} contentFit="contain" />
             <View style={{ flex: 1 }}>
-              <T v="bodyMd">{t('شوف ترتيبك بين المتفوقين')}</T>
+              <T v="bodyMd">{t('اعرف ترتيبك بين المتفوقين')}</T>
               <T v="tiny" color={C.muted}>{t('ترتيب المعدلات الرسمي على تخصصك وكليتك والجامعة')}</T>
             </View>
             <ChevronLeft size={18} color={C.muted} style={flip} />
@@ -199,7 +199,7 @@ export default function Gpa() {
                     {real.gpa == null ? '—' : shown.toFixed(2)}
                   </T>
                   <T v="small" color={C.white} style={{ opacity: 0.85 }}>
-                    {real.hours ? t('من {0} · {1} ساعة معتمدة', [maxGpa.toFixed(2), real.hours]) : t('ضيف علاماتك عشان نحسبلك')}
+                    {real.hours ? t('من {0} · {1} ساعة معتمدة', [maxGpa.toFixed(2), real.hours]) : t('أضف علاماتك لنحسب لك')}
                   </T>
                 </View>
                 <GlyphTile icon={GraduationCap} colors={['rgba(255,255,255,0.32)', 'rgba(255,255,255,0.14)']} size={58} />
@@ -208,7 +208,7 @@ export default function Gpa() {
                 {st && <View style={{ backgroundColor: 'rgba(255,255,255,0.26)', borderRadius: 999, paddingHorizontal: 12, paddingVertical: 5 }}><T v="bold" color={C.white} style={{ fontSize: 13 }}>{st[0]}</T></View>}
                 {plan.gpa != null && plannedHours > 0 && plan.gpa !== real.gpa && (
                   <View style={{ backgroundColor: 'rgba(14,20,48,0.22)', borderRadius: 999, paddingHorizontal: 12, paddingVertical: 5 }}>
-                    <T v="small" color={C.white}>{t('إذا جبت أهدافك: {0}', [plan.gpa.toFixed(2)])}</T>
+                    <T v="small" color={C.white}>{t('إذا حققت أهدافك: {0}', [plan.gpa.toFixed(2)])}</T>
                   </View>
                 )}
               </Row>
@@ -218,7 +218,7 @@ export default function Gpa() {
           {/* before the app */}
           <Card style={{ gap: 10 }}>
             <T v="h3">{t('معدلي قبل يونيميت')}</T>
-            <T v="tiny" color={C.muted}>{t('اكتب معدلك التراكمي وساعاتك من كشف العلامات، وما بتحتاج تضيف المواد القديمة وحدة وحدة.')}</T>
+            <T v="tiny" color={C.muted}>{t('اكتب معدلك التراكمي وساعاتك من كشف العلامات، ولا حاجة لإضافة المواد السابقة واحدة تلو الأخرى.')}</T>
             <Row gap={10}>
               <View style={{ flex: 1 }}>
                 <Field label={t('الساعات المقطوعة')} value={baseText.hours} onChangeText={(v) => setBaseText((b) => ({ ...b, hours: v.replace(/[^0-9]/g, '').slice(0, 3) }))}
@@ -243,7 +243,7 @@ export default function Gpa() {
                 <Row gap={10} style={{ marginBottom: 4 }}>
                   <View style={{ flex: 1 }}>
                     <T v="h3" numberOfLines={1}>{tl}</T>
-                    <T v="tiny" color={C.muted}>{list.length ? t('{0} مواد · {1} ساعة محسوبة', [list.length, hrs]) : t('ما في مواد لهلأ')}</T>
+                    <T v="tiny" color={C.muted}>{list.length ? t('{0} مواد · {1} ساعة محسوبة', [list.length, hrs]) : t('لا توجد مواد حتى الآن')}</T>
                   </View>
                   <View style={{ alignItems: 'center', minWidth: 64, backgroundColor: C.soft, borderRadius: 14, paddingVertical: 6, paddingHorizontal: 10 }}>
                     <T style={{ fontFamily: F.display, fontSize: 20, lineHeight: 26, writingDirection: 'ltr' }}>{g != null ? g.toFixed(2) : gw != null ? `~${gw.toFixed(2)}` : '—'}</T>
@@ -265,13 +265,13 @@ export default function Gpa() {
                           ))}
                         </Row>
                         <Row gap={8}>
-                          <Button title={t('ضيف')} onPress={addCourse} style={{ flex: 1 }} />
+                          <Button title={t('أضف')} onPress={addCourse} style={{ flex: 1 }} />
                           <Button kind="soft" title={t('إلغاء')} onPress={() => setAdding(null)} style={{ flex: 1 }} />
                         </Row>
                       </View>
                     ) : (
                       <Row gap={8}>
-                        <Button kind="soft" title={t('جيب مواد هالفصل')} icon={<Download size={17} color={C.primary} />} loading={importing} onPress={importTerm} style={{ flex: 1 }} />
+                        <Button kind="soft" title={t('استيراد مواد هذا الفصل')} icon={<Download size={17} color={C.primary} />} loading={importing} onPress={importTerm} style={{ flex: 1 }} />
                         <Button kind="soft" title={t('مادة')} icon={<Plus size={17} color={C.primary} />} onPress={() => setAdding({ name: '', hours: 3 })} style={{ paddingHorizontal: 18 }} />
                       </Row>
                     )}
@@ -286,13 +286,13 @@ export default function Gpa() {
             <Row gap={10}>
               <GlyphTile icon={Target} colors={GRAD.violet} size={42} />
               <View style={{ flex: 1 }}>
-                <T v="h3">{t('شو لازم أجيب؟')}</T>
-                <T v="tiny" color={C.muted}>{t('اكتب المعدل اللي بدك توصله، وبنحسبلك على مواد هالفصل اللي لسا بتدرسها.')}</T>
+                <T v="h3">{t('ماذا يجب أن أحضر؟')}</T>
+                <T v="tiny" color={C.muted}>{t('اكتب المعدل الذي تريد الوصول إليه، وسنحسبه لك بناءً على مواد هذا الفصل التي ما زلت تدرسها.')}</T>
               </View>
             </Row>
             <Field value={target} onChangeText={(v) => setTarget(v.replace(/[^0-9.,]/g, '').slice(0, 4))} keyboardType="decimal-pad" placeholder={t('مثلاً 3.00')}
               style={{ textAlign: 'center', writingDirection: 'ltr', fontFamily: F.display, fontSize: 22 }} />
-            {target.trim() !== '' && !goalOk && <T v="small" color={C.red}>{t('المعدل من 0 لـ {0}', [maxGpa])}</T>}
+            {target.trim() !== '' && !goalOk && <T v="small" color={C.red}>{t('المعدل من 0 إلى {0}', [maxGpa])}</T>}
             {need != null && (() => {
               const top = Math.max(...scale.map((s) => s.p));
               const box = (bg: string, fg: string, title: string, body: string) => (
@@ -300,16 +300,16 @@ export default function Gpa() {
                   <T v="bold" color={fg}>{title}</T><T v="small" color={fg}>{body}</T>
                 </Animated.View>
               );
-              if (!plannedHours) return box(C.soft, C.ink2, t('ما في مواد لسا بتدرسها'), t('ضيف مواد هالفصل («لسا») عشان نحسب.'));
-              if (need <= 0 || (real.gpa != null && need <= Math.min(...scale.map((s) => s.p)))) return box(C.greenSoft, C.greenInk, t('مضمون ✓'), t('حتى لو جبت أقل علامة بتوصل {0}.', [goal.toFixed(2)]));
-              if (need > top + 1e-9) return box(C.redSoft, C.red, t('مستحيل هالفصل'), t('بتحتاج معدل {0} على {1} ساعة، وهاد فوق أعلى علامة. ركّز على الفصل الجاي كمان.', [need.toFixed(2), plannedHours]));
-              return box(C.violetSoft, C.violetInk, t('بتحتاج معدل {0} بمواد هالفصل', [round2(need).toFixed(2)]), t('يعني تقريباً {0} أو أعلى بكل مادة ({1} ساعة).', [gradeFor(need, scale) ?? '', plannedHours]));
+              if (!plannedHours) return box(C.soft, C.ink2, t('لا توجد مواد تدرسها حاليًا'), t('أضف مواد هذا الفصل التي لم تُرصد علاماتها بعد لنتمكن من الحساب.'));
+              if (need <= 0 || (real.gpa != null && need <= Math.min(...scale.map((s) => s.p)))) return box(C.greenSoft, C.greenInk, t('مضمون ✓'), t('حتى لو حصلت على أدنى علامة، ستصل إلى {0}.', [goal.toFixed(2)]));
+              if (need > top + 1e-9) return box(C.redSoft, C.red, t('غير ممكن هذا الفصل'), t('تحتاج إلى معدل {0} في {1} ساعة، وهذا أعلى من العلامة القصوى. ركّز على الفصل القادم أيضاً.', [need.toFixed(2), plannedHours]));
+              return box(C.violetSoft, C.violetInk, t('تحتاج إلى معدل {0} في مواد هذا الفصل', [round2(need).toFixed(2)]), t('أي تقريبًا {0} أو أعلى في كل مادة ({1} ساعة).', [gradeFor(need, scale) ?? '', plannedHours]));
             })()}
           </Card>
 
           {/* the scale */}
           <Tap haptic={false} onPress={() => setShowScale((s) => !s)} style={{ flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'center', paddingVertical: 6 }}>
-            <T v="tiny" color={C.muted}>{t('السلم حسب إعدادات جامعتك')}</T>
+            <T v="tiny" color={C.muted}>{t('السلم وفق إعدادات جامعتك')}</T>
             <ChevronDown size={14} color={C.muted} style={{ transform: [{ rotate: showScale ? '180deg' : '0deg' }] }} />
           </Tap>
           {showScale && (
@@ -320,12 +320,12 @@ export default function Gpa() {
                   <T v="tiny" color={C.muted} style={{ writingDirection: 'ltr' }}>{s.p.toFixed(2)}</T>
                 </View>
               ))}
-              <T v="tiny" color={C.faint} style={{ width: '100%', textAlign: 'center', marginTop: 4 }}>{t('P = ناجح، ما بتدخل بالمعدل. تأكد من دليل جامعتك إذا في اختلاف.')}</T>
+              <T v="tiny" color={C.faint} style={{ width: '100%', textAlign: 'center', marginTop: 4 }}>{t('P = ناجح، ولا تُحتسب في المعدل. راجع دليل جامعتك في حال وجود اختلاف.')}</T>
             </Animated.View>
           )}
 
           {!all.length && !base.hours && (
-            <Empty icon={<GraduationCap size={28} color={C.primary} />} title={t('ابلش بمعدلك')} body={t('جيب مواد هالفصل من جدولك بكبسة، أو اكتب معدلك القديم فوق.')} />
+            <Empty icon={<GraduationCap size={28} color={C.primary} />} title={t('ابدأ بمعدلك')} body={t('استورد مواد هذا الفصل من جدولك بضغطة واحدة، أو اكتب معدلك السابق في الأعلى.')} />
           )}
         </ScrollView>
       </KeyboardAvoidingView>

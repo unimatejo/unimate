@@ -18,10 +18,12 @@ import { run } from '@/lib/run';
 import { readCache, writeCache } from '@/lib/cache';
 
 // Server-made notification texts are Arabic; show them in English when the app is in English.
+// Each pattern takes the current wording and the older one, so notifications from before 0138 still translate.
 const NOTE_EN: [RegExp, string][] = [
-  [/^حدا /, 'Someone '], [/ عجبه منشورك$/, ' liked your post'], [/ علّق على منشورك$/, ' commented on your post'],
-  [/ صار يتابعك$/, ' started following you'], [/ قبل طلب متابعتك$/, ' accepted your follow request'],
-  [/^لقينا تبديل مطابق$/, 'We found a matching swap'], [/^في حدا بدّه نفس التبديل بالعكس$/, 'Someone wants the same swap the other way'],
+  [/^(?:أحدهم|حدا) /, 'Someone '], [/ (?:أُعجب بمنشورك|عجبه منشورك)$/, ' liked your post'], [/ علّق على منشورك$/, ' commented on your post'],
+  [/ (?:بدأ بمتابعتك|صار يتابعك)$/, ' started following you'], [/ قبل طلب متابعتك$/, ' accepted your follow request'],
+  [/^(?:وجدنا تبديلًا مطابقًا|لقينا تبديل مطابق)$/, 'We found a matching swap'],
+  [/^(?:هناك من يريد التبديل نفسه بالعكس|في حدا بدّه نفس التبديل بالعكس)$/, 'Someone wants the same swap the other way'],
 ];
 function localizeNote(s: string) { return isAR ? s : NOTE_EN.reduce((x, [re, en]) => x.replace(re, en), s); }
 
@@ -237,13 +239,13 @@ export default function Notifications() {
                   </View>
                   <View style={{ flex: 1 }}>
                     <T v="bold" style={{ fontSize: 14 }}>{t('طلبات المتابعة')}</T>
-                    <T v="tiny" color={C.muted}>{reqs.length === 1 ? (first?.full_name ?? '') : t('{0} و{1} غيرهم', [first?.full_name ?? '', reqs.length - 1])}</T>
+                    <T v="tiny" color={C.muted}>{reqs.length === 1 ? (first?.full_name ?? '') : t('{0} و{1} آخرون', [first?.full_name ?? '', reqs.length - 1])}</T>
                   </View>
                   <View style={{ width: 9, height: 9, borderRadius: 5, backgroundColor: C.primary }} />
                 </Tap>
                 {showReqs && reqs.map((r) => (
                   <Animated.View key={r.follower_id} entering={FadeIn.duration(250)} style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 14, paddingVertical: 8, borderTopWidth: 1, borderTopColor: C.line }}>
-                    <Tap haptic={false} accessibilityLabel={r.profile?.full_name ?? t('بروفايل')} onPress={() => router.push({ pathname: '/user/[id]', params: { id: r.follower_id } })}><Avatar id={r.follower_id} name={r.profile?.full_name} url={r.profile?.avatar_url} size={42} /></Tap>
+                    <Tap haptic={false} accessibilityLabel={r.profile?.full_name ?? t('الملف الشخصي')} onPress={() => router.push({ pathname: '/user/[id]', params: { id: r.follower_id } })}><Avatar id={r.follower_id} name={r.profile?.full_name} url={r.profile?.avatar_url} size={42} /></Tap>
                     <View style={{ flex: 1 }}>
                       <T v="bold" style={{ fontSize: 14 }} numberOfLines={1}>{r.profile?.full_name}</T>
                       <T v="tiny" color={C.muted} numberOfLines={1}>{nm(r.profile?.major)}</T>
@@ -263,7 +265,7 @@ export default function Notifications() {
         renderSectionHeader={({ section }) => <T v="bold" style={{ fontSize: 15, fontFamily: F.title, paddingHorizontal: 16, paddingTop: 14, paddingBottom: 6 }}>{section.title}</T>}
         renderItem={({ item }) => renderRow(item)}
         ListEmptyComponent={loading ? <ListSkeleton n={7} /> : reqs.length ? undefined : (
-          <Empty icon={<Bell size={28} color={C.primary} />} title={t('ما في إشعارات')} body={t('بنخبرك هون بالمحاضرات والامتحانات والتبديلات والتعليقات.')} />
+          <Empty icon={<Bell size={28} color={C.primary} />} title={t('لا توجد إشعارات')} body={t('سنبلغك هنا بالمحاضرات والامتحانات والتبديلات والتعليقات.')} />
         )}
       />
     </Screen>
