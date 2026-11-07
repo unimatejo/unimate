@@ -1,7 +1,7 @@
 import * as Haptics from 'expo-haptics';
 import { Heart } from 'lucide-react-native';
 import { useEffect, type ReactNode } from 'react';
-import { Modal, Pressable, View, type StyleProp, type ViewStyle } from 'react-native';
+import { Modal, Platform, Pressable, View, type StyleProp, type ViewStyle } from 'react-native';
 import { GestureDetector, GestureHandlerRootView, usePanGesture } from 'react-native-gesture-handler';
 import Animated, { FadeIn, runOnJS, SlideInDown, useAnimatedStyle, useSharedValue, withSequence, withSpring, withTiming, ZoomIn } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -54,6 +54,14 @@ export function HeartBurst({ onDone }: { onDone: () => void }) {
 
 // ---------- bottom sheet you can drag down to close ----------
 /** A modal bottom sheet: tap outside or drag it down to close. */
+/**
+ * Run something that opens another screen after a sheet has closed. An iPhone can't present a new screen while the
+ * previous one is still closing (the new one just never shows), so it waits for the sheet's fade-out there.
+ */
+export function afterSheet(run: () => void) {
+  if (Platform.OS === 'ios') setTimeout(run, 380); else run();
+}
+
 export function SheetModal({ open, onClose, children, style, dim = true }: { open: boolean; onClose: () => void; children: ReactNode; style?: StyleProp<ViewStyle>; dim?: boolean }) {
   const insets = useSafeAreaInsets();
   const y = useSharedValue(0);

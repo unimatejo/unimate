@@ -1,6 +1,7 @@
 import * as Crypto from 'expo-crypto';
 import * as DocumentPicker from 'expo-document-picker';
 import { File } from 'expo-file-system';
+import * as LegacyFS from 'expo-file-system/legacy';
 import { ImageManipulator, SaveFormat } from 'expo-image-manipulator';
 import * as ImagePicker from 'expo-image-picker';
 import { Alert, Linking, Platform } from 'react-native';
@@ -146,6 +147,11 @@ export async function uploadPicked<M extends { trim?: { start: number; end: numb
   let meta = file.meta ?? null;
   if (small?.trimmed && meta) { const { trim: _t, ...rest } = meta; meta = rest as M; }
   try {
+    // phones send videos straight from the file (no copy of a big video in memory, which can close the app)
+    if (Platform.OS !== 'web' && mime.startsWith('video/')) {
+      await streamUp(bucket, path, (small?.uri ?? file.uri).split('#')[0], mime);
+      return { path, meta };
+    }
     const buf = small?.blob ?? await readBytes(small?.uri ?? file.uri);
     const size0 = (buf as { size?: number; byteLength?: number }).size ?? (buf as { byteLength?: number }).byteLength ?? 0;
     if (mime.startsWith('video/') && size0 > 50 * 1048576) throw new UserError(t('الفيديو كبير كثير. قصّره أو اختار جزء أقصر.'));
@@ -161,6 +167,21 @@ export async function uploadPicked<M extends { trim?: { start: number; end: numb
     const msg = e instanceof Error && e.message === 'timeout' ? t('الإنترنت بطيء، جرّب كمان مرة.') : t('ما زبط رفع الملف، تأكد من الإنترنت وجرّب كمان مرة.');
     throw new UserError(msg);
   }
+}
+
+/** A file straight from disk to storage through a one-time upload address (phones only). */
+async function streamUp(bucket: string, path: string, uri: string, mime: string) {
+  const size = new File(uri).size ?? 0;
+  if (size > 50 * 1048576) throw new UserError(t('الفيديو كبير كثير. قصّره أو اختار جزء أقصر.'));
+  const { data, error } = await supabase.storage.from(bucket).createSignedUploadUrl(path);
+  if (error || !data) throw error ?? new Error('no upload address');
+  const ms = Math.max(90_000, Math.min(600_000, 30_000 + size / 150));
+  const timeout = new Promise<never>((_, rej) => setTimeout(() => rej(new Error('timeout')), ms));
+  const res = await Promise.race([LegacyFS.uploadAsync(data.signedUrl, uri, {
+    httpMethod: 'PUT', uploadType: LegacyFS.FileSystemUploadType.BINARY_CONTENT,
+    headers: { 'content-type': mime, 'cache-control': 'max-age=3600', 'x-upsert': 'false', apikey: process.env.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY ?? '' },
+  }), timeout]);
+  if (res.status < 200 || res.status >= 300) throw new Error(`upload ${res.status}: ${res.body.slice(0, 200)}`);
 }
 
 export function publicUrl(bucket: string, path: string) {

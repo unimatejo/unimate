@@ -73,10 +73,11 @@ export function HighlightEditor({ open, edit, onClose, onSaved }: {
     else setSel([...sel, s.id]);
   }
 
-  /** any photo from the gallery, cropped round, saved in my own folder (readable by whoever sees my profile, 0107) */
+  /** any photo from the gallery, saved in my own folder (readable by whoever sees my profile, 0107). The phone's own
+   *  square crop: this editor is itself a sheet, and an iPhone can't put our crop screen on top of it. */
   async function coverFromGallery() {
     if (!profile) return;
-    const m = await pickMedia({ crop: 'avatar' });
+    const m = await pickMedia({ square: true, maxWidth: 720 });
     if (!m) return;
     try {
       const { path } = await uploadPicked('stories', profile.id, m);

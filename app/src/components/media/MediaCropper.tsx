@@ -98,6 +98,11 @@ function TrimBar({ duration, maxSec, start, end, onChange, onSeek, onScrub, thum
     onUpdate: (e) => { 'worklet'; b.value = Math.max(Math.min(w, b.value + e.changeX, a.value + maxPx), a.value + minPx); runOnJS(scrub)(b.value); },
     onDeactivate: () => { 'worklet'; runOnJS(commit)(a.value, b.value, a.value); },
   });
+  // like Instagram: drag the kept part itself to slide the same length along the video
+  const slide = usePanGesture({
+    onUpdate: (e) => { 'worklet'; const len = b.value - a.value; const na = Math.min(Math.max(0, a.value + e.changeX), w - len); a.value = na; b.value = na + len; runOnJS(scrub)(na); },
+    onDeactivate: () => { 'worklet'; runOnJS(commit)(a.value, b.value, a.value); },
+  });
   const kept = useAnimatedStyle(() => ({ left: a.value, width: Math.max(0, b.value - a.value) }));
   const ha = useAnimatedStyle(() => ({ left: a.value - 14 }));
   const hb = useAnimatedStyle(() => ({ left: b.value - 14 }));
@@ -105,7 +110,7 @@ function TrimBar({ duration, maxSec, start, end, onChange, onSeek, onScrub, thum
   return (
     <View style={{ gap: 8, paddingHorizontal: 24 }}>
       <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-        <T v="tiny" color={MUTED}>{t('اسحب الأطراف لتقص الفيديو')}</T>
+        <T v="tiny" color={MUTED}>{duration > maxSec + 0.5 ? t('حرّك الإطار واختار أحلى {0} ثانية', [maxSec]) : t('اسحب الأطراف لتقص الفيديو')}</T>
         <T v="tiny" color={INK} style={{ fontFamily: F.bodyBold }}>{t('{0} ث', [secs.toFixed(1)])}</T>
       </View>
       <View onLayout={(e) => setW(e.nativeEvent.layout.width)} style={{ height: 52, justifyContent: 'center', direction: 'ltr' }}>
@@ -113,7 +118,9 @@ function TrimBar({ duration, maxSec, start, end, onChange, onSeek, onScrub, thum
         <View style={{ height: 40, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.12)', overflow: 'hidden', flexDirection: 'row' }}>
           {thumbs.map((th, i) => <Image key={i} source={th as never} style={{ flex: 1, height: 40 }} contentFit="cover" />)}
         </View>
-        <Animated.View pointerEvents="none" style={[{ position: 'absolute', top: 6, height: 40, borderRadius: 12, borderWidth: 3, borderColor: C.primary, backgroundColor: 'rgba(255,122,89,0.18)' }, kept]} />
+        <GestureDetector gesture={slide}>
+          <Animated.View accessibilityLabel={t('الجزء المختار')} style={[{ position: 'absolute', top: 6, height: 40, borderRadius: 12, borderWidth: 3, borderColor: C.primary, backgroundColor: 'rgba(255,122,89,0.18)' }, kept]} />
+        </GestureDetector>
         <GestureDetector gesture={left}>
           <Animated.View accessibilityLabel={t('بداية الفيديو')} style={[{ position: 'absolute', top: 0, width: 28, height: 52, alignItems: 'center', justifyContent: 'center' }, ha]}>
             <View style={{ width: 8, height: 30, borderRadius: 4, backgroundColor: C.primary }} />

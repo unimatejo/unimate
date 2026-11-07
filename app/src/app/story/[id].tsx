@@ -21,6 +21,7 @@ import { optimistic } from '@/lib/run';
 import { toast } from '@/lib/toast';
 import { FramedMedia } from '@/components/media/FramedMedia';
 import { HighlightEditor, type HighlightRef } from '@/components/story/HighlightEditor';
+import { afterSheet } from '@/components/chat/ChatExtras';
 import { StoryMenu, type StoryMenuItem } from '@/components/story/StoryMenu';
 import { saveToDevice, shareLink } from '@/lib/share';
 import type { MediaMeta } from '@/lib/cropper';
@@ -382,7 +383,7 @@ export default function StoryViewer() {
         </View>
       </Modal>
 
-      <StoryMenu open={menu} items={menuItems} onClose={() => { setMenu(false); unfreeze(); }} onPick={(it) => { setMenu(false); it.onPress(); }} />
+      <StoryMenu open={menu} items={menuItems} onClose={() => { setMenu(false); unfreeze(); }} onPick={(it) => { setMenu(false); afterSheet(it.onPress); }} />
       {mine && hl && (
         <HighlightEditor open={editHl} edit={hl} onClose={() => { setEditHl(false); unfreeze(); }}
           onSaved={() => { closed.current = false; setReloadKey((k) => k + 1); setI(0); }} />

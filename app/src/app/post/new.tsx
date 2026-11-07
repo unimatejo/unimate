@@ -10,6 +10,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Avatar, Chip, Row, T, Tap } from '@/components/ui';
 import { FramedMedia } from '@/components/media/FramedMedia';
+import { afterSheet } from '@/components/chat/ChatExtras';
 import { StoryEditor } from '@/components/story/StoryEditor';
 import { StoryOverlays } from '@/components/story/StoryOverlays';
 import type { Overlay } from '@/lib/storyOverlay';
@@ -109,10 +110,16 @@ export default function Create() {
       let m: Picked | null = d;
       if (d.kind === 'video') { const r = await openCropper(d, { mode: 'story', maxSec }); m = r ? { ...r.media, aspect: r.aspect } : null; }
       if (!m) return;
-      setItems([m]); setActive(0); setOverlays([]); setEditing(true);
+      openEditor(m, d.kind === 'video');
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  /** the story editor on this photo / video; after a sheet or the trimmer it waits for that to close (iPhone) */
+  function openEditor(m: Picked, afterScreen: boolean) {
+    setItems([m]); setActive(0); setOverlays([]);
+    if (afterScreen) afterSheet(() => setEditing(true)); else setEditing(true);
+  }
 
   function switchMode(m: Mode) {
     setMode(m); setStep('pick'); setItems([]); setActive(0); setOverlays([]); setAud(0); setPdf(null); setPoll(null); setPostAspect(null);
@@ -144,7 +151,12 @@ export default function Create() {
     try {
       let m = await assetToPicked(a);
       if (seq !== pickSeq.current && !multi) return;
-      if (m.kind === 'video' && (m.duration ?? 0) > 60_500) {
+      // a story video longer than 15 s: the trimmer opens on it straight away (back = the gallery again)
+      if (isStory && m.kind === 'video' && (m.duration ?? 0) > maxSec * 1000 + 500) {
+        const r = await openCropper(m, { mode: 'story', maxSec });
+        if (!r) return;
+        m = { ...r.media, aspect: r.aspect };
+      } else if (m.kind === 'video' && (m.duration ?? 0) > 60_500) {
         const r = await openCropper(m, { mode: 'post', aspect: mode === 'reel' ? 9 / 16 : null, maxSec: 60 });
         if (!r) return;
         m = r.media;
@@ -157,7 +169,7 @@ export default function Create() {
       }
     } catch (e) { Alert.alert(t('ما زبط'), userMessage(e)); }
     finally { if (seq === pickSeq.current) setLoadingId(null); }
-  }, [mode, sel, multi, items, active]);
+  }, [mode, sel, multi, items, active, isStory, maxSec]);
 
   const onFirstAsset = useCallback((a: GalleryAsset | null) => { if (a && !items.length && (mode !== 'reel' || a.mediaType === 'video')) pickAsset(a); }, [items.length, mode, pickAsset]);
 
@@ -183,7 +195,7 @@ export default function Create() {
     let out: Picked | null = m;
     if (m.kind === 'video') { const r = await openCropper(m, { mode: 'story', maxSec }); out = r ? { ...r.media, aspect: r.aspect } : null; }
     if (!out) return;
-    setItems([out]); setActive(0); setOverlays([]); setEditing(true);
+    openEditor(out, m.kind === 'video');
   }
 
   async function addFromGallery() {
@@ -207,8 +219,8 @@ export default function Create() {
         const m = isStory ? await storyPick(false) : await pickMedia({ video: true, videoOnly: mode === 'reel', maxSec, crop: cropMode, aspect: mode === 'reel' ? 9 / 16 : null });
         if (!m) return;
         if (mode === 'reel' && m.kind !== 'video') { Alert.alert(t('الريلز فيديو'), t('اختار فيديو لحد دقيقة.')); return; }
+        if (isStory) { openEditor(m, true); return; }
         setItems([m]); setActive(0);
-        if (isStory) { setOverlays([]); setEditing(true); }
       }
     } catch (e) { Alert.alert(t('ما زبط'), userMessage(e)); }
   }
@@ -223,8 +235,8 @@ export default function Create() {
       const m = isStory ? await storyPick(true) : await pickMedia({ camera: true, video: mode !== 'post', videoOnly: mode === 'reel', maxSec, crop: cropMode, aspect: mode === 'reel' ? 9 / 16 : mode === 'post' ? postAspect : null });
       if (!m) return;
       if (mode === 'post') { if (postAspect == null && m.aspect) setPostAspect(m.aspect); setItems((cur) => [...cur, m].slice(0, 10)); setActive(items.length); return; }
+      if (isStory) { openEditor(m, true); return; }
       setItems([m]); setActive(0);
-      if (isStory) { setOverlays([]); setEditing(true); }
     } catch (e) { Alert.alert(t('ما زبط'), userMessage(e)); }
   }
   function toggleItem(i: number) {
@@ -327,7 +339,8 @@ export default function Create() {
       }
       markFeedStale();
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
-      goBack('/community');
+      // the story editor is a screen of its own: close it, then leave (leaving under an open one can close the app on iPhone)
+      if (editing) { setEditing(false); afterSheet(() => goBack('/community')); } else goBack('/community');
     } catch (e) {
       reportError(e);
       Alert.alert(t('ما انتشر'), userMessage(e));

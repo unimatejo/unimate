@@ -13,6 +13,7 @@ import { T, Tap } from '@/components/ui';
 import { assetToPicked, cameraModule, captureToPicked, latestAsset, mediaLibrary, type GalleryAsset } from '@/lib/nativeMedia';
 import type { Picked } from '@/lib/upload';
 import { C, R } from '@/lib/theme';
+import { afterSheet } from '@/components/chat/ChatExtras';
 import { t } from '@/lib/i18n';
 
 const ACircle = Animated.createAnimatedComponent(Circle);
@@ -122,7 +123,7 @@ export function StoryCamera({ maxSec, onPicked, onClose, onSystemPicker, footer,
   async function pickAsset(a: GalleryAsset) {
     if (pickBusy) return;
     setPickBusy(a.id);
-    try { const m = await assetToPicked(a); setSheet(false); onPicked(m); } finally { setPickBusy(null); }
+    try { const m = await assetToPicked(a); setSheet(false); afterSheet(() => onPicked(m)); } finally { setPickBusy(null); }
   }
   function openGallery() {
     Haptics.selectionAsync().catch(() => {});

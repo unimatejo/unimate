@@ -19,7 +19,7 @@ import { StickerTray, type NewSticker } from '@/components/story/StickerTray';
 import { TextTool, type TextDraft } from '@/components/story/TextTool';
 import { Avatar } from '@/components/ui';
 import { useAuth } from '@/lib/auth';
-import type { MediaMeta } from '@/lib/cropper';
+import { playLength, type MediaMeta } from '@/lib/cropper';
 import { newId, type Overlay, type Stroke } from '@/lib/storyOverlay';
 import { toast } from '@/lib/toast';
 import { F } from '@/lib/theme';
@@ -183,6 +183,8 @@ export function StoryEditor({ media, initial, onCancel, onDone, onShare, sharing
   const [caption, setCaption] = useState(media.meta?.caption ?? '');
   const [flash, setFlash] = useState<{ name: string; k: number } | null>(null);
   const [trim, setTrim] = useState(false);
+  // a story video is 15 s at most: a longer one opens the trimmer instead of failing when it's shared
+  const tooLong = m.kind === 'video' && (playLength(m) ?? 0) > 15;
   // like Instagram: the video's own sound is on, one tap turns it off (saved with the story)
   const [soundOff, setSoundOff] = useState(!!media.meta?.muted);
   const [soundBlocked, setSoundBlocked] = useState(false);
@@ -459,12 +461,12 @@ export function StoryEditor({ media, initial, onCancel, onDone, onShare, sharing
       )}
       {/* share: your story / close friends / go on */}
       <Animated.View style={[{ position: 'absolute', bottom: insets.bottom + 8, left: 12, right: 12, height: 52, flexDirection: 'row', alignItems: 'center', gap: 8 }, uiStyle, busyUI && { display: 'none' }]} pointerEvents={busyUI ? 'none' : 'auto'}>
-        <Pressable onPress={() => { const r = result(); if (onShare) onShare(r.media, r.overlays, 'friends'); else onDone(r.media, r.overlays); }} disabled={sharing} accessibilityLabel={t('شارك بقصتك')}
+        <Pressable onPress={() => { if (tooLong) { setTrim(true); return; } const r = result(); if (onShare) onShare(r.media, r.overlays, 'friends'); else onDone(r.media, r.overlays); }} disabled={sharing} accessibilityLabel={t('شارك بقصتك')}
           style={({ pressed }) => ({ flex: 1, height: 46, borderRadius: 23, backgroundColor: '#262626', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, opacity: pressed ? 0.8 : 1 })}>
           <View style={{ width: 28, height: 28, borderRadius: 14, borderWidth: 2, borderColor: '#FF6B4A', padding: 1.5 }}><Avatar id={profile?.id} name={profile?.full_name} url={profile?.avatar_url} size={21} /></View>
           <Text style={{ fontFamily: F.bodyBold, fontSize: 14, color: '#fff' }}>{t('قصتك')}</Text>
         </Pressable>
-        <Pressable onPress={() => { const r = result(); if (onShare) onShare(r.media, r.overlays, 'close_friends'); else onDone(r.media, r.overlays); }} disabled={sharing} accessibilityLabel={t('شارك مع المقربين')}
+        <Pressable onPress={() => { if (tooLong) { setTrim(true); return; } const r = result(); if (onShare) onShare(r.media, r.overlays, 'close_friends'); else onDone(r.media, r.overlays); }} disabled={sharing} accessibilityLabel={t('شارك مع المقربين')}
           style={({ pressed }) => ({ flex: 1, height: 46, borderRadius: 23, backgroundColor: '#262626', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, opacity: pressed ? 0.8 : 1 })}>
           <View style={{ width: 26, height: 26, borderRadius: 13, backgroundColor: '#34C759', alignItems: 'center', justifyContent: 'center' }}><Star size={14} color="#fff" fill="#fff" /></View>
           <Text style={{ fontFamily: F.bodyBold, fontSize: 14, color: '#fff' }}>{t('المقرّبين')}</Text>

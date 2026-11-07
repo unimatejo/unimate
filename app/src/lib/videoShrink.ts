@@ -1,5 +1,7 @@
+import { File, Paths } from 'expo-file-system';
 import { NativeModules, Platform, TurboModuleRegistry } from 'react-native';
 
+import { allowed, guarded } from './crashMark';
 import { reportError } from './errors';
 import { recordPerf } from './perf';
 
@@ -105,11 +107,22 @@ function nativeCompressor(): typeof import('react-native-compressor') | null {
 
 async function shrinkNative(file: { uri: string; mime: string; duration?: number | null; size?: number | null; width?: number; height?: number }): Promise<Shrunk | null> {
   const c = nativeCompressor();
-  if (!c) return null;
+  if (!c || !allowed('video-compress')) return null;
   const long = Math.max(file.width ?? 0, file.height ?? 0);
   const secs = file.duration ? file.duration / 1000 : 0;
   const bps = secs > 0 && file.size ? (file.size * 8) / secs : Infinity;
   if (long && long <= LONG_SIDE && bps <= KEEP_BPS && file.mime === 'video/mp4') return null;
-  const uri = await c.Video.compress(file.uri, { compressionMethod: 'manual', maxSize: LONG_SIDE, bitrate: VIDEO_BPS, minimumFileSizeForCompress: 0 });
+  // the encoder gets a plain copy in the app's own folder: a Photos-library address (with a "#…" tail, or one the
+  // app may only read for a moment) is what native encoders trip on
+  const src = localCopy(file.uri);
+  const uri = await guarded('video-compress', () => c.Video.compress(src, { compressionMethod: 'manual', maxSize: LONG_SIDE, bitrate: VIDEO_BPS, minimumFileSizeForCompress: 0 }));
   return uri ? { uri, mime: 'video/mp4' } : null;
+}
+
+function localCopy(uri: string) {
+  const clean = uri.split('#')[0];
+  const ext = /\.(mov|mp4|m4v)$/i.exec(clean)?.[1]?.toLowerCase() ?? 'mp4';
+  const out = new File(Paths.cache, `upload-${Date.now()}.${ext}`);
+  new File(clean).copy(out);
+  return out.uri;
 }
