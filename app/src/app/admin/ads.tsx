@@ -3,10 +3,11 @@ import { X } from 'lucide-react-native';
 import { useState } from 'react';
 import { View } from 'react-native';
 
-import { Act, Actions, AdminScreen, Item, Muted, OptionPicker, Panel, Pill, Section, Sheet, State, UniPicker, audit, confirm, done, fmtNum, useLoad, useUnis } from '@/components/admin/kit';
+import { Act, Actions, AdminScreen, Item, Muted, OptionPicker, Panel, Section, Sheet, State, UniPicker, audit, confirm, done, fmtNum, useLoad, useUnis } from '@/components/admin/kit';
 import { DateField } from '@/components/ui/DateField';
 import { Chip, Field, Row, T, Tap, Toggle } from '@/components/ui';
 import { supabase } from '@/lib/supabase';
+import { pickOnMap } from '@/lib/mapPick';
 import { pickMedia, publicUrl, uploadFile } from '@/lib/upload';
 import { AdSlide } from '@/components/feed/HomeAds';
 import { CTA_DEFAULT, PACKAGES, packageOf, type CtaKind, type PackageKey } from '@/lib/ads';
@@ -35,6 +36,18 @@ const blankAdv = (): Adv => ({ university_id: null, name: '', category: 'restaur
 const CTA_KINDS: [CtaKind | null, string][] = [[null, t('بدون زر')], ['link', t('رابط موقعه')], ['map', t('خذني إليه')], ['call', t('اتصال')]];
 /** ready words for the button, any of them can be changed by hand */
 const CTA_WORDS = [t('اطلب الآن'), t('اذهب إلى الموقع'), t('احجز الآن'), t('مشاهدة العرض'), t('الاتجاهات'), t('اتصل الآن')];
+
+/** Stop or start an advertiser or one ad straight from the list; logged. */
+async function switchOn(table: 'advertisers' | 'ad_campaigns', id: string, on: boolean, name: string) {
+  const { error } = await supabase.from(table).update({ is_active: on }).eq('id', id);
+  if (error) return;
+  await audit(on ? 'ad_on' : 'ad_off', table === 'advertisers' ? 'advertiser' : 'campaign', id, { name });
+  done();
+}
+
+function OnOff({ on, onChange }: { on: boolean; onChange: (v: boolean) => void }) {
+  return <Act label={on ? t('فعّال · أوقفه') : t('موقوف · شغّله')} kind={on ? 'green' : 'soft'} onPress={() => onChange(!on)} />;
+}
 
 /** `banner`: the picture is cut to the banner's shape (2:1) in the crop editor first, like cutting it by hand. */
 async function pickAndUpload(banner = false): Promise<string | null> {
@@ -149,7 +162,7 @@ function CampaignForm({ adv, camp, onDone }: { adv: Adv; camp: Camp | null; onDo
   );
 }
 
-function AdvEditor({ initial, onClose }: { initial: Adv; onClose: () => void }) {
+function AdvEditor({ initial, onClose, onPickSpot }: { initial: Adv; onClose: () => void; onPickSpot: (a: Adv) => void }) {
   const [a, setA] = useState<Adv>(initial);
   const [editCamp, setEditCamp] = useState<Camp | null | 'new'>(null);
   const [msg, setMsg] = useState<string | null>(null);
@@ -178,10 +191,14 @@ function AdvEditor({ initial, onClose }: { initial: Adv; onClose: () => void }) 
       <Field label={t('الدوام')} value={a.hours ?? ''} onChangeText={(v) => set({ hours: v })} placeholder={t('يوميًا 8 صباحًا - 11 مساءً')} />
       <BuildingPicker universityId={a.university_id} value={a.building_id}
         onChange={(b) => set(b ? { building_id: b.id, lat: b.lat, lng: b.lng } : { building_id: null })} />
-      {!a.building_id && (
-        <Field label={t('خارج الجامعة؟ الموقع (lat, lng)')} value={a.lat != null ? `${a.lat}, ${a.lng}` : ''} placeholder="32.0139, 35.8728"
-          onChangeText={(v) => { const [la, ln] = v.split(',').map((x) => parseFloat(x)); set({ lat: Number.isFinite(la) ? la : null, lng: Number.isFinite(ln) ? ln : null }); }} />
-      )}
+      <Row gap={8}>
+        <Act label={a.lat != null && !a.building_id ? t('غيّر مكانه على الخريطة') : t('حدّد مكانه على الخريطة')}
+          onPress={() => (a.university_id ? onPickSpot(a) : setMsg(t('اختر جامعة المعلن أولاً.')))} />
+        {a.lat != null ? <Act label={t('إزالة المكان')} onPress={() => set({ lat: null, lng: null, building_id: null })} /> : null}
+      </Row>
+      <Muted>{a.lat != null
+        ? t('مكانه محدّد، ويظهر للطلاب على خريطة الجامعة بإطار ذهبي وعلامة «ممول» ما دام فعّالًا.')
+        : t('اختر مبناه، أو حدّد مكانه بالضبط على الخريطة بلمسة، دون كتابة إحداثيات.')}</Muted>
       <Field label={t('الوصف')} value={a.description ?? ''} onChangeText={(v) => set({ description: v })} multiline style={{ minHeight: 80, paddingTop: 14 }} />
       <Row gap={10}>
         {a.logo_url ? <Image source={{ uri: a.logo_url }} style={{ width: 52, height: 52, borderRadius: 26 }} /> : null}
@@ -220,7 +237,8 @@ function AdvEditor({ initial, onClose }: { initial: Adv; onClose: () => void }) 
           {editCamp && <CampaignForm adv={a} camp={editCamp === 'new' ? null : editCamp} onDone={() => { setEditCamp(null); camps.reload(); }} />}
           {(camps.data ?? []).map((c) => (
             <Item key={c.id} onPress={() => setEditCamp(c)} dim={!c.is_active} title={c.title}
-              sub={`${PLACES[c.placement] ?? c.placement} · ${c.starts_on} ← ${c.ends_on}\n${t('{0} · مشاهدات {1} · ضغطات {2} · طلبات {3} · اتصالات {4}', [PACKAGES[packageOf(c.priority)], fmtNum(st(c.id)?.impressions), fmtNum(st(c.id)?.clicks), fmtNum(st(c.id)?.orders), fmtNum(st(c.id)?.calls)])}`} />
+              sub={`${PLACES[c.placement] ?? c.placement} · ${c.starts_on} ← ${c.ends_on}\n${t('{0} · مشاهدات {1} · ضغطات {2} · طلبات {3} · اتصالات {4}', [PACKAGES[packageOf(c.priority)], fmtNum(st(c.id)?.impressions), fmtNum(st(c.id)?.clicks), fmtNum(st(c.id)?.orders), fmtNum(st(c.id)?.calls)])}`}
+              end={<OnOff on={c.is_active} onChange={(v) => switchOn('ad_campaigns', c.id!, v, c.title).then(camps.reload)} />} />
           ))}
         </>
       )}
@@ -234,6 +252,15 @@ export default function Ads() {
   const { data, loading, error, reload } = useLoad<(Adv & { university: { name_ar: string } | null })[]>(
     () => supabase.from('advertisers').select('*, university:universities(name_ar)').order('created_at', { ascending: false }) as never, []);
 
+  // pointing at the shop on the map: the editor steps aside and comes back with the spot
+  const [picking, setPicking] = useState(false);
+  async function pickSpot(a: Adv) {
+    setSel(a); setPicking(true);
+    const p = await pickOnMap(a.university_id!);
+    setPicking(false);
+    if (p) setSel({ ...a, lat: p.lat, lng: p.lng, building_id: null });
+  }
+
   async function close() {
     if (sel && !sel.id && sel.name.trim() && !(await confirm(t('الخروج دون حفظ؟'), t('تعذّر حفظ المعلن الجديد.'), t('خروج')))) return;
     setSel(null); reload();
@@ -246,13 +273,13 @@ export default function Ads() {
           {(data ?? []).map((a) => (
             <Item key={a.id} onPress={() => { const { university, ...rest } = a; void university; setSel(rest); }} title={a.name}
               sub={[CATS[a.category], a.university?.name_ar ?? t('الكل'), a.phone].filter(Boolean).join(' · ')}
-              end={a.is_active ? <Pill label={t('فعّال')} tone="green" /> : <Pill label={t('موقوف')} />} />
+              end={<OnOff on={a.is_active} onChange={(v) => switchOn('advertisers', a.id!, v, a.name).then(reload)} />} />
           ))}
         </View>
       </State>
       {!loading && (data ?? []).length === 0 && <Muted>{t('أضف أول معلن من الزر في الأعلى.')}</Muted>}
-      <Sheet open={!!sel} onClose={close} title={sel?.id ? sel.name : t('معلن جديد')}>
-        {sel && <AdvEditor key={sel.id ?? 'new'} initial={sel} onClose={() => { setSel(null); reload(); }} />}
+      <Sheet open={!!sel && !picking} onClose={close} title={sel?.id ? sel.name : t('معلن جديد')}>
+        {sel && !picking && <AdvEditor key={`${sel.id ?? 'new'}-${sel.lat}`} initial={sel} onPickSpot={pickSpot} onClose={() => { setSel(null); reload(); }} />}
       </Sheet>
     </AdminScreen>
   );

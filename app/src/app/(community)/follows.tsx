@@ -14,11 +14,12 @@ import { fmtCount } from '@/lib/util';
 
 type P = { id: string; full_name: string; avatar_url: string | null; username: string | null; academic_title?: string | null; title_verified?: boolean; major: { name_ar: string } | null };
 
-/** Followers / following lists, like Instagram. Hidden lists are blocked by the profile owner's privacy settings. */
+/** Followers / following lists, like Instagram, and a third: my friends (we follow each other) on my own list, or the people we both know on someone else's. Hidden lists are blocked by the profile owner's privacy settings. */
 export default function Follows() {
   const params = useLocalSearchParams<{ user: string; type?: string; name?: string }>();
   const { profile } = useAuth();
-  const [tab, setTab] = useState(params.type === 'following' ? 1 : 0);
+  const [tab, setTab] = useState(params.type === 'following' ? 1 : params.type === 'friends' ? 2 : 0);
+  const mine = params.user === profile?.id;
   const [rows, setRows] = useState<P[]>([]);
   const [mineFollow, setMineFollow] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
@@ -33,17 +34,21 @@ export default function Follows() {
   useEffect(() => {
     (async () => {
       setLoading(true);
-      const followers = tab === 0;
+      // friends (my own list) or people in common (someone else's): their followers whom I follow too
+      const followers = tab !== 1;
       const sel = followers
         ? 'p:profiles!follows_follower_id_fkey(id, full_name, avatar_url, username, academic_title, title_verified, major:majors!profiles_major_id_fkey(name_ar, name_en))'
         : 'p:profiles!follows_followee_id_fkey(id, full_name, avatar_url, username, academic_title, title_verified, major:majors!profiles_major_id_fkey(name_ar, name_en))';
       const { data } = await supabase.from('follows').select(sel).eq(followers ? 'followee_id' : 'follower_id', params.user).eq('status', 'accepted').limit(500);
        
-      setRows(((data ?? []) as any[]).map((x) => x.p).filter(Boolean));
+      const list: P[] = ((data ?? []) as any[]).map((x) => x.p).filter(Boolean);
+      let mineF = new Set<string>();
       if (profile) {
-        const { data: f } = await supabase.from('follows').select('followee_id').eq('follower_id', profile.id);
-        setMineFollow(new Set((f ?? []).map((x) => x.followee_id)));
+        const { data: f } = await supabase.from('follows').select('followee_id').eq('follower_id', profile.id).eq('status', 'accepted');
+        mineF = new Set((f ?? []).map((x) => x.followee_id));
+        setMineFollow(mineF);
       }
+      setRows(tab === 2 ? list.filter((r) => mineF.has(r.id) && r.id !== profile?.id) : list);
       setLoading(false);
     })();
   }, [tab, params.user, profile]);
@@ -62,7 +67,8 @@ export default function Follows() {
     <Screen>
       <Header title={params.name || t('المتابعات')} />
       <View style={{ paddingHorizontal: 18, gap: 10 }}>
-        <Segmented items={counts ? [t('{0} متابِع', [fmtCount(counts[0])]), t('{0} يتابع', [fmtCount(counts[1])])] : [t('المتابِعون'), t('يتابع')]} value={tab} onChange={setTab} />
+        <Segmented items={[...(counts ? [t('{0} متابِع', [fmtCount(counts[0])]), t('{0} يتابع', [fmtCount(counts[1])])] : [t('المتابِعون'), t('يتابع')]), mine ? t('الأصدقاء') : t('مشتركون')]}
+          value={tab} onChange={setTab} />
         <Row gap={8} style={{ minHeight: 44, borderRadius: 14, backgroundColor: C.card, paddingHorizontal: 12 }}>
           <Search size={18} color={C.muted} />
           <TextInput keyboardAppearance={isDark ? 'dark' : 'light'} value={q} onChangeText={setQ} placeholder={t('ابحث')} placeholderTextColor={C.faint} style={{ flex: 1, fontFamily: F.body, fontSize: 14, color: C.ink, textAlign: ta }} />
@@ -89,7 +95,8 @@ export default function Follows() {
             )}
           </Row>
         )}
-        ListEmptyComponent={loading ? <ListSkeleton n={6} /> : <Empty title={tab === 0 ? t('لا يوجد متابعون حتى الآن') : t('لا يتابع أحدًا حتى الآن')} />}
+        ListEmptyComponent={loading ? <ListSkeleton n={6} /> : <Empty title={tab === 0 ? t('لا يوجد متابعون حتى الآن') : tab === 1 ? t('لا يتابع أحدًا حتى الآن') : mine ? t('لا أصدقاء بعد') : t('لا متابعين مشتركين')}
+          body={tab === 2 ? (mine ? t('الأصدقاء هم من تتابعهم ويتابعونك.') : t('هنا من تتابعهم ويتابعون هذا الحساب أيضًا.')) : undefined} />}
       />
     </Screen>
   );

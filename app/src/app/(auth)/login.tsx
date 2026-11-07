@@ -12,7 +12,7 @@ import { Button, Field, Row, T } from '@/components/ui';
 import { sendEmailCode, signInWithMicrosoftAndCourses, universityForEmail } from '@/lib/auth';
 import { C, F } from '@/lib/theme';
 import { nm, t } from '@/lib/i18n';
-import { useAppContent } from '@/lib/appContent';
+import { say, useAppContent } from '@/lib/appContent';
 
 // Microsoft sign-in shows only once the Azure app is set up (EXPO_PUBLIC_MS_LOGIN=1).
 const MS_READY = process.env.EXPO_PUBLIC_MS_LOGIN === '1';
@@ -96,8 +96,8 @@ export default function Login() {
 
           <SafeAreaView edges={['bottom']} style={{ flex: 1, paddingHorizontal: 24, paddingTop: 26, paddingBottom: 16, gap: 18 }}>
             <Animated.View entering={FadeIn.delay(100).duration(220)} style={{ gap: 8 }}>
-              <T v="h1">{content.login?.title?.trim() || t('جامعتك كلها في جيبك')}</T>
-              <T v="body" color={C.muted}>{content.login?.tagline?.trim() || t('جدولك يظهر تلقائيًا، ومجتمع جامعتك كله في مكان واحد، ورسائل دون رقم جوال.')}</T>
+              <T v="h1">{say(content.login?.title, content.login?.title_en) || t('جامعتك كلها في جيبك')}</T>
+              <T v="body" color={C.muted}>{say(content.login?.tagline, content.login?.tagline_en) || t('جدولك يظهر تلقائيًا، ومجتمع جامعتك كله في مكان واحد، ورسائل دون رقم جوال.')}</T>
             </Animated.View>
 
             {inApp && (

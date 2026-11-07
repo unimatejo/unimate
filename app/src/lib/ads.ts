@@ -33,6 +33,8 @@ export const packageOf = (priority: number): PackageKey => (priority >= 30 ? 30 
 
 /** Live ads for this student's university (and college) now, best package first (at most 5). */
 export async function liveAds(placement: Placement): Promise<Ad[]> {
+  // signed out (the login screen can sit on top of Home): there are no ads to ask for
+  if (!(await supabase.auth.getSession()).data.session) return [];
   const { data, error } = await supabase.rpc('live_ads', { placement_filter: placement });
   if (error) { reportError(error); return []; }
   return (data ?? []) as Ad[];

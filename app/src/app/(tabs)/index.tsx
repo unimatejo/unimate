@@ -3,7 +3,7 @@ import { PullRefresh } from '@/components/ui/PullRefresh';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Bell, CalendarDays, Navigation, Search, Users } from 'lucide-react-native';
 import { useCallback, useEffect, useState } from 'react';
-import { Linking, ScrollView, View } from 'react-native';
+import { ScrollView, View } from 'react-native';
 import Animated, { FadeIn, Easing, useAnimatedStyle, useSharedValue, withRepeat, withTiming } from 'react-native-reanimated';
 import Svg, { Circle, Defs, RadialGradient, Stop } from 'react-native-svg';
 
@@ -14,11 +14,12 @@ import { useAuth } from '@/lib/auth';
 import { placeLine, roomRoute, useSchedule } from '@/lib/schedule';
 import { supabase } from '@/lib/supabase';
 import { C, F } from '@/lib/theme';
-import { clock, greeting, isWebUrl } from '@/lib/util';
+import { clock, greeting } from '@/lib/util';
 import { nm, t } from '@/lib/i18n';
 import { useScreenTimer } from '@/lib/perf';
 import { DEFAULT_QUICK, QUICK } from '@/components/home/quick';
-import { featureOn, TONES, useAppContent } from '@/lib/appContent';
+import { featureOn, say, useAppContent } from '@/lib/appContent';
+import { NoticeBar, OwnerBanner, ownDir } from '@/components/home/OwnerContent';
 
 /** A soft light drifting behind the class card: a radial fade (same look on phones and the web, no blur filter needed). */
 function Glow({ color, size, style, dur }: { color: string; size: number; style: object; dur: number }) {
@@ -68,7 +69,8 @@ export default function Home() {
     ? content.home.quick.map((k) => QUICK.find((q) => q.key === k)).filter((q): q is (typeof QUICK)[number] => !!q)
     : [...DEFAULT_QUICK]).filter((q) => !('feature' in q) || featureOn(content, q.feature));
   const first = profile?.full_name?.split(' ')[0] ?? '';
-  const hello = content.home?.greeting?.trim() ? content.home.greeting.replace('{name}', first) : `${greeting(now)}${t('،')} ${first}`;
+  const own = say(content.home?.greeting, content.home?.greeting_en);
+  const hello = own ? own.replace('{name}', first) : `${greeting(now)}${t('،')} ${first}`;
   const banner = content.home?.banner?.on && content.home.banner.title ? content.home.banner : null;
   const notice = content.notice?.on && content.notice.text ? content.notice : null;
   const todays = meetings.filter((m) => m.weekday === today);
@@ -96,17 +98,13 @@ export default function Home() {
           </View>
           <View style={{ flex: 1 }}>
             <T v="tiny" color={university?.brand_color ?? C.blue}>{nm(university)}</T>
-            <T v="h2" style={{ fontFamily: F.display, fontSize: 22 }}>{hello}</T>
+            <T v="h2" style={[{ fontFamily: F.display, fontSize: 22 }, ownDir(hello)]}>{hello}</T>
           </View>
           <IconButton label={t('بحث')} onPress={() => router.push('/search')}><Search size={21} color={C.ink} /></IconButton>
           <IconButton label={t('الإشعارات')} badge={unread} onPress={() => router.push('/notifications')}><Wiggle trigger={unread}><Bell size={21} color={C.ink} /></Wiggle></IconButton>
         </Row>
 
-        {notice && (
-          <View accessibilityRole="alert" style={{ borderRadius: 18, paddingHorizontal: 16, paddingVertical: 12, backgroundColor: TONES[notice.tone ?? 'orange'][0] }}>
-            <T v="bold" color="#FFFFFF">{notice.text}</T>
-          </View>
-        )}
+        {notice && <NoticeBar notice={notice} />}
 
         <HomeAds />
 
@@ -157,15 +155,7 @@ export default function Home() {
           ))}
         </View>
 
-        {banner && (
-          <Tap disabled={!banner.link?.trim()} scale={0.98} style={{ borderRadius: 24, overflow: 'hidden' }}
-            onPress={() => { const l = banner.link?.trim(); if (!l) return; if (l.startsWith('/')) router.push(l as never); else if (isWebUrl(l)) Linking.openURL(l).catch(() => {}); }}>
-            <LinearGradient colors={TONES[banner.tone ?? 'blue']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={{ padding: 18, gap: 4 }}>
-              <T v="h3" color="#FFFFFF">{banner.title}</T>
-              {banner.body ? <T v="small" color="rgba(255,255,255,0.9)">{banner.body}</T> : null}
-            </LinearGradient>
-          </Tap>
-        )}
+        {banner && <OwnerBanner banner={banner} />}
 
         <Animated.View entering={FadeIn.delay(160).duration(220)}>
           <Card>

@@ -276,10 +276,10 @@ or JSON: `[{"student_number":"2620387","term_gpa":3.71,"cumulative_gpa":3.60,"cr
 | `/admin/events` | `app/admin/events.tsx` | Admin › an official exam or deadline, straight to exactly one scope (admin_post_event, 0106): one section, every section of a course this term, or… |
 | `/admin/grades` | `app/admin/grades.tsx` | Upload the university's official GPAs for the honor board. Students can never set these. |
 | `/admin` | `app/admin/index.tsx` | The admin home: what needs you now, today's numbers, the last two weeks, and every section. |
-| `/admin/look` | `app/admin/look.tsx` | The owner shapes the app: texts, the home banner and quick links, a notice for everyone, and which features are on. |
+| `/admin/look` | `app/admin/look.tsx` | The owner shapes the app for every university or one: the notice, greeting and banner (designed palettes or a photo, Arabic with its English, «ترجم» writes it), quick links, features, login words. |
 | `/admin/maps` | `app/admin/maps.tsx` | Every university's campus map: how complete it is, open it as its students see it, or rebuild it now. |
 | `/admin/moderation` | `app/admin/moderation.tsx` | Content the automatic checks held back (bad words, or a photo flagged by the image check). Approve = it goes live as if nothing happened. Remove = it… |
-| `/admin/notify` | `app/admin/notify.tsx` | Admin › send a notification to everyone, one university or one college (owner only). |
+| `/admin/notify` | `app/admin/notify.tsx` | Owner › a notification to everyone, a university, college, major or intake year, in Arabic and English, opening a page or site when tapped. |
 | `/admin/offers` | `app/admin/offers.tsx` | Offers: in-app to students who keep "offers" on, and by email to those who opted in. |
 | `/admin/reports` | `app/admin/reports.tsx` | Admin › reports from students about posts, messages and accounts. |
 | `/admin/study-rules` | `app/admin/study-rules.tsx` | Per-university rules behind the GPA calculator and the absence tracker. Every save is checked here and again on the server. |
@@ -447,7 +447,8 @@ or JSON: `[{"student_number":"2620387","term_gpa":3.71,"cumulative_gpa":3.60,"cr
 ### Shared logic (`app/src/lib`)
 
 - `ads.ts` — First-party ads (restaurants, cafés, print shops near the campus). Every ad is labelled «ممول», nothing tracks a student across apps: the server counts one view a day…
-- `appContent.ts` — What the owner sets from the admin panel ("شكل التطبيق"): texts, the home banner and quick links, a notice for everyone, and which features are on. Anything not set…
+- `appContent.ts` — What the owner sets in «شكل التطبيق»: the general look, and any university's own on top of it (`unis`, merged by `lookFor`). Each text has its `_en`; `say()` picks the app's language.
+- `mapPick.ts` — Point at a spot on a campus map (an advertiser's shop) by moving the map under a pin; no coordinates typed.
 - `auth.tsx` — No internet and the sign-in's short-lived token has run out: Supabase can't renew it, so it reports no session. The sign-in saved on this phone still says who this is,…
 - `cache.ts` — What a screen showed last time, so it opens instantly and refreshes quietly in the background (like Instagram). Kept in memory and on the device; every key includes the…
 - `chatOutbox.ts` — Messages that wait for a connection, like WhatsApp: «بعت» always works. A message is kept on the phone with a 🕓 and goes the moment there's any signal, even for two…
@@ -507,6 +508,7 @@ or JSON: `[{"student_number":"2620387","term_gpa":3.71,"cumulative_gpa":3.60,"cr
 - `moodle-import` — iCal date → Date. "…Z" is UTC; a TZID or floating time is Jordan time (UTC+3 all year since 2022).
 - `ms-role` — Microsoft job title (Arabic or English) → the app's title. Most specific first.
 - `push` — Sends a push to every device of the people a new notification / message is for.
+- `translate` — The owner's Arabic texts into English (Gemini), admins only, a few short texts at a time.
 - `schedule-import` — Read a student's timetable from a screenshot or photo, and give back courses with their times.
 - `send-offer-email` — Sends one offer (already saved by admin_send_offer) by email to students who opted in.
 - `storage-cleanup` — Daily (pg_cron → private.storage_cleanup_fire): deletes files in stories / posts / chat that no row points to
@@ -650,3 +652,4 @@ or JSON: `[{"student_number":"2620387","term_gpa":3.71,"cumulative_gpa":3.60,"cr
 - `0136_ads_banner_control.sql` — UniMate · 0136 the owner builds an advertiser's banner from scratch
 - `0137_shown_likes.sql` — UniMate · 0137 the like number an admin may show on a post (the likers list stays real)
 - `0138_server_texts_msa.sql` — UniMate · 0138 the server's own words (notifications, chat lines, admin alerts) in فصحى
+- `0139_targeting_ad_pins_error_alerts.sql` — UniMate · 0139 notifications to a college / major / intake year, advertisers as gold pins on the map, crash alerts to the owner

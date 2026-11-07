@@ -165,13 +165,14 @@ async function uploadThumb(bucket: string, path: string, f: { uri: string; width
 
 /**
  * A video's cover: the still shown before it plays and in the profile grid, stored next to the video
- * (`<name>.jpg`, with its small copy `<name>.t.jpg`). Returns its path, or null if it couldn't go up
+ * (`<name>.jpg`, with its small copy `<name>.t.jpg`; one changed later is `<name>.c<time>.jpg`). Returns its path, or null if it couldn't go up
  * (the video is posted anyway and shows its first frame).
  */
-export async function uploadCover(bucket: string, videoPath: string, cover: { uri: string; width?: number; height?: number }): Promise<string | null> {
+export async function uploadCover(bucket: string, videoPath: string, cover: { uri: string; width?: number; height?: number }, again = false): Promise<string | null> {
   try {
     const f = await lightImage({ ...cover, mime: 'image/jpeg' });
-    const path = videoPath.replace(/\.[a-z0-9]+$/i, '.jpg');
+    // a cover changed after posting gets a name of its own, so the old one is never overwritten while it's shown
+    const path = videoPath.replace(/\.[a-z0-9]+$/i, again ? `.c${Date.now().toString(36)}.jpg` : '.jpg');
     const { error } = await supabase.storage.from(bucket).upload(path, await readBytes(f.uri), { contentType: 'image/jpeg', upsert: false });
     if (error) throw error;
     await uploadThumb(bucket, path, f);

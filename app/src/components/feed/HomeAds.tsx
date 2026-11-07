@@ -9,7 +9,7 @@ import Animated, { FadeIn, runOnJS, useSharedValue } from 'react-native-reanimat
 
 import { Row, T, Tap } from '@/components/ui';
 import { CTA_DEFAULT, adAction, liveAds, openAdvertiser, trackAd, type Ad } from '@/lib/ads';
-import { t } from '@/lib/i18n';
+import { isAR, t } from '@/lib/i18n';
 import { C, F, shadow } from '@/lib/theme';
 
 const EVERY = 5500;
@@ -98,7 +98,13 @@ export function AdSlide({ ad, onOpen, onAction }: { ad: Ad; onOpen?: () => void;
     <Tap scale={0.98} onPress={onOpen} accessibilityLabel={t('إعلان ممول: {0}', [text ? ad.advertiser_name : `${ad.advertiser_name} · ${ad.title}`])}
       style={[{ borderRadius: 26, overflow: 'hidden', aspectRatio: 2, backgroundColor: '#1B1F3B' }, shadow]}>
       {ad.image_url
-        ? <Image source={{ uri: ad.image_url }} style={StyleSheet.absoluteFill} contentFit="cover" transition={250} cachePolicy="memory-disk" />
+        ? (
+          <>
+            <Image source={{ uri: ad.image_url }} style={StyleSheet.absoluteFill} contentFit="cover" transition={250} cachePolicy="memory-disk" />
+            {/* a studio look: the corner behind the name and «ممول» is shaded, the light falls on the rest */}
+            <LinearGradient colors={['rgba(8,10,28,0.6)', 'rgba(8,10,28,0)']} start={{ x: isAR ? 1 : 0, y: 0 }} end={{ x: 0.5, y: 0.55 }} style={StyleSheet.absoluteFill} />
+          </>
+        )
         : (
           <LinearGradient colors={['#2A1E5C', '#3D6BFF']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={[StyleSheet.absoluteFill, { alignItems: 'flex-end', justifyContent: 'center', paddingHorizontal: 22 }]}>
             {/* no photo: the advertiser's logo (or a shop sign) stands in, large, on the far side */}

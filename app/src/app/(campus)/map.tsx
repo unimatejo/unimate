@@ -13,6 +13,7 @@ import { FILTERS, inGroup, kindOf, localSearch, MINOR, TOUR_KINDS, type FilterKe
 import { MapMarkers, type MarkerSpec } from '@/components/map/markers';
 import { NativeCampus } from '@/components/map/NativeCampus';
 import { DirectionBanner, NavCard } from '@/components/map/NavPanel';
+import { PickPoint } from '@/components/map/PickPoint';
 import { SuggestPlace } from '@/components/map/SuggestPlace';
 import { UniSwitcher } from '@/components/map/UniSwitcher';
 import { Button, Chip, Row, T, Tap } from '@/components/ui';
@@ -23,6 +24,7 @@ import { CAMPUS_BASE, centroid, distM, findBuilding, loadCampus, type CampusData
 import { progress, walkRoute, type Route } from '@/lib/campus/route';
 import { mapTheme } from '@/lib/campus/theme';
 import { flip, nm, t, ta } from '@/lib/i18n';
+import { finishMapPick, pickWaiting } from '@/lib/mapPick';
 import { goBack } from '@/lib/nav';
 import { getPref } from '@/lib/prefs';
 import type { University } from '@/lib/types';
@@ -48,7 +50,10 @@ const theme = mapTheme();
  */
 export default function CampusMap() {
   const { university: mine, profile } = useAuth();
-  const params = useLocalSearchParams<{ uni?: string; building?: string; advertiser?: string; lat?: string; lng?: string; name?: string; go?: string; room?: string; floor?: string }>();
+  const params = useLocalSearchParams<{ uni?: string; building?: string; advertiser?: string; lat?: string; lng?: string; name?: string; go?: string; room?: string; floor?: string; pick?: string }>();
+  // the admin is pointing at a spot (lib/mapPick): only the pin and its card, then back with the spot
+  const [picking] = useState(() => params.pick === '1' && pickWaiting());
+  useEffect(() => () => { if (picking) finishMapPick(null); }, [picking]);
   // a place someone shared in a chat ("lat,lng,name"): pinned and opened on arrival
   const shared = useMemo<Pin | null>(() => {
     const la = Number(params.lat), ln = Number(params.lng);
@@ -371,7 +376,7 @@ export default function CampusMap() {
   const highlight = nav?.buildingId ?? (sel ? (sel.kind === 'building' ? sel.id : campus ? findBuilding(campus, null, sel)?.b ?? null : null) : null);
   const meters = sel && me ? Math.round(distM(me, sel) * 1.25) : null; // paths are ~25% longer than a straight line
   const walkMin = meters != null ? Math.max(1, Math.round(meters / 75)) : null;
-  const busy = !!(nav || tour || suggest);
+  const busy = !!(nav || tour || suggest || picking);
   const pressBuilding = (b: { b: string | null; n: string | null; at: { latitude: number; longitude: number } }) => {
     if (busy) return;
     const p = (b.b && pins.find((x) => x.id === b.b)) || { id: b.b ?? `osm-${b.at.latitude}`, kind: 'building', name: b.n ?? t('مبنى'), lat: b.at.latitude, lng: b.at.longitude };
@@ -400,10 +405,12 @@ export default function CampusMap() {
       const on = sel?.id === p.id;
       // a drawn campus: a building is its own shape, just its name once you're close
       const bare = !!campus && p.kind === 'building' && !on;
-      const label = on || (landmark(p) ? zoom > 15.2 : p.kind === 'building' ? zoom > 16.6 : zoom > 17.6);
+      // a sponsored place keeps its name showing from further out, and wins when pins crowd
+      const ad = !!p.advertiser_id;
+      const label = on || (landmark(p) || ad ? zoom > 15.2 : p.kind === 'building' ? zoom > 16.6 : zoom > 17.6);
       if (bare && !label) continue;
-      out.push({ t: 'pin', key: p.id + (on ? '-on' : '') + (label ? '-l' : ''), id: p.id, kind: p.kind, name: p.name, lat: p.lat, lng: p.lng, on, label, bare,
-        small: MINOR.includes(p.kind) && !on, priority: on ? 100 : landmark(p) ? 80 : p.kind === 'building' ? 60 : MINOR.includes(p.kind) ? 20 : 40 });
+      out.push({ t: 'pin', key: p.id + (on ? '-on' : '') + (label ? '-l' : ''), id: p.id, kind: p.kind, name: p.name, lat: p.lat, lng: p.lng, on, label, bare, ad,
+        small: MINOR.includes(p.kind) && !on && !ad, priority: on ? 100 : ad ? 90 : landmark(p) ? 80 : p.kind === 'building' ? 60 : MINOR.includes(p.kind) ? 20 : 40 });
     }
     if (shared) out.push({ t: 'shared', key: 'shared', lat: shared.lat, lng: shared.lng });
     if (nav) { const [lng, lat] = nav.route.line[nav.route.line.length - 1]; out.push({ t: 'dest', key: 'dest', name: nav.dest.name, lat, lng }); }
@@ -499,6 +506,8 @@ export default function CampusMap() {
       <UniSwitcher open={switching} onClose={() => setSwitching(false)} current={university?.id ?? null} mine={mine?.id ?? null}
         onPick={(u) => { if (u.id === university?.id) return; stopAnim(); setTour(null); setWalker(null); setSuggest(false); setSel(null); setNav(null); setQ(''); setFilter('all'); setCampus(null); setPins([]); opened.current = false; setPicked(u); }} />
 
+      {picking && <PickPoint onCancel={() => goBack('/admin/ads')}
+        onPick={() => { finishMapPick(mid.current ?? { lat: center.latitude, lng: center.longitude }); goBack('/admin/ads'); }} />}
       {suggest && university && <SuggestPlace universityId={university.id} userId={profile?.id} at={() => mid.current ?? { lat: center.latitude, lng: center.longitude }} onClose={() => setSuggest(false)} />}
 
       {!sel && !busy && (

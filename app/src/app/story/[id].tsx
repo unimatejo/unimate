@@ -31,8 +31,8 @@ type S = { id: string; media_url: string; kind: string; caption: string | null; 
 type Viewer = StoryViewer;
 
 /** a story video, framed and trimmed the way it was set in the crop editor; plays once with sound */
-function StoryVideo({ uri, meta, muted, onEnd, onReady, onError, onSoundBlocked }: { uri: string; meta?: MediaMeta | null; muted: boolean; onEnd: () => void; onReady: () => void; onError: () => void; onSoundBlocked: () => void }) {
-  return <FramedMedia uri={uri} kind="video" meta={meta} video={{ loop: false, muted, onEnd, onReady, onError, onSoundBlocked }} />;
+function StoryVideo({ uri, meta, muted, paused, onEnd, onReady, onError, onSoundBlocked }: { uri: string; meta?: MediaMeta | null; muted: boolean; paused: boolean; onEnd: () => void; onReady: () => void; onError: () => void; onSoundBlocked: () => void }) {
+  return <FramedMedia uri={uri} kind="video" meta={meta} video={{ loop: false, muted, paused, onEnd, onReady, onError, onSoundBlocked }} />;
 }
 
 /** Instagram-style story viewer: tap sides to move, hold to pause, video plays to the end, your own story shows who viewed it. */
@@ -304,10 +304,12 @@ export default function StoryViewer() {
     <GestureDetector gesture={pull}>
     <Animated.View style={[{ flex: 1, overflow: 'hidden', backgroundColor: '#000' }, sheet]}>
       {!uri && <View style={{ position: 'absolute', top: 0, bottom: 0, left: 0, right: 0, padding: 8 }}><Bone h={H - 16} r={28} style={{ opacity: 0.25 }} /></View>}
-      {uri && s?.kind === 'video' ? <StoryVideo key={s.id} uri={uri} meta={s.meta} muted={muted || !!s.meta?.muted} onEnd={next} onReady={markReady} onError={markFailed} onSoundBlocked={() => { setSoundBlocked(true); setMuted(true); }} />
+      {uri && s?.kind === 'video' ? <StoryVideo key={s.id} uri={uri} meta={s.meta} muted={muted || !!s.meta?.muted} paused={hold} onEnd={next} onReady={markReady} onError={markFailed} onSoundBlocked={() => { setSoundBlocked(true); setMuted(true); }} />
         : uri ? <FramedMedia key={uri} uri={uri} kind="image" meta={s?.meta} onImageLoad={markReady} /> : null}
       <Pressable style={{ position: 'absolute', top: 110, bottom: 130, width: '40%', ...(Platform.OS === 'web' ? (rtlLayout() ? { left: 0 } : { right: 0 }) : { end: 0 }) }} onPress={next} onLongPress={onHold} onPressOut={onRelease} delayLongPress={200} accessibilityLabel={t('التالي')} />
       <Pressable style={{ position: 'absolute', top: 110, bottom: 130, width: '40%', ...(Platform.OS === 'web' ? (rtlLayout() ? { right: 0 } : { left: 0 }) : { start: 0 }) }} onPress={prev} onLongPress={onHold} onPressOut={onRelease} delayLongPress={200} accessibilityLabel={t('السابق')} />
+      {/* the middle: a tap moves on, holding keeps the story still (the video stops too) to read or look closely */}
+      <Pressable style={{ position: 'absolute', top: 110, bottom: 130, left: '40%', right: '40%' }} onPress={next} onLongPress={onHold} onPressOut={onRelease} delayLongPress={200} accessibilityLabel={t('التالي')} />
       {failed && (
         <View pointerEvents="none" style={{ position: 'absolute', top: 0, bottom: 0, left: 0, right: 0, alignItems: 'center', justifyContent: 'center' }}>
           <View style={{ paddingHorizontal: 18, paddingVertical: 10, borderRadius: 18, backgroundColor: 'rgba(0,0,0,0.6)' }}>

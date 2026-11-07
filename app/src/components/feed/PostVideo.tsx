@@ -17,9 +17,10 @@ function Player({ uri, cover, meta, postId, onDoubleTap }: { uri: string; cover:
   const [muted, setMuted] = useVideoSound();
   const onScreen = useOnScreen(postId);
   const focused = useIsFocused();
-  // nothing plays by itself when the feed opens: a tap starts it (with sound), and it stops when it scrolls away
-  const [started, setStarted] = useState(false);
-  const live = started && onScreen && focused;
+  // like Instagram: it plays by itself while it's on screen (without sound until sound is turned on once);
+  // a tap stops it and another tap plays it again
+  const [stopped, setStopped] = useState(false);
+  const live = onScreen && focused && !stopped;
   const last = useRef(0);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const burst = useSharedValue(0);
@@ -35,26 +36,25 @@ function Player({ uri, cover, meta, postId, onDoubleTap }: { uri: string; cover:
       return;
     }
     last.current = now;
-    if (!started) { timer.current = setTimeout(() => { setStarted(true); setMuted(false); }, 290); return; }
-    timer.current = setTimeout(() => setMuted(!muted), 290);
+    timer.current = setTimeout(() => setStopped((x) => !x), 290);
   }
   return (
-    <Tap haptic={false} scale={0.995} throttle={0} onPress={press} accessibilityLabel={!started ? t('شغّل الفيديو') : muted ? t('شغّل الصوت') : t('اكتم الصوت')}
+    <Tap haptic={false} scale={0.995} throttle={0} onPress={press} accessibilityLabel={stopped ? t('شغّل الفيديو') : t('أوقف الفيديو')}
       style={{ marginHorizontal: 10, aspectRatio: 9 / 14, maxHeight: 520, borderRadius: 22, overflow: 'hidden', backgroundColor: '#000', alignItems: 'center', justifyContent: 'center' }}>
-      {/* framed and trimmed the way it was set in the crop editor */}
-      {/* the cover until it's tapped: no video is loaded for a post that's only scrolled past */}
-      {started || !cover
+      {/* framed and trimmed the way it was set in the crop editor; only the cover for a post scrolled past */}
+      {onScreen || !cover
         ? <FramedMedia uri={uri} kind="video" meta={meta} video={{ loop: true, muted: muted || !live, paused: !live }} />
         : <Image source={{ uri: cover }} style={{ position: 'absolute', top: 0, bottom: 0, left: 0, right: 0 }} contentFit="cover" transition={150} />}
-      {!started && (
+      {stopped && (
         <View pointerEvents="none" style={{ position: 'absolute', width: 68, height: 68, borderRadius: 34, backgroundColor: 'rgba(0,0,0,0.45)', alignItems: 'center', justifyContent: 'center' }}>
           <Play size={30} color="#fff" fill="#fff" />
         </View>
       )}
       <Animated.View style={burstStyle} pointerEvents="none"><Heart size={90} color="#fff" fill="#fff" /></Animated.View>
-      {started && <View style={{ position: 'absolute', bottom: 12, left: 12, width: 34, height: 34, borderRadius: 17, backgroundColor: 'rgba(0,0,0,0.5)', alignItems: 'center', justifyContent: 'center' }}>
+      <Tap haptic={false} onPress={() => setMuted(!muted)} accessibilityLabel={muted ? t('شغّل الصوت') : t('اكتم الصوت')} hitSlop={10}
+        style={{ position: 'absolute', bottom: 12, left: 12, width: 36, height: 36, borderRadius: 18, backgroundColor: 'rgba(0,0,0,0.55)', alignItems: 'center', justifyContent: 'center' }}>
         {muted ? <VolumeX size={17} color="#fff" /> : <Volume2 size={17} color="#fff" />}
-      </View>}
+      </Tap>
     </Tap>
   );
 }
@@ -62,7 +62,7 @@ function Player({ uri, cover, meta, postId, onDoubleTap }: { uri: string; cover:
 // framing / trim of each video (from the crop editor), looked up once per video
 const metaCache = new Map<string, MediaMeta | null>();
 
-/** A video inside a post: its cover until tapped, then plays on a loop while on screen; tap for sound (remembered for every video), double tap likes. */
+/** A video inside a post: plays on a loop by itself while on screen; a tap stops or plays it, the corner button turns sound on or off (remembered for every video), a double tap likes. */
 export function PostVideo({ path, meta: given, postId, onDoubleTap }: { path: string; meta?: unknown; postId?: string; onDoubleTap?: () => void }) {
   const [uri, setUri] = useState<string | null>(null);
   // the feed brings the framing along with the post; older callers look it up once
@@ -74,13 +74,15 @@ export function PostVideo({ path, meta: given, postId, onDoubleTap }: { path: st
     supabase.from('post_media').select('meta').eq('url', path).limit(1).maybeSingle()
       .then(({ data }) => { const m = (data?.meta ?? null) as MediaMeta | null; metaCache.set(path, m); setMeta(m); }, () => setMeta(null));
   }, [path, given]);
-  const coverPath = meta?.cover ?? null;
+  // the post's own framing wins as it changes (a new cover chosen after posting shows at once)
+  const m = given !== undefined ? (given as MediaMeta | null) : meta;
+  const coverPath = m?.cover ?? null;
   const [cover, setCover] = useState<string | null>(null);
   useEffect(() => { if (coverPath) mediaUrl('posts', coverPath, photoWidth(400)).then(setCover); }, [coverPath]);
-  if (!uri || meta === undefined) return (
+  if (!uri || m === undefined) return (
     <View style={{ marginHorizontal: 10, aspectRatio: 9 / 14, maxHeight: 520, borderRadius: 22, backgroundColor: C.soft, alignItems: 'center', justifyContent: 'center' }}>
       <Play size={36} color={C.muted} />
     </View>
   );
-  return <Player uri={uri} cover={cover} meta={meta} postId={postId} onDoubleTap={onDoubleTap} />;
+  return <Player uri={uri} cover={cover} meta={m} postId={postId} onDoubleTap={onDoubleTap} />;
 }

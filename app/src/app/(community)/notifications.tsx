@@ -6,6 +6,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ScrollView, SectionList, RefreshControl, View } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
 
+import { openOwnerLink } from '@/components/home/OwnerContent';
 import { titledName } from '@/components/profile/TitleBadge';
 import { Avatar, Empty, Header, Screen, T, Tap } from '@/components/ui';
 import { ListSkeleton } from '@/components/ui/Skeleton';
@@ -146,6 +147,8 @@ export default function Notifications() {
     if (n.kind === 'ride') return router.push(d.ride_id ? { pathname: '/rides/[id]', params: { id: String(d.ride_id) } } as never : '/rides' as never);
     if (n.kind === 'announcement') return router.push('/announcements');
     if (n.kind === 'swap_match') return router.push('/swap');
+    // the owner's notification: the page or site it was sent with
+    if (n.kind === 'system' && typeof d.url === 'string') return openOwnerLink(d.url);
     // app broke / content waiting for review: straight to the right admin screen
     if (n.kind === 'admin_alert') return router.push((typeof d.url === 'string' && d.url.startsWith('/admin') ? d.url : '/admin/errors') as never);
     if (['exam', 'lecture', 'assignment', 'event', 'summary'].includes(n.kind)) return router.push('/(tabs)/schedule');
@@ -172,7 +175,7 @@ export default function Notifications() {
     const who = uid ? people[uid] : undefined;
     const k = kindOf(n.kind);
     const [Icon, color] = BADGE[n.kind] ?? (k === 'uni' ? [GraduationCap, C.primary] : [Bell, C.primary]);
-    const title = localizeNote(n.title);
+    const title = !isAR && n.data?.title_en ? n.data.title_en : localizeNote(n.title);
     const name = titledName(who?.full_name, who?.academic_title, who?.title_verified);
     const rest = name && title.startsWith(name) ? title.slice(name.length) : null;
     const isFollow = n.kind === 'follow' && !!uid;
@@ -194,7 +197,7 @@ export default function Notifications() {
         </Tap>
         <T v="small" style={{ flex: 1, lineHeight: 21 }}>
           {rest !== null ? <><T v="bold" style={{ fontSize: 14 }}>{name}</T>{rest}</> : <T v="bold" style={{ fontSize: 14 }}>{title}</T>}
-          {n.body ? <T v="small">{` ${localizeNote(n.body)}`}</T> : null}
+          {n.body ? <T v="small">{` ${!isAR && n.data?.body_en ? n.data.body_en : localizeNote(n.body)}`}</T> : null}
           <T v="small" color={C.muted}>{`  ${timeAgo(n.created_at)}`}</T>
         </T>
         {isFollow ? (

@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { View } from 'react-native';
 
+import { explain, errorKey, type Explained, type Weight } from '@/components/admin/errorText';
 import { AdminScreen, Filters, Muted, Panel, Pill, Section, State, fmtDate, fmtNum, useLoad } from '@/components/admin/kit';
 import { T, Tap } from '@/components/ui';
 import { supabase } from '@/lib/supabase';
@@ -17,26 +18,61 @@ const sec = (ms: number) => `${(ms / 1000).toLocaleString(undefined, { maximumFr
 // green under 1.5s, orange under 3s, red above
 const tone = (ms: number) => (ms < 1500 ? 'green' : ms < 3000 ? 'orange' : 'red');
 
+const WEIGHT: Record<Weight, [string, string]> = { fix: [t('يحتاج إصلاحًا'), 'red'], watch: [t('للمتابعة'), 'orange'], fine: [t('يُحل تلقائيًا'), 'green'] };
+const ORDER: Record<Weight, number> = { fix: 0, watch: 1, fine: 2 };
+/** where it happened, in words: the screen and the kind of phone */
+const PLACE: Record<string, string> = {
+  '(tabs)': t('الشاشات الرئيسية'), '(auth)/login': t('تسجيل الدخول'), 'post/[id]': t('صفحة منشور'), 'story/[id]': t('القصص'),
+  '(chat)/messages/[id]': t('محادثة'), '(chat)/messages': t('الرسائل'), '(campus)/map': t('الخريطة'), 'post/new': t('إنشاء منشور'),
+};
+const DEVICE: Record<string, string> = { ios: t('آيفون'), android: t('أندرويد'), web: t('المتصفح') };
+
+/**
+ * Errors from students' phones, the same problem counted once: its plain Arabic name, what it means, and whether
+ * it needs fixing. The technical text (English) opens with a tap, for whoever fixes it.
+ */
 function Errors() {
-  const { data, loading, error } = useLoad<E[]>(() => supabase.from('client_errors').select('*, user:profiles!client_errors_user_id_fkey(full_name)').order('created_at', { ascending: false }).limit(200) as never, []);
-  const [open, setOpen] = useState<number | null>(null);
+  const { data, loading, error } = useLoad<E[]>(() => supabase.from('client_errors').select('*, user:profiles!client_errors_user_id_fkey(full_name)').order('created_at', { ascending: false }).limit(300) as never, []);
+  const [open, setOpen] = useState<string | null>(null);
+  const groups = useMemo(() => {
+    const m = new Map<string, { key: string; ex: Explained; rows: E[] }>();
+    for (const e of data ?? []) {
+      const key = errorKey(e.message);
+      const g = m.get(key) ?? { key, ex: explain(e.message), rows: [] };
+      g.rows.push(e); m.set(key, g);
+    }
+    return [...m.values()].sort((a, b) => Number(b.rows.some((r) => r.fatal)) - Number(a.rows.some((r) => r.fatal)) || ORDER[a.ex.weight] - ORDER[b.ex.weight] || b.rows.length - a.rows.length);
+  }, [data]);
   return (
-    <State loading={loading} error={error} empty={data?.length === 0}>
+    <State loading={loading} error={error} empty={groups.length === 0}>
       <View style={{ gap: 8 }}>
-        {(data ?? []).map((e) => (
-          <Tap key={e.id} onPress={() => setOpen(open === e.id ? null : e.id)} scale={0.99} haptic={false}>
-            <Panel>
-              <View style={{ flexDirection: 'row', gap: 6, flexWrap: 'wrap' }}>
-                {e.fatal && <Pill label={t('خطير')} tone="red" />}
-                {e.screen ? <Pill label={e.screen} /> : null}
-                {e.platform ? <Pill label={`${e.platform} ${e.app_version ?? ''}`} tone="blue" /> : null}
-              </View>
-              <T v="small" style={{ writingDirection: 'ltr', textAlign: 'left' }} selectable numberOfLines={open === e.id ? undefined : 3}>{e.message}</T>
-              <Muted>{[fmtDate(e.created_at), e.user?.full_name].filter(Boolean).join(' · ')}</Muted>
-              {open === e.id && e.stack ? <T v="tiny" color={C.muted} selectable style={{ writingDirection: 'ltr', textAlign: 'left' }}>{e.stack.slice(0, 1500)}</T> : null}
-            </Panel>
-          </Tap>
-        ))}
+        {groups.map(({ key, ex, rows }) => {
+          const last = rows[0];
+          const where = [...new Set(rows.map((r) => r.screen).filter(Boolean))].slice(0, 3).map((x) => PLACE[x!] ?? x).join('، ');
+          const on = [...new Set(rows.map((r) => r.platform).filter(Boolean))].map((x) => DEVICE[x!] ?? x).join('، ');
+          return (
+            <Tap key={key} onPress={() => setOpen(open === key ? null : key)} scale={0.99} haptic={false}>
+              <Panel>
+                <View style={{ flexDirection: 'row', gap: 6, flexWrap: 'wrap' }}>
+                  {rows.some((r) => r.fatal) && <Pill label={t('أغلق التطبيق')} tone="red" />}
+                  <Pill label={WEIGHT[ex.weight][0]} tone={WEIGHT[ex.weight][1]} />
+                  <Pill label={t('{0} مرة', [fmtNum(rows.length)])} tone="blue" />
+                </View>
+                <T v="bodyMd">{ex.title}</T>
+                <T v="small" color={C.muted}>{ex.what}</T>
+                <Muted>{[t('آخر مرة {0}', [fmtDate(last.created_at)]), where && t('في {0}', [where]), on].filter(Boolean).join(' · ')}</Muted>
+                {open === key && (
+                  <View style={{ gap: 6, paddingTop: 6, borderTopWidth: 0.5, borderTopColor: C.line }}>
+                    <T v="tiny" color={C.muted}>{t('التفاصيل التقنية')}</T>
+                    <T v="small" style={{ writingDirection: 'ltr', textAlign: 'left' }} selectable>{last.message}</T>
+                    {last.stack ? <T v="tiny" color={C.muted} selectable style={{ writingDirection: 'ltr', textAlign: 'left' }}>{last.stack.slice(0, 1500)}</T> : null}
+                    <Muted>{[last.user?.full_name, last.app_version && t('النسخة {0}', [last.app_version])].filter(Boolean).join(' · ')}</Muted>
+                  </View>
+                )}
+              </Panel>
+            </Tap>
+          );
+        })}
       </View>
     </State>
   );
@@ -95,7 +131,7 @@ function Performance() {
 export default function ErrorsAndPerformance() {
   const [tab, setTab] = useState<'errors' | 'perf'>('errors');
   return (
-    <AdminScreen ownerOnly title={t('أخطاء التطبيق')} subtitle={t('يصل إلى هنا تلقائياً أي خطأ أو بطء يحدث على هواتف الطلاب')}>
+    <AdminScreen ownerOnly title={t('أخطاء التطبيق')} subtitle={t('كل خطأ أو بطء على هواتف الطلاب يصل إلى هنا مشروحًا، ويصلك إشعار فوري إذا أُغلق التطبيق عند أحدهم')}>
       <Filters items={[['errors', t('الأخطاء')], ['perf', t('الأداء')]]} value={tab} onChange={setTab} />
       {tab === 'errors' ? <Errors /> : <Performance />}
     </AdminScreen>

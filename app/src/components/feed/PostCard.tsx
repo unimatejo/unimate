@@ -8,6 +8,9 @@ import Animated, { useAnimatedStyle, useSharedValue, withSequence, withSpring, w
 
 import { ZoomableImage, aspectCache } from '@/components/media/ZoomPhoto';
 import { PostVideo } from '@/components/feed/PostVideo';
+import { CoverPicker } from '@/components/create/CoverPicker';
+import { uploadCover, type Picked } from '@/lib/upload';
+import type { Cover } from '@/lib/videoCover';
 import { TitleBadge, titledName } from '@/components/profile/TitleBadge';
 import { Avatar, Row, T, Tag, Tap } from '@/components/ui';
 import { useAuth } from '@/lib/auth';
@@ -162,12 +165,32 @@ function PostCardView({ post, onLikes, compact, detail }: { post: Post; onLikes?
   const [gone, setGone] = useState(false);
   const mine = p.author_id === profile?.id;
 
+  // the author changes a posted video's cover: a moment of the video, or a photo from the gallery
+  const [coverOf, setCoverOf] = useState<Picked | null>(null);
+  async function editCover() {
+    if (!video) return;
+    const uri = await mediaUrl('posts', video.url);
+    if (uri) setCoverOf({ uri, kind: 'video', mime: 'video/mp4', meta: (video.meta ?? undefined) as Picked['meta'] });
+  }
+  async function saveCover(c: Cover) {
+    setCoverOf(null);
+    if (!video) return;
+    const path = await uploadCover('posts', video.url, c, true);
+    if (!path) { toast(t('تعذّر حفظ الغلاف')); return; }
+    const meta = { ...((video.meta ?? {}) as object), cover: path };
+    const r = await run(supabase.from('post_media').update({ meta }).eq('id', video.id));
+    if (!r.ok) return;
+    setP((x) => ({ ...x, media: (x.media ?? []).map((m) => (m.id === video.id ? { ...m, meta } : m)) }));
+    toast(t('تم تغيير الغلاف ✓'));
+  }
+
   /** "⋯" menu like Instagram: save, send, report or delete. */
   function menu() {
     const opts: [string, () => void, ('destructive' | undefined)?][] = [
       [p.saved ? t('إلغاء الحفظ') : t('حفظ'), save],
       [t('أرسل لصديق'), () => router.push({ pathname: '/share', params: { post: p.id } })],
       [t('عرض الملف الشخصي'), () => router.push({ pathname: '/user/[id]', params: { id: p.author_id } })],
+      ...(mine && video ? [[t('تعديل غلاف الفيديو'), editCover] as [string, () => void]] : []),
       mine
         ? [t('حذف المنشور'), () => Alert.alert(t('حذف المنشور؟'), t('لا يمكن التراجع عن ذلك.'), [{ text: t('إلغاء'), style: 'cancel' }, { text: t('حذف'), style: 'destructive', onPress: async () => { const r = await run(supabase.from('posts').delete().eq('id', p.id)); if (r.ok) { setGone(true); toast(t('تم حذف المنشور')); if (detail) router.back(); } } }]), 'destructive']
         : [t('إبلاغ'), () => router.push({ pathname: '/report', params: { type: 'post', id: p.id, user: p.author_id } }), 'destructive'],
@@ -202,6 +225,7 @@ function PostCardView({ post, onLikes, compact, detail }: { post: Post; onLikes?
       </Row>
 
       {video && <PostVideo path={video.url} meta={video.meta} postId={p.id} onDoubleTap={() => { if (!p.liked) like(); }} />}
+      {coverOf && <CoverPicker video={coverOf} onCancel={() => setCoverOf(null)} onDone={saveCover} />}
       {images.length > 0 && <Photos paths={images.map((m) => m.url)} onDoubleTap={() => { if (!p.liked) like(); }} />}
       <Tap scale={0.99} haptic={false} disabled={detail} onPress={() => router.push({ pathname: '/post/[id]', params: { id: p.id } })}>
         <View style={{ paddingHorizontal: 16, paddingTop: 10, gap: 4 }}>

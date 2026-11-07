@@ -56,6 +56,7 @@ async function forNotification(id: string): Promise<Push[]> {
   const url = n.kind === 'announcement' ? '/announcements'
     : n.kind === 'section_event' ? '/exams'
     : n.kind === 'ride' ? (d.ride_id ? `/rides/${d.ride_id}` : '/rides')
+    : n.kind === 'system' && d.url?.startsWith('/') && !d.url.startsWith('/admin') ? d.url // the owner's notification and the page it opens
     : d.conversation_id ? `/messages/${d.conversation_id}`
     : d.post_id ? `/post/${d.post_id}`
     : d.user_id ? `/user/${d.user_id}`
