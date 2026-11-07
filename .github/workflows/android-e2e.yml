@@ -1,0 +1,79 @@
+# Runs the app on Android emulators (a recent phone and a weak one) and walks the story flow with Maestro, taking a
+# screenshot at every step. Started by hand with one-time sign-in links for the QA account (made fresh for each run).
+# Screenshots, the Maestro report and the phone's log go to the "e2e-results" branch.
+name: Android E2E
+on:
+  workflow_dispatch:
+    inputs:
+      link_new: { description: 'unimate://callback?token_hash=…&type=magiclink (recent phone)', required: true }
+      link_weak: { description: 'unimate://callback?token_hash=…&type=magiclink (weak phone)', required: true }
+permissions:
+  contents: write
+concurrency:
+  group: android-e2e
+  cancel-in-progress: true
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    defaults: { run: { shell: 'bash -eo pipefail {0}', working-directory: app } }
+    env:
+      EXPO_PUBLIC_SUPABASE_URL: https://slkfyblvpewlxrifzrhg.supabase.co
+      EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY: sb_publishable_1otcwSg3NdpjsEmXJWJO7g_yxdXR2xP
+      EXPO_PUBLIC_MS_LOGIN: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm, cache-dependency-path: app/package-lock.json }
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: '17' }
+      - run: npm ci 2>&1 | tail -5
+      - run: npx expo prebuild --platform android --clean 2>&1 | tail -5
+      # the emulators are x86_64: the same release app, built for that processor
+      - run: cd android && ./gradlew assembleRelease --no-daemon -PreactNativeArchitectures=x86_64 -Dorg.gradle.jvmargs=-Xmx4g > ../gradle.log 2>&1 || { grep -E "error:|What went wrong" -A5 ../gradle.log | head -60; exit 1; }
+      - uses: actions/upload-artifact@v4
+        with: { name: apk, path: app/android/app/build/outputs/apk/release/app-release.apk }
+  e2e:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        phone:
+          - { name: new, api: 34, profile: pixel_7, ram: 4096, cores: 4, link: link_new }
+          - { name: weak, api: 30, profile: pixel_3a, ram: 2048, cores: 2, link: link_weak }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with: { name: apk, path: . }
+      - name: KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules && sudo udevadm trigger --name-match=kvm
+      - name: Maestro and a 30 s test video
+        run: |
+          curl -fsSL "https://get.maestro.mobile.dev" | bash
+          sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg > /dev/null
+          ffmpeg -loglevel error -y -f lavfi -i testsrc2=size=720x1280:rate=30 -f lavfi -i sine=frequency=440 -t 30 -c:v libx264 -preset veryfast -pix_fmt yuv420p -c:a aac test30.mp4
+      - uses: reactivecircus/android-emulator-runner@v2
+        env:
+          LOGIN_LINK: ${{ github.event.inputs[matrix.phone.link] }}
+        with:
+          api-level: ${{ matrix.phone.api }}
+          arch: x86_64
+          target: google_apis
+          profile: ${{ matrix.phone.profile }}
+          ram-size: ${{ matrix.phone.ram }}M
+          cores: ${{ matrix.phone.cores }}
+          disable-animations: false
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back emulated
+          script: bash e2e/run.sh ${{ matrix.phone.name }} ${{ matrix.phone.api }}
+      - name: Publish results
+        if: ${{ !cancelled() }}
+        run: |
+          mkdir -p /tmp/pub/${{ matrix.phone.name }} && cp -R out/. /tmp/pub/${{ matrix.phone.name }}/ 2>/dev/null || true
+          cd /tmp/pub && git init -q && git checkout -q -b e2e-${{ matrix.phone.name }}
+          echo "${{ github.sha }} ${{ job.status }} $(date -u)" > ${{ matrix.phone.name }}/RUN.txt
+          git -c user.name=ci -c user.email=ci@unimate.local add -A && git -c user.name=ci -c user.email=ci@unimate.local commit -qm "e2e ${{ matrix.phone.name }}"
+          git push -qf "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" e2e-${{ matrix.phone.name }}

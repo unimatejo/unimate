@@ -1,0 +1,40 @@
+# Posting a story from a long video, on a real Android phone (emulator), the way a student does it:
+# camera → photos → a 30 s video → the trimmer opens → «تم» → the editor → «شارك بقصتك» → back at once, the
+# «قصتك» circle fills, and the story is up. A screenshot at every step (e2e-results branch).
+appId: jo.unimate.app
+---
+- launchApp
+- openLink: ${LOGIN_LINK}
+- extendedWaitUntil: { visible: "الرئيسية", timeout: 90000 }
+# the newest update downloads on the first open and runs from the next
+- waitForAnimationToEnd: { timeout: 15000 }
+- stopApp
+- launchApp
+- extendedWaitUntil: { visible: "الرئيسية", timeout: 90000 }
+- waitForAnimationToEnd: { timeout: 15000 }
+- stopApp
+- launchApp
+- extendedWaitUntil: { visible: "الرئيسية", timeout: 90000 }
+- takeScreenshot: 01-home
+- tapOn: "المجتمع"
+- extendedWaitUntil: { visible: "ضيف قصة", timeout: 30000 }
+- takeScreenshot: 02-community
+- tapOn: "ضيف قصة"
+- extendedWaitUntil: { visible: "الصور", timeout: 30000 }
+- takeScreenshot: 03-camera
+- tapOn: "الصور"
+- extendedWaitUntil: { visible: "فيديو 0:30", timeout: 30000 }
+- takeScreenshot: 04-gallery
+- tapOn: "فيديو 0:30"
+- extendedWaitUntil: { visible: "عدّل الفيديو", timeout: 30000 }
+- waitForAnimationToEnd: { timeout: 8000 }
+- takeScreenshot: 05-trimmer
+- tapOn: "تم"
+- extendedWaitUntil: { visible: "شارك بقصتك", timeout: 30000 }
+- waitForAnimationToEnd: { timeout: 8000 }
+- takeScreenshot: 06-editor
+- tapOn: "شارك بقصتك"
+- extendedWaitUntil: { visible: "المجتمع", timeout: 15000 }
+- takeScreenshot: 07-after-share
+- extendedWaitUntil: { notVisible: "عم ترتفع…", timeout: 240000 }
+- takeScreenshot: 08-uploaded

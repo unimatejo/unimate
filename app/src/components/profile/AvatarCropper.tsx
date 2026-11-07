@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react';
 import { ActivityIndicator, Modal, useWindowDimensions, View } from 'react-native';
 import { GestureDetector, GestureHandlerRootView, usePanGesture, usePinchGesture, useSimultaneousGestures } from 'react-native-gesture-handler';
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { T, Tap } from '@/components/ui';
 import { C } from '@/lib/theme';
@@ -18,6 +18,7 @@ type Src = { uri: string; width: number; height: number };
  * Gives back a square JPEG of exactly what is inside the circle.
  */
 export function AvatarCropper({ src, onDone, onCancel }: { src: Src | null; onDone: (f: { uri: string; mime: string }) => void; onCancel: () => void }) {
+  const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
   const box = Math.min(width - 40, 340); // the circle
   const [img, setImg] = useState<Src | null>(src);
@@ -81,7 +82,8 @@ export function AvatarCropper({ src, onDone, onCancel }: { src: Src | null; onDo
   return (
     <Modal visible={!!src} animationType="slide" onRequestClose={onCancel}>
       <GestureHandlerRootView style={{ flex: 1, backgroundColor: '#000' }}>
-        <SafeAreaView style={{ flex: 1 }}>
+        {/* the phone's own insets: a SafeAreaView inside a Modal opened from a sheet reads them as zero on iPhone */}
+        <View style={{ flex: 1, paddingTop: insets.top, paddingBottom: insets.bottom }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, height: 52 }}>
             <Tap onPress={onCancel} accessibilityLabel={t('إلغاء')}><T v="bodyMd" color="#fff">{t('إلغاء')}</T></Tap>
             <T v="bold" color="#fff">{t('عدّل الصورة')}</T>
@@ -107,7 +109,7 @@ export function AvatarCropper({ src, onDone, onCancel }: { src: Src | null; onDo
               <RotateCw size={22} color="#fff" />
             </Tap>
           </View>
-        </SafeAreaView>
+        </View>
       </GestureHandlerRootView>
     </Modal>
   );

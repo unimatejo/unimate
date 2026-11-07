@@ -7,7 +7,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Image as RNImage, Modal, Platform, ScrollView, View } from 'react-native';
 import { GestureDetector, GestureHandlerRootView, usePanGesture, usePinchGesture, useSimultaneousGestures } from 'react-native-gesture-handler';
 import Animated, { Easing, runOnJS, useAnimatedStyle, useSharedValue, withTiming, type SharedValue } from 'react-native-reanimated';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { measureVideo } from '@/components/media/FramedMedia';
 import { useVideoThumbs, type Thumb } from '@/components/media/videoThumbs';
@@ -142,6 +142,7 @@ function TrimBar({ duration, maxSec, start, end, onChange, onSeek, onScrub, thum
  * over a blurred copy. Videos: frame them the same way and trim start / end (saved as framing, not re-encoded).
  */
 export function MediaCropper({ src, opts, onDone, onCancel }: { src: Picked; opts: CropOpts; onDone: (r: CropResult) => void; onCancel: () => void }) {
+  const insets = useSafeAreaInsets();
   const mode: CropMode = opts.mode;
   const isVideo = src.kind === 'video';
   const story = mode === 'story';
@@ -387,7 +388,8 @@ export function MediaCropper({ src, opts, onDone, onCancel }: { src: Picked; opt
 
   return (
     <GestureHandlerRootView style={{ flex: 1, backgroundColor: BG }}>
-      <SafeAreaView style={{ flex: 1 }}>
+      {/* the phone's own insets: a SafeAreaView inside a Modal opened from a sheet reads them as zero on iPhone */}
+        <View style={{ flex: 1, paddingTop: insets.top, paddingBottom: insets.bottom }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 10, height: 56 }}>
           <Tap onPress={onCancel} accessibilityLabel={t('إلغاء')} style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}><X size={24} color={INK} /></Tap>
           <T v="bold" color={INK} style={{ fontSize: 16 }}>{title}</T>
@@ -458,7 +460,7 @@ export function MediaCropper({ src, opts, onDone, onCancel }: { src: Picked; opt
             )}
           </View>
         </View>
-      </SafeAreaView>
+      </View>
     </GestureHandlerRootView>
   );
 }
