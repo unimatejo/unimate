@@ -1,12 +1,13 @@
 # Runs the app on Android emulators (a recent phone and a weak one) and walks the story flow with Maestro, taking a
-# screenshot at every step. Started by hand with one-time sign-in links for the QA account (made fresh for each run).
+# screenshot at every step. Started by hand for one phone at a time, with a one-time sign-in link for the QA account
+# (made fresh for each run: a new link cancels the previous one).
 # Screenshots, the Maestro report and the phone's log go to the "e2e-results" branch.
 name: Android E2E
 on:
   workflow_dispatch:
     inputs:
-      link_new: { description: 'unimate://callback?token_hash=…&type=magiclink (recent phone)', required: true }
-      link_weak: { description: 'unimate://callback?token_hash=…&type=magiclink (weak phone)', required: true }
+      phone: { description: 'new (recent phone) or weak (2 GB, 2 cores, Android 11)', required: true, default: weak }
+      link: { description: 'unimate://callback?token_hash=…&type=magiclink', required: true }
 permissions:
   contents: write
 concurrency:
@@ -38,11 +39,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 60
     strategy:
-      fail-fast: false
       matrix:
-        phone:
-          - { name: new, api: 34, profile: pixel_7, ram: 4096, cores: 4, link: link_new }
-          - { name: weak, api: 30, profile: pixel_3a, ram: 2048, cores: 2, link: link_weak }
+        phone: ${{ fromJSON(github.event.inputs.phone == 'new' && '[{"name":"new","api":34,"profile":"pixel_7","ram":4096,"cores":4}]' || '[{"name":"weak","api":30,"profile":"pixel_3a","ram":2048,"cores":2}]') }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
@@ -58,7 +56,7 @@ jobs:
           ffmpeg -loglevel error -y -f lavfi -i testsrc2=size=720x1280:rate=30 -f lavfi -i sine=frequency=440 -t 30 -c:v libx264 -preset veryfast -pix_fmt yuv420p -c:a aac test30.mp4
       - uses: reactivecircus/android-emulator-runner@v2
         env:
-          LOGIN_LINK: ${{ github.event.inputs[matrix.phone.link] }}
+          LOGIN_LINK: ${{ github.event.inputs.link }}
         with:
           api-level: ${{ matrix.phone.api }}
           arch: x86_64
