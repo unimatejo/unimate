@@ -13,6 +13,8 @@ import { t } from '@/lib/i18n';
 type Adv = {
   id: string; name: string; category: string; description: string | null; phone: string | null; hours: string | null;
   menu: { name: string; price_jod?: number; photo_url?: string }[]; photos: string[]; logo_url: string | null; lat: number | null; lng: number | null;
+  /** the building it's in on campus (0136): «وديني» walks there */
+  building_id?: string | null;
 };
 const CAT: Record<string, string> = { restaurant: t('مطعم'), cafe: t('كافيه'), bookshop: t('مكتبة'), print: t('طباعة'), housing: t('سكن'), courses: t('دورات'), shop: t('محل'), other: t('خدمة') };
 
@@ -93,7 +95,9 @@ export default function Advertiser() {
                 <Marker coordinate={{ latitude: a.lat, longitude: a.lng }} title={a.name} />
               </MapView>
             </View>
-            <Button kind="soft" title={t('شوفه على خريطة الجامعة')} onPress={() => router.push({ pathname: '/map', params: { advertiser: a.id } })} />
+            {a.building_id
+              ? <Button title={t('وديني')} onPress={() => router.push({ pathname: '/map', params: { building: a.building_id, go: '1' } })} />
+              : <Button kind="soft" title={t('شوفه على خريطة الجامعة')} onPress={() => router.push({ pathname: '/map', params: { advertiser: a.id } })} />}
           </View>
         )}
       </ScrollView>

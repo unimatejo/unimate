@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useState } from 'react';
 import { AppState } from 'react-native';
 
+import { useAuth } from './auth';
 import { readCache, writeCache } from './cache';
+import { buildingFor } from './campus/pins';
 import { timed } from './perf';
 import { preferOfficial } from './events';
 import { supabase } from './supabase';
@@ -47,6 +49,7 @@ export function useSchedule(userId?: string) {
   const [loading, setLoading] = useState(!cached);
   const [error, setError] = useState(false);
   const [now, setNow] = useState(() => new Date());
+  const universityId = useAuth().profile?.university_id ?? null;
 
   const load = useCallback(async () => {
     if (!userId) return;
@@ -142,13 +145,20 @@ export function useSchedule(userId?: string) {
         }
       }
     }
+    // a room written as text («قاعة 204 كلية الهندسة»): its building from the campus map, so "وديني" and the
+    // reminder's tap walk there too
+    for (const m of out) {
+      if (m.building_id || m.kind === 'online' || !m.room_text) continue;
+      const b = buildingFor(m.room_text, universityId);
+      if (b) { m.building_id = b.id; m.building_name = b.name; m.lat = b.lat; m.lng = b.lng; }
+    }
     out.sort((a, b) => a.weekday - b.weekday || a.starts_at.localeCompare(b.starts_at));
     const evs = preferOfficial((ev ?? []) as AcademicEvent[]);
     setMeetings(out); setEvents(evs); setError(false);
     writeCache(key, { meetings: out, events: evs });
     } catch { setError(true); }
     finally { setLoading(false); }
-  }, [userId, key]);
+  }, [userId, key, universityId]);
 
   useEffect(() => { load(); }, [load]);
   // keep "next lecture" / "today" fresh: re-render every minute, reload when the app comes back to the front

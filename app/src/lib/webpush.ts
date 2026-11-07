@@ -62,9 +62,33 @@ export async function registerNativePush() {
   if (tok) await supabase.rpc('register_push', { p_token: tok, p_platform: 'android', p_keys: null });
 }
 
+/**
+ * A tapped notification's screen waits here until the app has finished starting (signed in, set up), so a tap that
+ * opened the app isn't lost to the start-up screens. Each notification opens its screen once.
+ */
+let pending: string | null = null;
+const opened = new Set<string>();
+const waiters = new Set<() => void>();
 function openFrom(r: Notifications.NotificationResponse | null) {
-  const url = r?.notification.request.content.data?.url;
-  if (typeof url === 'string' && url.startsWith('/')) setTimeout(() => router.push(url as never), 300);
+  if (!r) return;
+  const url = r.notification.request.content.data?.url;
+  const once = `${r.notification.request.identifier}@${r.notification.date}`;
+  if (typeof url !== 'string' || !url.startsWith('/') || opened.has(once)) return;
+  opened.add(once);
+  pending = url;
+  waiters.forEach((w) => w());
+  Notifications.clearLastNotificationResponseAsync?.().catch(() => {});
+}
+
+/** Opens the tapped notification's screen once `ready` (the start-up screens are done). */
+export function useOpenTapped(ready: boolean) {
+  useEffect(() => {
+    if (!ready) return;
+    const go = () => { if (!pending) return; const url = pending; pending = null; setTimeout(() => router.push(url as never), 50); };
+    go();
+    waiters.add(go);
+    return () => { waiters.delete(go); };
+  }, [ready]);
 }
 
 /** On sign-out: this device stops getting the old account's messages. */

@@ -14,7 +14,7 @@ import { ZoomHost } from '@/components/media/ZoomPhoto';
 import { WebAlertHost } from '@/components/shell/WebAlert';
 import { MediaCropperHost } from '@/components/media/MediaCropper';
 import { useOtaUpdates } from '@/lib/ota';
-import { useWebPush } from '@/lib/webpush';
+import { useOpenTapped, useWebPush } from '@/lib/webpush';
 import { AuthProvider, useAuth } from '@/lib/auth';
 import { useTeamStatus } from '@/lib/team';
 import { useNotifIntroDue } from '@/lib/notifPermission';
@@ -76,6 +76,8 @@ function Gate() {
   // the one-time notifications screen, right after the first setup (never again once answered)
   const notifDue = useNotifIntroDue(!!profile?.onboarded);
   useEffect(() => { setScreen(seg.join('/')); }, [seg]);
+  // a tapped notification ("lecture in 10 minutes" → the walk to the room) opens once the start-up screens are done
+  useOpenTapped(!loading && !!profile?.onboarded && notifDue === false && seg[0] !== '(auth)');
   // the student's own campus map is made ready on the phone in the background, so it works there without internet
   useEffect(() => { if (profile?.onboarded) prepareOfflineCampus(profile.university_id); }, [profile?.onboarded, profile?.university_id]);
 

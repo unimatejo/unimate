@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { View } from 'react-native';
 
 import { Row, T, Tap, Tag } from '@/components/ui';
-import { liveAds, openAdvertiser, openOrder, trackAd, type Ad } from '@/lib/ads';
+import { CTA_DEFAULT, adAction, liveAds, openAdvertiser, trackAd, type Ad } from '@/lib/ads';
 import { C, shadow } from '@/lib/theme';
 import { t } from '@/lib/i18n';
 
@@ -33,9 +33,9 @@ export function AdBanner({ placement }: { placement: 'feed_card' | 'market_banne
           <T v="bold">{ad.title}</T>
           {ad.offer ? <T v="small" color={C.greenInk}>{ad.offer}</T> : ad.body ? <T v="small" color={C.muted}>{ad.body}</T> : null}
         </View>
-        <Tap onPress={ad.cta_url ? () => openOrder(ad) : () => openAdvertiser(ad)}
+        <Tap onPress={ad.cta_kind ? () => adAction(ad) : () => openAdvertiser(ad)}
           style={{ minHeight: 40, paddingHorizontal: 14, borderRadius: 12, backgroundColor: C.primarySoft, justifyContent: 'center' }}>
-          <T v="bold" color={C.primary} style={{ fontSize: 13 }}>{ad.cta_url ? ad.cta_label || t('اطلب الآن') : t('شوف')}</T>
+          <T v="bold" color={C.primary} style={{ fontSize: 13 }}>{ad.cta_kind ? ad.cta_label || CTA_DEFAULT[ad.cta_kind] : t('شوف')}</T>
         </Tap>
       </Row>
     </Tap>

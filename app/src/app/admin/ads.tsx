@@ -9,19 +9,21 @@ import { Chip, Field, Row, T, Tap, Toggle } from '@/components/ui';
 import { supabase } from '@/lib/supabase';
 import { pickMedia, publicUrl, uploadFile } from '@/lib/upload';
 import { AdSlide } from '@/components/feed/HomeAds';
-import { PACKAGES, packageOf, type PackageKey } from '@/lib/ads';
+import { CTA_DEFAULT, PACKAGES, packageOf, type CtaKind, type PackageKey } from '@/lib/ads';
 import { C } from '@/lib/theme';
+import { normalize } from '@/lib/util';
 import { t } from '@/lib/i18n';
 
 type MenuItem = { name: string; price_jod?: number; photo_url?: string };
 type Adv = {
   id?: string; university_id: string | null; name: string; category: string; description: string | null; phone: string | null; hours: string | null;
   menu: MenuItem[]; photos: string[]; logo_url: string | null; lat: number | null; lng: number | null; contact_name: string | null; notes: string | null; is_active: boolean;
+  building_id: string | null;
 };
 type Camp = {
   id?: string; advertiser_id: string; university_ids: string[]; college_ids: string[]; placement: string; title: string; body: string | null; image_url: string | null;
   offer: string | null; cta_url: string | null; cta_label: string | null; starts_on: string; ends_on: string; daily_from: string | null; daily_to: string | null;
-  priority: number; is_active: boolean;
+  priority: number; is_active: boolean; cta_kind: CtaKind | null; show_text: boolean;
 };
 type Stat = { campaign_id: string; impressions: number; clicks: number; calls: number; orders: number };
 
@@ -29,13 +31,36 @@ const CATS: Record<string, string> = { restaurant: t('مطعم'), cafe: t('كا�
 const PLACES: Record<string, string> = { home_banner: t('بانر الرئيسية (أعلى الشاشة)'), feed_card: t('بين المنشورات'), map_pin: t('دبوس على الخريطة'), market_banner: t('بانر السوق') };
 const ymd = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 const today = () => ymd(new Date());
-const blankAdv = (): Adv => ({ university_id: null, name: '', category: 'restaurant', description: '', phone: '', hours: '', menu: [], photos: [], logo_url: null, lat: null, lng: null, contact_name: '', notes: '', is_active: true });
+const blankAdv = (): Adv => ({ university_id: null, name: '', category: 'restaurant', description: '', phone: '', hours: '', menu: [], photos: [], logo_url: null, lat: null, lng: null, contact_name: '', notes: '', is_active: true, building_id: null });
+const CTA_KINDS: [CtaKind | null, string][] = [[null, t('بدون زر')], ['link', t('رابط موقعه')], ['map', t('وديني عنده')], ['call', t('اتصال')]];
+/** ready words for the button, any of them can be changed by hand */
+const CTA_WORDS = [t('اطلب الآن'), t('اذهب للموقع'), t('احجز الآن'), t('شوف العرض'), t('وديني'), t('اتصل الآن')];
 
-async function pickAndUpload(): Promise<string | null> {
-  const f = await pickMedia({ maxWidth: 1600 });
+/** `banner`: the picture is cut to the banner's shape (2:1) in the crop editor first, like cutting it by hand. */
+async function pickAndUpload(banner = false): Promise<string | null> {
+  const f = await pickMedia(banner ? { crop: 'post', aspect: 2 } : { maxWidth: 1600 });
   if (!f) return null;
   const path = await uploadFile('ads', 'admin', f);
   return publicUrl('ads', path);
+}
+
+/** Where the advertiser is on campus: one of the university's buildings, so «وديني» walks students to the door. */
+function BuildingPicker({ universityId, value, onChange }: { universityId: string | null; value: string | null; onChange: (b: { id: string; lat: number; lng: number } | null) => void }) {
+  const [q, setQ] = useState('');
+  const { data } = useLoad<{ id: string; name_ar: string; lat: number; lng: number }[]>(
+    () => universityId ? supabase.from('buildings').select('id, name_ar, lat, lng').eq('university_id', universityId).eq('state', 'approved').not('lat', 'is', null).order('name_ar') as never : Promise.resolve({ data: [], error: null }), [universityId]);
+  const chosen = (data ?? []).find((b) => b.id === value);
+  const hits = (data ?? []).filter((b) => !q.trim() || normalize(b.name_ar).includes(normalize(q))).slice(0, 8);
+  if (!universityId) return <Muted>{t('اختار جامعة المعلن أول، وبعدها بتختار مبناه.')}</Muted>;
+  return (
+    <View style={{ gap: 8 }}>
+      <T v="small" color={C.muted}>{chosen ? t('مكانه: {0}', [chosen.name_ar]) : t('مكانه بالجامعة (اختياري): دوّر على المبنى')}</T>
+      <Field value={q} onChangeText={setQ} placeholder={t('اسم المبنى، مثلاً كلية الهندسة')} />
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+        {hits.map((b) => <Chip key={b.id} label={b.name_ar} active={b.id === value} onPress={() => onChange(b.id === value ? null : b)} />)}
+      </View>
+    </View>
+  );
 }
 
 function CampaignForm({ adv, camp, onDone }: { adv: Adv; camp: Camp | null; onDone: () => void }) {
@@ -43,18 +68,21 @@ function CampaignForm({ adv, camp, onDone }: { adv: Adv; camp: Camp | null; onDo
   const [c, setC] = useState<Camp>(() => camp ?? {
     advertiser_id: adv.id!, university_ids: adv.university_id ? [adv.university_id] : [], college_ids: [], placement: 'home_banner', title: '', body: '', image_url: null,
     offer: '', cta_url: '', cta_label: '', starts_on: today(), ends_on: ymd(new Date(Date.now() + 30 * 864e5)), daily_from: null, daily_to: null, priority: 10, is_active: true,
+    cta_kind: 'link', show_text: true,
   });
   const [msg, setMsg] = useState<string | null>(null);
   const set = (p: Partial<Camp>) => setC((x) => ({ ...x, ...p }));
 
   async function save() {
     if (!c.title.trim() || c.university_ids.length === 0) { setMsg(t('حط عنوان واختار جامعة وحدة على الأقل.')); return; }
-    const cta = c.cta_url?.trim() || null;
-    if (cta && !/^https:\/\/\S+$/i.test(cta)) { setMsg(t('رابط «اطلب الآن» لازم يبلش بـ https://')); return; }
+    const cta = c.cta_kind === 'link' ? c.cta_url?.trim() || null : null;
+    if (c.cta_kind === 'link' && (!cta || !/^https:\/\/\S+$/i.test(cta))) { setMsg(t('رابط الزر لازم يبلش بـ https://')); return; }
+    if (c.cta_kind === 'map' && !adv.building_id && adv.lat == null) { setMsg(t('حدّد مكان المعلن (المبنى) فوق عشان «وديني» يشتغل.')); return; }
+    if (c.cta_kind === 'call' && !adv.phone?.trim()) { setMsg(t('حط رقم هاتف المعلن فوق عشان زر الاتصال يشتغل.')); return; }
     const time = /^([01]\d|2[0-3]):[0-5]\d$/;
     if ((c.daily_from && !time.test(c.daily_from)) || (c.daily_to && !time.test(c.daily_to))) { setMsg(t('اكتب الساعة هيك: 08:00')); return; }
     const row = { ...c, daily_from: c.daily_from || null, daily_to: c.daily_to || null, body: c.body?.trim() || null, offer: c.offer?.trim() || null,
-      title: c.title.trim(), cta_url: cta, cta_label: cta ? c.cta_label?.trim() || null : null };
+      title: c.title.trim(), cta_url: cta, cta_label: c.cta_kind ? c.cta_label?.trim() || null : null };
     const { error } = c.id ? await supabase.from('ad_campaigns').update(row).eq('id', c.id) : await supabase.from('ad_campaigns').insert(row);
     if (error) { setMsg(error.message); return; }
     await audit(c.id ? 'edit_campaign' : 'add_campaign', 'campaign', c.id ?? adv.id!, { title: c.title });
@@ -70,16 +98,35 @@ function CampaignForm({ adv, camp, onDone }: { adv: Adv; camp: Camp | null; onDo
       <Field label={t('النص (140 حرف)')} value={c.body ?? ''} onChangeText={(v) => set({ body: v })} maxLength={140} />
       <OptionPicker label={t('الباقة (الأعلى بيطلع أول)')} value={String(packageOf(c.priority))}
         options={PACKAGES as Record<PackageKey, string> as unknown as Record<string, string>} onChange={(v) => set({ priority: Number(v) })} />
-      <Field label={t('رابط «اطلب الآن» (اختياري)')} value={c.cta_url ?? ''} onChangeText={(v) => set({ cta_url: v })} placeholder="https://"
-        autoCapitalize="none" autoCorrect={false} keyboardType="url" maxLength={500} />
-      {c.cta_url?.trim() ? <Field label={t('كلمة الزر')} value={c.cta_label ?? ''} onChangeText={(v) => set({ cta_label: v })} placeholder={t('اطلب الآن')} maxLength={20} /> : null}
+      <T v="small" color={C.muted}>{t('زر الإعلان')}</T>
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+        {CTA_KINDS.map(([k, l]) => <Chip key={l} label={l} active={c.cta_kind === k} onPress={() => set({ cta_kind: k })} />)}
+      </View>
+      {c.cta_kind === 'link' && (
+        <Field label={t('رابط موقعه أو صفحة الطلب')} value={c.cta_url ?? ''} onChangeText={(v) => set({ cta_url: v })} placeholder="https://"
+          autoCapitalize="none" autoCorrect={false} keyboardType="url" maxLength={500} />
+      )}
+      {c.cta_kind === 'map' && <Muted>{t('بيفتح خريطة الجامعة وبيمشّي الطالب لمكان المعلن.')}</Muted>}
+      {c.cta_kind === 'call' && <Muted>{t('بيتصل على رقم المعلن: {0}', [adv.phone || t('(ما في رقم لهلأ)')])}</Muted>}
+      {c.cta_kind && (
+        <>
+          <Field label={t('الكلمة على الزر')} value={c.cta_label ?? ''} onChangeText={(v) => set({ cta_label: v })} placeholder={CTA_DEFAULT[c.cta_kind]} maxLength={20} />
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+            {CTA_WORDS.map((w) => <Chip key={w} label={w} active={c.cta_label === w} onPress={() => set({ cta_label: w })} />)}
+          </View>
+        </>
+      )}
+      <T v="small" color={C.muted}>{t('صورة البانر (بتنقص على شكل البانر)')}</T>
       <Row gap={10}>
-        <Act label={c.image_url ? t('غيّر الصورة') : t('حط صورة (عرضية)')} onPress={async () => { try { const u = await pickAndUpload(); if (u) set({ image_url: u }); } catch (e) { setMsg((e as Error).message); } }} />
+        <Act label={c.image_url ? t('غيّر الصورة') : t('حط صورة')} onPress={async () => { try { const u = await pickAndUpload(true); if (u) set({ image_url: u }); } catch (e) { setMsg((e as Error).message); } }} />
+        {c.image_url ? <Act label={t('شيل الصورة')} onPress={() => set({ image_url: null })} /> : null}
       </Row>
-      {c.image_url ? <Act label={t('شيل الصورة')} onPress={() => set({ image_url: null })} /> : null}
+      {c.image_url ? <Toggle value={!c.show_text} onChange={(v) => set({ show_text: !v })} label={t('الكتابة جاهزة على الصورة')}
+        hint={t('بيبيّن البانر زي ما هو، وفوقه «ممول» والزر بس.')} /> : null}
       <T v="small" color={C.muted}>{t('هيك بيطلع للطلاب:')}</T>
       <AdSlide ad={{ campaign_id: c.id ?? 'preview', advertiser_id: adv.id ?? '', advertiser_name: adv.name || t('اسم المحل'), title: c.title || t('عنوان الإعلان'),
-        body: c.body || null, image_url: c.image_url, offer: c.offer || null, logo_url: adv.logo_url, cta_url: c.cta_url?.trim() || null, cta_label: c.cta_label || null, priority: c.priority }} />
+        body: c.body || null, image_url: c.image_url, offer: c.offer || null, logo_url: adv.logo_url, cta_url: c.cta_url?.trim() || null, cta_label: c.cta_label || null, priority: c.priority,
+        cta_kind: c.cta_kind, show_text: c.show_text, building_id: adv.building_id, phone: adv.phone }} />
       <T v="small" color={C.muted}>{t('من تاريخ')}</T>
       <DateField value={new Date(c.starts_on)} onChange={(d) => set({ starts_on: ymd(d) })} />
       <T v="small" color={C.muted}>{t('لتاريخ')}</T>
@@ -129,8 +176,12 @@ function AdvEditor({ initial, onClose }: { initial: Adv; onClose: () => void }) 
       <UniPicker value={a.university_id ?? ''} onChange={(v) => set({ university_id: v || null })} />
       <Field label={t('الهاتف (بيبيّن للطلاب)')} value={a.phone ?? ''} onChangeText={(v) => set({ phone: v })} keyboardType="phone-pad" />
       <Field label={t('الدوام')} value={a.hours ?? ''} onChangeText={(v) => set({ hours: v })} placeholder={t('يومياً 8 الصبح - 11 بالليل')} />
-      <Field label={t('الموقع (lat, lng)')} value={a.lat != null ? `${a.lat}, ${a.lng}` : ''} placeholder="32.0139, 35.8728"
-        onChangeText={(v) => { const [la, ln] = v.split(',').map((x) => parseFloat(x)); set({ lat: Number.isFinite(la) ? la : null, lng: Number.isFinite(ln) ? ln : null }); }} />
+      <BuildingPicker universityId={a.university_id} value={a.building_id}
+        onChange={(b) => set(b ? { building_id: b.id, lat: b.lat, lng: b.lng } : { building_id: null })} />
+      {!a.building_id && (
+        <Field label={t('برا الجامعة؟ الموقع (lat, lng)')} value={a.lat != null ? `${a.lat}, ${a.lng}` : ''} placeholder="32.0139, 35.8728"
+          onChangeText={(v) => { const [la, ln] = v.split(',').map((x) => parseFloat(x)); set({ lat: Number.isFinite(la) ? la : null, lng: Number.isFinite(ln) ? ln : null }); }} />
+      )}
       <Field label={t('الوصف')} value={a.description ?? ''} onChangeText={(v) => set({ description: v })} multiline style={{ minHeight: 80, paddingTop: 14 }} />
       <Row gap={10}>
         {a.logo_url ? <Image source={{ uri: a.logo_url }} style={{ width: 52, height: 52, borderRadius: 26 }} /> : null}

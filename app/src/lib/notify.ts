@@ -31,6 +31,41 @@ export function scheduleLectureReminders(meetings: Meeting[], off: Record<string
   return scheduling;
 }
 
+/** "In 10 minutes: <course>" — tapping it opens the walk to the room (lib/webpush useOpenTapped), else the timetable. */
+function lectureContent(m: Meeting, minutes: number): Notifications.NotificationContentInput {
+  const where = m.kind === 'online' ? t('أونلاين') : m.kind === 'blended' && !m.room_code && !m.building_name ? t('مدمج') : [m.building_name, m.room_code ? t('قاعة {0}', [m.room_code]) : null].filter(Boolean).join(' · ');
+  const walk = !!m.building_id && m.kind !== 'online';
+  return {
+    title: t('بعد {0} دقايق: {1}', [minutes, m.course_name]),
+    body: walk ? t('{0} · {1} · اكبس وبوديك للقاعة', [where, clock(m.starts_at)]) : t('{0} · {1}', [where || t('شوف القاعة بالجدول'), clock(m.starts_at)]),
+    data: { kind: 'lecture', meeting: m.id, building: m.building_id, url: walk ? roomUrl(m) : '/(tabs)/schedule' },
+  };
+}
+
+/**
+ * Settings › "جرّب التنبيه": the reminder of the next lecture (one with a room on the map if there is one), 5 seconds
+ * from now, exactly as it will come before the lecture. Lock the phone and tap it to check it opens the walk.
+ */
+export async function testLectureReminder(meetings: Meeting[], minutes: number): Promise<'sent' | 'no_permission' | 'no_lectures'> {
+  if (!(await ensurePermission())) return 'no_permission';
+  const now = new Date(), wd = now.getDay(), nowMin = now.getHours() * 60 + now.getMinutes();
+  // minutes until each lecture's next time this week (or next week if it already passed)
+  const ahead = (m: Meeting) => {
+    const [h, mm] = m.starts_at.split(':').map(Number);
+    const d = ((m.weekday - wd + 7) % 7) * 1440 + h * 60 + mm - nowMin;
+    return d < 0 ? d + 7 * 1440 : d;
+  };
+  const sorted = [...meetings].sort((a, b) => ahead(a) - ahead(b));
+  const m = sorted.find((x) => x.building_id && x.kind !== 'online') ?? sorted[0];
+  if (!m) return 'no_lectures';
+  await Notifications.scheduleNotificationAsync({
+    identifier: `test-${Date.now()}`,
+    content: lectureContent(m, minutes),
+    trigger: { type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL, seconds: 5, channelId: 'lectures' },
+  });
+  return 'sent';
+}
+
 const roomUrl = (m: Meeting) => { const r = roomRoute(m); return `${r.pathname}?${new URLSearchParams(r.params as Record<string, string>).toString()}`; };
 
 async function doSchedule(meetings: Meeting[], off: Record<string, boolean>, userId?: string, override?: Override) {
@@ -73,15 +108,9 @@ async function doSchedule(meetings: Meeting[], off: Record<string, boolean>, use
     let total = h * 60 + mm - minutes;
     let weekday = m.weekday;
     if (total < 0) { total += 1440; weekday = (weekday + 6) % 7; }
-    const where = m.kind === 'online' ? t('أونلاين') : m.kind === 'blended' && !m.room_code && !m.building_name ? t('مدمج') : [m.building_name, m.room_code ? t('قاعة {0}', [m.room_code]) : null].filter(Boolean).join(' · ');
     await Notifications.scheduleNotificationAsync({
       identifier: `lec-${m.id}`,
-      content: {
-        title: t('بعد {0} دقايق: {1}', [minutes, m.course_name]),
-        body: m.building_id && m.kind !== 'online' ? t('{0} · {1} · اكبس وبوديك للقاعة', [where, clock(m.starts_at)]) : t('{0} · {1}', [where || t('شوف القاعة بالجدول'), clock(m.starts_at)]),
-        // tapping it opens the walk to the room (lib/webpush openFrom)
-        data: { kind: 'lecture', meeting: m.id, building: m.building_id, url: m.building_id && m.kind !== 'online' ? roomUrl(m) : '/(tabs)/schedule' },
-      },
+      content: lectureContent(m, minutes),
       trigger: {
         type: Notifications.SchedulableTriggerInputTypes.WEEKLY,
         weekday: weekday + 1, // expo: 1 = Sunday

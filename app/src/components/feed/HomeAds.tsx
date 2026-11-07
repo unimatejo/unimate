@@ -1,14 +1,14 @@
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useFocusEffect } from 'expo-router';
-import { ExternalLink, Store } from 'lucide-react-native';
+import { ExternalLink, Navigation, Phone, Store } from 'lucide-react-native';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { GestureDetector, usePanGesture } from 'react-native-gesture-handler';
 import Animated, { FadeIn, runOnJS, useSharedValue } from 'react-native-reanimated';
 
 import { Row, T, Tap } from '@/components/ui';
-import { liveAds, openAdvertiser, openOrder, trackAd, type Ad } from '@/lib/ads';
+import { CTA_DEFAULT, adAction, liveAds, openAdvertiser, trackAd, type Ad } from '@/lib/ads';
 import { t } from '@/lib/i18n';
 import { C, F, shadow } from '@/lib/theme';
 
@@ -68,7 +68,7 @@ export function HomeAds() {
     <View style={{ gap: 8 }}>
       <GestureDetector gesture={pan}>
         <Animated.View key={ad.campaign_id} entering={FadeIn.duration(320)}>
-          <AdSlide ad={ad} onOpen={() => openAdvertiser(ad)} onOrder={() => openOrder(ad)} />
+          <AdSlide ad={ad} onOpen={() => openAdvertiser(ad)} onAction={() => adAction(ad)} />
         </Animated.View>
       </GestureDetector>
       {ads.length > 1 && (
@@ -87,11 +87,15 @@ export function HomeAds() {
 
 /**
  * One sponsored banner, the way it looks on Home (the admin panel shows the same card as a preview). A photo fills it,
- * or the advertiser's logo on a deep gradient; «ممول» is always on it; «اطلب الآن» opens the advertiser's own site.
+ * or the advertiser's logo on a deep gradient; «ممول» is always on it. The button opens the advertiser's site, walks to
+ * them on the campus map or calls them, with the owner's own words on it. A banner designed with its writing on the
+ * picture (`show_text` off) shows only the picture, «ممول» and the button.
  */
-export function AdSlide({ ad, onOpen, onOrder }: { ad: Ad; onOpen?: () => void; onOrder?: () => void }) {
+export function AdSlide({ ad, onOpen, onAction }: { ad: Ad; onOpen?: () => void; onAction?: () => void }) {
+  const text = ad.show_text || !ad.image_url;
+  const Icon = ad.cta_kind === 'map' ? Navigation : ad.cta_kind === 'call' ? Phone : ExternalLink;
   return (
-    <Tap scale={0.98} onPress={onOpen} accessibilityLabel={t('إعلان ممول: {0}', [ad.advertiser_name])}
+    <Tap scale={0.98} onPress={onOpen} accessibilityLabel={t('إعلان ممول: {0}', [text ? ad.advertiser_name : `${ad.advertiser_name} · ${ad.title}`])}
       style={[{ borderRadius: 26, overflow: 'hidden', aspectRatio: 2, backgroundColor: '#1B1F3B' }, shadow]}>
       {ad.image_url
         ? <Image source={{ uri: ad.image_url }} style={StyleSheet.absoluteFill} contentFit="cover" transition={250} cachePolicy="memory-disk" />
@@ -105,30 +109,30 @@ export function AdSlide({ ad, onOpen, onOrder }: { ad: Ad; onOpen?: () => void; 
             </View>
           </LinearGradient>
         )}
-      <LinearGradient colors={['rgba(8,10,28,0.05)', 'rgba(8,10,28,0.25)', 'rgba(8,10,28,0.88)']} locations={[0, 0.45, 1]}
+      <LinearGradient colors={text ? ['rgba(8,10,28,0.05)', 'rgba(8,10,28,0.25)', 'rgba(8,10,28,0.88)'] : ['rgba(8,10,28,0)', 'rgba(8,10,28,0)', 'rgba(8,10,28,0.35)']} locations={[0, 0.45, 1]}
         style={{ flex: 1, padding: 14, justifyContent: 'space-between' }}>
         <Row gap={8}>
-          {ad.logo_url ? <Image source={{ uri: ad.logo_url }} style={{ width: 30, height: 30, borderRadius: 15, borderWidth: 1.5, borderColor: '#FFFFFF' }} /> : null}
-          <T v="bold" color="#FFFFFF" numberOfLines={1} style={{ flexShrink: 1, fontSize: 13 }}>{ad.advertiser_name}</T>
-          <View style={{ paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8, backgroundColor: 'rgba(255,255,255,0.22)' }}>
+          {text && ad.logo_url ? <Image source={{ uri: ad.logo_url }} style={{ width: 30, height: 30, borderRadius: 15, borderWidth: 1.5, borderColor: '#FFFFFF' }} /> : null}
+          {text ? <T v="bold" color="#FFFFFF" numberOfLines={1} style={{ flexShrink: 1, fontSize: 13 }}>{ad.advertiser_name}</T> : <View style={{ flex: 1 }} />}
+          <View style={{ paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8, backgroundColor: text ? 'rgba(255,255,255,0.22)' : 'rgba(8,10,28,0.45)' }}>
             <T v="tiny" color="#FFFFFF">{t('ممول')}</T>
           </View>
         </Row>
         <Row gap={10} style={{ alignItems: 'flex-end' }}>
           <View style={{ flex: 1, gap: 4 }}>
-            {ad.offer ? (
+            {text && ad.offer ? (
               <View style={{ alignSelf: 'flex-start', paddingHorizontal: 9, paddingVertical: 3, borderRadius: 9, backgroundColor: '#FACC15' }}>
                 <T v="tiny" color="#1A1300" style={{ fontFamily: F.title }} numberOfLines={1}>{ad.offer}</T>
               </View>
             ) : null}
-            <T v="h3" color="#FFFFFF" numberOfLines={2} style={{ fontFamily: F.display, fontSize: 19, lineHeight: 26 }}>{ad.title}</T>
-            {ad.body ? <T v="tiny" color="rgba(255,255,255,0.85)" numberOfLines={1}>{ad.body}</T> : null}
+            {text ? <T v="h3" color="#FFFFFF" numberOfLines={2} style={{ fontFamily: F.display, fontSize: 19, lineHeight: 26 }}>{ad.title}</T> : null}
+            {text && ad.body ? <T v="tiny" color="rgba(255,255,255,0.85)" numberOfLines={1}>{ad.body}</T> : null}
           </View>
-          {ad.cta_url ? (
-            <Tap onPress={onOrder} accessibilityRole="link" accessibilityLabel={ad.cta_label || t('اطلب الآن')}
+          {ad.cta_kind ? (
+            <Tap onPress={onAction} accessibilityRole={ad.cta_kind === 'link' ? 'link' : 'button'} accessibilityLabel={ad.cta_label || CTA_DEFAULT[ad.cta_kind]}
               style={{ minHeight: 42, paddingHorizontal: 14, borderRadius: 14, backgroundColor: '#FFFFFF', flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-              <T v="bold" color="#0E1430" style={{ fontSize: 14 }}>{ad.cta_label || t('اطلب الآن')}</T>
-              <ExternalLink size={15} color="#0E1430" />
+              <T v="bold" color="#0E1430" style={{ fontSize: 14 }}>{ad.cta_label || CTA_DEFAULT[ad.cta_kind]}</T>
+              <Icon size={15} color="#0E1430" />
             </Tap>
           ) : null}
         </Row>

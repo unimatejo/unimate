@@ -2,6 +2,7 @@ import type { Pin } from '@/components/map/kinds';
 import { readCache, writeCache } from '@/lib/cache';
 import { nm } from '@/lib/i18n';
 import { supabase } from '@/lib/supabase';
+import { normalize } from '@/lib/util';
 
 import { loadCampus } from './data';
 
@@ -43,4 +44,40 @@ export function prepareOfflineCampus(universityId: string | null | undefined) {
   if (!universityId || prepared === universityId) return;
   prepared = universityId;
   setTimeout(() => { void loadCampus(universityId); void fetchPins(universityId); }, 8000);
+}
+
+/** words that say what a place is, not which one (dropped when matching a room's text to a building) */
+const GENERIC = new Set(['مبني', 'كليه', 'مجمع', 'قاعه', 'قاعات', 'عماده', 'قسم', 'ملك', 'امير', 'جامعه', 'و'].map(normalize));
+/** a text's distinctive words: normalised, «ال» and «و» dropped from the front, digits split off, generic words out */
+function keyWords(s: string): string[] {
+  return normalize(s).replace(/(\d+)/g, ' $1 ').split(/[\s,،·.\-/()]+/)
+    .map((w) => w.replace(/^و(?=ال)/, '').replace(/^ال(?=..)/, ''))
+    .filter((w) => w.length >= 2 && !/^\d+$/.test(w) && !GENERIC.has(w));
+}
+
+/**
+ * The building a room written as text is in («مبنى الحسين الباني ح.ب 303», «الهندسه 2017», «IT 305»), from the campus
+ * buildings kept on the phone: every distinctive word of a building's name (or of one of its nicknames) appears in the
+ * text, or the text starts with its code. The name with the most words wins; null when nothing fits or two buildings
+ * fit equally (then the reminder opens the timetable instead of guessing).
+ */
+export function buildingFor(roomText: string | null | undefined, universityId: string | null | undefined): Pin | null {
+  if (!roomText || !universityId) return null;
+  const words = new Set(keyWords(roomText));
+  const raw = normalize(roomText).split(/[\s,،·\-/]+/).filter(Boolean);
+  const all = new Set(raw);
+  let best: Pin | null = null, bestScore = 0, tie = false;
+  for (const p of keptPins(universityId) ?? []) {
+    if (p.kind !== 'building') continue;
+    let score = 0;
+    for (const name of [p.name, ...(p.alt ?? [])]) {
+      const k = keyWords(name);
+      // every distinctive word must be there; the name's other words (مبنى / مجمع…) only break a tie
+      if (k.length && k.every((w) => words.has(w))) score = Math.max(score, k.length + normalize(name).split(' ').filter((w) => all.has(w)).length / 10);
+    }
+    const code = p.sub ? normalize(p.sub) : '';
+    if (code && raw.some((w, i) => (w === code && /^\d/.test(raw[i + 1] ?? '')) || (w.startsWith(code) && /^\d+$/.test(w.slice(code.length))))) score = Math.max(score, 1);
+    if (score > bestScore) { best = p; bestScore = score; tie = false; } else if (score && score === bestScore) tie = true;
+  }
+  return tie ? null : best;
 }

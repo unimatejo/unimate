@@ -1,11 +1,11 @@
 import { router } from 'expo-router';
 import { AlarmClock, EyeOff, Mail, BellRing, CalendarDays, Heart, Megaphone, MessageCircle, Moon, Users } from 'lucide-react-native';
 import { useEffect, useState, type ReactNode } from 'react';
-import { Alert, Linking, ScrollView, View } from 'react-native';
+import { Alert, Linking, Platform, ScrollView, View } from 'react-native';
 
-import { Chip, Field, Header, Row, Screen, T, Tap, Toggle } from '@/components/ui';
+import { Button, Chip, Field, Header, Row, Screen, T, Tap, Toggle } from '@/components/ui';
 import { useAuth } from '@/lib/auth';
-import { ensurePermission, scheduleLectureReminders } from '@/lib/notify';
+import { ensurePermission, scheduleLectureReminders, testLectureReminder } from '@/lib/notify';
 import { notifStatus } from '@/lib/notifPermission';
 import { useSchedule } from '@/lib/schedule';
 import { usePrefs } from '@/lib/settings';
@@ -15,6 +15,7 @@ import { clock, WEEKDAYS } from '@/lib/util';
 import { t } from '@/lib/i18n';
 import { reportError } from '@/lib/errors';
 import { run } from '@/lib/run';
+import { toast } from '@/lib/toast';
 
 const ic = (n: ReactNode) => <View style={{ width: 36, height: 36, borderRadius: 12, backgroundColor: C.bg, alignItems: 'center', justifyContent: 'center' }}>{n}</View>;
 const MINUTES = [5, 10, 15, 20, 30, 45, 60];
@@ -57,6 +58,14 @@ export default function Reminders() {
     return false;
   }
 
+  /** the next lecture's reminder in 5 seconds, so the student sees it and taps it to check the walk to the room */
+  async function tryReminder() {
+    const r = await testLectureReminder(meetings, prefs.lecture_minutes);
+    if (r === 'no_permission') { await askNotif(); return; }
+    if (r === 'no_lectures') { Alert.alert(t('جدولك فاضي'), t('ضيف موادك أول وبعدين جرّب.')); return; }
+    toast(t('بعد 5 ثواني بيوصلك التنبيه. اكبس عليه وبيوديك للقاعة.'));
+  }
+
   async function setRem(meeting_id: string, p: Partial<Rem>) {
     if (!profile) return;
     const cur = rems[meeting_id] ?? { meeting_id, minutes: null, enabled: true };
@@ -79,6 +88,7 @@ export default function Reminders() {
                 {MINUTES.map((m) => <Chip key={m} label={t('{0} د', [m])} active={prefs.lecture_minutes === m} onPress={() => set({ lecture_minutes: m })} />)}
               </Row>
               <MinutesBox value={MINUTES.includes(prefs.lecture_minutes) ? null : prefs.lecture_minutes} max={180} onChange={(m) => set({ lecture_minutes: m })} />
+              {Platform.OS !== 'web' && <Button kind="soft" title={t('جرّب التنبيه')} onPress={tryReminder} />}
             </>
           )}
         </View>
