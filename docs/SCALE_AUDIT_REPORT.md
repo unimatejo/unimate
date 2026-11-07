@@ -3,17 +3,18 @@
 Date: 2026-11-07 · Project: `unimate` (`slkfyblvpewlxrifzrhg`, eu-central-1, Micro) · Code: `github.com/unimatejo/unimate` (`app/` Expo SDK 58)
 
 > **Applied to production on 2026-11-07 (approved):** backup, migration history repair (0001–0126), 0127–0131, and the
-> app update (#16–18). **Waiting for approval:** 0132–0134, found by the load test below (tested on the staging copy only).
+> app update (#16–18). 0132–0134 (found by the load test below) applied the same day after a before/after check on
+> production: 160 of 160 checks identical (28 tables + 4 privacy functions × 5 identities), main reads answer 200.
 
 ## الخلاصة لمحمد
 
-- **القرار:** نقدر نطلق على جامعة وحدة (الهاشمية) على الخطة الحالية (Micro)، **بس بعد** ما تتطبق 0132–0134 (طلعهم اختبار الضغط، تحت).
+- **القرار:** نقدر نطلق على جامعة وحدة (الهاشمية) على الخطة الحالية (Micro). إصلاحات اختبار الضغط (0132–0134) انطبقت على السيرفر الحقيقي.
 - **أكبر خطرين على المصاري، مش على السرعة:**
   1. تصغير الصور على السيرفر (Image Transformations) بينحسب بالصورة.
   2. استهلاك الفيديو للنت (egress).
   - الحل موجود ومجاني، وهو إنه الجوال يعمل نسخة صغيرة من الصورة قبل ما يرفعها. بس هاد شغل بالتطبيق لسا ما انعمل.
 - **سقف حقيقي:** خطة Pro فيها **500 اتصال Realtime بنفس اللحظة**. يعني لو صاروا أكثر من 500 طالب فاتحين التطبيق بنفس الوقت، بندفع زيادة. السعر مذكور تحت.
-- **اختبار الضغط انعمل** على نسخة تجريبية فيها 20,000 طالب، 200 ألف منشور، مليون لايك، 2 مليون رسالة. طلّع 3 مشاكل كانت رح توقّع الصفحة الرئيسية لما يكبر المحتوى، وانحلّوا على النسخة التجريبية (0132–0134). السقف المقاس تحت.
+- **اختبار الضغط انعمل** على نسخة تجريبية فيها 20,000 طالب، 200 ألف منشور، مليون لايك، 2 مليون رسالة. طلّع 3 مشاكل كانت رح توقّع الصفحة الرئيسية لما يكبر المحتوى، وانحلّوا (0132–0134). السقف المقاس تحت.
 
 ## Phase 0 — Ground truth
 
@@ -88,7 +89,7 @@ Two outside drivers were tried and dropped: k6 from this workspace is blocked by
 So the numbers below are the **database ceiling**; PostgREST/Auth share the same machine, which is accounted for
 in the capacity line.
 
-### Found and fixed (on staging; production waits for approval)
+### Found and fixed (applied to production 2026-11-07)
 
 | # | Sev | Evidence | Fix | Before → after |
 |---|---|---|---|---|
@@ -134,7 +135,7 @@ Over that: $10 per extra 1,000.
 | Compute XL (4 dedicated vCPU) | > ~2,000 active at once | ~$210/month |
 | Egress over 250 GB | video / photos at scale | $0.09/GB (uncached), $0.03/GB (CDN-cached) |
 | Image transformations over 100 origin images | until they're turned off (#18 is released) | $5 per 1,000 images / month |
-| Staging branch for the load test | used 2026-11-07; delete after 0132–0134 are approved | $0.01344/hour while it exists (plus its compute) |
+| Staging branch for the load test | used 2026-11-07, deleted the same day | $0.01344/hour while it exists (plus its compute) |
 | Realtime messages over 5M/month | busy chats | $2.50 per million |
 | Custom SMTP | free tier first (Resend/Brevo) | $0 → ~$20/month later |
 
@@ -145,4 +146,4 @@ Over that: $10 per extra 1,000.
 
 ## Go / no-go
 
-**Go for one university on Micro** once: (a) 0132–0134 are applied (without them Home slows to seconds as posts grow), (b) custom SMTP is confirmed and Auth rate limits are raised (#12, #29), (c) leaked-password protection is on, (d) image transformations are turned off. Already done: 0127–0131 and the app update (#16–18). Open the next university only after a week of real numbers (DB CPU, realtime connections, egress).
+**Go for one university on Micro** once: (a) custom SMTP is confirmed and Auth rate limits are raised (#12, #29), (b) leaked-password protection is on, (c) image transformations are turned off. Already done: 0127–0134 and the app update (#16–18). Open the next university only after a week of real numbers (DB CPU, realtime connections, egress).
