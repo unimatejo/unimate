@@ -155,20 +155,27 @@ or JSON: `[{"student_number":"2620387","term_gpa":3.71,"cumulative_gpa":3.60,"cr
   (`planted` in the file: they're for the look, not the trees' real spots). The map credits OpenStreetMap and Microsoft.
 - **Branches.** Our buildings more than 3 km from the main campus (Al-Balqa's colleges in other towns) are grouped into
   branches; each gets its own box, drawn like the main campus, and a chip on the map that flies there (`branches`).
-- **Phones today.** Until the next app build brings the 3D view, `components/map/NativeCampus.tsx` draws the same file
-  on the platform map (outlines, green, parking, roads and paths by zoom, building shapes you can tap), the camera is
-  tilted, and markers are placed by importance on their screen positions so they never overlap. Landmarks (colleges,
-  presidency, library, mosque, gates, stadiums) are named from far away on both.
+- **Names everywhere.** Every building inside a campus has a name: its own (ours or OSM's), else the nearest landmark
+  within 90 m («مبنى قرب كلية الشريعة», numbered when one landmark has several), else a number («مبنى رقم 4»). The
+  pipeline writes these into the file (`l: 1` = labelled from the file; ours are labelled from the tables) and the map
+  shows them once you're close, around where you look. A hidden building keeps its shape but never its OSM name.
+  Places OSM left nameless («بوابة», «موقف سيارات») take the nearest building or named place within 300 m, else a
+  number (`campus_label_places`, run after every import).
 - **Admin.** Admin › خرائط الجامعات (`app/admin/maps.tsx`, RPCs `admin_campus_overview`, `admin_campus_rebuild`) lists
   every university's map with how complete it is (ready / partial / sparse), opens it as its students see it
   (`/map?uni=<id>`, admins only: RLS already lets admins read every campus's buildings and places), rebuilds it now,
   and lists that university's student suggestions (look at each on its own map, accept / reject: owner).
-- **Web.** `react-native-maps` is swapped for `components/map/webMaps.tsx` (metro.config.js): MapLibre GL, loaded on first
-  use, with its own style (colours: `lib/campus/theme.ts`, one per app theme), extruded buildings with light and soft
-  shadows, trees, a 3D route ribbon, the picked building highlighted, and markers placed from most to least important so
-  labels never overlap. Base context tiles: OpenFreeMap; satellite: Esri. Everything stays in the app.
-- **Phones.** The platform map (react-native-maps) with the same route and directions; the 3D view needs MapLibre native
-  in the next store build. A later "عرض واقعي" can add Google Photorealistic 3D Tiles (needs a Google Maps key with billing).
+- **One 3D map, web and phones.** `components/map/Campus3DView.tsx` is the 3D campus (MapLibre via
+  `components/map/webMaps.tsx`, which stands in for `react-native-maps` on the web: metro.config.js) with its markers
+  (`markers.tsx`, plain data so they can cross a bridge). The web renders it in the page (`Map3D.web.tsx`, MapLibre a
+  chunk of its own); phones run it in a web view as an Expo DOM component (`Campus3D.tsx`, `'use dom'`), which fetches
+  the campus file itself and takes the camera calls through a handle. A web view can't load split chunks, so that
+  bundle carries MapLibre's CSP build and starts its worker from a plain-string copy (`.maplibre-worker.js`, generated
+  by metro.config.js; the usual build's self-made worker breaks under a second minification). If the 3D view hasn't
+  drawn within 12 s, the phone falls back to the platform map with the campus drawn flat (`NativeCampus.tsx`).
+  Own style (colours: `lib/campus/theme.ts`, one per app theme), extruded buildings with light and soft shadows, trees,
+  a 3D route ribbon, the picked building highlighted, markers placed from most to least important so labels never
+  overlap. Base tiles: OpenFreeMap; satellite: Esri. A later «عرض واقعي» could add Google Photorealistic 3D Tiles.
 - **Routes.** `lib/campus/route.ts`: snap both ends to the nearest path, A* over the path network, turns → steps
   («بعد 40 م، لِف يمين»), live progress and a new route when you wander 35 m off. No path nearby → a straight line, labelled.
 - **Entry points.** `/map?building=<id>&go=1&room=<code>&floor=<n>` starts walking there: the lecture card on Home and

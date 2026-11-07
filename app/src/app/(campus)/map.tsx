@@ -1,14 +1,16 @@
 import * as Location from 'expo-location';
 import { router, useLocalSearchParams } from 'expo-router';
-import { ChevronRight, Crosshair, School, Footprints, Layers, MapPin, MapPinPlus, Maximize2, Navigation, Pause, Play, Search, Send, SkipBack, SkipForward, X } from 'lucide-react-native';
+import { ChevronRight, Crosshair, School, Footprints, Layers, MapPinPlus, Maximize2, Navigation, Pause, Play, Search, Send, SkipBack, SkipForward, X } from 'lucide-react-native';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, FlatList, Keyboard, Linking, Platform, ScrollView, TextInput, View } from 'react-native';
-import MapView, { Marker, Polyline, PROVIDER_DEFAULT } from 'react-native-maps';
+import MapView, { Polyline, PROVIDER_DEFAULT } from 'react-native-maps';
 import Animated, { FadeIn, SlideInDown } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ShareToChat } from '@/components/chat/ShareToChat';
+import Map3D, { type Campus3DHandle } from '@/components/map/Map3D';
 import { FILTERS, inGroup, kindOf, localSearch, MINOR, TOUR_KINDS, type FilterKey, type Pin } from '@/components/map/kinds';
+import { MapMarkers, type MarkerSpec } from '@/components/map/markers';
 import { NativeCampus } from '@/components/map/NativeCampus';
 import { DirectionBanner, NavCard } from '@/components/map/NavPanel';
 import { SuggestPlace } from '@/components/map/SuggestPlace';
@@ -16,11 +18,12 @@ import { UniSwitcher } from '@/components/map/UniSwitcher';
 import { Button, Chip, Row, T, Tap } from '@/components/ui';
 import { GlyphTile } from '@/components/ui/Glyph';
 import { useAuth } from '@/lib/auth';
-import { centroid, distM, findBuilding, loadCampus, type CampusData, type LL } from '@/lib/campus/data';
+import { CAMPUS_BASE, centroid, distM, findBuilding, loadCampus, type CampusData, type LL } from '@/lib/campus/data';
 import { progress, walkRoute, type Route } from '@/lib/campus/route';
 import { mapTheme } from '@/lib/campus/theme';
 import { flip, nm, t, ta } from '@/lib/i18n';
 import { goBack } from '@/lib/nav';
+import { getPref } from '@/lib/prefs';
 import type { University } from '@/lib/types';
 import { supabase } from '@/lib/supabase';
 import { C, F, isDark, shadow } from '@/lib/theme';
@@ -36,9 +39,10 @@ const landmark = (p: { kind: string; name: string }) => LANDMARK_KINDS.includes(
 const theme = mapTheme();
 
 /**
- * The campus map, all inside the app. On the web: a real 3D campus (MapLibre: buildings with height, light and
- * shadow, trees, green areas, paths) built from OpenStreetMap and our own buildings; on phones the platform map until
- * the next app build brings the same 3D view. "وديني" walks you there on the campus paths with turn-by-turn directions.
+ * The campus map, all inside the app: a real 3D campus (MapLibre: buildings with height, light and shadow, trees,
+ * green areas, paths) built from OpenStreetMap, Microsoft footprints and our own buildings. The web draws it in the
+ * page and phones in a web view (Campus3D); a phone whose web view doesn't come up falls back to the platform map with
+ * the campus drawn flat. "وديني" walks you there on the campus paths with turn-by-turn directions.
  * Opened with ?building=…&go=1 (&room, &floor) from a lecture, it starts the route by itself.
  */
 export default function CampusMap() {
@@ -66,7 +70,27 @@ export default function CampusMap() {
   const preview = picked ? (picked.id === mine?.id ? null : picked) : !wanted ? null : loaded?.id === wanted ? loaded.uni : undefined;
   const university = preview ?? mine;
   const [shareFor, setShareFor] = useState<Pin | null>(null);
-  const map = useRef<MapView>(null);
+  const flat = useRef<MapView>(null);
+  const deep = useRef<Campus3DHandle>(null);
+  // the 3D view on phones too; if it isn't drawn within 12 s (an old web view, no GPU), the platform map takes over
+  const [ready3d, setReady3d] = useState(WEB);
+  const [failed3d, setFailed3d] = useState(false);
+  const three = WEB || !failed3d;
+  useEffect(() => {
+    if (ready3d || failed3d) return;
+    const tm = setTimeout(() => setFailed3d(true), 12000);
+    return () => clearTimeout(tm);
+  }, [ready3d, failed3d]);
+  const threeRef = useRef(three);
+  useEffect(() => { threeRef.current = three; }, [three]);
+  // one camera for whichever map is showing; tilted further in 3D
+  const cam = useMemo(() => ({
+    animateCamera: (c: { center?: { latitude: number; longitude: number }; zoom?: number; pitch?: number; heading?: number }, o?: { duration?: number }) =>
+      threeRef.current ? deep.current?.animateCamera(c, o) : flat.current?.animateCamera(c, o),
+    fitToCoordinates: (cs: { latitude: number; longitude: number }[], o: { edgePadding: { top: number; bottom: number; left: number; right: number }; animated: boolean }) =>
+      threeRef.current ? deep.current?.fitToCoordinates(cs, o) : flat.current?.fitToCoordinates(cs, o),
+    tilt: (deg3d: number, flatDeg: number) => (threeRef.current ? deg3d : flatDeg),
+  }), []);
   const [pins, setPins] = useState<Pin[]>([]);
   const [pinsState, setPinsState] = useState<'loading' | 'ok' | 'empty' | 'error'>('loading');
   const [campus, setCampus] = useState<CampusData | null>(null);
@@ -129,9 +153,9 @@ export default function CampusMap() {
   const near = useMemo(() => pins.filter((p) => distM({ lat: center.latitude, lng: center.longitude }, p) < 3000), [pins, center.latitude, center.longitude]);
   const fitAll = useCallback(() => {
     // the main campus only: colleges in other cities (Al-Balqa has many) would zoom the map out to all of Jordan
-    if (near.length < 2) { map.current?.animateCamera({ center, zoom: 16.4, pitch: WEB ? 52 : 35, heading: WEB ? -18 : 0 }, { duration: 700 }); return; }
-    map.current?.fitToCoordinates(near.map((p) => ({ latitude: p.lat, longitude: p.lng })), { edgePadding: { top: 170, bottom: 80, left: 40, right: 40 }, animated: true });
-  }, [near, center]);
+    if (near.length < 2) { cam.animateCamera({ center, zoom: 16.4, pitch: cam.tilt(52, 35), heading: cam.tilt(-18, 0) }, { duration: 700 }); return; }
+    cam.fitToCoordinates(near.map((p) => ({ latitude: p.lat, longitude: p.lng })), { edgePadding: { top: 170, bottom: 80, left: 40, right: 40 }, animated: true });
+  }, [near, center, cam]);
   const opened = useRef(false);
   useEffect(() => {
     if (!pins.length || opened.current || params.building || params.advertiser || shared) return;
@@ -184,8 +208,8 @@ export default function CampusMap() {
 
   const focus = useCallback((p: Pin) => {
     setSel(p);
-    map.current?.animateCamera({ center: { latitude: p.lat - (WEB ? 0.0003 : 0.0006), longitude: p.lng }, zoom: 18, pitch: WEB ? 55 : 40 }, { duration: 800 });
-  }, []);
+    cam.animateCamera({ center: { latitude: p.lat - cam.tilt(0.0003, 0.0006), longitude: p.lng }, zoom: 18, pitch: cam.tilt(55, 40) }, { duration: 800 });
+  }, [cam]);
   useEffect(() => { if (shared) { const tm = setTimeout(() => focus(shared), 500); return () => clearTimeout(tm); } }, [shared, focus]);
 
   // ---------- walking there ----------
@@ -198,8 +222,8 @@ export default function CampusMap() {
     stopAnim(); setTour(null); setWalker(null); setSel(null); setFollow(fromMe);
     setNav({ dest, building: b?.n ?? null, buildingId: b?.b ?? (dest.kind === 'building' ? dest.id : null), outline: b?.c ?? null, floor: extra?.floor ?? b?.f ?? null,
       room: extra?.room ?? null, route, from: fromMe ? 'me' : 'gate' });
-    map.current?.fitToCoordinates(route.line.map(([lng, lat]) => ({ latitude: lat, longitude: lng })), { edgePadding: { top: 190, bottom: 330, left: 50, right: 50 }, animated: true });
-  }, [campus, me, gate, center]);
+    cam.fitToCoordinates(route.line.map(([lng, lat]) => ({ latitude: lat, longitude: lng })), { edgePadding: { top: 190, bottom: 330, left: 50, right: 50 }, animated: true });
+  }, [campus, me, gate, center, cam]);
 
   // where I am on the route; off it by more than 35 m → a new route from here (at most every 8 s)
   const live = useMemo(() => (nav && me && nav.from === 'me' ? progress(nav.route, [me.lng, me.lat]) : null), [nav, me]);
@@ -213,7 +237,7 @@ export default function CampusMap() {
     if (!nav || !me || !follow || walker) return;
     const r = nav.route.line, i = Math.min(r.length - 1, 1);
     const head = (Math.atan2((r[i][0] - me.lng) * Math.cos((me.lat * Math.PI) / 180), r[i][1] - me.lat) * 180) / Math.PI;
-    map.current?.animateCamera({ center: { latitude: me.lat, longitude: me.lng }, zoom: 18.6, pitch: 60, heading: live && live.left > 15 ? head : undefined }, { duration: 600 });
+    cam.animateCamera({ center: { latitude: me.lat, longitude: me.lng }, zoom: 18.6, pitch: 60, heading: live && live.left > 15 ? head : undefined }, { duration: 600 });
   }, [me, follow, nav, walker]); // eslint-disable-line react-hooks/exhaustive-deps
 
   /** Walk the little figure along a line, with the camera following like you're there. */
@@ -235,11 +259,11 @@ export default function CampusMap() {
       if (Date.now() - last > 280 || k === 1) {
         last = Date.now();
         const head = (Math.atan2((b[0] - a[0]) * Math.cos((a[1] * Math.PI) / 180), b[1] - a[1]) * 180) / Math.PI;
-        map.current?.animateCamera({ center: { latitude: p.lat, longitude: p.lng }, zoom: k === 1 ? 18.6 : 18.3, pitch: 62, heading: head }, { duration: k === 1 ? 700 : 300 });
+        cam.animateCamera({ center: { latitude: p.lat, longitude: p.lng }, zoom: k === 1 ? 18.6 : 18.3, pitch: 62, heading: head }, { duration: k === 1 ? 700 : 300 });
       }
       if (k === 1) { if (anim.current) clearInterval(anim.current); anim.current = null; done?.(); }
     }, 50);
-  }, []);
+  }, [cam]);
 
   const tourLine = useCallback((stops: Pin[], i: number, from?: { lat: number; lng: number } | null) => {
     const a = from ?? stops[i - 1] ?? stops[i], b = stops[i];
@@ -263,8 +287,8 @@ export default function CampusMap() {
     setSel(null); setNav(null); setAuto(true);
     setTour({ stops: order, i: 0 });
     setWalker({ lat: order[0].lat, lng: order[0].lng });
-    map.current?.animateCamera({ center: { latitude: order[0].lat, longitude: order[0].lng }, zoom: 18.4, pitch: 62 }, { duration: 900 });
-  }, [near]);
+    cam.animateCamera({ center: { latitude: order[0].lat, longitude: order[0].lng }, zoom: 18.4, pitch: 62 }, { duration: 900 });
+  }, [near, cam]);
 
   const go = useCallback((i: number) => {
     if (!tour || i < 0 || i >= tour.stops.length) return;
@@ -318,11 +342,11 @@ export default function CampusMap() {
   const [fits, setFits] = useState<Set<string> | null>(null);
   const region = useRef(0);
   const placeMarkers = useCallback(async () => {
-    if (WEB || !map.current) return;
+    if (three || !flat.current) return;
     const turn = ++region.current;
     const rank = (p: Pin) => (p.id === sel?.id ? 0 : landmark(p) ? 1 : p.kind === 'building' ? 2 : MINOR.includes(p.kind) ? 4 : 3);
     const order = [...listed].sort((a, b) => rank(a) - rank(b)).slice(0, 220);
-    const pts = await Promise.all(order.map((p) => map.current!.pointForCoordinate({ latitude: p.lat, longitude: p.lng }).catch(() => null)));
+    const pts = await Promise.all(order.map((p) => flat.current!.pointForCoordinate({ latitude: p.lat, longitude: p.lng }).catch(() => null)));
     if (turn !== region.current) return;
     const boxes: [number, number, number, number][] = [];
     const keep = new Set<string>();
@@ -335,9 +359,9 @@ export default function CampusMap() {
       boxes.push(b); keep.add(p.id);
     });
     setFits(keep);
-  }, [listed, sel?.id, zoom]);
+  }, [listed, sel?.id, zoom, three]);
   useEffect(() => { placeMarkers(); }, [placeMarkers]);
-  const shown = WEB || !fits ? listed : listed.filter((p) => fits.has(p.id));
+  const shown = three || !fits ? listed : listed.filter((p) => fits.has(p.id));
   const highlight = nav?.buildingId ?? (sel ? (sel.kind === 'building' ? sel.id : campus ? findBuilding(campus, null, sel)?.b ?? null : null) : null);
   const meters = sel && me ? Math.round(distM(me, sel) * 1.25) : null; // paths are ~25% longer than a straight line
   const walkMin = meters != null ? Math.max(1, Math.round(meters / 75)) : null;
@@ -347,73 +371,58 @@ export default function CampusMap() {
     const p = (b.b && pins.find((x) => x.id === b.b)) || { id: b.b ?? `osm-${b.at.latitude}`, kind: 'building', name: b.n ?? t('مبنى'), lat: b.at.latitude, lng: b.at.longitude };
     focus(p);
   };
-  const web3d = WEB ? { campus, theme, highlight, route: nav?.route.line ?? null, onBuildingPress: pressBuilding } : {};
+  const pressPin = (id: string) => {
+    const p = id === 'shared' ? shared : shown.find((x) => x.id === id);
+    if (p) focus(p);
+  };
+  const onRegion = (r: { latitude: number; longitude: number; longitudeDelta: number; zoom?: number }) => {
+    setZoom(r.zoom ?? Math.log2(360 / r.longitudeDelta));
+    mid.current = { lat: r.latitude, lng: r.longitude };
+    setLook(mid.current);
+    placeMarkers();
+  };
+  // what goes on the map, as data: the same list draws on the platform map and in the 3D view
+  const markers = useMemo<MarkerSpec[]>(() => {
+    const out: MarkerSpec[] = [];
+    if (!nav) for (const p of shown) {
+      const on = sel?.id === p.id;
+      // a drawn campus: a building is its own shape, just its name once you're close
+      const bare = !!campus && p.kind === 'building' && !on;
+      const label = on || (landmark(p) ? zoom > 15.2 : p.kind === 'building' ? zoom > 16.6 : zoom > 17.6);
+      if (bare && !label) continue;
+      out.push({ t: 'pin', key: p.id + (on ? '-on' : '') + (label ? '-l' : ''), id: p.id, kind: p.kind, name: p.name, lat: p.lat, lng: p.lng, on, label, bare,
+        small: MINOR.includes(p.kind) && !on, priority: on ? 100 : landmark(p) ? 80 : p.kind === 'building' ? 60 : MINOR.includes(p.kind) ? 20 : 40 });
+    }
+    if (shared) out.push({ t: 'shared', key: 'shared', lat: shared.lat, lng: shared.lng });
+    if (nav) { const [lng, lat] = nav.route.line[nav.route.line.length - 1]; out.push({ t: 'dest', key: 'dest', name: nav.dest.name, lat, lng }); }
+    if (walker) out.push({ t: 'walker', key: 'walker', lat: walker.lat, lng: walker.lng });
+    if (three && me && !walker) out.push({ t: 'me', key: 'me', lat: me.lat, lng: me.lng }); // the platform map draws its own
+    return out;
+  }, [nav, shown, sel?.id, campus, zoom, shared, walker, me, three]);
+  // the phone's 3D view reads the app's look and language from its own storage, set before it starts
+  const prefs = useMemo(() => `try{localStorage.setItem('theme',${JSON.stringify(getPref('theme') ?? '')});localStorage.setItem('lang',${JSON.stringify(getPref('lang') ?? '')})}catch(e){};true;`, []);
 
   if (preview === undefined) return <View style={{ flex: 1, backgroundColor: C.bg, alignItems: 'center', justifyContent: 'center' }}><ActivityIndicator color={C.primary} /></View>;
 
   return (
     <View style={{ flex: 1, backgroundColor: C.bg, overflow: 'hidden' }}>
-      <MapView key={university?.id ?? 'none'} ref={map} provider={PROVIDER_DEFAULT} style={{ flex: 1 }} showsUserLocation showsCompass={false} showsPointsOfInterests={false} showsBuildings pitchEnabled rotateEnabled
-        mapType={sat ? (Platform.OS === 'ios' ? 'hybridFlyover' : 'hybrid') : Platform.OS === 'ios' ? 'mutedStandard' : 'standard'}
-        initialCamera={{ center, zoom: 16, heading: WEB ? -18 : 0, pitch: WEB ? 52 : 35 }} onPress={() => { Keyboard.dismiss(); }}
-        onRegionChangeComplete={(r) => { setZoom((r as { zoom?: number }).zoom ?? Math.log2(360 / r.longitudeDelta)); mid.current = { lat: r.latitude, lng: r.longitude }; setLook(mid.current); placeMarkers(); }}
-        {...web3d}>
-        {!WEB && campus && <NativeCampus campus={campus} theme={theme} zoom={zoom} highlight={highlight} onBuildingPress={pressBuilding} />}
-        {!nav && shown.map((p) => {
-          const on = sel?.id === p.id;
-          const { g, icon: Icon } = kindOf(p.kind);
-          const small = MINOR.includes(p.kind) && !on;
-          // a drawn campus (3D on the web, shapes on phones): a building is its own shape, just its name once you're close
-          const bare = !!campus && p.kind === 'building' && !on;
-          const label = on || (landmark(p) ? zoom > 15.2 : p.kind === 'building' ? zoom > 16.6 : zoom > 17.6);
-          if (bare && !label) return null;
-          return (
-            <Marker key={p.id + (on ? '-on' : '') + (label ? '-l' : '')} coordinate={{ latitude: p.lat, longitude: p.lng }} onPress={() => focus(p)} tracksViewChanges={false} anchor={{ x: 0.5, y: 0.5 }}
-              {...(WEB ? { priority: on ? 100 : landmark(p) ? 80 : p.kind === 'building' ? 60 : MINOR.includes(p.kind) ? 20 : 40 } : {})}>
-              <View style={{ alignItems: 'center', gap: 3 }}>
-                {!bare && <GlyphTile icon={Icon} colors={on ? ['#2A2F4F', '#0E1430'] : g} size={on ? 40 : small ? 22 : 30} />}
-                {label && (
-                  <View style={[{ paddingHorizontal: 8, paddingVertical: 3, borderRadius: 9, backgroundColor: on ? C.inverse : C.glass, maxWidth: 150 }, shadow]}>
-                    <T v="tiny" numberOfLines={1} color={on ? C.onInverse : C.ink} style={{ fontSize: 11 }}>{p.name}</T>
-                  </View>
-                )}
-              </View>
-            </Marker>
-          );
-        })}
-        {shared && (
-          <Marker key="shared" coordinate={{ latitude: shared.lat, longitude: shared.lng }} onPress={() => focus(shared)} anchor={{ x: 0.5, y: 0.5 }} tracksViewChanges={false} zIndex={998}>
-            <View style={{ width: 40, height: 40, borderRadius: 14, backgroundColor: C.primary, borderWidth: 3, borderColor: '#FFFFFF', alignItems: 'center', justifyContent: 'center' }}>
-              <MapPin size={20} color={C.onPrimary} />
-            </View>
-          </Marker>
-        )}
-        {/* phones draw the route as a line; the web draws it as a 3D ribbon (route prop above) */}
-        {!WEB && nav && <Polyline coordinates={nav.route.line.map(([lng, lat]) => ({ latitude: lat, longitude: lng }))} strokeColor="#FFFFFF" strokeWidth={9} />}
-        {!WEB && nav && <Polyline coordinates={nav.route.line.map(([lng, lat]) => ({ latitude: lat, longitude: lng }))} strokeColor={C.primary} strokeWidth={5} />}
-        {nav && (
-          <Marker key="dest" coordinate={{ latitude: nav.route.line[nav.route.line.length - 1][1], longitude: nav.route.line[nav.route.line.length - 1][0] }} anchor={{ x: 0.5, y: 1 }} tracksViewChanges={false} zIndex={997}>
-            <View style={{ alignItems: 'center' }}>
-              <View style={[{ paddingHorizontal: 10, paddingVertical: 5, borderRadius: 12, backgroundColor: C.inverse, maxWidth: 170 }, shadow]}>
-                <T v="tiny" numberOfLines={1} color={C.onInverse} style={{ fontFamily: F.bodyBold }}>{nav.dest.name}</T>
-              </View>
-              <MapPin size={30} color={C.primary} fill={C.primary} />
-            </View>
-          </Marker>
-        )}
-        {walker && (
-          <Marker key="walker" coordinate={{ latitude: walker.lat, longitude: walker.lng }} anchor={{ x: 0.5, y: 0.5 }} tracksViewChanges={false} zIndex={999}>
-            <View style={[{ width: 34, height: 34, borderRadius: 17, backgroundColor: C.primary, borderWidth: 3, borderColor: '#FFFFFF', alignItems: 'center', justifyContent: 'center' }, shadow]}>
-              <Footprints size={17} color={C.onPrimary} />
-            </View>
-          </Marker>
-        )}
-        {WEB && me && !walker && (
-          <Marker key="me" coordinate={{ latitude: me.lat, longitude: me.lng }} anchor={{ x: 0.5, y: 0.5 }} zIndex={996}>
-            <View style={{ width: 20, height: 20, borderRadius: 10, backgroundColor: '#2E7BFF', borderWidth: 3, borderColor: '#FFFFFF', shadowColor: '#2E7BFF', shadowOpacity: 0.6, shadowRadius: 8 }} />
-          </Marker>
-        )}
-      </MapView>
+      {three ? (
+        <View key={university?.id ?? 'none'} style={{ flex: 1 }}>
+          <Map3D ref={deep} theme={theme} center={center} highlight={highlight} route={nav?.route.line ?? null} sat={sat} markers={markers}
+            onPin={pressPin} onBuilding={pressBuilding} onRegion={onRegion} onTap={() => Keyboard.dismiss()} onReady={() => setReady3d(true)}
+            {...(WEB ? { campus } : { file: campus ? `${CAMPUS_BASE}/${university?.id}.json?v=${encodeURIComponent(campus.at)}` : null,
+              dom: { style: { flex: 1 }, injectedJavaScriptBeforeContentLoaded: prefs } })} />
+        </View>
+      ) : (
+        <MapView key={university?.id ?? 'none'} ref={flat} provider={PROVIDER_DEFAULT} style={{ flex: 1 }} showsUserLocation showsCompass={false} showsPointsOfInterests={false} showsBuildings pitchEnabled rotateEnabled
+          mapType={sat ? (Platform.OS === 'ios' ? 'hybridFlyover' : 'hybrid') : Platform.OS === 'ios' ? 'mutedStandard' : 'standard'}
+          initialCamera={{ center, zoom: 16, heading: 0, pitch: 35 }} onPress={() => { Keyboard.dismiss(); }} onRegionChangeComplete={onRegion}>
+          {campus && <NativeCampus campus={campus} theme={theme} zoom={zoom} highlight={highlight} onBuildingPress={pressBuilding} />}
+          <MapMarkers specs={markers} onPin={pressPin} />
+          {nav && <Polyline coordinates={nav.route.line.map(([lng, lat]) => ({ latitude: lat, longitude: lng }))} strokeColor="#FFFFFF" strokeWidth={9} />}
+          {nav && <Polyline coordinates={nav.route.line.map(([lng, lat]) => ({ latitude: lat, longitude: lng }))} strokeColor={C.primary} strokeWidth={5} />}
+        </MapView>
+      )}
 
       <SafeAreaView edges={['top']} style={{ position: 'absolute', top: 0, left: 0, right: 0, paddingHorizontal: 16, gap: 10 }} pointerEvents="box-none">
         <Row gap={8} style={{ marginTop: 6 }}>
@@ -461,7 +470,7 @@ export default function CampusMap() {
             <Chip label={t('الحرم الرئيسي')} onPress={fitAll} style={shadow} />
             {campus.branches.map((b) => (
               <Chip key={b.n} label={b.n} style={shadow}
-                onPress={() => map.current?.animateCamera({ center: { latitude: b.c[1], longitude: b.c[0] }, zoom: 16.6, pitch: WEB ? 52 : 35 }, { duration: 900 })} />
+                onPress={() => cam.animateCamera({ center: { latitude: b.c[1], longitude: b.c[0] }, zoom: 16.6, pitch: cam.tilt(52, 35) }, { duration: 900 })} />
             ))}
           </ScrollView>
         )}
@@ -516,7 +525,7 @@ export default function CampusMap() {
             <Maximize2 size={20} color={C.ink} />
           </Tap>
           {me && (
-            <Tap onPress={() => map.current?.animateCamera({ center: { latitude: me.lat, longitude: me.lng }, zoom: 17.8 }, { duration: 600 })} accessibilityLabel={t('موقعي')}
+            <Tap onPress={() => cam.animateCamera({ center: { latitude: me.lat, longitude: me.lng }, zoom: 17.8 }, { duration: 600 })} accessibilityLabel={t('موقعي')}
               style={[{ width: 48, height: 48, borderRadius: 16, backgroundColor: C.card, alignItems: 'center', justifyContent: 'center' }, shadow]}>
               <Crosshair size={22} color={C.primary} />
             </Tap>

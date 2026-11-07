@@ -33,7 +33,8 @@ export type CampusData = {
   branches?: { n: string; c: LL }[];   // the university's colleges in other towns, drawn in the same file
 };
 
-const BASE = `${process.env.EXPO_PUBLIC_SUPABASE_URL}/storage/v1/object/public/campus`;
+/** Where each university's 3D file lives (`<id>.json`); public, cached by the browser between visits. */
+export const CAMPUS_BASE = `${process.env.EXPO_PUBLIC_SUPABASE_URL}/storage/v1/object/public/campus`;
 const mem = new Map<string, Promise<CampusData | null>>();
 
 /** The campus of one university, or null when it has no file yet (the map still works with pins only). */
@@ -43,7 +44,7 @@ export function loadCampus(universityId: string): Promise<CampusData | null> {
     p = (async () => {
       const { data: row } = await supabase.from('campus_maps').select('version').eq('university_id', universityId).maybeSingle();
       if (!row?.version) return null;
-      const r = await fetch(`${BASE}/${universityId}.json?v=${row.version}`);
+      const r = await fetch(`${CAMPUS_BASE}/${universityId}.json?v=${row.version}`);
       return r.ok ? ((await r.json()) as CampusData) : null;
     })().catch(() => null);
     p.then((d) => { if (!d) mem.delete(universityId); });

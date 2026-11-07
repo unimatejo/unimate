@@ -2,7 +2,7 @@
   "expo": {
     "name": "UniMate",
     "slug": "unimate",
-    "version": "1.1.0",
+    "version": "1.2.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "unimate",
@@ -122,7 +122,7 @@
           }
         ]
       },
-      "buildNumber": "2",
+      "buildNumber": "3",
       "config": {
         "usesNonExemptEncryption": false
       }
@@ -144,7 +144,7 @@
         "READ_MEDIA_VIDEO"
       ],
       "predictiveBackGestureEnabled": false,
-      "versionCode": 2,
+      "versionCode": 3,
       "googleServicesFile": "./google-services.json"
     },
     "web": {
@@ -223,7 +223,7 @@
       "typedRoutes": false,
       "reactCompiler": true
     },
-    "runtimeVersion": "1.1.0",
+    "runtimeVersion": "1.2.0",
     "updates": {
       "enabled": true,
       "url": "https://app.unimate.my/ota/manifest",

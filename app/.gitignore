@@ -43,5 +43,6 @@ example
 /android
 dist-web/
 .lucide-lite.js
+.maplibre-worker.js
 
 dist-*/

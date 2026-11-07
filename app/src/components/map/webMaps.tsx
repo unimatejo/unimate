@@ -17,6 +17,8 @@ type Lib = typeof ML;
 let lib: Lib | null = null;
 let loading: Promise<Lib> | null = null;
 const loadLib = () => (loading ??= import('maplibre-gl').then((m) => { lib = ((m as unknown as { default?: Lib }).default ?? m) as Lib; return lib; }));
+/** The phone's 3D view has MapLibre in its own bundle (a web view can't load split chunks), so it hands it over here. */
+export function provideLib(m: unknown) { lib = ((m as { default?: Lib }).default ?? m) as Lib; loading = Promise.resolve(lib); }
 
 type LatLng = { latitude: number; longitude: number };
 type Camera = { center?: LatLng; zoom?: number; pitch?: number; heading?: number };
@@ -27,6 +29,7 @@ type Props = {
   mapType?: string;
   onPress?: (e: unknown) => void;
   onRegionChangeComplete?: (r: Region) => void;
+  onReady?: () => void; // the map is drawn (the phone's 3D view waits for this before giving up on it)
   // web only
   campus?: CampusData | null; theme?: MapTheme; highlight?: string | null; route?: LL[] | null;
   onBuildingPress?: (b: Pick<CampusBuilding, 'b' | 'n' | 'f'> & { at: LatLng }) => void;
@@ -227,6 +230,7 @@ const MapView = forwardRef<MapHandle, Props>(function MapView(p, ref) {
         m!.setLight({ anchor: 'map', position: [1.4, 210, 35], color: th.light.color, intensity: th.light.intensity });
         setRoute(m!, th, null);
         setReady(true);
+        cb.current.onReady?.();
       });
       // tiles that don't load (offline, blocked) just leave the plain background; nothing to show the user
       m.on('error', () => {});
