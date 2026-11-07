@@ -16,7 +16,7 @@ import { UniSwitcher } from '@/components/map/UniSwitcher';
 import { Button, Chip, Row, T, Tap } from '@/components/ui';
 import { GlyphTile } from '@/components/ui/Glyph';
 import { useAuth } from '@/lib/auth';
-import { distM, findBuilding, loadCampus, type CampusData, type LL } from '@/lib/campus/data';
+import { centroid, distM, findBuilding, loadCampus, type CampusData, type LL } from '@/lib/campus/data';
 import { progress, walkRoute, type Route } from '@/lib/campus/route';
 import { mapTheme } from '@/lib/campus/theme';
 import { flip, nm, t, ta } from '@/lib/i18n';
@@ -77,6 +77,7 @@ export default function CampusMap() {
   const [me, setMe] = useState<{ lat: number; lng: number } | null>(null);
   const [sat, setSat] = useState(false);
   const [zoom, setZoom] = useState(16);
+  const [look, setLook] = useState<{ lat: number; lng: number } | null>(null); // the map's centre after each move
   const mid = useRef<{ lat: number; lng: number } | null>(null);
   const [suggest, setSuggest] = useState(false);
   const [nav, setNav] = useState<Nav | null>(null);
@@ -301,7 +302,17 @@ export default function CampusMap() {
   }, [params.go, campus, center.latitude, center.longitude]);
 
   // zoomed out, only the big landmarks; parking, bus stops and ATMs appear as you zoom in (or pick their filter)
-  const listed = useMemo(() => pins.filter((p) => inGroup(filter, p.kind) && (filter !== 'all' || zoom > 16.9 || !MINOR.includes(p.kind))), [pins, filter, zoom]);
+  // every building on campus has a name: ours from the tables, the rest from the 3D file («مبنى قرب …»), those only
+  // once you're close and around where you look, so a big campus doesn't put thousands of labels on the map
+  const filePins = useMemo<Pin[]>(() => (campus?.buildings ?? []).flatMap((b, i) => {
+    if (!b.l || !b.n) return [];
+    const [lng, lat] = centroid(b.c);
+    return [{ id: `f${i}`, kind: 'building', name: b.n, lat, lng }];
+  }), [campus]);
+  const listed = useMemo(() => {
+    const near = zoom > 17.2 && look && (filter === 'all' || filter === 'building') ? filePins.filter((p) => distM(look, p) < 260) : [];
+    return [...pins.filter((p) => inGroup(filter, p.kind) && (filter !== 'all' || zoom > 16.9 || !MINOR.includes(p.kind))), ...near];
+  }, [pins, filePins, filter, zoom, look]);
   // phones: the platform map has no collision handling, so place markers by importance on their real screen positions
   // and leave out any that would sit on one already placed (the web map does this itself)
   const [fits, setFits] = useState<Set<string> | null>(null);
@@ -345,7 +356,7 @@ export default function CampusMap() {
       <MapView key={university?.id ?? 'none'} ref={map} provider={PROVIDER_DEFAULT} style={{ flex: 1 }} showsUserLocation showsCompass={false} showsPointsOfInterests={false} showsBuildings pitchEnabled rotateEnabled
         mapType={sat ? (Platform.OS === 'ios' ? 'hybridFlyover' : 'hybrid') : Platform.OS === 'ios' ? 'mutedStandard' : 'standard'}
         initialCamera={{ center, zoom: 16, heading: WEB ? -18 : 0, pitch: WEB ? 52 : 35 }} onPress={() => { Keyboard.dismiss(); }}
-        onRegionChangeComplete={(r) => { setZoom((r as { zoom?: number }).zoom ?? Math.log2(360 / r.longitudeDelta)); mid.current = { lat: r.latitude, lng: r.longitude }; placeMarkers(); }}
+        onRegionChangeComplete={(r) => { setZoom((r as { zoom?: number }).zoom ?? Math.log2(360 / r.longitudeDelta)); mid.current = { lat: r.latitude, lng: r.longitude }; setLook(mid.current); placeMarkers(); }}
         {...web3d}>
         {!WEB && campus && <NativeCampus campus={campus} theme={theme} zoom={zoom} highlight={highlight} onBuildingPress={pressBuilding} />}
         {!nav && shown.map((p) => {

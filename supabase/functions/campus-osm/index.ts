@@ -87,6 +87,9 @@ function poiKind(t: Record<string, string>): string | null {
 const KIND_AR: Record<string, string> = { bus: 'موقف باص', cafeteria: 'كافتيريا', restaurant: 'مطعم', kiosk: 'كشك', print: 'طباعة وقرطاسية', shop: 'محل', atm: 'صراف آلي',
   bank: 'بنك', pharmacy: 'صيدلية', clinic: 'عيادة', mosque: 'مسجد', library: 'مكتبة', parking: 'موقف سيارات', gate: 'بوابة', sports: 'ملعب', service: 'خدمة' };
 
+// places whose own name can tell a building next to them apart
+const LANDMARKS = new Set(['library', 'mosque', 'gate', 'sports', 'clinic', 'building']);
+
 function greenType(t: Record<string, string>): string | null {
   if (t.natural === 'water' || t.water || t.leisure === 'swimming_pool') return 'water';
   if (t.leisure === 'pitch' || t.leisure === 'track' || t.leisure === 'stadium') return 'pitch';
@@ -206,9 +209,10 @@ async function outline(uni: Uni): Promise<{ ring: LL[]; center: { lat: number; l
 }
 
 async function build(db: ReturnType<typeof createClient>, uni: Uni) {
-  const [{ data: bs }, { data: ps }] = await Promise.all([
+  const [{ data: bs }, { data: ps }, { data: hidden }] = await Promise.all([
     db.from('buildings').select('id, name_ar, name_en, code, lat, lng, floors, osm_id').eq('university_id', uni.id).eq('state', 'approved'),
-    db.from('places').select('id, kind, name_ar, lat, lng, osm_id').eq('university_id', uni.id),
+    db.from('places').select('id, kind, name_ar, lat, lng, osm_id, state').eq('university_id', uni.id),
+    db.from('buildings').select('name_ar, name_en, osm_id').eq('university_id', uni.id).neq('state', 'approved'),
   ]);
   let c = { lat: uni.center_lat, lng: uni.center_lng };
   const named = await outline(uni);
@@ -243,7 +247,7 @@ async function build(db: ReturnType<typeof createClient>, uni: Uni) {
   const elements = await osm(w, s, e, n);
   for (const b of branches) elements.push(...await osm(...b.box));
 
-  type B = { o: number; c: LL[]; h: number; mh: number; n: string | null; b: string | null; f: number | null; k: string; ap?: 1; e?: boolean };
+  type B = { o: number; c: LL[]; h: number; mh: number; n: string | null; b: string | null; f: number | null; k: string; ap?: 1; l?: 1; e?: boolean };
   const buildings: B[] = [];
   const green: { t: string; c: LL[] }[] = [];
   const parking: LL[][] = [];
@@ -377,6 +381,40 @@ async function build(db: ReturnType<typeof createClient>, uni: Uni) {
   const onCampus = (p: LL) => (campuses.length ? campuses.some((r) => inside(p, r)) : dist(c, { lat: p[1], lng: p[0] }) < reach)
     || branches.some((g) => dist({ lat: g.c[1], lng: g.c[0] }, { lat: p[1], lng: p[0] }) < 400);
 
+  // every building on campus carries a name: its own, else where it stands («مبنى قرب كلية الشريعة», numbered when one
+  // landmark has several next to it), else a number. `l` marks the ones the map labels from this file (ours, linked to
+  // the buildings table, are labelled from there). A real name, from OSM or the table, always wins on the next build.
+  // a building we hid (a home, a wrong name) keeps its shape but not the name OSM gave it
+  const hiddenOsm = new Set((hidden ?? []).map((x) => String(x.osm_id ?? '').replace(/\D/g, '')).filter(Boolean));
+  const hiddenName = new Set((hidden ?? []).flatMap((x) => [x.name_ar, x.name_en]).filter(Boolean));
+  for (const x of buildings) if (!x.b && x.n && (hiddenOsm.has(String(x.o)) || hiddenName.has(x.n))) x.n = null;
+  const GENERIC = new Set([...Object.values(KIND_AR), 'حديقة']);
+  const short = (n: string) => n.split(/[،,(]| - /)[0].trim();
+  const pt = (p: LL) => ({ lat: p[1], lng: p[0] });
+  const anchors = [
+    ...buildings.filter((x) => x.n && x.k !== 'part' && onCampus(centroid(x.c))).map((x) => ({ n: short(x.n!), p: centroid(x.c) })),
+    ...((ps ?? []) as { kind: string; name_ar: string | null; lat: number; lng: number; state: string }[])
+      .filter((x) => x.state === 'approved' && x.name_ar && !GENERIC.has(x.name_ar) && LANDMARKS.has(x.kind) && onCampus([x.lng, x.lat]))
+      .map((x) => ({ n: short(x.name_ar!), p: [x.lng, x.lat] as LL })),
+  ].filter((a) => a.n.length > 1 && /[\u0621-\u064A]/.test(a.n) && !/^مبنى رقم| قرب |^مبنى قرب /.test(a.n));
+  const unnamed = buildings.filter((x) => !x.n && x.k !== 'part' && onCampus(centroid(x.c))).map((x) => ({ x, p: centroid(x.c) }))
+    .sort((a, b) => b.p[1] - a.p[1] || a.p[0] - b.p[0]);
+  const nearest = unnamed.map(({ p }) => {
+    let best: string | null = null, bd = 90;
+    for (const a of anchors) { const d = dist(pt(a.p), pt(p)); if (d < bd) { bd = d; best = a.n; } }
+    return best;
+  });
+  const around = new Map<string, number>(), seen = new Map<string, number>();
+  nearest.forEach((a) => { if (a) around.set(a, (around.get(a) ?? 0) + 1); });
+  let numbered = 0;
+  unnamed.forEach(({ x }, i) => {
+    const a = nearest[i];
+    if (!a) { x.n = `مبنى رقم ${++numbered}`; return; }
+    const k = (seen.get(a) ?? 0) + 1; seen.set(a, k);
+    x.n = around.get(a)! > 1 ? `مبنى ${k} قرب ${a}` : `مبنى قرب ${a}`;
+  });
+  for (const x of buildings) if (x.n && !x.b && x.k !== 'part' && onCampus(centroid(x.c))) x.l = 1;
+
   // points of interest → `places` (new ones only; anything already there, by OSM id or same kind within 20 m, stays as it is)
   const have = (ps ?? []) as { kind: string; lat: number; lng: number; osm_id: string | null }[];
   const haveOsm = new Set(have.map((x) => String(x.osm_id ?? '').replace(/\D/g, '')).filter(Boolean));
@@ -389,6 +427,8 @@ async function build(db: ReturnType<typeof createClient>, uni: Uni) {
     const { error, count } = await db.from('places').insert(rows, { count: 'exact' });
     if (!error) added += count ?? rows.length;
   }
+  // a place OSM left nameless («بوابة», «موقف سيارات») is told apart by the building next to it
+  await db.rpc('campus_label_places', { p_university: uni.id });
 
   buildings.sort((a, b) => area(b.c) - area(a.c));
   for (const x of buildings) delete x.e;
@@ -397,7 +437,7 @@ async function build(db: ReturnType<typeof createClient>, uni: Uni) {
   const body = JSON.stringify(out);
   const up = await db.storage.from('campus').upload(`${uni.id}.json`, new Blob([body], { type: 'application/json' }), { upsert: true, contentType: 'application/json', cacheControl: '3600' });
   if (up.error) throw new Error('upload: ' + up.error.message);
-  const stats = { outline: !!named, outlines: campuses.length, ml, planted, branches: branches.length, boxes, moved, buildings: buildings.length, linked, approx, green: green.length, paths: paths.length, trees: trees.length, pois: pois.length, added, bytes: body.length };
+  const stats = { outline: !!named, outlines: campuses.length, ml, planted, branches: branches.length, boxes, moved, buildings: buildings.length, linked, approx, labelled: unnamed.length, green: green.length, paths: paths.length, trees: trees.length, pois: pois.length, added, bytes: body.length };
   await db.rpc('campus_map_saved', { p_university: uni.id, p_bbox: out.bbox, p_stats: stats, p_error: null });
   return stats;
 }

@@ -16,6 +16,7 @@ export type CampusBuilding = {
   f: number | null;     // floors (ours)
   k: string;            // OSM building type
   ap?: 1;
+  l?: 1;                // on campus and named only here ("مبنى قرب …" or an OSM name): the map labels it from the file
 };
 export type CampusData = {
   v: number; at: string;
