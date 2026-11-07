@@ -1,19 +1,32 @@
 # Runs the app on Android emulators (a recent phone and a weak one) and walks the story flow with Maestro, taking a
-# screenshot at every step. Started by hand for one phone at a time, with a one-time sign-in link for the QA account
-# (made fresh for each run: a new link cancels the previous one).
+# screenshot at every step. One phone per run, started by pushing e2e/run.json ({"phone": "new"|"weak", "link": a
+# one-time sign-in link for the QA account, made fresh each time: a new link cancels the previous one}) to the
+# "e2e-run" branch, or by hand with the same two inputs.
 # Screenshots, the Maestro report and the phone's log go to the "e2e-results" branch.
 name: Android E2E
 on:
+  push:
+    branches: [e2e-run]
   workflow_dispatch:
     inputs:
-      phone: { description: 'new (recent phone) or weak (2 GB, 2 cores, Android 11)', required: true, default: weak }
-      link: { description: 'unimate://callback?token_hash=…&type=magiclink', required: true }
+      phone: { description: 'new (recent phone) or weak (2 GB, 2 cores, Android 11)', required: false, default: weak }
+      link: { description: 'unimate://callback?token_hash=…&type=magiclink', required: false }
 permissions:
   contents: write
 concurrency:
   group: android-e2e
   cancel-in-progress: true
 jobs:
+  config:
+    runs-on: ubuntu-latest
+    outputs:
+      phone: ${{ steps.c.outputs.phone }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: c
+        run: |
+          P="${{ github.event.inputs.phone }}"; [ -f e2e/run.json ] && [ -z "$P" ] && P=$(python3 -c "import json;print(json.load(open('e2e/run.json'))['phone'])")
+          echo "phone=${P:-weak}" >> $GITHUB_OUTPUT
   build:
     runs-on: ubuntu-latest
     timeout-minutes: 50
@@ -35,12 +48,12 @@ jobs:
       - uses: actions/upload-artifact@v4
         with: { name: apk, path: app/android/app/build/outputs/apk/release/app-release.apk }
   e2e:
-    needs: build
+    needs: [config, build]
     runs-on: ubuntu-latest
     timeout-minutes: 60
     strategy:
       matrix:
-        phone: ${{ fromJSON(github.event.inputs.phone == 'new' && '[{"name":"new","api":34,"profile":"pixel_7","ram":4096,"cores":4}]' || '[{"name":"weak","api":30,"profile":"pixel_3a","ram":2048,"cores":2}]') }}
+        phone: ${{ fromJSON(needs.config.outputs.phone == 'new' && '[{"name":"new","api":34,"profile":"pixel_7","ram":4096,"cores":4}]' || '[{"name":"weak","api":30,"profile":"pixel_3a","ram":2048,"cores":2}]') }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
@@ -57,6 +70,7 @@ jobs:
       - uses: reactivecircus/android-emulator-runner@v2
         env:
           LOGIN_LINK: ${{ github.event.inputs.link }}
+          RUN_JSON: e2e/run.json
         with:
           api-level: ${{ matrix.phone.api }}
           arch: x86_64

@@ -4,6 +4,7 @@
 set -x
 NAME=$1; API=$2
 mkdir -p out
+[ -z "$LOGIN_LINK" ] && [ -f "$RUN_JSON" ] && LOGIN_LINK=$(python3 -c "import json;print(json.load(open('$RUN_JSON'))['link'])")
 adb wait-for-device
 adb root || true
 adb shell "setprop persist.sys.locale ar-JO; setprop ctl.restart zygote" || true
