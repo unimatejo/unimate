@@ -1,3 +1,7 @@
+import { Directory, File, Paths } from 'expo-file-system';
+import { Platform } from 'react-native';
+
+import { getPref, setPref } from '@/lib/prefs';
 import { supabase } from '@/lib/supabase';
 
 /**
@@ -36,21 +40,86 @@ export type CampusData = {
 /** Where each university's 3D file lives (`<id>.json`); public, cached by the browser between visits. */
 export const CAMPUS_BASE = `${process.env.EXPO_PUBLIC_SUPABASE_URL}/storage/v1/object/public/campus`;
 const mem = new Map<string, Promise<CampusData | null>>();
+/** how long to wait for the version check before using the copy on the phone (a weak campus signal) */
+const CHECK_MS = 5000;
 
-/** The campus of one university, or null when it has no file yet (the map still works with pins only). */
+/**
+ * The campus of one university, or null when it has no file yet (the map still works with pins only).
+ * Works without internet: phones keep the file in the app's own folder (once opened, anywhere, with internet), a
+ * newer version replaces it, and with no connection the kept copy is used. The web does the same in the browser's
+ * offline store.
+ */
 export function loadCampus(universityId: string): Promise<CampusData | null> {
   let p = mem.get(universityId);
   if (!p) {
     p = (async () => {
-      const { data: row } = await supabase.from('campus_maps').select('version').eq('university_id', universityId).maybeSingle();
-      if (!row?.version) return null;
-      const r = await fetch(`${CAMPUS_BASE}/${universityId}.json?v=${row.version}`);
-      return r.ok ? ((await r.json()) as CampusData) : null;
+      const version = await Promise.race([
+        supabase.from('campus_maps').select('version').eq('university_id', universityId).maybeSingle()
+          .then(({ data, error }) => (error ? undefined : (data?.version as number | undefined) ?? null), () => undefined),
+        new Promise<undefined>((r) => setTimeout(() => r(undefined), CHECK_MS)),
+      ]);
+      if (version === null) return null; // this university has no map
+      return Platform.OS === 'web' ? webFile(universityId, version) : phoneFile(universityId, version);
     })().catch(() => null);
     p.then((d) => { if (!d) mem.delete(universityId); });
     mem.set(universityId, p);
   }
   return p;
+}
+
+const url = (id: string, v: number) => `${CAMPUS_BASE}/${id}.json?v=${v}`;
+
+/** Phones: `campus/<id>-v<version>.json` in the app's folder; `version` undefined = no connection right now. */
+async function phoneFile(id: string, version: number | undefined): Promise<CampusData | null> {
+  const dir = new Directory(Paths.document, 'campus');
+  if (!dir.exists) dir.create({ intermediates: true });
+  const kept = dir.list().filter((f): f is File => f instanceof File && f.name.startsWith(`${id}-v`) && f.name.endsWith('.json'));
+  const keptV = (f: File) => Number(f.name.slice(id.length + 2, -5)) || 0;
+  const newest = kept.sort((a, b) => keptV(b) - keptV(a))[0];
+  const read = async (f: File) => { try { return JSON.parse(await f.text()) as CampusData; } catch { return null; } };
+  if (newest && (version === undefined || keptV(newest) >= version)) {
+    const d = await read(newest);
+    if (d) return d;
+  }
+  if (version === undefined) return null; // offline and nothing kept yet
+  try {
+    const r = await fetch(url(id, version));
+    if (!r.ok) throw new Error(`campus file ${r.status}`);
+    const text = await r.text();
+    const d = JSON.parse(text) as CampusData;
+    const f = new File(dir, `${id}-v${version}.json`);
+    f.write(text);
+    kept.filter((x) => x.uri !== f.uri).forEach((x) => { try { x.delete(); } catch { /* in use */ } });
+    return d;
+  } catch {
+    return newest ? read(newest) : null; // a drop halfway: the older copy still beats nothing
+  }
+}
+
+/** Web: the file is also kept in the browser's offline store (Cache Storage), so the map opens without internet too. */
+async function webFile(id: string, version: number | undefined): Promise<CampusData | null> {
+  const key = `campus_v:${id}`;
+  const v = version ?? Number(getPref(key) ?? 0);
+  if (!v) return null;
+  const store = typeof caches !== 'undefined' ? await caches.open('campus').catch(() => null) : null;
+  try {
+    if (version === undefined) {
+      const hit = await store?.match(url(id, v));
+      if (hit) return (await hit.json()) as CampusData;
+    }
+    const r = await fetch(url(id, v));
+    if (!r.ok) return null;
+    if (store) {
+      await store.put(url(id, v), r.clone()).catch(() => {});
+      // older versions of this campus go
+      for (const k of await store.keys()) if (k.url.includes(`/${id}.json`) && !k.url.endsWith(`v=${v}`)) await store.delete(k);
+    }
+    setPref(key, String(v));
+    return (await r.json()) as CampusData;
+  } catch {
+    const hit = await store?.match(url(id, v)).catch(() => undefined);
+    return hit ? ((await hit.json()) as CampusData) : null;
+  }
 }
 
 // ---------- small geometry helpers (metres on a local flat projection: fine at campus size) ----------

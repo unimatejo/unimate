@@ -8,7 +8,8 @@ import { t } from '@/lib/i18n';
 import { normalize } from '@/lib/util';
 
 /** A place on the campus map: our buildings and approved places (with the OSM ones), or a spot shared in a chat. */
-export type Pin = { id: string; kind: string; name: string; sub?: string | null; lat: number; lng: number; advertiser_id?: string | null };
+/** `alt`: nicknames and other names (search only); `sub` of a building is its code («C11»). */
+export type Pin = { id: string; kind: string; name: string; sub?: string | null; lat: number; lng: number; advertiser_id?: string | null; alt?: string[] };
 
 type G = readonly [string, string];
 const KIND: Record<string, { icon: LucideIcon; g: G; label: string; words?: string[] }> = {
@@ -62,7 +63,8 @@ export function localSearch(pins: Pin[], q: string, near?: { lat: number; lng: n
   const n = norm(q);
   if (n.length < 2) return [];
   const kinds = Object.entries(KIND).filter(([, v]) => v.words?.some((w) => norm(w).startsWith(n) || n.startsWith(norm(w)))).map(([k]) => k);
-  const hit = pins.filter((p) => norm(p.name).includes(n) || (kinds.includes(p.kind) && p.kind !== 'building'));
+  const named = (p: Pin) => norm(p.name).includes(n) || !!p.alt?.some((x) => norm(x).includes(n)) || (p.kind === 'building' && !!p.sub && norm(p.sub).startsWith(n));
+  const hit = pins.filter((p) => named(p) || (kinds.includes(p.kind) && p.kind !== 'building'));
   const d = (p: Pin) => (near ? (p.lat - near.lat) ** 2 + (p.lng - near.lng) ** 2 : 0);
   return hit.sort((a, b) => Number(norm(b.name).startsWith(n)) - Number(norm(a.name).startsWith(n)) || d(a) - d(b)).slice(0, 12);
 }

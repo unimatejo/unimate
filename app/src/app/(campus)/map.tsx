@@ -18,6 +18,7 @@ import { UniSwitcher } from '@/components/map/UniSwitcher';
 import { Button, Chip, Row, T, Tap } from '@/components/ui';
 import { GlyphTile } from '@/components/ui/Glyph';
 import { useAuth } from '@/lib/auth';
+import { readCache, writeCache } from '@/lib/cache';
 import { CAMPUS_BASE, centroid, distM, findBuilding, loadCampus, type CampusData, type LL } from '@/lib/campus/data';
 import { progress, walkRoute, type Route } from '@/lib/campus/route';
 import { mapTheme } from '@/lib/campus/theme';
@@ -129,17 +130,27 @@ export default function CampusMap() {
         setPinsState(rows.length ? 'ok' : 'empty');
         return;
       }
-      const [{ data: b, error: be }, { data: p, error: pe }] = await Promise.all([
+      // what this campus showed last time comes up at once, and is all there is without internet
+      const key = `campus_pins:${university.id}`;
+      const kept = readCache<Pin[]>(key);
+      if (kept?.length) { setPins(kept); setPinsState('ok'); }
+      const [{ data: b, error: be }, { data: p, error: pe }, { data: al }] = await Promise.all([
         supabase.from('buildings').select('id, name_ar, name_en, code, lat, lng').eq('university_id', university.id).eq('state', 'approved').not('lat', 'is', null),
         supabase.from('places').select('id, kind, name_ar, name_en, description, lat, lng, advertiser_id').eq('university_id', university.id).eq('state', 'approved'),
+        supabase.from('place_aliases').select('alias, building_id, place_id').eq('university_id', university.id).eq('state', 'approved'),
       ]);
-      if (be || pe) { setPinsState('error'); return; }
-      setPins([
-        ...(b ?? []).map((x) => ({ id: x.id, kind: 'building', name: nm(x), sub: x.code, lat: x.lat!, lng: x.lng! })),
-        ...(p ?? []).map((x) => ({ id: x.id, kind: x.kind, name: nm(x), sub: x.description, lat: x.lat, lng: x.lng, advertiser_id: x.advertiser_id })),
-      ]);
-      setPinsState(((b ?? []).length + (p ?? []).length) ? 'ok' : 'empty');
-    } catch { setPinsState('error'); }
+      if (be || pe) { if (!kept?.length) setPinsState('error'); return; }
+      // nicknames («المجمع»، «C11») so search finds them offline too
+      const alt = new Map<string, string[]>();
+      for (const a of al ?? []) { const id = a.building_id ?? a.place_id; if (id) alt.set(id, [...(alt.get(id) ?? []), a.alias]); }
+      const next: Pin[] = [
+        ...(b ?? []).map((x) => ({ id: x.id, kind: 'building', name: nm(x), sub: x.code, lat: x.lat!, lng: x.lng!, alt: alt.get(x.id) })),
+        ...(p ?? []).map((x) => ({ id: x.id, kind: x.kind, name: nm(x), sub: x.description, lat: x.lat, lng: x.lng, advertiser_id: x.advertiser_id, alt: alt.get(x.id) })),
+      ];
+      writeCache(key, next);
+      setPins(next);
+      setPinsState(next.length ? 'ok' : 'empty');
+    } catch { if (!readCache<Pin[]>(`campus_pins:${university.id}`)?.length) setPinsState('error'); }
   }, [university, preview]);
   useEffect(() => { loadPins(); }, [loadPins]);
   // the 3D campus: only this university's file, kept by the browser between visits
@@ -383,6 +394,12 @@ export default function CampusMap() {
     const p = id === 'shared' ? shared : shown.find((x) => x.id === id);
     if (p) focus(p);
   };
+  // a finger on the map while walking: the camera stops riding along, and «إعادة التوسط» brings it back
+  const handMoved = useCallback(() => { setFollow((f) => (f ? false : f)); }, []);
+  // the phone's 3D view without internet asks for the campus copy kept on the phone
+  const campusRef = useRef(campus);
+  useEffect(() => { campusRef.current = campus; }, [campus]);
+  const keptCampus = useCallback(async () => campusRef.current, []);
   const onRegion = (r: { latitude: number; longitude: number; longitudeDelta: number; zoom?: number }) => {
     setZoom(r.zoom ?? Math.log2(360 / r.longitudeDelta));
     mid.current = { lat: r.latitude, lng: r.longitude };
@@ -417,14 +434,15 @@ export default function CampusMap() {
       {three ? (
         <View key={university?.id ?? 'none'} style={{ flex: 1 }}>
           <Map3D ref={deep} theme={theme} center={center} highlight={highlight} route={nav?.route.line ?? null} sat={sat} markers={markers}
-            onPin={pressPin} onBuilding={pressBuilding} onRegion={onRegion} onTap={() => Keyboard.dismiss()} onReady={() => setReady3d(true)}
+            onPin={pressPin} onBuilding={pressBuilding} onRegion={onRegion} onPanDrag={handMoved} onTap={() => Keyboard.dismiss()} onReady={() => setReady3d(true)}
+            getCampus={keptCampus}
             {...(WEB ? { campus } : { file: campus ? `${CAMPUS_BASE}/${university?.id}.json?v=${encodeURIComponent(campus.at)}` : null,
               dom: { style: { flex: 1 }, injectedJavaScriptBeforeContentLoaded: prefs } })} />
         </View>
       ) : (
         <MapView key={university?.id ?? 'none'} ref={flat} provider={PROVIDER_DEFAULT} style={{ flex: 1 }} showsUserLocation showsCompass={false} showsPointsOfInterests={false} showsBuildings pitchEnabled rotateEnabled
           mapType={sat ? (Platform.OS === 'ios' ? 'hybridFlyover' : 'hybrid') : Platform.OS === 'ios' ? 'mutedStandard' : 'standard'}
-          initialCamera={{ center, zoom: 16, heading: 0, pitch: 35 }} onPress={() => { Keyboard.dismiss(); }} onRegionChangeComplete={onRegion}>
+          initialCamera={{ center, zoom: 16, heading: 0, pitch: 35 }} onPress={() => { Keyboard.dismiss(); }} onPanDrag={handMoved} onRegionChangeComplete={onRegion}>
           {campus && <NativeCampus campus={campus} theme={theme} zoom={zoom} highlight={highlight} onBuildingPress={pressBuilding} />}
           <MapMarkers specs={markers} onPin={pressPin} />
           {nav && <Polyline coordinates={nav.route.line.map(([lng, lat]) => ({ latitude: lat, longitude: lng }))} strokeColor="#FFFFFF" strokeWidth={9} />}
@@ -592,7 +610,7 @@ export default function CampusMap() {
       {nav && !tour && (
         <NavCard name={nav.dest.name} kind={nav.dest.kind} building={nav.building} floor={nav.floor} room={nav.room}
           left={live?.left ?? nav.route.meters} minutes={live?.minutes ?? nav.route.minutes} straight={nav.route.straight}
-          following={nav.from === 'me' ? follow : null} onFollow={() => setFollow((f) => !f)}
+          following={nav.from === 'me' ? follow : null} onRecenter={() => setFollow(true)}
           onPreview={() => { setFollow(false); walkAlong(nav.route.line, () => setTimeout(() => setWalker(null), 1500)); }}
           onEnd={() => { stopAnim(); setWalker(null); setNav(null); }} />
       )}

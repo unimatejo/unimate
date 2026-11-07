@@ -185,6 +185,13 @@ or JSON: `[{"student_number":"2620387","term_gpa":3.71,"cumulative_gpa":3.60,"cr
   live progress, and a new route when you wander off (35 m, or more when the phone itself reports a vague fix).
   No path nearby → a straight line, labelled. Checked on every campus from every gate to every named building
   (19.6k routes: straight-line fallbacks 3.8% → 0.04%, big detours 4.1% → 1.8%).
+- **Offline.** Opened once with internet (anywhere), the campus map works without it: the campus file is kept on the
+  phone (`campus/<id>-v<version>.json` in the app folder; the web keeps it in Cache Storage) and replaced when a newer
+  version is out; places and nicknames are kept with `readCache`; the last profile is kept too, so the app opens
+  offline even after the sign-in's token ran out (`savedSession` in `lib/auth.tsx`). The phone's 3D view asks the app
+  for the kept file (`getCampus`) when it can't fetch it, and starts without base tiles when the phone is offline.
+- **Following.** While walking from where you are the camera rides along; a finger on the map stops it and
+  «إعادة التوسط» (NavCard) puts it back, like Google Maps.
 - **Entry points.** `/map?building=<id>&go=1&room=<code>&floor=<n>` starts walking there: the lecture card on Home and
   Schedule (`roomRoute` in `lib/schedule.ts`) and the lecture reminder (tapping it opens the route).
 - **Search.** What's on the map answers instantly (names, and kind words like «كشك», «باص», «صراف», Arabic spelling
@@ -353,7 +360,7 @@ or JSON: `[{"student_number":"2620387","term_gpa":3.71,"cumulative_gpa":3.60,"cr
 
 **map/**
 
-- `Campus3D.tsx` — The 3D campus on a phone: Expo runs this file in a web view, so the app shows exactly what the site shows. The campus file is fetched here from its address,…
+- `Campus3D.tsx` — The 3D campus on a phone: Expo runs this file in a web view, so the app shows exactly what the site shows. The campus file is fetched here from its address…
 - `Campus3DView.tsx` — The 3D campus (MapLibre) with its markers: what the web page shows, and what a phone shows inside Campus3D.
 - `Map3D.tsx` — Phones: the 3D campus in a web view (Map3D.web.tsx draws it straight in the page).
 - `Map3D.web.tsx` — The web: the 3D campus right in the page (MapLibre stays a chunk of its own, loaded when the map opens).
@@ -437,7 +444,7 @@ or JSON: `[{"student_number":"2620387","term_gpa":3.71,"cumulative_gpa":3.60,"cr
 
 - `ads.ts` — First-party ads (restaurants, cafés, print shops near the campus). Every ad is labelled «ممول», nothing tracks a student across apps: the server counts one view a day…
 - `appContent.ts` — What the owner sets from the admin panel ("شكل التطبيق"): texts, the home banner and quick links, a notice for everyone, and which features are on. Anything not set…
-- `auth.tsx` — University domain check before we send a code: only university emails can join.
+- `auth.tsx` — No internet and the sign-in's short-lived token has run out: Supabase can't renew it, so it reports no session. The sign-in saved on this phone still says who this is,…
 - `cache.ts` — What a screen showed last time, so it opens instantly and refreshes quietly in the background (like Instagram). Kept in memory and on the device; every key includes the…
 - `crashMark.ts` — Native work that can take the whole app down (a video encoder, say) can't be caught from JavaScript. Before such a step a mark is saved; if the app starts again with the…
 - `cropper.ts` — How a photo / video sits in its frame after the crop editor (saved with the post / story).

@@ -1,6 +1,6 @@
-import { ArrowUp, ArrowUpLeft, ArrowUpRight, CornerUpLeft, CornerUpRight, Crosshair, Flag, Footprints, Navigation, Undo2, X, type LucideIcon } from 'lucide-react-native';
+import { ArrowUp, ArrowUpLeft, ArrowUpRight, CornerUpLeft, CornerUpRight, Flag, Footprints, Navigation, Undo2, X, type LucideIcon } from 'lucide-react-native';
 import { View } from 'react-native';
-import Animated, { FadeInUp, SlideInDown } from 'react-native-reanimated';
+import Animated, { FadeIn, FadeInUp, FadeOut, SlideInDown } from 'react-native-reanimated';
 
 import { Row, T, Tap } from '@/components/ui';
 import { GlyphTile } from '@/components/ui/Glyph';
@@ -36,15 +36,27 @@ export function DirectionBanner({ step, toNext, from }: { step: Step; toNext: nu
 }
 
 /** The card at the bottom: where I'm going (building, floor, room), how far and how long, and the controls. */
-export function NavCard({ name, kind, building, floor, room, left, minutes, straight, following, onFollow, onPreview, onEnd }: {
+/**
+ * The walking card. `following` (walking from where I am): the camera rides along above me; moving the map by hand
+ * stops that and «إعادة التوسط» appears above the card, like Google Maps, to put the camera back over me.
+ */
+export function NavCard({ name, kind, building, floor, room, left, minutes, straight, following, onRecenter, onPreview, onEnd }: {
   name: string; kind: string; building?: string | null; floor?: number | null; room?: string | null; left: number; minutes: number; straight: boolean;
-  following: boolean | null; onFollow: () => void; onPreview: () => void; onEnd: () => void;
+  following: boolean | null; onRecenter: () => void; onPreview: () => void; onEnd: () => void;
 }) {
   const k = kindOf(kind);
   const where = [building && building !== name ? building : null, floor != null ? (floor === 0 ? t('الطابق الأرضي') : t('الطابق {0}', [floor])) : null, room ? t('قاعة {0}', [room]) : null].filter(Boolean).join(' · ');
   const btn = { flex: 1, flexDirection: 'row', gap: 8, minHeight: 48, borderRadius: 16, alignItems: 'center', justifyContent: 'center' } as const;
   return (
     <Animated.View entering={SlideInDown.duration(240)} style={[{ position: 'absolute', left: 12, right: 12, bottom: 28, backgroundColor: C.card, borderRadius: 30, padding: 16, paddingTop: 10, gap: 12 }, shadow]}>
+      {following === false && (
+        <Animated.View entering={FadeIn.duration(180)} exiting={FadeOut.duration(140)} style={{ position: 'absolute', top: -62, alignSelf: 'center' }}>
+          <Tap onPress={onRecenter} accessibilityRole="button" accessibilityLabel={t('إعادة التوسط')}
+            style={[{ flexDirection: 'row', alignItems: 'center', gap: 8, minHeight: 46, paddingHorizontal: 18, borderRadius: 23, backgroundColor: C.card }, shadow]}>
+            <Navigation size={18} color={C.primary} fill={C.primary} /><T v="bodyMd" color={C.primary}>{t('إعادة التوسط')}</T>
+          </Tap>
+        </Animated.View>
+      )}
       <View style={{ alignSelf: 'center', width: 42, height: 5, borderRadius: 3, backgroundColor: C.line }} />
       <Row gap={12}>
         <GlyphTile icon={k.icon} colors={k.g} size={52} />
@@ -65,17 +77,9 @@ export function NavCard({ name, kind, building, floor, room, left, minutes, stra
         </View>
       </Row>
       {straight && <T v="tiny" color={C.muted}>{t('ما في ممرات مرسومة لهون، فهاد خط مباشر تقريبي.')}</T>}
-      <Row gap={8}>
-        <Tap onPress={onPreview} accessibilityLabel={t('شوف الطريق مشي')} style={[btn, { backgroundColor: C.soft }]}>
-          <Footprints size={18} color={C.ink} /><T v="bodyMd">{t('شوف الطريق')}</T>
-        </Tap>
-        {following !== null && (
-          <Tap onPress={onFollow} accessibilityLabel={following ? t('وقف المتابعة') : t('تابعني')} style={[btn, { backgroundColor: following ? C.primary : C.soft }]}>
-            {following ? <Navigation size={18} color={C.onPrimary} /> : <Crosshair size={18} color={C.ink} />}
-            <T v="bodyMd" color={following ? C.onPrimary : C.ink}>{following ? t('بتابعك') : t('تابعني')}</T>
-          </Tap>
-        )}
-      </Row>
+      <Tap onPress={onPreview} accessibilityLabel={t('شوف الطريق مشي')} style={[btn, { flex: undefined, backgroundColor: C.soft }]}>
+        <Footprints size={18} color={C.ink} /><T v="bodyMd">{t('شوف الطريق')}</T>
+      </Tap>
     </Animated.View>
   );
 }

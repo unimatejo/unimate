@@ -2785,9 +2785,7 @@ export const EN: Record<string, string> = {
   "الخريطة المرسومة": "Drawn map",
   "المسافة": "Distance",
   "امشِ باتجاه {0}": "Head towards {0}",
-  "بتابعك": "Following",
   "بعد {0}، {1}": "In {0}, {1}",
-  "تابعني": "Follow me",
   "شوف الطريق": "Preview",
   "شوف الطريق مشي": "Preview the walk",
   "صفحة المحل": "Shop page",
@@ -2804,7 +2802,6 @@ export const EN: Record<string, string> = {
   "وديني لهون": "Take me here",
   "وديني: {0}": "Take me: {0}",
   "وصلت {0}": "You've arrived at {0}",
-  "وقف المتابعة": "Stop following",
   "{0} شجرة": "{0} trees",
   "{0} ممر وطريق": "{0} paths and roads",
   "آخر بناء {0}": "Last built {0}",
@@ -2861,4 +2858,5 @@ export const EN: Record<string, string> = {
   "فضية": "Silver",
   "كلمة الزر": "Button text",
   "هيك بيطلع للطلاب:": "How students will see it:",
+  "إعادة التوسط": "Re-center",
 };

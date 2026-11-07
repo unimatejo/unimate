@@ -17,15 +17,21 @@ provideLib(maplibre);
 
 /**
  * The 3D campus on a phone: Expo runs this file in a web view, so the app shows exactly what the site shows. The
- * campus file is fetched here from its address, and the camera is driven from the app through the handle.
+ * campus file is fetched here from its address (offline: the app's kept copy), and the camera is driven from the app
+ * through the handle.
  */
-export default function Campus3D({ ref, file, campus: _given, dom: _dom, ...props }: Map3DProps & { ref?: Ref<Campus3DHandle> }) {
+export default function Campus3D({ ref, file, campus: _given, dom: _dom, getCampus, ...props }: Map3DProps & { ref?: Ref<Campus3DHandle> }) {
   const map = useRef<MapHandle>(null);
   const [campus, setCampus] = useState<CampusData | null>(null);
+  const ask = useRef(getCampus);
+  useEffect(() => { ask.current = getCampus; }, [getCampus]);
   useEffect(() => {
     if (!file) return;
     let live = true;
-    fetch(file).then((r) => (r.ok ? r.json() : null)).then((d) => { if (live) setCampus(d as CampusData | null); }, () => {});
+    // no internet (or a dropped download): the copy the app keeps on the phone, sent over once
+    const kept = () => ask.current?.().then((d) => { if (live && d) setCampus(d); }, () => {});
+    fetch(file).then((r) => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
+      .then((d) => { if (live) setCampus(d as CampusData); }, kept);
     return () => { live = false; };
   }, [file]);
   // the app calls these across the bridge (arguments arrive as JSON, hence the loose factory type)

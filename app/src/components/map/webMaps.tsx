@@ -29,6 +29,8 @@ type Props = {
   mapType?: string;
   onPress?: (e: unknown) => void;
   onRegionChangeComplete?: (r: Region) => void;
+  /** the student moved the map with a finger (not the app moving the camera) */
+  onPanDrag?: () => void;
   onReady?: () => void; // the map is drawn (the phone's 3D view waits for this before giving up on it)
   // web only
   campus?: CampusData | null; theme?: MapTheme; highlight?: string | null; route?: LL[] | null;
@@ -141,8 +143,14 @@ function toGeo(d: CampusData) {
 }
 const geoOf = (d: CampusData) => { let g = geoCache.get(d); if (!g) { g = toGeo(d); geoCache.set(d, g); } return g; };
 
+/**
+ * The base map: streets and land around the campus from OpenFreeMap. Offline (a phone on campus without data) there's
+ * nothing to fetch, so the map starts with just its background and the campus drawn from the kept file on top: it
+ * opens at once instead of waiting on tiles that can't come.
+ */
 function style(th: MapTheme): ML.StyleSpecification {
-  return {
+  const online = typeof navigator === 'undefined' || navigator.onLine !== false;
+  const full: ML.StyleSpecification = {
     version: 8,
     sources: {
       omt: { type: 'vector', url: TILES, attribution: '© OpenStreetMap' },
@@ -162,6 +170,7 @@ function style(th: MapTheme): ML.StyleSpecification {
         paint: { 'fill-extrusion-color': th.city, 'fill-extrusion-height': ['coalesce', ['get', 'render_height'], 6], 'fill-extrusion-base': ['coalesce', ['get', 'render_min_height'], 0], 'fill-extrusion-opacity': 0.85 } },
     ],
   };
+  return online ? full : { ...full, sources: {}, layers: full.layers.filter((l) => l.type === 'background') };
 }
 
 function addCampus(map: ML.Map, g: ReturnType<typeof toGeo>, th: MapTheme) {
@@ -234,6 +243,8 @@ const MapView = forwardRef<MapHandle, Props>(function MapView(p, ref) {
       });
       // tiles that don't load (offline, blocked) just leave the plain background; nothing to show the user
       m.on('error', () => {});
+      // a finger on the map (MapLibre only gives camera moves made by the app no original event)
+      m.on('movestart', (e: { originalEvent?: unknown }) => { if (e.originalEvent) cb.current.onPanDrag?.(); });
       m.on('moveend', () => {
         const b = m!.getBounds(), z = m!.getZoom(), ce = m!.getCenter();
         cb.current.onRegionChangeComplete?.({ latitude: ce.lat, longitude: ce.lng, latitudeDelta: b.getNorth() - b.getSouth(), longitudeDelta: b.getEast() - b.getWest(), zoom: z });

@@ -4,7 +4,7 @@ import * as WebBrowser from 'expo-web-browser';
 import type { Session } from '@supabase/supabase-js';
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
 
-import { clearCache } from './cache';
+import { clearCache, readCache, writeCache } from './cache';
 import { reportError } from './errors';
 import { getPref, setPref } from './prefs';
 import { toast } from './toast';
@@ -12,6 +12,21 @@ import { t } from './i18n';
 import { clearMediaCache, supabase } from './supabase';
 import { dropWebPush } from './webpush';
 import type { Profile, University } from './types';
+
+const keptKey = (uid: string) => `profile:${uid}`;
+
+/**
+ * No internet and the sign-in's short-lived token has run out: Supabase can't renew it, so it reports no session. The
+ * sign-in saved on this phone still says who this is, enough to open the app offline (campus map, timetable); the
+ * token is renewed on its own as soon as there's a connection, and nothing on the server accepts the old one meanwhile.
+ */
+function savedSession(): Session | null {
+  try {
+    const ref = new URL(process.env.EXPO_PUBLIC_SUPABASE_URL!).hostname.split('.')[0];
+    const s = JSON.parse(localStorage.getItem(`sb-${ref}-auth-token`) ?? 'null') as Session | null;
+    return s?.user?.id && s.refresh_token ? s : null;
+  } catch { return null; }
+}
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -37,6 +52,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [profileError, setProfileError] = useState(false);
   const uidRef = useRef<string | undefined>(undefined);
 
+  // the last profile this phone saw: the app opens at once with it, and works without internet (the campus map)
+  const applyKept = useCallback((uid: string) => {
+    const k = readCache<{ profile: Profile; university: University | null }>(keptKey(uid));
+    if (k?.profile) { setProfile(k.profile); setUniversity(k.university); }
+    return !!k?.profile;
+  }, []);
+
   const loadProfile = useCallback(async (uid?: string) => {
     uidRef.current = uid;
     if (!uid) { setProfile(null); setUniversity(null); setProfileError(false); return; }
@@ -54,7 +76,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // the saved sign-in is no longer valid: get a fresh one once, then try again
         if (/jwt|token|PGRST30/i.test(`${error.code ?? ''} ${error.message ?? ''}`)) {
           const { error: re } = await supabase.auth.refreshSession();
-          if (re) { await supabase.auth.signOut().catch(() => {}); return; } // back to the sign-in screen
+          // refused (not just no connection): back to the sign-in screen
+          if (re && re.name !== 'AuthRetryableFetchError' && re.status !== 0) { await supabase.auth.signOut().catch(() => {}); return; }
         }
         await new Promise((r) => setTimeout(r, 800 * (attempt + 1)));
       }
@@ -77,26 +100,37 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
       setProfile((data as Profile) ?? null);
       setUniversity((data?.university as University) ?? null);
+      if (data) writeCache(keptKey(uid), { profile: data, university: data.university ?? null });
     } catch (e) {
-      // keep the previous profile on network errors instead of wiping it
+      // keep the previous profile on network errors instead of wiping it; without internet the kept one is enough
       reportError(e);
-      if (uidRef.current === uid) setProfileError(true);
+      if (uidRef.current === uid && !applyKept(uid)) setProfileError(true);
     }
-  }, []);
+  }, [applyKept]);
 
   useEffect(() => {
     supabase.auth.getSession()
-      .then(async ({ data }) => { setSession(data.session); await loadProfile(data.session?.user.id); })
+      .then(async ({ data, error }) => {
+        const offline = !data.session && error?.name === 'AuthRetryableFetchError';
+        const session = data.session ?? (offline ? savedSession() : null);
+        setSession(session);
+        const uid = session?.user.id;
+        // seen before on this phone: open now with it, and bring it up to date in the background
+        if (uid && applyKept(uid)) { setLoading(false); void loadProfile(uid); return; }
+        await loadProfile(uid);
+      })
       .catch((e) => { reportError(e); setProfileError(true); })
       .finally(() => setLoading(false));
     const { data: sub } = supabase.auth.onAuthStateChange((event, s) => {
+      // the first answer is getSession's above (it also covers opening offline with an expired token)
+      if (event === 'INITIAL_SESSION') return;
       setSession(s);
       // a token refresh doesn't change who is signed in
       if (event === 'TOKEN_REFRESHED' && s?.user.id === uidRef.current) return;
       loadProfile(s?.user.id);
     });
     return () => sub.subscription.unsubscribe();
-  }, [loadProfile]);
+  }, [loadProfile, applyKept]);
 
   const value: Ctx = {
     session, profile, university, loading, profileError,
