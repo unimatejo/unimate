@@ -15,6 +15,7 @@ import { step as logStep } from '@/lib/crashMark';
 import { enqueueStory } from '@/lib/storyQueue';
 import { toast } from '@/lib/toast';
 import { StoryEditor } from '@/components/story/StoryEditor';
+import { MediaCropperHost } from '@/components/media/MediaCropper';
 import { StoryOverlays } from '@/components/story/StoryOverlays';
 import type { Overlay } from '@/lib/storyOverlay';
 import { useAuth } from '@/lib/auth';
@@ -63,7 +64,17 @@ function ModeSwitch({ mode, onChange }: { mode: Mode; onChange: (m: Mode) => voi
  * Create, like Instagram: pick what to make at the bottom (post / story / reel / live), choose the photos or video,
  * then "التالي" to write the caption and who sees it. Stories open the editor and can be shared straight from it.
  */
+/** The create screen opens as a sheet on iPhone, so it carries its own crop editor (see openCropper). */
 export default function Create() {
+  return (
+    <>
+      <CreateScreen />
+      <MediaCropperHost />
+    </>
+  );
+}
+
+function CreateScreen() {
   const { profile } = useAuth();
   const { width } = useWindowDimensions();
   const params = useLocalSearchParams<{ mode?: string; category?: string; community?: string }>();

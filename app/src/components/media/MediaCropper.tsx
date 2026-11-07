@@ -463,7 +463,7 @@ export function MediaCropper({ src, opts, onDone, onCancel }: { src: Picked; opt
   );
 }
 
-/** Mounted once at the root: shows the crop editor whenever openCropper() is called. */
+/** Shows the crop editor whenever openCropper() is called: one at the root, and one in each screen opened as a sheet. */
 export function MediaCropperHost() {
   const [req, setReq] = useState<{ src: Picked; opts: CropOpts } | null>(null);
   useEffect(() => subscribeCropper((r) => setReq(r ? { src: r.src, opts: r.opts } : null)), []);

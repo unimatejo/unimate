@@ -41,29 +41,40 @@ export type CropResult = { media: Picked; aspect: number };
 
 type Req = { src: Picked; opts: CropOpts; resolve: (r: CropResult | null) => void };
 let pending: Req | null = null;
-const subs = new Set<(r: Req | null) => void>();
+/**
+ * Hosts, the most recently mounted last. Only the top one shows the editor: on iPhone a screen opened as a sheet
+ * (the create screen) covers the root, and an editor shown from the root would open underneath it (invisible, and it
+ * blocks every tap). So a sheet screen mounts its own host, and requests go to it while it's open.
+ */
+const hosts: ((r: Req | null) => void)[] = [];
+const top = () => hosts[hosts.length - 1];
 
-/** Open the full-screen crop editor (rendered once by MediaCropperHost). Resolves with the edited media, or null if cancelled. */
+/** Open the full-screen crop editor (shown by the top MediaCropperHost). Resolves with the edited media, or null if cancelled. */
 export function openCropper(src: Picked, opts: CropOpts): Promise<CropResult | null> {
   return new Promise((resolve) => {
     if (pending) pending.resolve(null);
     pending = { src, opts, resolve };
-    subs.forEach((f) => f(pending));
+    top()?.(pending);
   });
 }
 
-/** Host side: listen for crop requests. */
+/** Host side: listen for crop requests (the newest host gets them until it unmounts). */
 export function subscribeCropper(f: (r: Req | null) => void) {
-  subs.add(f);
+  hosts.forEach((h) => h(null));
+  hosts.push(f);
   f(pending);
-  return () => { subs.delete(f); };
+  return () => {
+    const i = hosts.indexOf(f);
+    if (i >= 0) hosts.splice(i, 1);
+    top()?.(pending);
+  };
 }
 
 /** Host side: finish the current request; waits for the editor's window to close on iPhone before the next screen opens. */
 export function finishCropper(r: CropResult | null) {
   const p = pending;
   pending = null;
-  subs.forEach((f) => f(null));
+  top()?.(null);
   if (!p) return;
   setTimeout(() => p.resolve(r), Platform.OS === 'ios' ? 380 : 0);
 }
