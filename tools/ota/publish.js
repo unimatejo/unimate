@@ -34,17 +34,31 @@ for (const platform of ['ios', 'android']) {
   fs.writeFileSync(path.join(out, `manifest-${platform}.json`), JSON.stringify(manifest));
   console.log(platform, 'update', manifest.id, 'assets', manifest.assets.length);
 }
-// the app asks /ota/manifest with an "expo-platform" header; Apache picks the right file and adds the protocol headers
+// the app asks /ota/manifest with an "expo-platform" header; manifest.php serves that platform's file with the
+// protocol headers, and notes each check (time, platform, the update the phone runs now; nothing about the person)
+// in ota/checks.log, so we can see whether phones reach the updates
+fs.writeFileSync(path.join(out, 'manifest.php'), `<?php
+$p = stripos($_SERVER['HTTP_EXPO_PLATFORM'] ?? '', 'android') !== false ? 'android' : 'ios';
+$log = __DIR__ . '/checks.log';
+if (@filesize($log) > 1000000) @file_put_contents($log, '');
+@file_put_contents($log, gmdate('c') . " $p rt=" . ($_SERVER['HTTP_EXPO_RUNTIME_VERSION'] ?? '-') . ' running=' . ($_SERVER['HTTP_EXPO_CURRENT_UPDATE_ID'] ?? '-') . ' embedded=' . ($_SERVER['HTTP_EXPO_EMBEDDED_UPDATE_ID'] ?? '-') . ' ua=' . substr($_SERVER['HTTP_USER_AGENT'] ?? '-', 0, 60) . "\\n", FILE_APPEND | LOCK_EX);
+header('expo-protocol-version: 1');
+header('expo-sfv-version: 0');
+header('Cache-Control: private, max-age=0');
+header('Content-Type: application/json');
+readfile(__DIR__ . "/manifest-$p.json");
+`);
 fs.writeFileSync(path.join(out, '.htaccess'), `RewriteEngine On
-RewriteCond %{HTTP:expo-platform} android [NC]
-RewriteRule ^manifest$ manifest-android.json [L]
-RewriteRule ^manifest$ manifest-ios.json [L]
+RewriteRule ^manifest$ manifest.php [L]
 <FilesMatch "^manifest-.*\\.json$">
   Header set expo-protocol-version "1"
   Header set expo-sfv-version "0"
   Header set Cache-Control "private, max-age=0"
   Header set Content-Type "application/json"
 </FilesMatch>
+<Files "checks.log">
+  Require all denied
+</Files>
 <IfModule mod_headers.c>
   <FilesMatch "\\.(hbc|js|bundle|png|jpg|ttf|otf|webp)$">
     Header set Cache-Control "public, max-age=31536000, immutable"
