@@ -1,8 +1,8 @@
 # Runs the app on Android emulators (a recent phone and a weak one) and walks the story flow with Maestro, taking a
-# screenshot at every step. One phone per run, started by pushing e2e/run.json ({"phone": "new"|"weak", "link": a
-# one-time sign-in link for the QA account, made fresh each time: a new link cancels the previous one}) to the
-# "e2e-run" branch, or by hand with the same two inputs.
-# Screenshots, the Maestro report and the phone's log go to the "e2e-results" branch.
+# screenshot at every step. One phone per run, started by pushing e2e/run.json ({"phone": "new"|"weak"}) to the
+# "e2e-run" branch, or by hand. A sign-in link for the QA account lasts minutes, so once the emulator is ready the job
+# waits for one on the "e2e-link" branch (link.txt: this run's id, then the link) — or takes it from the "link" input.
+# Screenshots, the Maestro report and the phone's log go to the "e2e-weak" / "e2e-new" branch.
 name: Android E2E
 on:
   push:
@@ -70,7 +70,7 @@ jobs:
       - uses: reactivecircus/android-emulator-runner@v2
         env:
           LOGIN_LINK: ${{ github.event.inputs.link }}
-          RUN_JSON: e2e/run.json
+          GH_TOKEN: ${{ github.token }}
         with:
           api-level: ${{ matrix.phone.api }}
           arch: x86_64

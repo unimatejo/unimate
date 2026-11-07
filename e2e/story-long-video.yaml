@@ -5,17 +5,18 @@ appId: jo.unimate.app
 ---
 - launchApp
 - openLink: ${LOGIN_LINK}
-- extendedWaitUntil: { visible: "الرئيسية", timeout: 90000 }
+- extendedWaitUntil: { visible: "المجتمع", timeout: 90000 }
 # the newest update downloads on the first open and runs from the next
 - waitForAnimationToEnd: { timeout: 15000 }
 - stopApp
 - launchApp
-- extendedWaitUntil: { visible: "الرئيسية", timeout: 90000 }
+- extendedWaitUntil: { visible: "المجتمع", timeout: 90000 }
 - waitForAnimationToEnd: { timeout: 15000 }
 - stopApp
 - launchApp
-- extendedWaitUntil: { visible: "الرئيسية", timeout: 90000 }
+- extendedWaitUntil: { visible: "المجتمع", timeout: 90000 }
 - takeScreenshot: 01-home
+- assertNotVisible: "ادخل بحساب الجامعة (مايكروسوفت)"
 - tapOn: "المجتمع"
 - extendedWaitUntil: { visible: "ضيف قصة", timeout: 30000 }
 - takeScreenshot: 02-community

@@ -4,7 +4,6 @@
 set -x
 NAME=$1; API=$2
 mkdir -p out
-[ -z "$LOGIN_LINK" ] && [ -f "$RUN_JSON" ] && LOGIN_LINK=$(python3 -c "import json;print(json.load(open('$RUN_JSON'))['link'])")
 adb wait-for-device
 adb root || true
 adb shell "setprop persist.sys.locale ar-JO; setprop ctl.restart zygote" || true
@@ -16,6 +15,16 @@ adb push test30.mp4 /sdcard/DCIM/Camera/test30.mp4
 adb shell am broadcast -a android.intent.action.MEDIA_SCANNER_SCAN_FILE -d file:///sdcard/DCIM/Camera/test30.mp4 || true
 adb shell content call --method scan_volume --uri content://media --arg external_primary || true
 adb logcat -c
+# a sign-in link lasts minutes, so it is made only now: wait for it on the "e2e-link" branch (first line: this run's id)
+if [ -z "$LOGIN_LINK" ]; then
+  echo "waiting for the sign-in link"
+  for i in $(seq 1 90); do
+    T=$(curl -fsS -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github.raw" "https://api.github.com/repos/$GITHUB_REPOSITORY/contents/link.txt?ref=e2e-link" 2>/dev/null)
+    [ "$(echo "$T" | head -1)" = "$GITHUB_RUN_ID" ] && LOGIN_LINK=$(echo "$T" | sed -n 2p) && break
+    sleep 10
+  done
+fi
+[ -z "$LOGIN_LINK" ] && echo "no sign-in link" > out/result.txt && exit 0
 START=$(date +%s)
 ~/.maestro/bin/maestro test --env LOGIN_LINK="$LOGIN_LINK" --format junit --output out/report.xml --test-output-dir out e2e/story-long-video.yaml > out/maestro.log 2>&1
 echo "exit=$? seconds=$(( $(date +%s) - START ))" > out/result.txt
