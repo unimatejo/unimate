@@ -2563,7 +2563,6 @@ export const EN: Record<string, string> = {
   "جدولك فارغ": "Your timetable is empty",
   "جرّب التنبيه": "Try the reminder",
   "يجب أن يبدأ رابط الزر بـ https://": "The button link must start with https://",
-  "رابط موقعه أو صفحة الطلب": "Their site or ordering page",
   "أضف موادك أولًا ثم حاول.": "Add your courses first, then try.",
   "موقعه في الجامعة (اختياري): ابحث عن المبنى": "Where on campus (optional): find the building",
   "موقعه: {0}": "Location: {0}",
@@ -2769,4 +2768,6 @@ export const EN: Record<string, string> = {
   "أضف أول إعلان من الزر في الأعلى.": "Add the first ad with the button at the top.",
   "لأي محل؟": "For which shop?",
   "+ محل جديد": "+ New shop",
+  "الزر يفتح هذا الرابط.": "The button opens this link.",
+  "دون رابط: الزر يفتح صفحة المحل في التطبيق (رقمه وموقعه وقائمته).": "Without a link, the button opens the shop's page in the app (number, location, menu).",
 };

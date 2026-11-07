@@ -52,9 +52,10 @@ export function openAdvertiser(ad: Ad) {
 
 /**
  * The banner's button: the advertiser's own site or ordering app (https only, checked on the server too), the walk to
- * them on the campus map, or a call.
+ * them on the campus map, or a call. Words without any of these open the advertiser's page.
  */
 export function adAction(ad: Ad) {
+  if (!ad.cta_kind) { openAdvertiser(ad); return; }
   if (ad.cta_kind === 'link') {
     const url = ad.cta_url?.trim();
     if (!url || !/^https:\/\/\S+$/i.test(url)) return;

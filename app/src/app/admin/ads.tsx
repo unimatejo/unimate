@@ -94,7 +94,8 @@ function BuildingPicker({ universityId, value, onChange }: { universityId: strin
 function CampaignForm({ adv: given, camp, onDone }: { adv: Adv; camp: Camp | null; onDone: () => void }) {
   const unis = useUnis();
   const [adv, setAdv] = useState<Adv>(given);
-  const [c, setC] = useState<Camp>(() => camp ?? {
+  // words saved without a link come back as their chip (the button then opens the shop's page)
+  const [c, setC] = useState<Camp>(() => (camp && !camp.cta_kind && camp.cta_label ? { ...camp, cta_kind: 'link' } : camp) ?? {
     advertiser_id: given.id ?? '', university_ids: given.university_id ? [given.university_id] : [], college_ids: [], placement: 'home_banner', title: '', body: '',
     image_url: null, offer: '', cta_url: '', cta_label: '', starts_on: today(), ends_on: ymd(new Date(Date.now() + 30 * 864e5)), daily_from: null, daily_to: null,
     priority: 10, is_active: true, cta_kind: given.phone ? 'call' : null, show_text: true,
@@ -111,7 +112,9 @@ function CampaignForm({ adv: given, camp, onDone }: { adv: Adv; camp: Camp | nul
     // nobody chosen: the shop's university, or every university
     const reach = c.university_ids.length ? c.university_ids : adv.university_id ? [adv.university_id] : unis.map((u) => u.id);
     const cta = c.cta_kind === 'link' ? c.cta_url?.trim() || null : null;
-    if (c.cta_kind === 'link' && (!cta || !/^https:\/\/\S+$/i.test(cta))) { setMsg(t('يجب أن يبدأ رابط الزر بـ https://')); return; }
+    if (cta && !/^https:\/\/\S+$/i.test(cta)) { setMsg(t('يجب أن يبدأ رابط الزر بـ https://')); return; }
+    // no link: the words stay on the button, and it opens the shop's page in the app
+    const kind = c.cta_kind === 'link' && !cta ? null : c.cta_kind;
     if (c.cta_kind === 'map' && !adv.building_id && adv.lat == null) { setMsg(t('حدّد مكان المحل على الخريطة من صفحة المحل ليعمل زر «خذني إليه».')); return; }
     if (c.cta_kind === 'call' && !adv.phone?.trim()) { setMsg(t('اكتب رقم هاتف المحل ليعمل زر الاتصال.')); return; }
     const time = /^([01]\d|2[0-3]):[0-5]\d$/;
@@ -132,7 +135,7 @@ function CampaignForm({ adv: given, camp, onDone }: { adv: Adv; camp: Camp | nul
     const row = { ...c, advertiser_id: advId, university_ids: reach, daily_from: c.daily_from || null, daily_to: c.daily_to || null,
       body: c.body?.trim() || null, offer: c.offer?.trim() || null, title: (c.title.trim() || adv.name.trim()).slice(0, 60),
       // a photo is the whole banner: only «ممول» and the button go on it
-      show_text: !c.image_url, cta_url: cta, cta_label: c.cta_kind ? c.cta_label?.trim() || null : null };
+      show_text: !c.image_url, cta_kind: kind, cta_url: cta, cta_label: c.cta_kind ? c.cta_label?.trim() || CTA_DEFAULT[c.cta_kind] : null };
     const { error } = c.id ? await supabase.from('ad_campaigns').update(row).eq('id', c.id) : await supabase.from('ad_campaigns').insert(row);
     setBusy(false);
     if (error) { setMsg(error.message); return; }
@@ -192,8 +195,11 @@ function CampaignForm({ adv: given, camp, onDone }: { adv: Adv; camp: Camp | nul
           <Chip label={t('بدون زر')} active={!c.cta_kind} onPress={() => set({ cta_kind: null, cta_label: '' })} />
         </View>
         {c.cta_kind === 'link' && (
-          <Field label={t('رابط موقعه أو صفحة الطلب')} value={c.cta_url ?? ''} onChangeText={(v) => set({ cta_url: v })} placeholder="https://"
-            autoCapitalize="none" autoCorrect={false} keyboardType="url" maxLength={500} />
+          <>
+            <Field label={t('رابط (اختياري)')} value={c.cta_url ?? ''} onChangeText={(v) => set({ cta_url: v })} placeholder="https://"
+              autoCapitalize="none" autoCorrect={false} keyboardType="url" maxLength={500} />
+            <Muted>{c.cta_url?.trim() ? t('الزر يفتح هذا الرابط.') : t('دون رابط: الزر يفتح صفحة المحل في التطبيق (رقمه وموقعه وقائمته).')}</Muted>
+          </>
         )}
         {c.cta_kind === 'call' && adv.id && (
           <Field label={t('رقم هاتف المحل')} value={adv.phone ?? ''} onChangeText={(v) => setAdv((x) => ({ ...x, phone: v }))} keyboardType="phone-pad" />

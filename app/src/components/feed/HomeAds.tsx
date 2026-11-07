@@ -94,7 +94,7 @@ export function HomeAds() {
  */
 export function AdSlide({ ad, onOpen, onAction }: { ad: Ad; onOpen?: () => void; onAction?: () => void }) {
   const text = ad.show_text || !ad.image_url;
-  const Icon = ad.cta_kind === 'map' ? Navigation : ad.cta_kind === 'call' ? Phone : ExternalLink;
+  const Icon = ad.cta_kind === 'map' ? Navigation : ad.cta_kind === 'call' ? Phone : ad.cta_kind === 'link' ? ExternalLink : Store;
   return (
     <Tap scale={0.98} onPress={onOpen} accessibilityLabel={t('إعلان ممول: {0}', [text ? ad.advertiser_name : `${ad.advertiser_name} · ${ad.title}`])}
       style={[{ borderRadius: 26, overflow: 'hidden', aspectRatio: 2, backgroundColor: '#1B1F3B' }, shadow]}>
@@ -135,10 +135,11 @@ export function AdSlide({ ad, onOpen, onAction }: { ad: Ad; onOpen?: () => void;
             {text ? <T v="h3" color="#FFFFFF" numberOfLines={2} style={{ fontFamily: F.display, fontSize: 19, lineHeight: 26 }}>{ad.title}</T> : null}
             {text && ad.body ? <T v="tiny" color="rgba(255,255,255,0.85)" numberOfLines={1}>{ad.body}</T> : null}
           </View>
-          {ad.cta_kind ? (
-            <Tap onPress={onAction} accessibilityRole={ad.cta_kind === 'link' ? 'link' : 'button'} accessibilityLabel={ad.cta_label || CTA_DEFAULT[ad.cta_kind]}
+          {/* words without a link (or call / map) open the shop's page, like a tap on the banner */}
+          {ad.cta_kind || ad.cta_label ? (
+            <Tap onPress={ad.cta_kind ? onAction : onOpen} accessibilityRole={ad.cta_kind === 'link' ? 'link' : 'button'} accessibilityLabel={ad.cta_label || CTA_DEFAULT[ad.cta_kind!]}
               style={{ minHeight: 42, paddingHorizontal: 14, borderRadius: 14, backgroundColor: '#FFFFFF', flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-              <T v="bold" color="#0E1430" style={{ fontSize: 14 }}>{ad.cta_label || CTA_DEFAULT[ad.cta_kind]}</T>
+              <T v="bold" color="#0E1430" style={{ fontSize: 14 }}>{ad.cta_label || CTA_DEFAULT[ad.cta_kind!]}</T>
               <Icon size={15} color="#0E1430" />
             </Tap>
           ) : null}
