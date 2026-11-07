@@ -2859,4 +2859,8 @@ export const EN: Record<string, string> = {
   "كلمة الزر": "Button text",
   "هيك بيطلع للطلاب:": "How students will see it:",
   "إعادة التوسط": "Re-center",
+  "بتنبعت أول ما يرجع النت": "Sends as soon as you're online",
+  "🕓 بتنبعت أول ما يرجع النت": "🕓 Sends as soon as you're online",
+  "ما انبعتت · اكبس": "Not sent · tap",
+  "ما قدرنا نبعتها. اكبس عليها عشان تجرّب كمان مرة أو تحذفها.": "We couldn't send it. Tap it to try again or delete it.",
 };

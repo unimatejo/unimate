@@ -68,6 +68,8 @@ Admin › أخطاء التطبيق (`app/admin/errors.tsx`). Stale web code aft
 | Content checks | (automatic) | `moderation_words`, `private.mod_*` triggers, `moderation_queue`, Edge `moderate`; Admin › فحص المحتوى |
 | App look (owner) | `admin/look.tsx`, `lib/appContent.ts`, `components/home/quick.ts` | `app_content`, `admin_set_app_content` |
 | Ads (owner) | `admin/ads.tsx`, `lib/ads.ts`, `components/feed/HomeAds.tsx` (Home banners), `AdBanner.tsx` (feed, market) | `advertisers`, `ad_campaigns` (package = `priority` 30/20/10, `cta_url` «اطلب الآن», https only), `live_ads`, `track_ad` (one view a day per student, taps capped), `admin_ad_stats` |
+| Sending without internet | `lib/chatOutbox.ts` (chat: text, photos, voice, stickers, locations; `useOutbox` in `(chat)/messages/[id].tsx`), `lib/storyQueue.ts` (stories) | `messages` (the client gives each message its id, so a resend is never a duplicate) |
+| Offline reading | `readCache`/`writeCache` (`lib/cache.ts`): inbox, each chat, community, profile, schedule, exams, announcements, honor board, campus places; `lib/campus/data.ts` keeps the campus file | — |
 | Opening animation | `components/brand/Intro.tsx` (mounted in `app/_layout.tsx`) | — |
 | Campus map | `(campus)/map.tsx`, `components/map/*`, `lib/campus/*` | `campus_maps`, Storage `campus`, Edge `campus-osm`, `buildings`, `places`, `campus_search` |
 | Admin panel | `app/admin/*`, `components/admin/kit.tsx`, `components/admin/sections.ts` | `admin_*` RPCs, `admin_stats`, `admin_series`, `admin_audit_log` |
@@ -446,6 +448,7 @@ or JSON: `[{"student_number":"2620387","term_gpa":3.71,"cumulative_gpa":3.60,"cr
 - `appContent.ts` — What the owner sets from the admin panel ("شكل التطبيق"): texts, the home banner and quick links, a notice for everyone, and which features are on. Anything not set…
 - `auth.tsx` — No internet and the sign-in's short-lived token has run out: Supabase can't renew it, so it reports no session. The sign-in saved on this phone still says who this is,…
 - `cache.ts` — What a screen showed last time, so it opens instantly and refreshes quietly in the background (like Instagram). Kept in memory and on the device; every key includes the…
+- `chatOutbox.ts` — Messages that wait for a connection, like WhatsApp: «بعت» always works. A message is kept on the phone with a 🕓 and goes the moment there's any signal, even for two…
 - `crashMark.ts` — Native work that can take the whole app down (a video encoder, say) can't be caught from JavaScript. Before such a step a mark is saved; if the app starts again with the…
 - `cropper.ts` — How a photo / video sits in its frame after the crop editor (saved with the post / story).
 - `errors.ts` — Send an error report to the database so problems on real phones can be fixed. Never throws.

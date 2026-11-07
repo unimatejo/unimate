@@ -12,6 +12,7 @@ import { Button, Empty, Header, IconButton, Screen, T } from '@/components/ui';
 import { useAuth } from '@/lib/auth';
 import { run } from '@/lib/run';
 import { supabase } from '@/lib/supabase';
+import { readCache, writeCache } from '@/lib/cache';
 import { C } from '@/lib/theme';
 import { nm, t } from '@/lib/i18n';
 import { toast } from '@/lib/toast';
@@ -19,7 +20,8 @@ import { toast } from '@/lib/toast';
 /** Official announcements from the university leadership, deans and the dean's office. */
 export default function Announcements() {
   const { university } = useAuth();
-  const [rows, setRows] = useState<Announcement[] | null>(null);
+  // the last feed this phone saw: opens at once, and without internet
+  const [rows, setRows] = useState<Announcement[] | null>(() => readCache<Announcement[]>('announcements') ?? null);
   const [failed, setFailed] = useState(false);
   const [canPost, setCanPost] = useState(false);
 
@@ -28,9 +30,10 @@ export default function Announcements() {
       supabase.rpc('announcements_feed', { lim: 50 }),
       supabase.rpc('my_announce_scopes'),
     ]);
-    if (error) { setFailed(true); setRows((r) => r ?? []); return; }
+    if (error) { setFailed(!readCache('announcements')); setRows((r) => r ?? []); return; }
     setFailed(false);
     setRows((data ?? []) as Announcement[]);
+    writeCache('announcements', (data ?? []) as Announcement[]);
     setCanPost(((scopes ?? []) as unknown[]).length > 0);
   }, []);
 

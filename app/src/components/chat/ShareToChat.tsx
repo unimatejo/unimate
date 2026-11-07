@@ -2,14 +2,14 @@ import * as Haptics from 'expo-haptics';
 import { router } from 'expo-router';
 import { Search, Users } from 'lucide-react-native';
 import { useEffect, useMemo, useState } from 'react';
-import { Alert, ScrollView, TextInput, View } from 'react-native';
+import { ScrollView, TextInput, View } from 'react-native';
 
 import { SheetModal } from '@/components/chat/ChatExtras';
 import { Bone } from '@/components/ui/Skeleton';
 import { Avatar, T, Tap } from '@/components/ui';
 import { useAuth } from '@/lib/auth';
-import { friendly, isRateLimited } from '@/lib/run';
 import { supabase } from '@/lib/supabase';
+import { sendLater } from '@/lib/chatOutbox';
 import { C, F, isDark } from '@/lib/theme';
 import { t, ta } from '@/lib/i18n';
 
@@ -48,9 +48,9 @@ export function ShareToChat({ place, onClose }: { place: { lat: number; lng: num
     if (!place || !profile || busy) return;
     setBusy(c.id);
     const body = `${place.lat.toFixed(6)},${place.lng.toFixed(6)},${place.name.replace(/\s+/g, ' ').trim()}`;
-    const { error } = await supabase.from('messages').insert({ conversation_id: c.id, sender_id: profile.id, kind: 'location', body });
+    // through the outbox: without internet it waits on the phone and goes once there's a connection
+    await sendLater({ conversation_id: c.id, sender_id: profile.id, kind: 'location', body });
     setBusy(null);
-    if (error) { Alert.alert(t('ما انبعت'), isRateLimited(error) ? friendly(error) : t('جرّب كمان مرة.')); return; }
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
     onClose();
     router.push({ pathname: '/messages/[id]', params: { id: c.id } });

@@ -23,7 +23,9 @@ import { toast } from '@/lib/toast';
 import { rtTopic, sharedChannel } from '@/lib/realtime';
 import { C, F, isDark } from '@/lib/theme';
 import type { Conversation, Message, VanishMode } from '@/lib/types';
-import { pickMedia, uploadFile } from '@/lib/upload';
+import { pickMedia } from '@/lib/upload';
+import { readCache, writeCache } from '@/lib/cache';
+import { dropOutbox, retryOutbox, sendLater, useOutbox, type OutJob } from '@/lib/chatOutbox';
 import { ImageViewer } from '@/components/media/ImageViewer';
 import { aspectCache } from '@/components/media/ZoomPhoto';
 import { timeAgo } from '@/lib/util';
@@ -82,15 +84,15 @@ function ChatImage({ path, mine }: { path: string; mine: boolean }) {
   </View>;
 }
 
-/** A photo I'm sending: shows right away from the phone, with progress, and a retry if it fails. */
-type Pending = { key: string; file: { uri: string; mime: string; width?: number; height?: number }; viewOnce: boolean; failed: boolean };
-function PendingPhoto({ p, onRetry, onDrop }: { p: Pending; onRetry: () => void; onDrop: () => void }) {
+/** A photo I'm sending: shows right away from the phone; waits for a connection (🕓), or the server said no (retry). */
+function PendingPhoto({ p, onRetry, onDrop }: { p: OutJob & { file: NonNullable<OutJob['file']> }; onRetry: () => void; onDrop: () => void }) {
   const a = p.file.width && p.file.height ? p.file.width / p.file.height : 0.8;
+  const viewOnce = p.kind === 'view_once', failed = !!p.refused;
   return (
     <View style={{ alignSelf: 'flex-end', gap: 4, alignItems: 'flex-end' }}>
       <View style={[{ ...photoBox(a), overflow: 'hidden', alignItems: 'center', justifyContent: 'center' }, bubble(true, C.soft)]}>
-        <Image source={{ uri: p.file.uri }} style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, opacity: p.failed ? 0.5 : 0.75 }} contentFit="cover" blurRadius={p.viewOnce ? 18 : 0} />
-        {p.failed ? (
+        <Image source={{ uri: p.file.uri }} style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, opacity: failed ? 0.5 : 0.75 }} contentFit="cover" blurRadius={viewOnce ? 18 : 0} />
+        {failed ? (
           <Tap onPress={onRetry} accessibilityLabel={t('جرّب كمان مرة')} style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 14, height: 40, borderRadius: 20, backgroundColor: 'rgba(0,0,0,0.6)' }}>
             <RotateCw size={16} color="#fff" /><T v="bold" color="#fff" style={{ fontSize: 13 }}>{t('جرّب كمان مرة')}</T>
           </Tap>
@@ -98,9 +100,9 @@ function PendingPhoto({ p, onRetry, onDrop }: { p: Pending; onRetry: () => void;
           <View style={{ width: 46, height: 46, borderRadius: 23, backgroundColor: 'rgba(0,0,0,0.45)', alignItems: 'center', justifyContent: 'center' }}><ActivityIndicator color="#fff" /></View>
         )}
       </View>
-      {p.failed
+      {failed
         ? <Tap onPress={onDrop} accessibilityLabel={t('احذفها')}><T v="tiny" color={C.danger}>{t('ما انبعتت · احذفها')}</T></Tap>
-        : <T v="tiny" color={C.faint}>{t('عم تنبعت…')}</T>}
+        : <T v="tiny" color={C.faint}>{p.tries ? t('🕓 بتنبعت أول ما يرجع النت') : t('عم تنبعت…')}</T>}
     </View>
   );
 }
@@ -162,23 +164,40 @@ export default function Chat() {
     return () => { ScreenCapture.allowScreenCaptureAsync('chat').catch(() => {}); sub?.remove(); };
   }, [shield, id]);
 
+  // the chat as it was last time: opens at once, and is what there is without internet
+  type Kept = { conv: Conversation; mem: unknown[]; msgs: Message[] };
+  const apply = useCallback((c: Conversation | null, rows: any[]) => {
+    setConv(c);
+    setPeople(Object.fromEntries(rows.filter((r) => r.profile).map((r) => [r.user_id, r.profile])));
+    setOtherRead(rows.find((m) => m.user_id !== (profile?.id ?? ''))?.last_read_at ?? null);
+    setReads(Object.fromEntries(rows.filter((r) => r.user_id !== profile?.id && r.state === 'active').map((r) => [r.user_id, r.last_read_at])));
+    const o = rows.find((m) => m.user_id !== (profile?.id ?? ''));
+    setOther(o?.profile ?? null);
+    setMyState(rows.find((m) => m.user_id === (profile?.id ?? ''))?.state ?? 'active');
+    return o;
+  }, [profile?.id]);
+  useEffect(() => {
+    const k = readCache<Kept>(`chat:${id}`);
+    if (!k) return;
+    apply(k.conv, k.mem as any[]);
+    setMsgs(k.msgs); setLoaded(true);
+  }, [id, apply]);
+
   const load = useCallback(async () => {
     if (!profile) return;
-    const { data: c } = await supabase.from('conversations').select('*').eq('id', id).single();
+    const { data: c, error: ce } = await supabase.from('conversations').select('*').eq('id', id).single();
+    if (ce && !c && readCache(`chat:${id}`)) return; // no connection: the kept copy stays on screen
     setConv(c as Conversation);
     const { data: mem } = await supabase.from('conversation_members').select('user_id, state, last_read_at, profile:profiles!conversation_members_user_id_fkey(id, full_name, avatar_url, username, is_verified, academic_title, title_verified, major:majors!profiles_major_id_fkey(name_ar, name_en))').eq('conversation_id', id);
      
     const rows = (mem ?? []) as any[];
-    setPeople(Object.fromEntries(rows.filter((r) => r.profile).map((r) => [r.user_id, r.profile])));
-    setOtherRead(rows.find((m) => m.user_id !== (profile?.id ?? ''))?.last_read_at ?? null);
-    setReads(Object.fromEntries(rows.filter((r) => r.user_id !== profile.id && r.state === 'active').map((r) => [r.user_id, r.last_read_at])));
-    const o = rows.find((m) => m.user_id !== (profile?.id ?? ''));
-    setOther(o?.profile ?? null);
+    const o = apply(c as Conversation, rows);
     // a chat with someone I blocked: no composer, a way to unblock instead
     if (o?.user_id && (c as Conversation | null)?.kind === 'direct') supabase.rpc('i_blocked', { target: o.user_id }).then(({ data }) => setIBlocked(data === true ? o.user_id : null), () => {});
-    setMyState(rows.find((m) => m.user_id === (profile?.id ?? ''))?.state ?? 'active');
-    const { data: m } = await supabase.from('messages').select('*').eq('conversation_id', id).order('created_at', { ascending: false }).limit(60);
+    const { data: m, error: me } = await supabase.from('messages').select('*').eq('conversation_id', id).order('created_at', { ascending: false }).limit(60);
+    if (me) return;
     setMsgs((m ?? []) as Message[]);
+    writeCache(`chat:${id}`, { conv: c, mem: rows, msgs: ((m ?? []) as Message[]).slice(0, 40) } satisfies Kept);
     setLoaded(true);
     loadReactions(((m ?? []) as Message[]).map((x) => x.id));
     supabase.rpc('mark_read', { conv: id }).then(() => {}, () => {});
@@ -350,65 +369,54 @@ export default function Chat() {
     Alert.alert(t('ما انبعتت رسالتك'), t('فيها كلام مخالف لقواعد الجروبات، فانكتمت شوي. كل مرة بتتكرر المدة بتزيد.'));
     return true;
   }
-  /** stickers, files, location, contacts and polls from the "+" sheet */
+  /** stickers, files, location, contacts and polls from the "+" sheet: through the outbox like everything else */
   async function sendOut(o: Outgoing) {
     if (!profile) return;
-    const { data, error } = await supabase.from('messages').insert({ conversation_id: id, sender_id: profile.id, kind: o.kind, body: o.body ?? null, media_url: o.media ?? null, ref_id: o.ref ?? null }).select().single();
-    if (error) { if (mutedError(error)) return; Alert.alert(t('ما انبعتت'), myState === 'request' ? t('لازم تقبل الطلب أول.') : isRateLimited(error) ? friendly(error) : t('جرّب مرة ثانية.')); return; }
-    if (badWord(data as Message)) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
-    setMsgs((cur) => [data as Message, ...cur.filter((x) => x.id !== data.id)]);
+    await sendLater({ conversation_id: id, sender_id: profile.id, kind: o.kind, body: o.body ?? null, media_url: o.media ?? null, ref_id: o.ref ?? null });
   }
 
-  async function send(kind: 'text' | 'image' | 'view_once' | 'voice' = 'text', media?: string, extra?: string) {
+  /** «بعت» always works: the message waits on the phone (🕓) until there's a connection, then goes on its own. */
+  async function send() {
     if (!profile) return;
-    const body = kind === 'text' ? draft.trim() : kind === 'voice' ? extra ?? null : null;
-    if (kind === 'text' && !body) return;
-    if (kind === 'text') setDraft('');
-    const { data, error } = await supabase.from('messages').insert({ conversation_id: id, sender_id: (profile?.id ?? ''), kind, body, media_url: media ?? null }).select().single();
-    if (error) {
-      if (kind === 'text' && body) setDraft((d) => d || body); // give the text back
-      if (mutedError(error)) return false;
-      if (kind === 'text' || kind === 'voice' || myState === 'request' || isRateLimited(error)) Alert.alert(t('ما انبعتت'), myState === 'request' ? t('لازم تقبل الطلب أول.') : isRateLimited(error) ? friendly(error) : t('جرّب مرة ثانية.'));
-      return false;
-    }
-    if (badWord(data as Message)) return false;
+    const body = draft.trim();
+    if (!body) return;
+    setDraft('');
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
-    setMsgs((cur) => [data as Message, ...cur.filter((x) => x.id !== data.id)]);
-    return true;
+    await sendLater({ conversation_id: id, sender_id: profile.id, kind: 'text', body });
   }
+
+  // the outbox: what's waiting in this chat, the server's row once sent, and a refusal explained
+  const onSent = ({ job, row }: { job: OutJob; row: Message }) => {
+    if (badWord(row)) return;
+    // the photo keeps its shape while it loads from the server
+    if (row.kind === 'image' && row.media_url && job.file?.width && job.file.height) aspectCache.set(`chat/${row.media_url}`, job.file.width / job.file.height);
+    setMsgs((cur) => [row, ...cur.filter((x) => x.id !== row.id)]);
+  };
+  const onRefused = (_j: OutJob, error: { message?: string; code?: string }) => {
+    if (mutedError(error)) return;
+    Alert.alert(t('ما انبعتت'), myState === 'request' ? t('لازم تقبل الطلب أول.') : isRateLimited(error) ? friendly(error) : t('ما قدرنا نبعتها. اكبس عليها عشان تجرّب كمان مرة أو تحذفها.'));
+  };
+  const waiting = useOutbox(id, { sent: onSent, refused: onRefused });
+  const waitingPhotos = waiting.filter((j): j is OutJob & { file: NonNullable<OutJob['file']> } => !!j.file && (j.kind === 'image' || j.kind === 'view_once'));
+  const waitingIds = useMemo(() => new Set(waiting.map((j) => j.id)), [waiting]);
 
   const [uploading, setUploading] = useState(false);
-  const [pending, setPending] = useState<Pending[]>([]);
-  async function upload(p: Pending) {
-    setPending((cur) => cur.map((x) => (x.key === p.key ? { ...x, failed: false } : x)));
-    try {
-      const path = await uploadFile('chat', id, p.file);
-      const ok = await send(p.viewOnce ? 'view_once' : 'image', path);
-      if (!ok) throw new Error('send');
-      if (!p.viewOnce && p.file.width && p.file.height) aspectCache.set(`chat/${path}`, p.file.width / p.file.height);
-      setPending((cur) => cur.filter((x) => x.key !== p.key));
-    } catch {
-      setPending((cur) => cur.map((x) => (x.key === p.key ? { ...x, failed: true } : x)));
-    }
-  }
   async function sendPhoto(viewOnce: boolean, camera = false) {
-    if (uploading) return;
+    if (uploading || !profile) return;
     setUploading(true);
     let f: Awaited<ReturnType<typeof pickMedia>> = null;
     try { f = await pickMedia({ camera, crop: 'chat' }); } catch (e) { Alert.alert(t('ما انبعتت الصورة'), userMessage(e)); }
     setUploading(false);
     if (!f) return;
-    const p: Pending = { key: `${Date.now()}-${Math.random()}`, file: f, viewOnce, failed: false };
-    setPending((cur) => [...cur, p]);
+    await sendLater({ conversation_id: id, sender_id: profile.id, kind: viewOnce ? 'view_once' : 'image', file: { uri: f.uri, mime: f.mime, width: f.width, height: f.height } });
     list.current?.scrollToOffset({ offset: 0, animated: true });
-    upload(p);
   }
 
   const [recording, setRecording] = useState(false);
   async function sendVoice(file: { uri: string; mime: string }, seconds: number) {
-    const path = await uploadFile('chat', id, file);
-    await send('voice', path, String(seconds));
+    if (!profile) return;
+    await sendLater({ conversation_id: id, sender_id: profile.id, kind: 'voice', body: String(seconds), file });
   }
 
   // older messages when you scroll up
@@ -474,7 +482,15 @@ export default function Chat() {
   // re-check every 20s so vanished messages leave the screen on time
   const [now, setNow] = useState(Date.now());
   useEffect(() => { const tm = setInterval(() => setNow(Date.now()), 20000); return () => clearInterval(tm); }, []);
-  const visible = useMemo(() => msgs.filter((m) => !m.deleted_at && (m.is_saved || !m.vanishes_at || new Date(m.vanishes_at).getTime() > now)), [msgs, now]);
+  const visible = useMemo(() => {
+    const shown = msgs.filter((m) => !m.deleted_at && (m.is_saved || !m.vanishes_at || new Date(m.vanishes_at).getTime() > now));
+    // waiting texts, stickers, locations… sit at the bottom as my own bubbles with a 🕓 (photos have their own card above)
+    const wait = waiting.filter((j) => !j.file || (j.kind !== 'image' && j.kind !== 'view_once')).filter((j) => !shown.some((m) => m.id === j.id))
+      .map((j): Message => ({ id: j.id, conversation_id: j.conversation_id, sender_id: j.sender_id, kind: j.kind, body: j.body, media_url: j.media_url, ref_id: j.ref_id,
+        is_saved: false, viewed_once_at: null, vanishes_at: null, deleted_at: null, created_at: j.created_at }))
+      .reverse();
+    return [...wait, ...shown];
+  }, [msgs, now, waiting]);
   const lastMineIdx = useMemo(() => visible.findIndex((x) => x.sender_id === profile?.id), [visible, profile?.id]);
   const title = conv?.kind === 'direct' ? other?.full_name ?? (conv ? t('محادثة') : '') : conv?.title ?? '';
   const activity = useActivityLine(conv?.kind === 'direct' ? other?.id : null);
@@ -518,9 +534,9 @@ export default function Chat() {
           removeClippedSubviews={Platform.OS === 'android'}
           onEndReached={loadOlder}
           onEndReachedThreshold={0.3}
-          ListHeaderComponent={typing !== null || pending.length ? (
+          ListHeaderComponent={typing !== null || waitingPhotos.length ? (
             <View style={{ gap: 6 }}>
-              {pending.map((p) => <PendingPhoto key={p.key} p={p} onRetry={() => upload(p)} onDrop={() => setPending((cur) => cur.filter((x) => x.key !== p.key))} />)}
+              {waitingPhotos.map((p) => <PendingPhoto key={p.id} p={p} onRetry={() => retryOutbox(p.id)} onDrop={() => dropOutbox(p.id)} />)}
               {typing !== null && (
                 <Animated.View entering={FadeIn} accessibilityLabel={conv?.kind === 'direct' ? t('عم يكتب…') : t('{0} عم يكتب…', [typing])} style={{ alignSelf: 'flex-start', backgroundColor: C.soft, borderRadius: 20, paddingHorizontal: 16, paddingVertical: 13, marginTop: 6 }}>
                   <TypingDots />
@@ -609,7 +625,17 @@ export default function Chat() {
                     {heart === m.id && <HeartBurst onDone={() => setHeart(null)} />}
                   </Pressable>
                   <ReactionChips list={reactions[m.id] ?? []} mine={mine} me={profile?.id} onPress={() => setReactSheet(m.id)} />
-                  {(endOfRun || lastMine || m.is_saved) && (
+                  {waitingIds.has(m.id) ? (() => {
+                    const j = waiting.find((x) => x.id === m.id)!;
+                    return j.refused ? (
+                      <Tap onPress={() => Alert.alert(t('ما انبعتت'), undefined, [{ text: t('جرّب كمان مرة'), onPress: () => retryOutbox(j.id) }, { text: t('احذفها'), style: 'destructive', onPress: () => dropOutbox(j.id) }, { text: t('إلغاء'), style: 'cancel' }])}
+                        style={{ alignSelf: 'flex-end', paddingHorizontal: 4 }}><T v="tiny" color={C.danger} style={{ fontSize: 11 }}>{t('ما انبعتت · اكبس')}</T></Tap>
+                    ) : (
+                      <Row gap={4} style={{ alignSelf: 'flex-end', paddingHorizontal: 4 }}>
+                        <Clock size={11} color={C.faint} /><T v="tiny" color={C.faint} style={{ fontSize: 11 }}>{j.tries ? t('بتنبعت أول ما يرجع النت') : t('عم تنبعت…')}</T>
+                      </Row>
+                    );
+                  })() : (endOfRun || lastMine || m.is_saved) && (
                     <Row gap={4} style={{ alignSelf: mine ? 'flex-end' : 'flex-start', paddingHorizontal: 4 }}>
                       {m.is_saved && <Bookmark size={11} color={C.primary} fill={C.primary} />}
                       {lastMine && conv?.kind === 'direct'

@@ -14,6 +14,7 @@ import { useAuth } from '@/lib/auth';
 import { nm, t } from '@/lib/i18n';
 import { run } from '@/lib/run';
 import { supabase } from '@/lib/supabase';
+import { readCache, writeCache } from '@/lib/cache';
 import { C, F, shadow } from '@/lib/theme';
 import { timeAgo } from '@/lib/util';
 import { refreshFrames } from '@/lib/frames';
@@ -38,10 +39,15 @@ export default function Honor() {
   const [busy, setBusy] = useState(false);
 
   const load = useCallback(async () => {
-    const [{ data: st }, { data }] = await Promise.all([
+    const key = `honor:${SCOPES[scope]}:${PERIODS[period]}:${term ?? ''}`;
+    const [{ data: st0, error: se }, { data: d0, error: be }] = await Promise.all([
       supabase.rpc('honor_status'),
       supabase.rpc('honor_board', { p_scope: SCOPES[scope], p_period: PERIODS[period], p_term: term }),
     ]);
+    // without internet: the board as it was last time
+    const kept = se || be ? readCache<{ st: unknown; data: unknown }>(key) : null;
+    const st = kept ? kept.st : st0, data = kept ? kept.data : d0;
+    if (!se && !be) writeCache(key, { st: st0, data: d0 });
     const s = (st ?? null) as Status | null;
     setStatus(s ?? { term: null, terms: [], updated_at: null, hidden: false, has_record: false });
     setHide(!!s?.hidden);

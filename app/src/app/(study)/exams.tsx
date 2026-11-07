@@ -11,6 +11,7 @@ import { ListSkeleton } from '@/components/ui/Skeleton';
 import { Avatar, Button, Card, Chip, Empty, Header, IconButton, Row, Screen, T, Tap } from '@/components/ui';
 import { useAuth } from '@/lib/auth';
 import { scheduleExamReminders } from '@/lib/examReminders';
+import { readCache, writeCache } from '@/lib/cache';
 import { reportError } from '@/lib/errors';
 import { MoodleImport } from '@/components/study/MoodleImport';
 import { EventSourceTag } from '@/components/study/EventSourceTag';
@@ -46,8 +47,10 @@ const leftLabel = (d: number) => d <= 0 ? t('اليوم') : d === 1 ? t('بكر�
 /** Exam mode: what's coming, how long is left, and who from my section is studying right now. */
 export default function Exams() {
   const { profile } = useAuth();
-  const [events, setEvents] = useState<Ev[] | null>(null);
-  const [secs, setSecs] = useState<Sec[]>([]);
+  // the last list this phone saw: opens at once, and without internet
+  const keptKey = `exams:${profile?.id ?? ''}`;
+  const [events, setEvents] = useState<Ev[] | null>(() => readCache<{ events: Ev[] }>(keptKey)?.events ?? null);
+  const [secs, setSecs] = useState<Sec[]>(() => readCache<{ secs: Sec[] }>(keptKey)?.secs ?? []);
   const [mine, setMine] = useState<Mine | null>(null);
   const [mates, setMates] = useState<Record<string, Mate[]>>({});
   const [now, setNow] = useState(Date.now());
@@ -66,21 +69,22 @@ export default function Exams() {
         supabase.from('studying_now').select('section_id, place, until, user_id').gt('until', new Date().toISOString()),
       ]);
        
+      if (evError) { setEvents((x) => x ?? []); return; } // offline: what's on screen (the kept list) stays
       const s: Sec[] = ((enr ?? []) as any[]).map((e) => e.section).filter(Boolean).map((x) => ({ id: x.id, name: x.course?.name_ar ?? '', section_no: x.section_no }));
       setSecs(s);
-       
       const list = preferOfficial((ev ?? []) as Ev[]);
       setEvents(list);
+      writeCache(keptKey, { events: list, secs: s });
        
       setMine(((st ?? []) as any[]).find((r) => r.user_id === profile.id) ?? null);
-      // only a list that really came back replaces the reminders: offline they stay on the phone and still ring
-      if (!evError) scheduleExamReminders(list).catch(reportError);
+      // a list that really came back replaces the reminders (offline they stay on the phone and still ring)
+      scheduleExamReminders(list).catch(reportError);
       // classmates studying, for the courses on screen
       const ids = [...new Set(s.map((x) => x.id))].slice(0, 12);
       const res = await Promise.all(ids.map((id) => supabase.rpc('studying_classmates', { p_section: id }).then(({ data }) => [id, (data ?? []) as Mate[]] as const)));
       setMates(Object.fromEntries(res));
     } catch (e) { reportError(e); setEvents((x) => x ?? []); }
-  }, [profile]);
+  }, [profile, keptKey]);
 
   useEffect(() => { load(); }, [load]);
   // the countdown ticks every minute; classmates refresh every 2 minutes
