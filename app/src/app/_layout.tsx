@@ -4,7 +4,7 @@ import { Stack, router, useSegments, type ErrorBoundaryProps } from 'expo-router
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Pressable, Text, View } from 'react-native';
+import { ActivityIndicator, Platform, Pressable, Text, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
@@ -17,7 +17,8 @@ import { useWebPush } from '@/lib/webpush';
 import { AuthProvider, useAuth } from '@/lib/auth';
 import { useTeamStatus } from '@/lib/team';
 import { useNotifIntroDue } from '@/lib/notifPermission';
-import { checkCrashMarks } from '@/lib/crashMark';
+import { checkCrashMarks, checkTrail } from '@/lib/crashMark';
+import { resumeStoryQueue } from '@/lib/storyQueue';
 import { installGlobalErrorHandler, reportError, setScreen } from '@/lib/errors';
 import { isAR, syncDirection, t } from '@/lib/i18n';
 import { C, F, isDark } from '@/lib/theme';
@@ -25,6 +26,9 @@ import { C, F, isDark } from '@/lib/theme';
 SplashScreen.preventAutoHideAsync();
 installGlobalErrorHandler();
 checkCrashMarks();
+checkTrail();
+// stories left half-sent last time carry on (a moment later, once the session is back)
+if (Platform.OS !== 'web') setTimeout(resumeStoryQueue, 4000);
 
 /** Shown instead of closing the app when a screen fails to draw. */
 export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {

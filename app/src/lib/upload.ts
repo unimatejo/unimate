@@ -123,6 +123,21 @@ export async function pickPhotos(max = 10): Promise<Picked[]> {
   return out;
 }
 
+/** Photos go up at most 1440 px on the long side as JPEG (what Instagram serves too): a few hundred KB instead of
+ *  several MB, so they go up on a weak connection and load fast for everyone. Already-small photos are left alone. */
+const PHOTO_SIDE = 1440;
+export async function lightImage<T extends { uri: string; mime: string; width?: number; height?: number }>(f: T): Promise<T> {
+  if (!/^image\/(jpeg|jpg|png|heic|heif|webp)$/i.test(f.mime)) return f;
+  const long = Math.max(f.width ?? 0, f.height ?? 0);
+  if (long && long <= PHOTO_SIDE && /jpe?g/i.test(f.mime)) return f;
+  try {
+    const ctx = ImageManipulator.manipulate(f.uri);
+    if (!long || long > PHOTO_SIDE) fitLongSide(ctx, f.width ?? PHOTO_SIDE + 1, f.height ?? 0, PHOTO_SIDE);
+    const out = await (await ctx.renderAsync()).saveAsync({ compress: 0.8, format: SaveFormat.JPEG });
+    return { ...f, uri: out.uri, mime: 'image/jpeg', width: out.width, height: out.height };
+  } catch (e) { reportError(e); return f; }
+}
+
 async function readBytes(uri: string): Promise<ArrayBuffer> {
   if (Platform.OS === 'web') return (await fetch(uri)).arrayBuffer();
   return new File(uri).arrayBuffer();
@@ -139,7 +154,8 @@ export async function uploadFile(bucket: string, folder: string, file: { uri: st
  */
 export async function uploadPicked<M extends { trim?: { start: number; end: number } }>(bucket: string, folder: string,
   file: { uri: string; mime: string; duration?: number | null; size?: number | null; width?: number; height?: number; meta?: M | null }): Promise<{ path: string; meta: M | null }> {
-  // videos are made light enough for every phone to play before they go up
+  // photos and videos are made light enough for every phone and connection before they go up
+  if (file.mime.startsWith('image/')) file = await lightImage(file);
   const small = file.mime.startsWith('video/') ? await shrinkVideo(file, file.meta?.trim) : null;
   const mime = small?.mime ?? file.mime;
   const ext = mime.split('/')[1]?.replace('quicktime', 'mov').replace('jpeg', 'jpg') ?? 'bin';

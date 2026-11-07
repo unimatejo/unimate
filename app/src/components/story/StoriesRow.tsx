@@ -1,12 +1,14 @@
 import { router, useFocusEffect } from 'expo-router';
-import { Plus } from 'lucide-react-native';
+import { Plus, RotateCw } from 'lucide-react-native';
 import { useCallback, useState } from 'react';
 import { Platform, ScrollView, View } from 'react-native';
+import Svg, { Circle } from 'react-native-svg';
 import Animated from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
 
 import { Avatar, T, Tap } from '@/components/ui';
 import { useAuth } from '@/lib/auth';
+import { resumeStoryQueue, useStoryQueue } from '@/lib/storyQueue';
 import { setStoryDraft } from '@/lib/storyDraft';
 import { pickMedia } from '@/lib/upload';
 import { supabase } from '@/lib/supabase';
@@ -26,6 +28,25 @@ function Ring({ seen, children }: { seen: boolean; children: React.ReactNode }) 
         </Animated.View>
       )}
       <View style={{ padding: 3, borderRadius: 21, backgroundColor: C.bg }}>{children}</View>
+    </View>
+  );
+}
+
+/** A story going up in the background: a ring that fills around "قصتك", like Instagram (red with ↻ if it stopped). */
+function Uploading({ progress, failed }: { progress: number; failed: boolean }) {
+  const r = 31, c = 2 * Math.PI * r;
+  return (
+    <View pointerEvents="none" style={{ position: 'absolute', top: 0, left: 1, width: 66, height: 66 }}>
+      <Svg width={66} height={66} style={{ transform: [{ rotate: '-90deg' }] }}>
+        <Circle cx={33} cy={33} r={r} stroke={C.line} strokeWidth={3} fill="none" />
+        <Circle cx={33} cy={33} r={r} stroke={failed ? C.red : C.primary} strokeWidth={3} fill="none" strokeLinecap="round"
+          strokeDasharray={`${c} ${c}`} strokeDashoffset={c * (1 - (failed ? 1 : Math.max(0.04, progress)))} />
+      </Svg>
+      {failed && (
+        <View style={{ position: 'absolute', top: 20, left: 20, width: 26, height: 26, borderRadius: 13, backgroundColor: C.red, alignItems: 'center', justifyContent: 'center' }}>
+          <RotateCw size={14} color="#fff" />
+        </View>
+      )}
     </View>
   );
 }
@@ -68,22 +89,27 @@ export function StoriesRow() {
   }, [profile]);
 
   useFocusEffect(useCallback(() => { load(); }, [load]));
+  // stories going up in the background; when one is up, the row shows it
+  const queue = useStoryQueue(load);
+  const up = queue.jobs[0];
+  const sending = queue.jobs.length > 0;
 
   return (
     <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 12, paddingHorizontal: 18 }}>
       {/* like Instagram: your photo with a "+"; tap it to see your story, or to add one when you have none */}
       <View style={{ alignItems: 'center', gap: 6, width: 68 }}>
-        <Tap onPress={() => (mineCount > 0 ? router.push({ pathname: '/story/[id]', params: { id: profile?.id ?? '' } }) : addStory())}
-          accessibilityLabel={mineCount > 0 ? t('شوف قصتك') : t('ضيف قصة')}>
+        <Tap onPress={() => (up?.failed ? resumeStoryQueue() : mineCount > 0 ? router.push({ pathname: '/story/[id]', params: { id: profile?.id ?? '' } }) : addStory())}
+          accessibilityLabel={up?.failed ? t('جرّب ترفع قصتك كمان مرة') : sending ? t('عم نرفع قصتك') : mineCount > 0 ? t('شوف قصتك') : t('ضيف قصة')}>
           {mineCount > 0
             ? <Ring seen={false}><Avatar id={profile?.id} name={profile?.full_name} url={profile?.avatar_url} size={56} radius={19} /></Ring>
-            : <View style={{ width: 66, height: 66, alignItems: 'center', justifyContent: 'center' }}><Avatar id={profile?.id} name={profile?.full_name} url={profile?.avatar_url} size={60} radius={21} /></View>}
+            : <View style={{ width: 66, height: 66, alignItems: 'center', justifyContent: 'center' }}><Avatar id={profile?.id} name={profile?.full_name} url={profile?.avatar_url} size={sending ? 56 : 60} radius={sending ? 33 : 21} /></View>}
+          {up && <Uploading progress={up.progress} failed={up.failed} />}
         </Tap>
         <Tap onPress={addStory} accessibilityLabel={t('ضيف قصة')} hitSlop={10}
           style={{ position: 'absolute', top: 44, left: 0, width: 26, height: 26, borderRadius: 13, backgroundColor: C.primary, borderWidth: 2.5, borderColor: C.bg, alignItems: 'center', justifyContent: 'center' }}>
           <Plus size={15} color={C.onPrimary} strokeWidth={3} />
         </Tap>
-        <T v="tiny">{t('قصتك')}</T>
+        <T v="tiny" color={up?.failed ? C.red : undefined}>{up?.failed ? t('ما ارتفعت') : sending ? t('عم ترتفع…') : t('قصتك')}</T>
       </View>
       {groups.map((g) => (
         <Tap key={g.author_id} onPress={() => router.push({ pathname: '/story/[id]', params: { id: g.author_id } })} style={{ alignItems: 'center', gap: 6, width: 68 }}>

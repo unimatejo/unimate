@@ -11,6 +11,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Avatar, Chip, Row, T, Tap } from '@/components/ui';
 import { FramedMedia } from '@/components/media/FramedMedia';
 import { afterSheet } from '@/components/chat/ChatExtras';
+import { step as logStep } from '@/lib/crashMark';
+import { enqueueStory } from '@/lib/storyQueue';
+import { toast } from '@/lib/toast';
 import { StoryEditor } from '@/components/story/StoryEditor';
 import { StoryOverlays } from '@/components/story/StoryOverlays';
 import type { Overlay } from '@/lib/storyOverlay';
@@ -294,6 +297,17 @@ export default function Create() {
       if (isStory) {
         const m = story?.m ?? media;
         if (!m) { Alert.alert(t('ضيف صورة أو فيديو للستوري')); setBusy(false); return; }
+        if (Platform.OS !== 'web') {
+          logStep('story', 'share');
+          // phones: it goes up in the background (the "قصتك" circle shows how far), the student carries on now
+          void enqueueStory(m, { author_id: profile.id, university_id: profile.university_id, kind: m.kind, duration_sec: playLength(m),
+            caption: (m.meta?.caption ?? body.trim()) || null, audience: story?.audience ?? STORY_AUD[aud][0], overlays: story?.o ?? overlays });
+          toast(t('عم نرفع قصتك…'));
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+          setBusy(false);
+          if (editing) { setEditing(false); afterSheet(() => goBack('/community')); } else goBack('/community');
+          return;
+        }
         const up = await uploadPicked('stories', profile.id, m);
         const row = {
           author_id: profile.id, university_id: profile.university_id, kind: m.kind, media_url: up.path,

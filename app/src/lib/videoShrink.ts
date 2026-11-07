@@ -1,18 +1,19 @@
 import { File, Paths } from 'expo-file-system';
+import * as LegacyFS from 'expo-file-system/legacy';
 import { NativeModules, Platform, TurboModuleRegistry } from 'react-native';
 
-import { allowed, guarded } from './crashMark';
+import { allowed, disable, guarded } from './crashMark';
 import { reportError } from './errors';
 import { recordPerf } from './perf';
 
 /**
  * Phones record 1080p–4K at 10–20 Mbps: a 14 s clip can be 25 MB, slow to upload and too heavy for many phones
  * and browsers to play. Before upload every video is brought down to at most 1280 px on its long side
- * (H.264 + AAC in MP4, about 2.5 Mbps), like Instagram and WhatsApp do.
+ * (H.264 + AAC in MP4, about 2 Mbps: a 15 s story is ~4 MB), like Instagram and WhatsApp do.
  * Anything that can't be converted on this device is uploaded as it is, so posting never breaks.
  */
 const LONG_SIDE = 1280;
-const VIDEO_BPS = 2_500_000;
+const VIDEO_BPS = 2_000_000;
 /** small, already-light MP4s are left alone */
 const KEEP_BPS = 4_000_000;
 
@@ -114,15 +115,32 @@ async function shrinkNative(file: { uri: string; mime: string; duration?: number
   if (long && long <= LONG_SIDE && bps <= KEEP_BPS && file.mime === 'video/mp4') return null;
   // the encoder gets a plain copy in the app's own folder: a Photos-library address (with a "#…" tail, or one the
   // app may only read for a moment) is what native encoders trip on
-  const src = localCopy(file.uri);
-  const uri = await guarded('video-compress', () => c.Video.compress(src, { compressionMethod: 'manual', maxSize: LONG_SIDE, bitrate: VIDEO_BPS, minimumFileSizeForCompress: 0 }));
-  return uri ? { uri, mime: 'video/mp4' } : null;
+  const src = await localCopy(file.uri);
+  // the phone's encoder gets a time limit: one that never finishes (it happens on some iPhones) must never hold a
+  // story back. Past the limit it's cancelled, the video goes up as it is, and this phone skips converting for a week.
+  let cancelId: string | null = null;
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const limit = new Promise<'late'>((res) => { timer = setTimeout(() => res('late'), Math.min(60_000, 20_000 + secs * 2000)); });
+  try {
+    const out = await guarded('video-compress', () => Promise.race([
+      c.Video.compress(src, { compressionMethod: 'manual', maxSize: LONG_SIDE, bitrate: VIDEO_BPS, minimumFileSizeForCompress: 0, getCancellationId: (id) => { cancelId = id; } }),
+      limit,
+    ]));
+    if (out === 'late') {
+      if (cancelId) try { c.Video.cancelCompression(cancelId); } catch { /* already over */ }
+      disable('video-compress');
+      reportError(new Error(`video-compress: no result after the time limit (${Math.round(secs)} s video); turned off on this phone for a week`));
+      return null;
+    }
+    return out ? { uri: out, mime: 'video/mp4' } : null;
+  } finally { clearTimeout(timer); }
 }
 
-function localCopy(uri: string) {
+/** A copy off the screen's thread (a big video copied in one go would stall the app on a weak phone). */
+async function localCopy(uri: string) {
   const clean = uri.split('#')[0];
   const ext = /\.(mov|mp4|m4v)$/i.exec(clean)?.[1]?.toLowerCase() ?? 'mp4';
   const out = new File(Paths.cache, `upload-${Date.now()}.${ext}`);
-  new File(clean).copy(out);
+  await LegacyFS.copyAsync({ from: clean, to: out.uri });
   return out.uri;
 }
