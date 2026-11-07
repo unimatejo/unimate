@@ -2770,4 +2770,10 @@ export const EN: Record<string, string> = {
   "+ محل جديد": "+ New shop",
   "الزر يفتح هذا الرابط.": "The button opens this link.",
   "دون رابط: الزر يفتح صفحة المحل في التطبيق (رقمه وموقعه وقائمته).": "Without a link, the button opens the shop's page in the app (number, location, menu).",
+  "حذف الإعلان نهائيًا؟": "Delete the ad for good?",
+  "يختفي فورًا من عند الطلاب وتُحذف أرقامه، ولا يمكن التراجع. للإخفاء المؤقت استخدم «أوقفه».": "It disappears from students right away and its numbers are deleted. This can't be undone. To hide it for a while, use \"turn off\".",
+  "احذف الإعلان نهائيًا": "Delete ad for good",
+  "حذف {0} نهائيًا؟": "Delete {0} for good?",
+  "يُحذف المحل وكل إعلاناته وأرقامها ودبوسه على الخريطة، ولا يمكن التراجع.": "The shop, all its ads, their numbers and its map pin are deleted. This can't be undone.",
+  "احذف المحل وكل إعلاناته": "Delete the shop and all its ads",
 };

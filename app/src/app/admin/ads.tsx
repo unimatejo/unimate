@@ -143,6 +143,15 @@ function CampaignForm({ adv: given, camp, onDone }: { adv: Adv; camp: Camp | nul
     done(); onDone();
   }
 
+  /** gone for good, with its numbers; the shop stays */
+  async function remove() {
+    if (!c.id || !(await confirm(t('حذف الإعلان نهائيًا؟'), t('يختفي فورًا من عند الطلاب وتُحذف أرقامه، ولا يمكن التراجع. للإخفاء المؤقت استخدم «أوقفه».'), t('احذف')))) return;
+    const { error } = await supabase.from('ad_campaigns').delete().eq('id', c.id);
+    if (error) { setMsg(error.message); return; }
+    await audit('delete_campaign', 'campaign', c.id, { title: c.title });
+    done(); onDone();
+  }
+
   const preview = <AdSlide ad={toAd(adv, { ...c, show_text: !c.image_url })} />;
   return (
     <View style={{ gap: 12 }}>
@@ -242,6 +251,7 @@ function CampaignForm({ adv: given, camp, onDone }: { adv: Adv; camp: Camp | nul
       <Toggle value={c.is_active} onChange={(v) => set({ is_active: v })} label={t('منشور')} hint={t('أوقفه متى شئت دون حذفه.')} />
       {msg && <T v="small" color={C.red}>{msg}</T>}
       <Actions><Act label={c.id ? t('احفظ التعديلات') : t('انشر الإعلان')} kind="primary" loading={busy} onPress={save} /><Act label={t('إلغاء')} onPress={onDone} /></Actions>
+      {c.id ? <Act label={t('احذف الإعلان نهائيًا')} kind="danger" onPress={remove} /> : null}
     </View>
   );
 }
@@ -272,6 +282,15 @@ function AdvEditor({ initial, onClose, onPickSpot }: { initial: Adv; onClose: ()
     done(); set({ id: r.data.id }); setMsg(null);
     // a new shop goes straight on to its first ad: nothing shows to students without one
     if (!id) setEditCamp('new'); else onClose();
+  }
+  /** the shop, its ads and their numbers, for good; its pin leaves the map first */
+  async function removeShop() {
+    if (!a.id || !(await confirm(t('حذف {0} نهائيًا؟', [a.name]), t('يُحذف المحل وكل إعلاناته وأرقامها ودبوسه على الخريطة، ولا يمكن التراجع.'), t('احذف')))) return;
+    await supabase.from('advertisers').update({ is_active: false }).eq('id', a.id);
+    const { error } = await supabase.from('advertisers').delete().eq('id', a.id);
+    if (error) { setMsg(error.message); return; }
+    await audit('delete_advertiser', 'advertiser', a.id, { name: a.name });
+    done(); onClose();
   }
   const up = async (f: (u: string) => void) => { try { const u = await pickAndUpload(); if (u) f(u); } catch (e) { setMsg((e as Error).message); } };
   const st = (cid?: string) => stats.data?.find((s) => s.campaign_id === cid);
@@ -373,6 +392,7 @@ function AdvEditor({ initial, onClose, onPickSpot }: { initial: Adv; onClose: ()
       </Panel>
       {msg && <T v="small" color={C.red}>{msg}</T>}
       <Act label={a.id ? t('احفظ معلومات المحل') : t('احفظ وأنشئ الإعلان')} kind="primary" onPress={save} />
+      {a.id ? <Act label={t('احذف المحل وكل إعلاناته')} kind="danger" onPress={removeShop} /> : null}
     </View>
   );
 }

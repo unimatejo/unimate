@@ -7,6 +7,7 @@ import Animated, { FadeIn, runOnJS, SlideInDown, useAnimatedStyle, useSharedValu
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Avatar, Row, T, Tap } from '@/components/ui';
+import { WebAlertHost } from '@/components/shell/WebAlert';
 import { C, SPRING, shadow } from '@/lib/theme';
 import { LOCALE, rtlLayout, t } from '@/lib/i18n';
 
@@ -88,6 +89,8 @@ export function SheetModal({ open, onClose, children, style, dim = true }: { ope
             {children}
           </Animated.View>
         </GestureDetector>
+        {/* the web's in-app dialogs, above this sheet */}
+        <WebAlertHost />
       </GestureHandlerRootView>
     </Modal>
   );

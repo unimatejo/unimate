@@ -7,18 +7,25 @@ import { C } from '@/lib/theme';
 import { t } from '@/lib/i18n';
 
 type Item = { title: string; message?: string; buttons: AlertButton[] };
-let show: ((i: Item | null) => void) | null = null;
+/**
+ * Hosts, the most recently mounted last: the root one, and one inside each open sheet. A sheet is drawn above the
+ * root, so a dialog asked for from inside it must show in the sheet's own host, or it would sit hidden under it.
+ */
+const hosts: ((i: Item | null) => void)[] = [];
 
 /** On the web, React Native's Alert does nothing; route it to an in-app dialog instead. */
 if (Platform.OS === 'web') {
   Alert.alert = (title: string, message?: string, buttons?: AlertButton[]) => {
-    show?.({ title, message, buttons: buttons?.length ? buttons : [{ text: t('حسناً') }] });
+    hosts[hosts.length - 1]?.({ title, message, buttons: buttons?.length ? buttons : [{ text: t('حسناً') }] });
   };
 }
 
 export function WebAlertHost() {
   const [item, setItem] = useState<Item | null>(null);
-  useEffect(() => { show = setItem; return () => { show = null; }; }, []);
+  useEffect(() => {
+    hosts.push(setItem);
+    return () => { const i = hosts.indexOf(setItem); if (i >= 0) hosts.splice(i, 1); };
+  }, []);
   if (Platform.OS !== 'web' || !item) return null;
   const close = (b?: AlertButton) => { setItem(null); b?.onPress?.(); };
   const cancel = item.buttons.find((b) => b.style === 'cancel');

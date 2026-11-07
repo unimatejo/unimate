@@ -4,6 +4,7 @@ import { ChevronLeft, Search, ShieldAlert, ShieldCheck } from 'lucide-react-nati
 import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import { Alert, Platform, ScrollView, TextInput, View, useWindowDimensions, type StyleProp, type ViewStyle } from 'react-native';
 
+import { MediaCropperHost } from '@/components/media/MediaCropper';
 import { SheetModal } from '@/components/chat/ChatExtras';
 import { Button, Chip, Empty, Field, Header, Loading, Row, Screen, T, Tap } from '@/components/ui';
 import { ADMIN_SECTIONS, GROUPS, type AdminCounts } from '@/components/admin/sections';
@@ -286,6 +287,8 @@ export function State({ loading, error, empty, children }: { loading: boolean; e
 export function Sheet({ open, onClose, title, children }: { open: boolean; onClose: () => void; title?: string; children: ReactNode }) {
   return (
     <SheetModal open={open} onClose={onClose} style={{ maxHeight: '88%' }}>
+      {/* a photo picked in the sheet is cut in an editor shown above the sheet, not hidden under it (lib/cropper) */}
+      <MediaCropperHost />
       {title ? <T v="h2">{title}</T> : null}
       <ScrollView contentContainerStyle={{ gap: 12, paddingBottom: 10 }} keyboardShouldPersistTaps="handled">{children}</ScrollView>
     </SheetModal>
